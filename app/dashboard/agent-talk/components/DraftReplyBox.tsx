@@ -228,7 +228,7 @@ export function DraftReplyBox({
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-arcus-elevated rounded-full blur-[60px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-arcus-border bg-arcus-elevated">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.03] bg-arcus-elevated">
                 <div className="flex items-center gap-5">
                     <div className="w-10 h-10 rounded-2xl bg-arcus-elevated flex items-center justify-center border border-neutral-200 dark:border-arcus-divider shadow-inner">
                         <Mail className="w-5 h-5 text-black/5 dark:text-arcus-fg-tertiary" />
@@ -265,7 +265,7 @@ export function DraftReplyBox({
             </div>
 
             {/* Protocol Metadata (Subject) */}
-            <div className="px-6 py-4 bg-arcus-elevated border-b border-arcus-border flex items-center gap-4">
+            <div className="px-6 py-4 bg-arcus-elevated border-b border-white/[0.03] flex items-center gap-4">
                 <span className="text-[10px] font-bold text-black/20 dark:text-arcus-fg-muted uppercase tracking-[0.1em] shrink-0">Subject</span>
                 <span className="text-[12px] text-black/60 dark:text-arcus-fg-secondary font-medium truncate tracking-tight">{draftData.subject}</span>
             </div>
@@ -395,7 +395,7 @@ export function DraftReplyBox({
             </div>
 
             {/* Command Interface (Footer) */}
-            <div className="px-8 py-5 bg-arcus-elevated border-t border-arcus-border flex items-center justify-between">
+            <div className="px-8 py-5 bg-arcus-elevated border-t border-white/[0.03] flex items-center justify-between">
                 <div className="flex items-center gap-3">
                     {sendError ? (
                         <div className="flex items-center gap-2 text-red-500 text-[10px] tracking-widest bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase">

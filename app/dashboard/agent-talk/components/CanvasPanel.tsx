@@ -207,7 +207,7 @@ export function CanvasPanel({
       />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-arcus-border bg-arcus-elevated">
+      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-white/[0.03] bg-arcus-elevated">
         {/* Type badge + title */}
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold tracking-wide shrink-0', cfg.badge, cfg.badgeText)}>
@@ -250,7 +250,7 @@ export function CanvasPanel({
 
       {/* ── Email metadata strip ────────────────────────────────────────────── */}
       {isEmail && (
-        <div className="shrink-0 border-b border-arcus-border bg-arcus-elevated/60">
+        <div className="shrink-0 border-b border-white/[0.03] bg-arcus-elevated/60">
           <EmailField label="To"      value={canvasData.content?.to      || ''} />
           <EmailField label="Subject" value={canvasData.content?.subject || ''} last />
         </div>
@@ -288,7 +288,7 @@ export function CanvasPanel({
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="shrink-0 border-t border-arcus-border bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
+      <footer className="shrink-0 border-t border-white/[0.03] bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           {/* Word count */}
           <span className="text-[11px] text-arcus-fg-muted tabular-nums">
@@ -342,7 +342,7 @@ export function CanvasPanel({
 
 function EmailField({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-arcus-border')}>
+    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-white/[0.03]')}>
       <span className="text-[11px] font-semibold text-arcus-fg-muted uppercase tracking-widest w-[42px] shrink-0 pt-[1px]">{label}</span>
       <span className="text-[13px] text-arcus-fg-secondary leading-snug">{value || '—'}</span>
     </div>

@@ -233,7 +233,7 @@ export function ArtifactsGalleryPanel({
       </div>
 
       {/* Header section */}
-      <div className="px-6 py-5 border-b border-arcus-border flex items-center justify-between shrink-0 relative z-10">
+      <div className="px-6 py-5 border-b border-white/[0.03] flex items-center justify-between shrink-0 relative z-10">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-arcus-elevated border border-arcus-border flex items-center justify-center">
             <Library className="w-4 h-4 text-arcus-fg-secondary" />
@@ -260,7 +260,7 @@ export function ArtifactsGalleryPanel({
 
       {/* Search Input (only shown if there are active artifacts) */}
       {dynamicArtifacts.length > 0 && (
-        <div className="px-6 py-4 border-b border-arcus-border shrink-0 relative z-10">
+        <div className="px-6 py-4 border-b border-white/[0.03] shrink-0 relative z-10">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-arcus-fg-muted" />
             <input

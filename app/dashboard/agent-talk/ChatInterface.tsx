@@ -3602,7 +3602,7 @@ export default function ChatInterface({
                 style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
               >
                 {/* Header - Glassmorphic fixed height */}
-                <div className="shrink-0 z-40 bg-arcus-bg/40 backdrop-blur-md border-b border-arcus-border" style={{ flexShrink: 0 }}>
+                <div className="shrink-0 z-40 bg-arcus-bg/40 backdrop-blur-md border-b border-white/[0.03]" style={{ flexShrink: 0 }}>
                   <div className="relative px-8 py-4">
                     {/* Centered Agent/Home Toggle */}
                     {isInitialMode && arcusView === 'feed' && (
