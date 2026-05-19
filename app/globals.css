@@ -1546,6 +1546,22 @@ textarea,
   --sidebar-accent-foreground: hsl(222.2 47.4% 11.2%);
   --sidebar-border: hsl(214.3 31.8% 91.4%);
   --sidebar-ring: hsl(222.2 84% 4.9%);
+
+  /* Arcus Design System Overrides - Light Mode */
+  --arcus-bg:               #F4F5F8;
+  --arcus-bg-elevated:      #FFFFFF;
+  --arcus-surface:          #FFFFFF;
+  --arcus-surface-hover:    #F1F5F9;
+  --arcus-raised:           #ECEFF1;
+  --arcus-border:           #E2E8F0;
+  --arcus-divider:          #E2E8F0;
+
+  /* Arcus Design System Text Overrides - Light Mode (Exact specs from user) */
+  --arcus-fg:               #0F172A;
+  --arcus-fg-secondary:     #475569;
+  --arcus-fg-tertiary:      #64748B;
+  --arcus-fg-muted:         #94A3B8;
+  --arcus-fg-inverse:       #FFFFFF;
 }
 
 /* ===== THEME-AWARE UTILITY CLASSES ===== */

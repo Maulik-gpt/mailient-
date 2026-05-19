@@ -156,7 +156,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   };
 
   return (
-    <div className="h-full flex flex-col bg-[#F4F5F8] dark:bg-[#0A0A0A] text-[#0A0B0D] dark:text-white overflow-hidden font-sans selection:bg-black/10 dark:selection:bg-white/10" onClick={e => e.stopPropagation()}>
+    <div className="h-full flex flex-col bg-arcus-bg dark:bg-arcus-bg-elevated text-arcus-fg overflow-hidden font-sans selection:bg-black/10 dark:selection:bg-white/10" onClick={e => e.stopPropagation()}>
       
       {/* Search Header Transition */}
       <AnimatePresence mode="wait">
@@ -164,9 +164,9 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
           <motion.div 
             key="search-view"
             initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-            className="p-4 flex items-center gap-3 border-b border-[#E2E8F0] dark:border-[#2A2A2A]"
+            className="p-4 flex items-center gap-3 border-b border-arcus-border"
           >
-            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }} className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white transition-colors">
+            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }} className="text-arcus-fg-muted hover:text-arcus-fg transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <input 
@@ -175,7 +175,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               placeholder="Search missions..."
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              className="flex-1 bg-transparent border-none outline-none text-[14px] text-[#0A0B0D] dark:text-white placeholder:text-[#94A3B8] dark:placeholder:text-[#525252]"
+              className="flex-1 bg-transparent border-none outline-none text-[14px] text-arcus-fg placeholder:text-arcus-fg-muted"
             />
           </motion.div>
         ) : (
@@ -185,29 +185,29 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
           >
              <button 
                onClick={onNewMission}
-               className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-white dark:bg-[#141414] hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A] border border-[#E2E8F0] dark:border-[#2A2A2A] transition-all group"
+               className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border transition-all group"
              >
                <div className="w-5 h-5 flex items-center justify-center">
-                 <Edit3 className="w-4 h-4 text-neutral-500 dark:text-neutral-400 group-hover:text-black dark:group-hover:text-white" />
+                 <Edit3 className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg transition-colors" />
                </div>
-               <span className="text-[14px] font-medium text-[#0A0B0D] dark:text-white/90">New mission</span>
+               <span className="text-[14px] font-medium text-arcus-fg">New mission</span>
              </button>
 
              <div className="pt-1">
                 <button 
                   onClick={() => setIsSearchVisible(true)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A] transition-all group"
+                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-arcus-surface-hover transition-all group"
                 >
                   <div className="w-5 h-5 flex items-center justify-center">
-                    <Search className="w-4 h-4 text-[#94A3B8] dark:text-neutral-500 group-hover:text-[#475569] dark:group-hover:text-neutral-300" />
+                    <Search className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg-secondary transition-colors" />
                   </div>
-                  <span className="text-[14px] font-medium text-[#475569] dark:text-neutral-400 group-hover:text-[#0A0B0D] dark:group-hover:text-white">Search</span>
+                  <span className="text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors">Search</span>
                 </button>
-                <button className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A] transition-all group">
+                <button className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-arcus-surface-hover transition-all group">
                   <div className="w-5 h-5 flex items-center justify-center">
-                    <History className="w-4 h-4 text-[#94A3B8] dark:text-neutral-500 group-hover:text-[#475569] dark:group-hover:text-neutral-300" />
+                    <History className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg-secondary transition-colors" />
                   </div>
-                  <span className="text-[14px] font-medium text-[#475569] dark:text-neutral-400 group-hover:text-[#0A0B0D] dark:group-hover:text-white">Yesterday</span>
+                  <span className="text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors">Yesterday</span>
                 </button>
              </div>
           </motion.div>
@@ -217,7 +217,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
         {/* All Missions Section */}
         <div className="mt-6 mb-2 flex items-center justify-between px-2.5">
-          <span className="text-[12px] font-semibold text-neutral-400 dark:text-white/30 tracking-tight">All missions</span>
+          <span className="text-[12px] font-semibold text-arcus-fg-tertiary tracking-tight uppercase">All missions</span>
           <button className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white transition-colors">
             <ListFilter className="w-3.5 h-3.5" />
           </button>
@@ -239,7 +239,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                   onClick={() => onConversationSelect?.(item.conversation_id || item.id)}
                   className={cn(
                     "flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer",
-                    "hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A]"
+                    "hover:bg-arcus-surface-hover"
                   )}
                 >
                   <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
@@ -249,7 +249,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                   {editingId === (item.conversation_id || item.id) ? (
                     <input 
                       autoFocus
-                      className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-[#0A0B0D] dark:text-white/90"
+                      className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-arcus-fg"
                       value={localEditValue}
                       onChange={e => setLocalEditValue(e.target.value)}
                       onBlur={() => handleRename(item.conversation_id || item.id, localEditValue)}
@@ -257,7 +257,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                       onClick={e => e.stopPropagation()}
                     />
                   ) : (
-                    <span className="flex-1 text-[14px] font-medium text-[#475569] dark:text-[#A0A0A0] group-hover:text-[#0A0B0D] dark:group-hover:text-white transition-colors truncate">
+                    <span className="flex-1 text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors truncate">
                       {item.user_message}
                     </span>
                   )}
@@ -266,13 +266,13 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
                       <button 
                         onClick={(e) => { e.stopPropagation(); setEditingId(item.conversation_id || item.id); setLocalEditValue(item.user_message); }}
-                        className="p-1 hover:text-black dark:hover:text-white text-neutral-300 dark:text-neutral-600"
+                        className="p-1 hover:text-arcus-fg text-arcus-fg-muted"
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
                       <button 
                         onClick={(e) => { e.stopPropagation(); handleDelete(item.conversation_id || item.id); }}
-                        className="p-1 hover:text-red-400 text-neutral-300 dark:text-neutral-600"
+                        className="p-1 hover:text-red-400 text-arcus-fg-muted"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -286,7 +286,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       </div>
       
       {/* Footer / Feedback Section */}
-      <div className="p-4 border-t border-[#E2E8F0] dark:border-[#2A2A2A] bg-white dark:bg-[#141414]">
+      <div className="p-4 border-t border-arcus-border bg-arcus-surface">
         <AnimatePresence mode="wait">
           {!isFeedbackOpen ? (
             <motion.button
@@ -295,9 +295,9 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               animate={{ opacity: 1 }} 
               exit={{ opacity: 0 }}
               onClick={() => setIsFeedbackOpen(true)}
-              className="w-full py-3 px-4 rounded-xl border border-dashed border-[#E2E8F0] dark:border-white/10 hover:border-[#94A3B8] dark:hover:border-white/20 hover:bg-[#F1F5F9] dark:hover:bg-[#1A1A1A] transition-all text-left group"
+              className="w-full py-3 px-4 rounded-xl border border-dashed border-arcus-border hover:border-arcus-fg-muted hover:bg-arcus-surface-hover transition-all text-left group"
             >
-              <span className="text-[12px] font-medium text-[#94A3B8] dark:text-[#525252] group-hover:text-[#475569] dark:group-hover:text-[#A0A0A0]">Have Feedback? <span className="text-black/60 dark:text-white/60">Write here!</span></span>
+              <span className="text-[12px] font-medium text-arcus-fg-muted group-hover:text-arcus-fg-secondary">Have Feedback? <span className="text-arcus-fg/60">Write here!</span></span>
             </motion.button>
           ) : (
             <motion.div
@@ -305,7 +305,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
               initial={{ opacity: 0, y: 10, scale: 0.95 }} 
               animate={{ opacity: 1, y: 0, scale: 1 }} 
               exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="w-full bg-[#F4F5F8] dark:bg-[#141414] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-2xl p-4 shadow-2xl relative overflow-hidden"
+              className="w-full bg-arcus-surface border border-arcus-border rounded-2xl p-4 shadow-2xl relative overflow-hidden"
             >
                <textarea
                  autoFocus
@@ -316,13 +316,13 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSendFeedback();
                    if (e.key === 'Escape') setIsFeedbackOpen(false);
                  }}
-                 className="w-full bg-white dark:bg-[#0A0A0A] border border-[#E2E8F0] dark:border-[#2A2A2A] rounded-xl p-3 text-[13px] text-[#0A0B0D] dark:text-white placeholder:text-[#94A3B8] dark:placeholder:text-[#525252] resize-none min-h-[100px] outline-none focus:border-[#737373] dark:focus:border-white/20 transition-all mb-4"
+                 className="w-full bg-arcus-bg dark:bg-[#0A0A0A] border border-arcus-border rounded-xl p-3 text-[13px] text-arcus-fg placeholder:text-arcus-fg-muted resize-none min-h-[100px] outline-none focus:border-arcus-fg-tertiary dark:focus:border-white/20 transition-all mb-4"
                />
                
                <div className="flex items-center justify-between">
                   <button 
                     onClick={() => window.open('mailto:mailient.xyz@gmail.com')}
-                    className="text-[12px] text-neutral-500 dark:text-neutral-400 hover:text-black dark:hover:text-white transition-colors"
+                    className="text-[12px] text-arcus-fg-muted hover:text-arcus-fg transition-colors"
                   >
                     Need help? <span className="underline decoration-white/20">Contact us</span>
                   </button>
@@ -332,7 +332,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                     disabled={!feedbackText.trim() || isSending || isSent}
                     className={cn(
                       "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border-none shadow-lg",
-                      isSent ? "bg-emerald-500 text-white" : "bg-black dark:bg-white text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-100"
+                      isSent ? "bg-emerald-500 text-white" : "bg-arcus-fg dark:bg-white text-arcus-fg-inverse dark:text-black hover:bg-arcus-fg/90 dark:hover:bg-neutral-100"
                     )}
                   >
                     {isSent ? "Sent!" : isSending ? "Sending..." : "Send"}

@@ -46,7 +46,7 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({ className, ...props }, ref) => (
   <textarea
     className={cn(
-      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-black dark:text-white placeholder:text-black/40 dark:placeholder:text-white/40 focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
+      "flex w-full rounded-md border-none bg-transparent px-3 py-3 text-base text-arcus-fg placeholder:text-arcus-fg-muted focus-visible:outline-none focus-visible:ring-0 disabled:cursor-not-allowed disabled:opacity-50 min-h-[60px] resize-none scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent hover:scrollbar-thumb-gray-500",
       className
     )}
     ref={ref}
@@ -872,7 +872,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       initial={{ opacity: 0, y: 10, scale: 0.95 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
                       exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute bottom-full left-0 mb-2 w-64 bg-[#141414] backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                      className="absolute bottom-full left-0 mb-2 w-64 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
                     >
                       {MODES.map((mode) => (
                         <div key={mode.id} className="relative group">
@@ -882,8 +882,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                             className={cn(
                               "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
                               activeMode === mode.id 
-                                ? "bg-white/10 text-white" 
-                                : "hover:bg-white/[0.03] text-white/50 hover:text-white"
+                                ? "bg-arcus-surface-hover text-arcus-fg" 
+                                : "hover:bg-arcus-surface-hover/50 text-arcus-fg-secondary hover:text-arcus-fg"
                             )}
                           >
                             <div className="flex items-center gap-3">
@@ -894,8 +894,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
-                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-[#141414] border border-white/10 rounded-xl p-3 shadow-xl z-[80]">
-                            <p className="text-[11px] text-white/60 leading-relaxed">
+                          <div className="absolute left-full ml-2 top-0 invisible group-hover:visible w-48 bg-arcus-surface border border-arcus-border rounded-xl p-3 shadow-xl z-[80]">
+                            <p className="text-[11px] text-arcus-fg-secondary leading-relaxed">
                               {mode.description}
                             </p>
                           </div>
@@ -959,16 +959,16 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             <PromptInputAction tooltip="Change the Model">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="bg-arcus-raised hover:bg-arcus-raised border-none shadow-none px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
+                  <button className="bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
                     <div className="flex items-center gap-1.5">
                       {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
-                      <span className="text-[13px] font-semibold text-white/90">
+                      <span className="text-[13px] font-semibold text-arcus-fg">
                         {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
                       </span>
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" side="top" className="w-56 bg-[#141414]/95 backdrop-blur-xl border border-white/10 text-white">
+                <DropdownMenuContent align="end" side="top" className="w-56 bg-arcus-surface backdrop-blur-xl border border-arcus-border text-arcus-fg">
                   {AI_MODELS.map(model => {
                     const isLocked = 
                       (model.tier !== 'free' && (props.currentPlan === 'free' || props.currentPlan === 'none' || !props.currentPlan)) || 
@@ -992,27 +992,27 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                         }}
                         className={cn(
                           "flex items-center justify-between gap-2 px-3 py-2 cursor-pointer",
-                          activeModelId === model.id && "bg-white/10",
+                          activeModelId === model.id && "bg-arcus-surface-hover",
                           isLocked && "hover:bg-transparent"
                         )}
                       >
                         <div className="flex items-center gap-2">
-                          <model.icon className={cn("w-4 h-4", isLocked ? "text-white/20" : "text-white/60")} />
+                          <model.icon className={cn("w-4 h-4", isLocked ? "opacity-20" : "opacity-60")} />
                           <div className="flex flex-col">
-                            <span className={cn("text-sm font-medium", isLocked ? "text-white/30" : "text-white/90")}>
+                            <span className={cn("text-sm font-medium", isLocked ? "opacity-30" : "opacity-90")}>
                               {model.name}
                             </span>
                             {isLocked && (
-                              <span className="text-[9px] text-amber-500/60 font-bold uppercase tracking-wider">
+                              <span className="text-[9px] text-amber-500/80 font-bold uppercase tracking-wider">
                                 {model.tier === 'pro' ? 'Pro Plan' : 'Starter Plan'}
                               </span>
                             )}
                           </div>
                         </div>
                         {isLocked ? (
-                          <Lock className="w-3.5 h-3.5 text-white/20" />
+                          <Lock className="w-3.5 h-3.5 opacity-20" />
                         ) : (
-                          activeModelId === model.id && <Check className="w-3.5 h-3.5 text-blue-400" />
+                          activeModelId === model.id && <Check className="w-3.5 h-3.5 text-blue-500" />
                         )}
                       </DropdownMenuItem>
                     );
