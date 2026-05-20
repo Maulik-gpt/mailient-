@@ -150,7 +150,7 @@ export default function ContactPage() {
   };
 
   return (
-    <main className="min-h-screen bg-black text-white overflow-hidden">
+    <main className="min-h-screen bg-black text-white overflow-hidden strichpunkt-theme">
       {/* Background Effects */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-gray-800/5 rounded-full blur-[150px]" />
