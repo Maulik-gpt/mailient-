@@ -345,6 +345,8 @@ export function LinearLanding() {
                 loop 
                 muted={isMuted} 
                 playsInline 
+                onPlay={() => setIsPlaying(true)}
+                onPause={() => setIsPlaying(false)}
                 onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 className="w-full h-full object-cover relative z-10" 
