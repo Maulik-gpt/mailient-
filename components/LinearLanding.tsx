@@ -104,7 +104,7 @@ export function LinearLanding() {
   }, []);
 
   useEffect(() => {
-    document.title = "Mailient / Hours of email, handled overnight";
+    document.title = "Mailient";
   }, []);
 
   return (
