@@ -55,11 +55,11 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative",
           scrolled
             ? isDark
-              ? "border-white/[0.08] bg-neutral-950/75 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]"
-              : "border-neutral-200/50 bg-white/80 shadow-[0_20px_40px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]"
+              ? "border-white/[0.12] bg-gradient-to-r from-zinc-800/60 via-zinc-700/75 to-zinc-800/60 shadow-[0_25px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
+              : "border-neutral-200/50 bg-gradient-to-r from-white/90 via-neutral-50/95 to-white/90 shadow-[0_20px_40px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]"
             : isDark
-              ? "border-white/[0.05] bg-neutral-950/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-              : "border-neutral-200/40 bg-white/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"
+              ? "border-white/[0.08] bg-gradient-to-r from-zinc-900/40 via-zinc-800/50 to-zinc-900/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+              : "border-neutral-200/40 bg-gradient-to-r from-white/60 via-neutral-50/70 to-white/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"
         )}
       >
         {/* Fine Glass Reflection Line Overlay */}
