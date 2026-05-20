@@ -297,7 +297,7 @@ export default function PricingSection3({
                   </div>
                 </CardContent>
 
-                <CardFooter className="pt-8 relative z-10 shrink-0">
+                <div className="pt-8 relative z-10 shrink-0">
                   <button
                     onClick={() => {
                       if (isLifetime) {
@@ -308,12 +308,12 @@ export default function PricingSection3({
                     }}
                     disabled={isLoading || isCurrentPlanActive}
                     className={cn(
-                      "w-full py-4 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 border",
+                      "w-full py-4 text-xs font-semibold rounded-2xl transition-all duration-300 flex items-center justify-center gap-1.5 border cursor-pointer",
                       isCurrentPlanActive
                         ? "bg-white/5 border-white/10 text-neutral-500 cursor-not-allowed"
                         : plan.popular
-                          ? "bg-white text-black hover:bg-white/95 border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.08)] hover:scale-[1.01]"
-                          : "bg-white/[0.02] border-white/[0.08] text-white hover:bg-white/[0.06] hover:scale-[1.01]"
+                          ? "bg-white text-black hover:bg-neutral-100 border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:scale-[1.01]"
+                          : "bg-[#121316] border-white/[0.08] text-white hover:bg-[#1c1d22] hover:border-white/25 hover:scale-[1.01]"
                     )}
                   >
                     {isLoading ? (
@@ -330,7 +330,7 @@ export default function PricingSection3({
                       </>
                     )}
                   </button>
-                </CardFooter>
+                </div>
               </Card>
             </TimelineContent>
           );
