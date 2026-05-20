@@ -139,14 +139,14 @@ Maulik`,
         <div className="flex flex-wrap items-center justify-center gap-4 mb-20">
           <button
             onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-            className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-transform duration-300 hover:scale-[1.02] shadow-lg flex items-center gap-2"
+            className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] border border-white/20 flex items-center gap-2"
           >
             Try Arcus free
             <ArrowRight className="w-4 h-4 text-neutral-950" />
           </button>
           <a
             href="#live-demo-section"
-            className="px-8 py-3.5 rounded-full bg-neutral-900 border border-neutral-800 text-white font-extrabold text-xs transition-colors hover:bg-neutral-800 flex items-center gap-1.5"
+            className="px-8 py-3.5 rounded-full bg-white/[0.02] border border-white/[0.08] text-white font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] backdrop-blur-md flex items-center gap-1.5 shadow-inner"
           >
             <Play className="w-3.5 h-3.5 fill-white" />
             Watch it work
@@ -648,7 +648,7 @@ Maulik`,
           <div className="flex flex-wrap items-center justify-center gap-4 pt-6">
             <button
               onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-transform duration-300 hover:scale-[1.02] shadow-lg flex items-center gap-2"
+              className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] border border-white/20 flex items-center gap-2"
             >
               Try Arcus free
               <ArrowRight className="w-4 h-4 text-neutral-950" />
@@ -656,7 +656,7 @@ Maulik`,
 
             <a
               href="mailto:maulik@mailient.xyz?subject=A%20Message%20for%20Maulik"
-              className="px-8 py-3.5 rounded-full bg-neutral-900 border border-neutral-800 text-white font-extrabold text-xs transition-colors hover:bg-neutral-850 shadow-sm flex items-center gap-1.5"
+              className="px-8 py-3.5 rounded-full bg-white/[0.02] border border-white/[0.08] text-white font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] backdrop-blur-md flex items-center gap-1.5 shadow-inner"
             >
               Talk to Maulik
             </a>

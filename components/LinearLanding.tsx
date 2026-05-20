@@ -29,6 +29,8 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
+import { SpecialText } from "@/components/ui/special-text";
+
 
 // Re-map premium company metadata
 const PARTNERS = [
@@ -157,16 +159,16 @@ export function LinearLanding() {
           >
             <button
               onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-[#030303] text-xs font-bold tracking-tight transition-all duration-500 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(255,255,255,0.25)] flex items-center gap-2"
+              className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-black text-xs font-bold tracking-tight transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] flex items-center gap-2 border border-white/20"
             >
-              <Mail className="w-3.5 h-3.5 text-[#030303]" />
+              <Mail className="w-3.5 h-3.5 text-black" />
               Connect Gmail
-              <ArrowRight className="w-3.5 h-3.5 text-[#030303] transition-transform duration-300 group-hover:translate-x-1" />
+              <ArrowRight className="w-3.5 h-3.5 text-black transition-transform duration-300 group-hover:translate-x-1" />
             </button>
 
             <a
               href="#triage-fold"
-              className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.06] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] transition-all duration-300 flex items-center gap-1.5 shadow-inner"
+              className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.08] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] backdrop-blur-md transition-all duration-300 flex items-center gap-1.5 shadow-inner hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
             >
               Review specifications
             </a>
@@ -752,15 +754,21 @@ export function LinearLanding() {
         {/* Minimal Metrics Grid */}
         <div className="grid grid-cols-3 gap-8 max-w-3xl mx-auto mt-28 border-t border-white/[0.04] pt-20 text-center">
           <div>
-            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white">1.2M+</p>
+            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white font-mono">
+              <SpecialText inView speed={25}>1.2M+</SpecialText>
+            </p>
             <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mt-3">Emails Sifted</p>
           </div>
           <div>
-            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white">94%</p>
+            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white font-mono">
+              <SpecialText inView speed={25}>94%</SpecialText>
+            </p>
             <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mt-3">Triage Speed</p>
           </div>
           <div>
-            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white">14h</p>
+            <p className="text-3xl md:text-6xl font-light tracking-[-0.04em] text-white font-mono">
+              <SpecialText inView speed={25}>14h</SpecialText>
+            </p>
             <p className="text-[9px] uppercase tracking-widest text-neutral-500 font-bold mt-3">Saved / Founder / wk</p>
           </div>
         </div>
@@ -916,14 +924,14 @@ export function LinearLanding() {
           <div className="flex flex-wrap items-center justify-center gap-4 pt-8">
             <button
               onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-black text-xs font-bold tracking-tight transition-all duration-300 hover:scale-[1.01]"
+              className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-black text-xs font-bold tracking-tight transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] border border-white/20"
             >
               Connect Gmail
             </button>
 
             <a
               href="mailto:partner@mailient.xyz?subject=Strategy%20Setup"
-              className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.06] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] transition-all duration-300 flex items-center gap-1.5"
+              className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.08] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] backdrop-blur-md transition-all duration-300 flex items-center gap-1.5 shadow-inner hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
             >
               Book Strategy Setup
             </a>

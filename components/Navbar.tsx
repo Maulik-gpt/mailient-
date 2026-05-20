@@ -269,9 +269,9 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                 <button
                   onClick={handleConnectGmail}
                   className={cn(
-                    "relative group overflow-hidden px-4.5 py-2 rounded-full text-[12px] font-extrabold tracking-tight transition-all duration-300 flex items-center gap-1.5 shadow-md hover:scale-[1.02]",
+                    "relative group overflow-hidden px-4.5 py-2 rounded-full text-[12px] font-extrabold tracking-tight transition-all duration-300 flex items-center gap-1.5 hover:scale-[1.01]",
                     isDark 
-                      ? "bg-white text-neutral-950 hover:bg-neutral-100" 
+                      ? "bg-white text-neutral-950 hover:bg-white/95 border border-white/20 hover:shadow-[0_0_30px_rgba(255,255,255,0.2)]" 
                       : "bg-neutral-950 text-white hover:bg-black hover:shadow-[0_4px_20px_rgba(0,0,0,0.15)]"
                   )}
                 >

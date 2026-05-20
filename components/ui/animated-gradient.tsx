@@ -293,8 +293,10 @@ export default function AnimatedGradient({
     const animate = (time: number) => {
       const elapsed = (time - startTimeRef.current) / 1000;
       const speed = (params.speed / 100) * 5;
+      const rawTime = elapsed * speed + params.offset * 0.01;
+      const wrappedTime = rawTime % (200 * Math.PI); // Periodically wraps to preserve high-precision floats on the GPU
 
-      gl.uniform1f(uniforms.u_time, elapsed * speed + params.offset * 0.01);
+      gl.uniform1f(uniforms.u_time, wrappedTime);
       gl.uniform2f(uniforms.u_resolution, canvas.width, canvas.height);
       gl.uniform1f(uniforms.u_pixelRatio, window.devicePixelRatio || 1);
       gl.uniform1f(uniforms.u_scale, params.scale);
