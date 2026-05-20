@@ -5,6 +5,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MessageCircleQuestion, ChevronLeft, ChevronRight, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+function WaitingIndicator() {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ delay: 0.4 }}
+      className="flex items-center gap-2 px-4 pb-3"
+    >
+      <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0">
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
+          <motion.circle
+            key={deg}
+            cx={7 + 5 * Math.cos((deg * Math.PI) / 180)}
+            cy={7 + 5 * Math.sin((deg * Math.PI) / 180)}
+            r="1.2"
+            fill="#EAB308"
+            animate={{ opacity: [1, 0.15, 1] }}
+            transition={{
+              repeat: Infinity,
+              duration: 1.2,
+              delay: i * 0.15,
+              ease: 'easeInOut',
+            }}
+          />
+        ))}
+      </svg>
+      <span className="text-[11px] font-medium text-yellow-400/80">
+        Waiting for you to proceed
+      </span>
+    </motion.div>
+  );
+}
+
 export interface AskQuestion {
   text: string;
   options?: string[];
@@ -206,6 +239,9 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
           </button>
         )}
       </div>
+
+      {/* Waiting indicator — shown until user submits */}
+      <WaitingIndicator />
     </motion.div>
   );
 }

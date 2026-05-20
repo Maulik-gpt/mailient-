@@ -1034,6 +1034,7 @@ function PartialFailureCard({
 // ─── Proceed Confirm Buttons ───────────────────────────────────────────────────
 function ProceedConfirmButtons({ onProceed, onDismiss }: { onProceed: () => void; onDismiss: () => void }) {
   const [dismissed, setDismissed] = useState(false);
+  const [proceeded, setProceeded] = useState(false);
 
   if (dismissed) return null;
 
@@ -1042,20 +1043,55 @@ function ProceedConfirmButtons({ onProceed, onDismiss }: { onProceed: () => void
       initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.15, type: 'spring', damping: 24, stiffness: 260 }}
-      className="flex items-center gap-2 mt-3"
+      className="mt-3 space-y-2.5"
     >
-      <button
-        onClick={() => { onProceed(); setDismissed(true); }}
-        className="px-4 py-2 rounded-xl bg-white text-black text-[12px] font-semibold hover:bg-white/90 transition-all shadow-sm"
-      >
-        Yes, proceed
-      </button>
-      <button
-        onClick={() => { onDismiss(); setDismissed(true); }}
-        className="px-4 py-2 rounded-xl bg-arcus-surface border border-arcus-border text-arcus-fg-tertiary text-[12px] font-medium hover:bg-arcus-raised hover:text-arcus-fg-secondary transition-all"
-      >
-        Cancel
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => { setProceeded(true); onProceed(); setDismissed(true); }}
+          className="px-4 py-2 rounded-xl bg-white text-black text-[12px] font-semibold hover:bg-white/90 transition-all shadow-sm"
+        >
+          Yes, proceed
+        </button>
+        <button
+          onClick={() => { onDismiss(); setDismissed(true); }}
+          className="px-4 py-2 rounded-xl bg-arcus-surface border border-arcus-border text-arcus-fg-tertiary text-[12px] font-medium hover:bg-arcus-raised hover:text-arcus-fg-secondary transition-all"
+        >
+          Cancel
+        </button>
+      </div>
+
+      {/* Waiting indicator */}
+      {!proceeded && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-center gap-2"
+        >
+          {/* Dotted spinning circle */}
+          <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0">
+            {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
+              <motion.circle
+                key={deg}
+                cx={7 + 5 * Math.cos((deg * Math.PI) / 180)}
+                cy={7 + 5 * Math.sin((deg * Math.PI) / 180)}
+                r="1.2"
+                fill="#EAB308"
+                animate={{ opacity: [1, 0.15, 1] }}
+                transition={{
+                  repeat: Infinity,
+                  duration: 1.2,
+                  delay: i * 0.15,
+                  ease: 'easeInOut',
+                }}
+              />
+            ))}
+          </svg>
+          <span className="text-[11px] font-medium text-yellow-400/80">
+            Waiting for you to proceed
+          </span>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
