@@ -529,6 +529,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     content: '[AUTO-BRIDGE] Meeting created. Notion is connected — automatically log this meeting to Notion now using create_notion_page (database hint: "meetings"). Include: attendees, time, agenda, Meet link. Report "Logged to Notion ✓" after.',
                   } as any);
                 }
+                // After studying the user's writing style, the ONLY valid next step is
+                // draft_reply. Free models tend to stop here and hallucinate "Done" —
+                // this bridge makes the requirement explicit in the message history.
+                if (tc.name === 'get_sent_emails') {
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: `bridge_${tc.id}`,
+                    content: '[WRITING STYLE READY — ACTION REQUIRED] You now have the user\'s writing style, tone, and voice. The task is NOT complete. You MUST call draft_reply immediately with the full email body written in the user\'s voice. Do NOT output any text message. Do NOT say "Done" or "Completed". Call draft_reply NOW.',
+                  } as any);
+                }
+
                 if (tc.name === 'draft_reply' && connectedIntegrations.includes('notion')) {
                   toolResults.push({
                     type: 'tool_result',
