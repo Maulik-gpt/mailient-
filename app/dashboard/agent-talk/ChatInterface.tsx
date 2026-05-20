@@ -282,7 +282,7 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
 
 
 const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
-  const textColorClass = isUser ? "text-white" : "text-white/90";
+  const textColorClass = "text-white";
   let textContent = typeof content === 'string' ? content : (content.text || '');
 
   const shouldAnimate = (isTyping || isNewResponse) && !isUser;
@@ -4167,7 +4167,7 @@ export default function ChatInterface({
 
                                      {/* Plan text — what Arcus is about to do, shown before execution steps */}
                                      {msg.role === 'assistant' && (msg as AgentMessage).meta?.planText && (
-                                       <p className="text-[14px] text-white/80 leading-[1.7] mb-3">
+                                       <p className="text-[16px] text-white leading-[1.7] mb-3">
                                          {(msg as AgentMessage).meta!.planText}
                                        </p>
                                      )}

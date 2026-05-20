@@ -234,7 +234,9 @@ export async function callLLM(
   };
   if (openAITools) {
     baseBody.tools = openAITools;
-    baseBody.tool_choice = 'auto';
+    // When forceToolCall is true, require the model to call a tool rather than
+    // narrating what it intends to do. This is essential for the nudge system.
+    baseBody.tool_choice = options.forceToolCall ? 'required' : 'auto';
   }
 
   const deadKeys = new Set<string>();

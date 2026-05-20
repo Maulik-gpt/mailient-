@@ -61,12 +61,12 @@ const MAX_NUDGES = 3;
 
 // ── Pattern guards ─────────────────────────────────────────────────────────────
 
-const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading))/i;
+const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading)|got it|sure|okay|alright)/i;
 
 // Catches future-intent phrases ANYWHERE in the text — handles planning paragraphs
 // that don't start with intent words but end with "I'll set that up now." etc.
 const INTENT_ANYWHERE_PATTERN =
-  /\b(i['']ll\s+(?:set\s+(?:that|this|it)\s+up|proceed(?:\s+now)?|create\s+(?:the|an?\s+|this\s+)\w|start(?:\s+(?:now|this|that))?|do\s+(?:this|that)\s+now|handle\s+this|call\s+the\s+tools?|use\s+the\s+tools?)|i\s+will\s+(?:now|proceed|create|set\s+up|schedule|run|execute|build|make)\b|setting\s+(?:this|that|it)\s+up\s+now|proceeding\s+now|will\s+proceed\s+now)\b/i;
+  /\b(i['']ll\s+(?:set\s+(?:that|this|it)\s+up|proceed(?:\s+now)?|create\s+(?:the|an?\s+|this\s+)?\w|start(?:\s+(?:now|this|that))?|do\s+(?:this|that)\s+now|handle\s+this|call\s+the\s+tools?|use\s+the\s+tools?|draft\s+\w|define\s+\w|write\s+\w|open\s+\w|search\s+\w|send\s+\w|check\s+\w|read\s+\w|schedule\s+\w|look\s+\w)|i\s+will\s+(?:now|proceed|create|set\s+up|schedule|run|execute|build|make|draft|define|write|open|search|send|check|read)\b|setting\s+(?:this|that|it)\s+up\s+now|proceeding\s+now|will\s+proceed\s+now|and\s+then\s+create\s+it|then\s+I'?ll\s+\w)\b/i;
 
 const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*link|link here|pending|tbd|insert|placeholder|meet link|google meet link|conference link|calendar link|meeting link)\s*[^\]]*?\]/i;
 
@@ -79,7 +79,8 @@ const ACTION_PLACEHOLDER_PATTERN = /\[\s*(open(s|ing)?\s+(the\s+)?canvas|canvas\
 function isIntentText(text: string): boolean {
   const t = text.trim();
   if (!t) return false;
-  if (t.length < 500 && INTENT_PATTERN.test(t)) return true;
+  // Increased from 500 to 800 — some narration paragraphs are longer
+  if (t.length < 800 && INTENT_PATTERN.test(t)) return true;
   return INTENT_ANYWHERE_PATTERN.test(t);
 }
 
@@ -591,9 +592,18 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             nudgeCount++;
             forceNextToolCall = true;
             emit('thinking', { status: 'Working on it…' });
+            // Progressively more forceful nudges
+            const nudgeMessages = [
+              // Nudge 1: Direct instruction
+              'Do NOT describe what you will do. Call the actual tools RIGHT NOW to complete this task. Use the tools available to you.',
+              // Nudge 2: Emphatic with specific instruction
+              'STOP narrating. You must call the tools immediately — search_gmail, open_canvas, create_scheduled_agent, draft_reply, schedule_meeting, or whatever tools are needed. Execute the action, do not describe it.',
+              // Nudge 3: Final warning with available tools listed
+              `FINAL WARNING: You are narrating actions instead of performing them. You MUST call at least one tool function now. Available tools: ${availableTools.map(t => t.name).join(', ')}. Pick the right one and call it with the correct parameters. Do NOT respond with text.`,
+            ];
             messages.push({
               role: 'user',
-              content: 'Please call the appropriate tools now to complete this task. Do not describe what you will do — use the tools directly.',
+              content: nudgeMessages[nudgeCount - 1] || nudgeMessages[nudgeMessages.length - 1],
             });
             continue;
           }
@@ -638,6 +648,93 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           if (thinkingText && thinkingText.length >= 20) {
             emit('narrative', { text: thinkingText, iteration });
           }
+
+          // ── Last resort: if text is still intent and no tools called, force one final attempt ──
+          // This catches the case where all nudges were exhausted but the LLM still narrates.
+          if (totalToolCalls === 0 && availableTools.length > 0 && isIntentText(textContent)) {
+            log('warn', 'All nudges exhausted — attempting forced tool execution as last resort');
+            emit('thinking', { status: 'Executing now…' });
+            messages.push({
+              role: 'user',
+              content:
+                'You have described what you will do but have not called any tools. ' +
+                'The user is waiting for actual results, not descriptions. ' +
+                'Call the first tool needed to start the task NOW. ' +
+                `Available tools: ${availableTools.map(t => t.name).join(', ')}. ` +
+                'You MUST respond with a tool_call, not text.',
+            });
+            const lastResort = await callLLM(messages, availableTools, { forceToolCall: true });
+            messages.push({ role: 'assistant', content: lastResort.content });
+            const lastToolCalls = getToolCalls(lastResort.content);
+
+            if (lastToolCalls.length > 0) {
+              // Success! Process the tool calls and continue the loop
+              const narrativeText = sanitizeModelText(getRawText(lastResort.content));
+              if (narrativeText && narrativeText.length >= 20 && narrativeText.length <= 6000 && !isIntentText(narrativeText)) {
+                emit('narrative', { text: narrativeText, iteration });
+              }
+
+              const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
+              for (const tc of lastToolCalls) {
+                if (totalToolCalls >= toolCallLimit) break;
+                totalToolCalls++;
+                log('info', `tool_call #${totalToolCalls} (last-resort)`, { tool: tc.name, iteration });
+                emit('tool_call', { tool: tc.name, params: tc.input, iteration });
+                try {
+                  let result = await executeTool(tc.name, tc.input, userId);
+                  if (result.canvasData) {
+                    if (result.canvasData.type !== 'scheduled_agent' && result.canvasData.type !== 'integration_required') {
+                      canvasContent = result.canvasData;
+                    }
+                    emit('canvas', result.canvasData);
+                  }
+                  emit('tool_result', { tool: tc.name, success: true, summary: result.output.slice(0, 300), iteration });
+                  outcomes.push({ tool: tc.name, ok: true });
+                  toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
+                } catch (err: any) {
+                  const friendly = humanizeError(tc.name, err?.message ?? 'Unknown error');
+                  emit('tool_result', { tool: tc.name, success: false, summary: friendly, iteration });
+                  outcomes.push({ tool: tc.name, ok: false, error: friendly });
+                  toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: friendly });
+                }
+              }
+              if (toolResults.length) {
+                messages.push({ role: 'user', content: toolResults as any });
+              }
+              iteration++;
+
+              // Now get the final summary from the LLM
+              emit('thinking', { status: 'Preparing final response…' });
+              const canvasSchema = availableTools.find(t => t.name === 'open_canvas');
+              const finalTools = canvasSchema ? [canvasSchema] : [];
+              const summaryRes = await callLLM(
+                [
+                  ...messages,
+                  {
+                    role: 'user',
+                    content:
+                      'Write your final response now. Confirm what you completed and provide the key details. ' +
+                      'If you need to create a document or report, call open_canvas. Be specific about results.',
+                  },
+                ],
+                finalTools,
+              );
+              const summaryToolCalls = getToolCalls(summaryRes.content);
+              const summaryCanvasCall = summaryToolCalls.find(tc => tc.name === 'open_canvas');
+              if (summaryCanvasCall) {
+                try {
+                  const canvasResult = await executeTool('open_canvas', summaryCanvasCall.input, userId);
+                  if (canvasResult.canvasData) {
+                    canvasContent = canvasResult.canvasData;
+                    emit('canvas', canvasResult.canvasData);
+                  }
+                } catch { /* non-fatal */ }
+              }
+              finalText = sanitizeModelText(getText(summaryRes.content));
+              break;
+            }
+          }
+
           finalText = textContent;
           break;
         }
