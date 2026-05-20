@@ -257,8 +257,14 @@ export function LinearLanding() {
 
         </div>
 
+        {/* Metallic reflection shimmer and fine separation divider */}
+        <div className="w-full relative flex flex-col items-center mt-20 pointer-events-none select-none">
+          <div className="absolute top-[-110px] w-full max-w-6xl h-[180px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_65%)] z-0" />
+          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.1] to-transparent z-10" />
+        </div>
+
         {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE */}
-        <div className="w-full mt-36 relative h-28 overflow-hidden bg-black border-y border-white/[0.05]">
+        <div className="w-full relative h-28 overflow-hidden bg-black border-b border-white/[0.05]">
           <PerspectiveMarquee 
             fontSize={26} 
             color="#a3a3a3" 
