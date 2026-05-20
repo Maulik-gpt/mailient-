@@ -583,12 +583,12 @@ export function LinearLanding() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
           {/* Left panel: Chaos */}
-          <div className="bg-[#050505] border border-red-950/20 p-8 rounded-3xl relative overflow-hidden text-left h-[440px] flex flex-col justify-between group">
+          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(239,68,68,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left h-[440px] flex flex-col justify-between group">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.015),transparent_60%)] pointer-events-none" />
             
             <div>
-              <div className="flex items-center gap-2 mb-6 text-red-400 font-mono text-[10px] tracking-wider uppercase font-bold">
-                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
+                <span className="text-[10px] text-red-500">✦</span>
                 <span>The Chaos of Yesterday</span>
               </div>
               <h3 className="text-lg font-bold text-white mb-2">High stress inbox pile</h3>
@@ -596,13 +596,13 @@ export function LinearLanding() {
                 Waking up to 45 unread threads, urgent meeting booking queries, and complex response requirements.
               </p>
 
-              {/* Stress rows */}
+              {/* Stress rows with neumorphic inset style */}
               <div className="space-y-3 font-mono text-[11px] text-red-300/80">
-                <div className="p-3.5 rounded-xl border border-red-950/30 bg-red-950/5 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
                   <span>&gt; Thread: Pitch update (URGENT)</span>
                   <span className="text-[9px] text-red-500">Unread</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-red-950/30 bg-red-950/5 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
                   <span>&gt; Meeting request: slot needed today</span>
                   <span className="text-[9px] text-red-500">Unread</span>
                 </div>
@@ -615,12 +615,12 @@ export function LinearLanding() {
           </div>
 
           {/* Right panel: Overnight Clarity */}
-          <div className="bg-[#050505] border border-white/[0.08] p-8 rounded-3xl relative overflow-hidden text-left h-[440px] flex flex-col justify-between group shadow-2xl">
+          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left h-[440px] flex flex-col justify-between group shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.02),transparent_60%)] pointer-events-none" />
             
             <div>
-              <div className="flex items-center gap-2 mb-6 text-emerald-400 font-mono text-[10px] tracking-wider uppercase font-bold">
-                <Check className="w-4 h-4 text-emerald-400" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
+                <span className="text-[10px] text-emerald-400">✦</span>
                 <span>Overnight Clarity</span>
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Autonomous Morning Briefing</h3>
@@ -628,13 +628,13 @@ export function LinearLanding() {
                 Start the morning with resolved outbox drafts, confirmed bookings, and a single dashboard brief.
               </p>
 
-              {/* Clarity rows */}
+              {/* Clarity rows with neumorphic inset style */}
               <div className="space-y-3 font-mono text-[11px] text-emerald-300/80">
-                <div className="p-3.5 rounded-xl border border-emerald-950/30 bg-emerald-950/5 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
                   <span>&gt; 4 Meetings booked automatically</span>
                   <span className="text-[9px] text-emerald-400">Resolved</span>
                 </div>
-                <div className="p-3.5 rounded-xl border border-emerald-950/30 bg-emerald-950/5 flex items-center justify-between">
+                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
                   <span>&gt; 3 High-priority drafts waiting in outbox</span>
                   <span className="text-[9px] text-emerald-400">Resolved</span>
                 </div>
@@ -687,7 +687,7 @@ export function LinearLanding() {
 
           {/* Quotes grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-24">
-            <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-sm relative overflow-hidden">
+            <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.08),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
                 Mailient restored my momentum. I wake up to resolved threads and booked calls, not a wall of noise.
@@ -695,7 +695,7 @@ export function LinearLanding() {
               <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Austin, Founder at Aether Labs</span>
             </div>
 
-            <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-sm relative overflow-hidden">
+            <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.08),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
                 Autonomous workflows are the ultimate leverage. Arcus handles the routine, keeping our team focused on shipping.
@@ -705,7 +705,7 @@ export function LinearLanding() {
           </div>
 
           {/* Security Strip */}
-          <div className="w-full py-4 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between text-left hover:border-white/[0.08] transition-colors cursor-pointer">
+          <div className="w-full py-4 px-6 rounded-[20px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_15px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_20px_40px_rgba(16,185,129,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span className="text-[11px] text-neutral-400 font-sans">
@@ -732,9 +732,12 @@ export function LinearLanding() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto text-left items-stretch">
           {/* Monthly Plan */}
-          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group">
+          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group">
             <div>
-              <span className="text-neutral-500 font-mono text-[9px] tracking-wider uppercase font-bold block mb-4">MONTHLY TIER</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
+                <span className="text-[10px] text-indigo-400">✦</span>
+                <span>Solo Builder</span>
+              </div>
               <h3 className="text-lg font-bold text-white mb-2">Solo Builder</h3>
               <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
                 For solo builders looking for autonomous triage. Cancel anytime.
@@ -769,12 +772,15 @@ export function LinearLanding() {
           </div>
 
           {/* Annual Plan */}
-          <div className="p-8 rounded-[24px] border border-white/[0.08] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group shadow-2xl">
+          <div className="p-8 rounded-[28px] border border-white/[0.08] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.15),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
             
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-white font-mono text-[9px] tracking-wider uppercase font-bold">BEST VALUE TIER</span>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-950/40 border border-indigo-500/20 shadow-[0_4px_12px_rgba(99,102,241,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] text-[9px] font-mono tracking-wider uppercase text-indigo-300">
+                  <span className="text-[10px] text-indigo-400">✦</span>
+                  <span>Enterprise Scale</span>
+                </div>
                 <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-bold">RECOMMENDED</span>
               </div>
               <h3 className="text-lg font-bold text-white mb-2">Enterprise Scale</h3>
@@ -804,16 +810,19 @@ export function LinearLanding() {
 
             <Link 
               href="/pricing"
-              className="px-6 py-2.5 rounded-full bg-white text-black font-semibold text-center text-[10.5px] hover:bg-neutral-200 transition-colors w-full"
+              className="px-6 py-2.5 rounded-full bg-white text-black font-semibold text-center text-[10.5px] hover:bg-neutral-200 transition-colors w-full shadow-md"
             >
               Get Best Value
             </Link>
           </div>
 
           {/* Lifetime Plan */}
-          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group">
+          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group">
             <div>
-              <span className="text-neutral-500 font-mono text-[9px] tracking-wider uppercase font-bold block mb-4">FOUNDING TIER</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
+                <span className="text-[10px] text-amber-500">✦</span>
+                <span>Founding Tier</span>
+              </div>
               <h3 className="text-lg font-bold text-white mb-2">Lifetime Access</h3>
               <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
                 Own Mailient forever. Full access, diamond founding status, 500 monthly queries.

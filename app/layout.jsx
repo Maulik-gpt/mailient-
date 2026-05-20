@@ -92,8 +92,27 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300,200,100&display=swap" rel="stylesheet" />
       </head>
-      <body className="font-sans antialiased satoshi-app bg-background text-foreground" data-new-gr-c-s-check-loaded="14.1258.0" data-gr-ext-installed="">
+      <body className="font-sans antialiased satoshi-app bg-[#000000] text-foreground" data-new-gr-c-s-check-loaded="14.1258.0" data-gr-ext-installed="">
         <Providers>
+          {/* Global Progressive Blur Overlays */}
+          {/* 1. Top Progressive Blur */}
+          <div className="fixed top-0 left-0 right-0 h-32 z-40 pointer-events-none select-none overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-black via-black/90 to-transparent opacity-95" />
+            <div className="absolute inset-0 backdrop-blur-[2px] [mask-image:linear-gradient(to_bottom,black_10%,transparent_30%)]" />
+            <div className="absolute inset-0 backdrop-blur-[6px] [mask-image:linear-gradient(to_bottom,black_30%,transparent_60%)]" />
+            <div className="absolute inset-0 backdrop-blur-[16px] [mask-image:linear-gradient(to_bottom,black_60%,transparent_90%)]" />
+            <div className="absolute inset-0 backdrop-blur-[32px] [mask-image:linear-gradient(to_bottom,black_90%,transparent)]" />
+          </div>
+
+          {/* 2. Bottom Progressive Blur */}
+          <div className="fixed bottom-0 left-0 right-0 h-24 z-40 pointer-events-none select-none overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/90 to-transparent opacity-95" />
+            <div className="absolute inset-0 backdrop-blur-[2px] [mask-image:linear-gradient(to_top,black_10%,transparent_30%)]" />
+            <div className="absolute inset-0 backdrop-blur-[6px] [mask-image:linear-gradient(to_top,black_30%,transparent_60%)]" />
+            <div className="absolute inset-0 backdrop-blur-[16px] [mask-image:linear-gradient(to_top,black_60%,transparent_90%)]" />
+            <div className="absolute inset-0 backdrop-blur-[32px] [mask-image:linear-gradient(to_top,black_90%,transparent)]" />
+          </div>
+
           {children}
           <Analytics />
         </Providers>
