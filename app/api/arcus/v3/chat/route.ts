@@ -26,7 +26,7 @@ import crypto from 'crypto';
 
 export const maxDuration = 60;
 
-const MAX_ITERATIONS = 6;
+const MAX_ITERATIONS = 12;
 
 // ── SSE helpers ────────────────────────────────────────────────────────────────
 
