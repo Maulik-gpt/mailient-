@@ -46,15 +46,19 @@ export function Navbar({ theme = "light" }: NavbarProps) {
       className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 md:px-6 pointer-events-none"
     >
       <div
+        style={{
+          backdropFilter: "blur(24px) saturate(180%)",
+          WebkitBackdropFilter: "blur(24px) saturate(180%)",
+        }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-[24px] saturate-[180%] relative",
+          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative",
           scrolled
             ? isDark
               ? "border-white/[0.08] bg-neutral-950/75 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]"
               : "border-neutral-200/50 bg-white/80 shadow-[0_20px_40px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]"
             : isDark
-              ? "border-white/[0.03] bg-neutral-950/40"
-              : "border-neutral-200/30 bg-white/40"
+              ? "border-white/[0.05] bg-neutral-950/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
+              : "border-neutral-200/40 bg-white/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"
         )}
       >
         {/* Fine Glass Reflection Line Overlay */}
