@@ -2505,12 +2505,17 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
-              if (!finalProcessedText && stepIndex > 0) {
-                const completedSteps = currentAgentSteps.filter(s => s.status === 'completed');
+              // Always ensure a final response text is shown to the user after execution
+              if (!finalProcessedText && (stepIndex > 0 || currentAgentSteps.length > 0)) {
+                const completedSteps = currentAgentSteps.filter(s => s.status === 'completed' || s.status === 'active');
                 const toolNames = completedSteps.map(s => s.label || (s as any).tool || '').filter(Boolean).join(', ');
                 finalProcessedText = completedSteps.length > 0
-                  ? `I completed the following steps: ${toolNames}. Let me know if you need any changes or have follow-up questions.`
+                  ? `Done — I completed the following: ${toolNames}. Let me know if you need any changes or have follow-up questions.`
                   : "I've completed the requested actions. Let me know if you need anything else.";
+              }
+              // Final safety net: never leave the user with an empty response
+              if (!finalProcessedText) {
+                finalProcessedText = "I've finished processing your request. Let me know if you need anything else.";
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
@@ -2556,10 +2561,27 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
+        // Generate a fallback response text so the user always sees a final confirmation
+        let fallbackText = finalContent.trim();
+        if (!fallbackText && autoCompletedSteps.length > 0) {
+          const completedLabels = autoCompletedSteps
+            .filter(s => s.status === 'completed')
+            .map(s => s.label || (s as any).tool || '')
+            .filter(Boolean)
+            .join(', ');
+          fallbackText = completedLabels
+            ? `Done — I completed the following: ${completedLabels}. Let me know if you need any changes or have follow-up questions.`
+            : "I've completed the requested actions. Let me know if you need anything else.";
+        }
+        if (!fallbackText) {
+          fallbackText = "I've finished processing your request. Let me know if you need anything else.";
+        }
+
         setMessages(msgs => msgs.map(m => {
           if (m.id !== assistantMsgId || m.type !== 'agent') return m;
           return {
             ...m,
+            content: { text: fallbackText, list: [], footer: '' },
             meta: {
               ...(m.meta || {}),
               isStreaming: false,
@@ -2569,6 +2591,7 @@ export default function ChatInterface({
           };
         }));
         setAgentSteps(autoCompletedSteps);
+        setIsAgentLoopActive(false);
         setLiveActivityLine('');
       }
 
@@ -2586,8 +2609,21 @@ export default function ChatInterface({
           allMsgs = [...allMsgs, userMsg];
         }
 
-        // Use synthesized content if available, fallback to finalContent
-        const finalPersistedText = finalProcessedText || finalContent;
+        // Use synthesized content if available, fallback to finalContent, then generate a fallback
+        let finalPersistedText = finalProcessedText || finalContent;
+        if (!finalPersistedText.trim() && currentAgentSteps.length > 0) {
+          const completedLabels = currentAgentSteps
+            .filter(s => s.status === 'completed')
+            .map(s => s.label || (s as any).tool || '')
+            .filter(Boolean)
+            .join(', ');
+          finalPersistedText = completedLabels
+            ? `Done — I completed the following: ${completedLabels}. Let me know if you need any changes or have follow-up questions.`
+            : "I've completed the requested actions. Let me know if you need anything else.";
+        }
+        if (!finalPersistedText.trim()) {
+          finalPersistedText = "I've finished processing your request. Let me know if you need anything else.";
+        }
         const agentMsg: AgentMessage = { 
           id: assistantMsgId, 
           type: 'agent', 
