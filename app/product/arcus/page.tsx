@@ -132,7 +132,7 @@ export default function ArcusProductPage() {
               {/* Official Arcus Cat Logo Component */}
               <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
               
-              <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] text-white leading-[1.05] font-sans">
+              <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] leading-[1.05] font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
                 Arcus
               </h1>
             </div>
@@ -172,7 +172,7 @@ export default function ArcusProductPage() {
           <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
             ARCUS FLAGSPACE // CONTROL PANEL
           </span>
-          <h2 className="text-3xl md:text-[42px] font-medium tracking-[-0.025em] text-white leading-tight font-sans">
+          <h2 className="text-3xl md:text-[42px] font-medium tracking-[-0.025em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             A real-time command center for your outbox.
           </h2>
         </div>
@@ -374,7 +374,7 @@ export default function ArcusProductPage() {
           <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
             THE BEST WAY TO MANAGE WITH AGENTS
           </span>
-          <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.035em] text-white leading-tight font-sans">
+          <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.035em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             Built to drive real leverage.
           </h2>
         </div>
@@ -535,7 +535,7 @@ export default function ArcusProductPage() {
           
           <div className="lg:col-span-4 space-y-4 text-left">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">ARCUS AGENT FAQ</span>
-            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] text-white leading-tight">
+            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Frequently asked questions.
             </h2>
             <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">

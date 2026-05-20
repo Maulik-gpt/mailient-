@@ -203,7 +203,7 @@ export function LinearLanding() {
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
           {/* Headline & Subtitle */}
-          <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
+          <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] leading-[1.08] max-w-4xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             Hours of email, <br />handled overnight.
           </h1>
 
@@ -794,7 +794,7 @@ fadeColor="#000000"
               PLATFORM FLAGSHIP AGENT
             </span>
             
-            <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] text-white leading-tight font-sans">
+            <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Meet Arcus.
             </h2>
 
@@ -842,7 +842,7 @@ fadeColor="#000000"
       <section id="sample-brief" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <div className="text-center flex flex-col items-center mb-24">
           <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
-          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl">
+          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             Chaos vs Overnight Clarity.
           </h2>
           <p className="text-xs text-[#8a8f98] leading-relaxed font-light max-w-md mt-4 font-sans">
@@ -998,7 +998,7 @@ fadeColor="#000000"
           
           <div className="lg:col-span-4 space-y-4 text-left">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>
-            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] text-white leading-tight">
+            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Frequently asked questions.
             </h2>
             <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
@@ -1059,8 +1059,11 @@ fadeColor="#000000"
               </span>
               Why Mailient?
             </div>
-            <h2 className="text-4xl md:text-6xl font-medium tracking-tight text-white leading-tight font-sans">
-              Email was supposed to be a tool. <br />
+            <h2 className="text-4xl md:text-6xl font-medium tracking-tight leading-tight font-sans">
+              <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+                Email was supposed to be a tool.
+              </span>
+              <br />
               <span className="text-neutral-500">For most founders, it became the job.</span>
             </h2>
           </div>
