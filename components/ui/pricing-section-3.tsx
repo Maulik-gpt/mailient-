@@ -223,13 +223,13 @@ export default function PricingSection3({
                 className={cn(
                   "relative w-full flex flex-col justify-between rounded-[32px] p-8 transition-all duration-500 overflow-hidden group backdrop-blur-md",
                   plan.popular
-                    ? "linear-grid-card border-white/[0.12] ring-1 ring-white/10"
+                    ? "bg-white/[0.02] border-white/[0.15] ring-1 ring-white/10"
                     : "bg-white/[0.01] border-white/[0.04] hover:border-white/[0.08]"
                 )}
               >
                 {/* Visual glow backdrop for popular lifetime card */}
                 {plan.popular && (
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.06),_transparent_70%)] pointer-events-none" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_70%)] pointer-events-none" />
                 )}
 
                 <CardContent className="pt-0 relative z-10 flex-grow">
@@ -239,7 +239,7 @@ export default function PricingSection3({
                     </span>
                     {plan.popular && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-black text-[9px] font-black uppercase tracking-wider shadow-xl">
-                        <Crown className="w-3 h-3 text-[#d97706]" />
+                        <Crown className="w-3 h-3 text-black" />
                         Prioritized
                       </span>
                     )}
@@ -283,7 +283,7 @@ export default function PricingSection3({
                           <span className={cn(
                             "w-5 h-5 rounded-full border grid place-content-center mt-0.5 shrink-0 transition-colors",
                             plan.popular 
-                              ? "bg-amber-500/10 border-amber-500/20 text-amber-400" 
+                              ? "bg-white/10 border-white/20 text-white" 
                               : "bg-white/5 border-white/10 text-white"
                           )}>
                             <Check className="w-3.5 h-3.5" />

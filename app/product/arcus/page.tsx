@@ -47,14 +47,14 @@ export default function ArcusProductPage() {
       {/* Sticky Translucent Header */}
       <Navbar theme="dark" />
 
-      {/* Atmospheric blue-purple mesh gradients to match Codex styling */}
+      {/* Atmospheric dark premium monochrome meshes */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
         {/* Massive top glowing backdrop blur */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.12),rgba(59,130,246,0.06),transparent_70%)] blur-[120px]" />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.025),rgba(255,255,255,0.01),transparent_70%)] blur-[120px]" />
         
         {/* Subtle dynamic warm mesh spotlights */}
-        <div className="absolute top-[15%] left-[10%] w-[600px] h-[600px] rounded-full bg-indigo-900/5 blur-[160px]" />
-        <div className="absolute top-[35%] right-[5%] w-[800px] h-[800px] rounded-full bg-blue-950/8 blur-[200px]" />
+        <div className="absolute top-[15%] left-[10%] w-[600px] h-[600px] rounded-full bg-white/[0.003] blur-[160px]" />
+        <div className="absolute top-[35%] right-[5%] w-[800px] h-[800px] rounded-full bg-white/[0.002] blur-[200px]" />
       </div>
 
       {/* 1. HERO SECTION */}
@@ -77,28 +77,22 @@ export default function ArcusProductPage() {
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
-          {/* Top Premium Glossy App Icon */}
-          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
-            <div className="relative w-20 h-20 rounded-[24px] bg-[#0d0e12] border border-white/[0.08] flex items-center justify-center shadow-[0_15px_45px_rgba(99,102,241,0.2)] mb-8 overflow-hidden group">
-              {/* Inner glowing core */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-blue-600/10 to-transparent opacity-100 group-hover:opacity-80 transition-opacity" />
-              <div className="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/30 rounded-full blur-2xl pointer-events-none" />
-              
-              {/* Glossy Diagonal Reflection */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.05] pointer-events-none" />
-              
-              {/* Neural Node Logo Emblem */}
-              <svg className="w-9 h-9 text-indigo-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l8.982-11.761h-6.803L12 3 3.018 14.761h6.795L9.813 15.904z" />
-              </svg>
-            </div>
-          </BlurFade>
-
-          {/* Bold White Clean Title */}
+          {/* Premium Logo and Title Sideways Container */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] text-white leading-[1.05] font-sans">
-              Arcus
-            </h1>
+            <div className="flex items-center gap-5 mb-8 justify-center">
+              {/* Arcus Logo - Stylized Geometric Cat Head */}
+              <div className="relative w-16 h-16 rounded-[20px] bg-[#0d0e12] border border-white/[0.08] flex items-center justify-center shadow-[0_15px_45px_rgba(255,255,255,0.05)] overflow-hidden group flex-shrink-0">
+                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-white/[0.02] to-transparent opacity-100 transition-opacity" />
+                <svg className="w-9 h-9 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-4.418 0-8-3.582-8-8 0-1.62.48-3.13 1.3-4.4L3 3l5.6 2.3A7.95 7.95 0 0112 5c1.4 0 2.73.36 3.9 1L21 3.7l-2.3 5.6c.82 1.27 1.3 2.78 1.3 4.4 0 4.418-3.582 8-8 8z" />
+                  <path strokeLinecap="round" d="M9.5 13h.01M14.5 13h.01M9 16c1 1 5 1 6 0" />
+                </svg>
+              </div>
+              
+              <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] text-white leading-[1.05] font-sans">
+                Arcus
+              </h1>
+            </div>
           </BlurFade>
 
           {/* Sleek Subtitle */}

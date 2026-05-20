@@ -110,11 +110,7 @@ export default function PricingPage() {
         <div className="absolute top-[15%] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-neutral-900/10 blur-[130px]" />
       </div>
 
-      <AnimatedGradient 
-        config={{ preset: "Prism", speed: 8 }} 
-        noise={{ opacity: 0.01 }} 
-        className="opacity-20 pointer-events-none"
-      />
+
 
       {/* Modular Pricing Component */}
       <PricingSection3 
