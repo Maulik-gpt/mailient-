@@ -117,145 +117,87 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                 >
                   {/* Mega Menu Obsidian Box */}
                   <div className={cn(
-                    "w-[760px] rounded-[32px] border p-8 shadow-[0_45px_100px_rgba(0,0,0,0.8)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
+                    "w-[700px] rounded-2xl border p-6 pb-4 shadow-[0_50px_100px_rgba(0,0,0,0.85)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
                     isDark 
-                      ? "border-white/[0.08] bg-black/95 shadow-[0_50px_120px_rgba(0,0,0,0.95)]" 
+                      ? "border-white/[0.06] bg-black/90" 
                       : "border-neutral-200/50 bg-white/95"
                   )}>
-                    {/* Blue Ambient Neon Spotlight behind Links */}
-                    <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_60%_40%,rgba(59,130,246,0.15),transparent_60%)] pointer-events-none" />
-
-                    <div className="grid grid-cols-3 gap-10 relative z-10">
+                    
+                    <div className="grid grid-cols-3 gap-8 relative z-10">
                       
-                      {/* Column 1: ChatGPT For -> Mailient For */}
-                      <div className="flex flex-col">
-                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
-                          Mailient For
-                        </h4>
-                        <div className="flex flex-col space-y-4">
-                          <Link href="/product/sift" className="group">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Students & Academics
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Filter courses, assignments, and campus alerts.
-                            </span>
-                          </Link>
-                          <Link href="/product/sift" className="group">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Founders & Leaders
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Triage capital rounds and deck applications.
-                            </span>
-                          </Link>
-                          <Link href="/product/drafts" className="group">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Operations Managers
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Sync client onboarding tasks automatically.
-                            </span>
-                          </Link>
-                          <Link href="/product/drafts" className="group">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Customer Support
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Pre-draft premium client responses.
-                            </span>
-                          </Link>
-                        </div>
+                      {/* Column 1 */}
+                      <div className="flex flex-col space-y-6 pr-4 border-r border-white/[0.04]">
+                        <Link href="/product/sift" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Intake
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Make your product operations self-driving
+                          </span>
+                        </Link>
+
+                        <Link href="/product/drafts" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Plan
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Plan and navigate from idea to launch
+                          </span>
+                        </Link>
                       </div>
 
-                      {/* Column 2: Inspiration -> Core Tech */}
-                      <div className="flex flex-col">
-                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
-                          Core Technology
-                        </h4>
-                        <div className="flex flex-col space-y-4">
-                          <Link href="/product/sift" className="group flex items-start gap-2.5">
-                            <div className="w-4 h-4 rounded bg-neutral-900 border border-white/5 flex items-center justify-center text-[9px] text-neutral-400 mt-0.5">
-                              S
-                            </div>
-                            <div>
-                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                                Sift / Intake
-                              </span>
-                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                                Autonomous inbox classification & sorting.
-                              </span>
-                            </div>
-                          </Link>
-                          <Link href="/product/drafts" className="group flex items-start gap-2.5">
-                            <div className="w-4 h-4 rounded bg-neutral-900 border border-white/5 flex items-center justify-center text-[9px] text-neutral-400 mt-0.5">
-                              D
-                            </div>
-                            <div>
-                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                                Drafts / Plan
-                              </span>
-                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                                Contextual responses tailored to your tone.
-                              </span>
-                            </div>
-                          </Link>
-                          <Link href="/product/arcus" className="group flex items-start gap-2.5">
-                            <ArcusLogo size={18} className="rounded-md border-0 bg-transparent shrink-0 mt-0.5" />
-                            <div>
-                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                                Arcus Flagship
-                              </span>
-                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                                Multi-agent logic command reasoning.
-                              </span>
-                            </div>
-                          </Link>
-                        </div>
+                      {/* Column 2 */}
+                      <div className="flex flex-col space-y-6 pr-4 border-r border-white/[0.04]">
+                        <Link href="/product/arcus" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Build
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Move work forward across teams and agents
+                          </span>
+                        </Link>
+
+                        <Link href="/product/arcus" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Diffs
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Make code review effortless
+                          </span>
+                        </Link>
                       </div>
 
-                      {/* Column 3: Ways to Use -> Integrations */}
-                      <div className="flex flex-col">
-                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
-                          Integrations
-                        </h4>
-                        <div className="flex flex-col space-y-4">
-                          <div className="group cursor-pointer">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Gmail & Google Tasks
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Secure transactional in-memory indexing.
-                            </span>
-                          </div>
-                          <div className="group cursor-pointer">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Cal.com & Meet API
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Conflict-free booking pipelines.
-                            </span>
-                          </div>
-                          <div className="group cursor-pointer">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Notion Calendars
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Synchronized event logging.
-                            </span>
-                          </div>
-                          <div className="group cursor-pointer">
-                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
-                              Slack Real-time Alerts
-                            </span>
-                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
-                              Instant briefing push notifications.
-                            </span>
-                          </div>
-                        </div>
+                      {/* Column 3 */}
+                      <div className="flex flex-col space-y-6">
+                        <Link href="/home-feed" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Monitor
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Understand progress at scale
+                          </span>
+                        </Link>
+
+                        <a href="#connectors" className="group block cursor-pointer select-none">
+                          <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
+                            Integrations
+                          </span>
+                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Collaborate across tools
+                          </span>
+                        </a>
                       </div>
 
                     </div>
+
+                    {/* Divider and Footer */}
+                    <div className="border-t border-white/[0.06] pt-4 mt-6 flex items-center justify-between text-xs text-neutral-500 z-10 relative">
+                      <span className="font-semibold text-neutral-200">New: Code Intelligence</span>
+                      <Link href="/changelog" className="text-[#5f5bf6] hover:text-[#7875f7] transition-colors font-semibold">
+                        Changelog
+                      </Link>
+                    </div>
+
                   </div>
                 </motion.div>
               )}
