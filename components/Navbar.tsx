@@ -55,10 +55,10 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative",
           scrolled
             ? isDark
-              ? "border-white/[0.12] bg-gradient-to-r from-zinc-800/60 via-zinc-700/75 to-zinc-800/60 shadow-[0_25px_60px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.15)]"
+              ? "border-white/[0.08] bg-gradient-to-r from-neutral-900/85 via-neutral-950/90 to-neutral-900/85 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]"
               : "border-neutral-200/50 bg-gradient-to-r from-white/90 via-neutral-50/95 to-white/90 shadow-[0_20px_40px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]"
             : isDark
-              ? "border-white/[0.08] bg-gradient-to-r from-zinc-900/40 via-zinc-800/50 to-zinc-900/40 shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]"
+              ? "border-white/[0.05] bg-gradient-to-r from-neutral-950/65 via-neutral-900/70 to-neutral-950/65 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
               : "border-neutral-200/40 bg-gradient-to-r from-white/60 via-neutral-50/70 to-white/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"
         )}
       >
@@ -119,7 +119,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                   <div className={cn(
                     "w-[700px] rounded-2xl border p-6 pb-4 shadow-[0_50px_100px_rgba(0,0,0,0.85)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
                     isDark 
-                      ? "border-white/[0.06] bg-black/90" 
+                      ? "border-white/[0.12] bg-neutral-900/55" 
                       : "border-neutral-200/50 bg-white/95"
                   )}>
                     
@@ -129,19 +129,19 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                       <div className="flex flex-col space-y-6 pr-4 border-r border-white/[0.04]">
                         <Link href="/product/sift" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Intake
+                            Sift AI
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Make your product operations self-driving
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Triage incoming threads and isolate critical updates
                           </span>
                         </Link>
 
                         <Link href="/product/drafts" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Plan
+                            Voice Profile
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Plan and navigate from idea to launch
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Build style profiles to write exactly like you
                           </span>
                         </Link>
                       </div>
@@ -150,19 +150,19 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                       <div className="flex flex-col space-y-6 pr-4 border-r border-white/[0.04]">
                         <Link href="/product/arcus" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Build
+                            Arcus Engine
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Move work forward across teams and agents
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Delegate complex scheduling and tasks overnight
                           </span>
                         </Link>
 
                         <Link href="/product/arcus" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Diffs
+                            Encryption
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Make code review effortless
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Secure client-side protection for total privacy
                           </span>
                         </Link>
                       </div>
@@ -171,19 +171,19 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                       <div className="flex flex-col space-y-6">
                         <Link href="/home-feed" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Monitor
+                            Analytics
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Understand progress at scale
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Monitor usage metrics and team throughput
                           </span>
                         </Link>
 
                         <a href="#connectors" className="group block cursor-pointer select-none">
                           <span className="text-[10px] font-medium tracking-wide text-neutral-500 uppercase block mb-1">
-                            Integrations
+                            Connectors
                           </span>
-                          <span className="text-[13px] font-semibold text-neutral-350 leading-snug group-hover:text-white transition-all duration-300 block">
-                            Collaborate across tools
+                          <span className="text-[13px] font-semibold text-neutral-300 leading-snug group-hover:text-white transition-all duration-300 block">
+                            Integrate Slack, Notion, Cal.com, and Google Meet
                           </span>
                         </a>
                       </div>
@@ -192,7 +192,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
 
                     {/* Divider and Footer */}
                     <div className="border-t border-white/[0.06] pt-4 mt-6 flex items-center justify-between text-xs text-neutral-500 z-10 relative">
-                      <span className="font-semibold text-neutral-200">New: Code Intelligence</span>
+                      <span className="font-semibold text-neutral-200">New: Neural Voice Profile</span>
                       <Link href="/changelog" className="text-[#5f5bf6] hover:text-[#7875f7] transition-colors font-semibold">
                         Changelog
                       </Link>

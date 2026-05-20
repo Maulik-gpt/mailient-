@@ -240,7 +240,7 @@ export function LinearLanding() {
       <Navbar theme="dark" />
 
       {/* 1. HERO SECTION */}
-      <section className="relative w-full pt-40 pb-20 md:pt-48 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10">
+      <section className="relative w-full pt-40 pb-0 md:pt-48 flex flex-col items-center text-center z-10 bg-gradient-to-b from-[#000000] via-[#09090b] to-[#16161a]">
         
         {/* WebGL Backing Shader */}
         <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
@@ -257,7 +257,7 @@ export function LinearLanding() {
           </div>
         </Suspense>
 
-        <div className="w-full flex flex-col items-center max-w-5xl z-10">
+        <div className="w-full flex flex-col items-center max-w-5xl z-10 mx-auto px-6">
           
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
@@ -390,28 +390,27 @@ export function LinearLanding() {
             </div>
           </BlurFade>
 
-        </div>
+      </div>
 
-        {/* Metallic reflection shimmer and fine separation divider */}
-        <div className="w-full relative flex flex-col items-center mt-20 pointer-events-none select-none">
-          <div className="absolute top-[-110px] w-full max-w-6xl h-[180px] bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.06),transparent_65%)] z-0" />
-          <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.1] to-transparent z-10" />
-        </div>
+      {/* Clear Separation Line at the bottom of the Metallic Hero */}
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent relative z-25 mt-24" />
 
-        {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE */}
-        <div className="w-full relative h-28 overflow-hidden bg-black border-b border-white/[0.05]">
+      {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE SECTION ON PURE BLACK */}
+      <div className="w-full bg-[#000000] py-16 relative z-10">
+        <div className="w-full relative h-28 overflow-hidden bg-[#000000]">
           <PerspectiveMarquee 
             fontSize={26} 
             color="#a3a3a3" 
             rotateY={-14} 
             rotateX={5} 
             perspective={1100} 
-fadeColor="#000000" 
+            fadeColor="#000000" 
             background="#000000"
             className="w-full h-full"
           />
         </div>
-      </section>
+      </div>
+    </section>
 
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
