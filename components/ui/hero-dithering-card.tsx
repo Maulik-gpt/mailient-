@@ -22,7 +22,7 @@ export function CTASection() {
             <div className="absolute inset-0 z-0 pointer-events-none opacity-50 dark:opacity-40 mix-blend-multiply dark:mix-blend-screen">
               <Dithering
                 colorBack="#00000000" // Transparent
-                colorFront="#141414"  // Ultra-dark metallic gray instead of orange
+                colorFront="#4a4a4a"  // Lighter gray instead of ultra-dark metallic gray
                 shape="warp"
                 type="4x4"
                 speed={isHovered ? 0.35 : 0.12}
