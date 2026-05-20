@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, Suspense, lazy } from "react";
 import { motion, AnimatePresence, useScroll, useTransform, useMotionTemplate, useMotionValue } from "framer-motion";
+
+const Dithering = lazy(() => 
+  import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
+);
 import {
   Zap,
   Bot,
@@ -103,12 +107,20 @@ export function LinearLanding() {
       <section 
         className="relative pt-44 pb-24 md:pt-56 md:pb-36 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10"
       >
-        {/* Slow Chromatic WebGL Gradient behind Hero */}
-        <AnimatedGradient 
-          config={{ preset: "Prism", speed: 12 }} 
-          noise={{ opacity: 0.01 }} 
-          className="opacity-[0.22] pointer-events-none"
-        />
+        {/* Slow Dithering WebGL Gradient behind Hero */}
+        <Suspense fallback={<div className="absolute inset-0 bg-muted/20 pointer-events-none" />}>
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-30 mix-blend-screen">
+            <Dithering
+              colorBack="#00000000" // Transparent
+              colorFront="#ffffff"  // White accent
+              shape="warp"
+              type="4x4"
+              speed={0.25}
+              className="size-full"
+              minPixelRatio={1}
+            />
+          </div>
+        </Suspense>
 
         <motion.div
           style={{ scale: heroScale, opacity: heroOpacity }}

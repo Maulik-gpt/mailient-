@@ -234,9 +234,10 @@ Maulik`,
               </div>
               <div className="mt-8 pt-4 border-t border-neutral-900 flex items-center gap-1.5 text-[9px] uppercase font-black text-neutral-500">
                 <Check className="w-3.5 h-3.5 text-white" />
-              <span>Full Tool Layer active</span>
+                <span>Full Tool Layer active</span>
+              </div>
             </div>
-          </div>
+          </BlurFade>
 
           {/* Block 3: Scheduling Agents */}
           <div className="rounded-3xl border border-neutral-900 bg-neutral-950 p-8 flex flex-col justify-between hover:border-neutral-800 transition-all duration-300 relative group overflow-hidden">
