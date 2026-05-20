@@ -1146,18 +1146,32 @@ function cronToLabel(cron: string): string {
   return `At ${at} (${cron})`;
 }
 
-/** Next fire time for the supported cron patterns, as an ISO string. */
-function nextRunIso(cron: string): string | null {
+/** Returns the TZ offset in minutes for `tz` at `date` (positive = ahead of UTC). */
+function getUtcOffsetMinutes(tz: string, date: Date): number {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const get = (t: string) => parseInt(fmt.formatToParts(date).find(p => p.type === t)?.value ?? '0');
+    const localAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+    return (localAsUtc - date.getTime()) / 60000;
+  } catch { return 0; }
+}
+
+/** Next fire time for the given cron, interpreted in the user's timezone, as a UTC ISO string. */
+function nextRunIso(cron: string, tz = 'UTC'): string | null {
   const p = cron.trim().split(/\s+/);
   if (p.length !== 5) return null;
   const [minS, hourS, , , dowS] = p;
   const now = new Date();
   const next = new Date(now);
 
+  // Interval-based patterns have no timezone meaning — use UTC
   if (hourS.startsWith('*/')) {
     const step = parseInt(hourS.slice(2)) || 1;
     next.setMinutes(/^\d+$/.test(minS) ? parseInt(minS) : 0, 0, 0);
-    while (next <= now || next.getHours() % step !== 0) next.setHours(next.getHours() + 1);
+    while (next <= now || next.getUTCHours() % step !== 0) next.setHours(next.getHours() + 1);
     return next.toISOString();
   }
   if (minS.startsWith('*/')) {
@@ -1169,15 +1183,36 @@ function nextRunIso(cron: string): string | null {
 
   const h = parseInt(hourS), m = parseInt(minS);
   if (isNaN(h) || isNaN(m)) return null;
-  next.setHours(h, m, 0, 0);
+
+  // Shift `now` into the user's TZ coordinate space
+  const offsetMin = getUtcOffsetMinutes(tz, now);
+  const nowLocal = new Date(now.getTime() + offsetMin * 60000);
+  const y = nowLocal.getUTCFullYear(), mo = nowLocal.getUTCMonth(), d = nowLocal.getUTCDate();
+  let targetLocal = new Date(Date.UTC(y, mo, d, h, m, 0, 0));
 
   if (/^\d$/.test(dowS)) {
     const targetDow = Number(dowS);
-    while (next <= now || next.getDay() !== targetDow) next.setDate(next.getDate() + 1);
-  } else if (next <= now) {
-    next.setDate(next.getDate() + 1);
+    while (targetLocal <= nowLocal || targetLocal.getUTCDay() !== targetDow) {
+      targetLocal = new Date(targetLocal.getTime() + 86_400_000);
+    }
+  } else if (targetLocal <= nowLocal) {
+    targetLocal = new Date(targetLocal.getTime() + 86_400_000);
   }
-  return next.toISOString();
+
+  return new Date(targetLocal.getTime() - offsetMin * 60000).toISOString();
+}
+
+async function getUserTimezone(userId: string): Promise<string> {
+  try {
+    const { getSupabaseAdmin } = await import('../supabase.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    return (data?.preferences as Record<string, unknown>)?.timezone as string || 'UTC';
+  } catch { return 'UTC'; }
 }
 
 async function createScheduledAgent(userId: string, input: any): Promise<ToolResult> {
@@ -1246,13 +1281,21 @@ async function createScheduledAgent(userId: string, input: any): Promise<ToolRes
   }
 
   const scheduleLabel = cronToLabel(cron);
-  const nextRun = nextRunIso(cron);
+  const userTz = await getUserTimezone(userId);
+  const nextRun = nextRunIso(cron, userTz);
+  const nextRunLabel = nextRun
+    ? new Date(nextRun).toLocaleString('en-US', {
+        timeZone: userTz,
+        weekday: 'long', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      })
+    : null;
 
   return {
     output: [
       `Scheduled agent "${data.name}" created successfully and is now LIVE.`,
       `Schedule: ${scheduleLabel} (cron: ${cron})`,
-      nextRun ? `Next run: ${nextRun}` : '',
+      nextRunLabel ? `Next run: ${nextRunLabel}` : '',
       `Delivery: ${data.output_channel}`,
       `Now write a short confirmation to the user telling them the agent is live, when it will next run, and how the report will be delivered. Do NOT call any more tools.`,
     ].filter(Boolean).join('\n'),

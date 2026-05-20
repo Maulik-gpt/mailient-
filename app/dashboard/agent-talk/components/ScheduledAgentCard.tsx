@@ -3,9 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play, ExternalLink } from 'lucide-react';
+import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play } from 'lucide-react';
 import { useTheme } from 'next-themes';
-import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 // ── Channel icons ──────────────────────────────────────────────────────────────
@@ -26,12 +25,53 @@ function SlackIcon({ className }: { className?: string }) {
   );
 }
 
+// ── Browser-local TZ cron helpers ─────────────────────────────────────────────
+// Running in the browser: setHours uses the user's local timezone automatically.
+
+const DOW_FULL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function nextRunDateFromCron(cron: string): Date | null {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return null;
+  const [minS, hourS, , , dowS] = p;
+  if (hourS.startsWith('*/') || minS.startsWith('*/')) return null;
+  const h = parseInt(hourS), m = parseInt(minS);
+  if (isNaN(h) || isNaN(m)) return null;
+  const now = new Date();
+  const next = new Date(now);
+  next.setHours(h, m, 0, 0);
+  if (/^\d$/.test(dowS)) {
+    const target = Number(dowS);
+    while (next <= now || next.getDay() !== target) next.setDate(next.getDate() + 1);
+  } else if (next <= now) {
+    next.setDate(next.getDate() + 1);
+  }
+  return next;
+}
+
+function scheduleFromCron(cron: string): string {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return cron;
+  const [minS, hourS, , , dowS] = p;
+  if (hourS.startsWith('*/')) return `Every ${hourS.slice(2)} hour(s)`;
+  if (minS.startsWith('*/')) return `Every ${minS.slice(2)} minute(s)`;
+  const h = parseInt(hourS), m = parseInt(minS);
+  if (isNaN(h) || isNaN(m)) return cron;
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  const timeStr = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  if (dowS === '*') return `Daily at ${timeStr}`;
+  if (/^\d$/.test(dowS)) return `Weekly — ${DOW_FULL[Number(dowS)]} at ${timeStr}`;
+  return `${timeStr} (${cron})`;
+}
+
 // ── Next-run countdown ─────────────────────────────────────────────────────────
 
-function useCountdown(iso?: string) {
+function useCountdown(cron: string, fallbackIso?: string) {
   const compute = useCallback(() => {
-    if (!iso) return '—';
-    const diff = new Date(iso).getTime() - Date.now();
+    const next = nextRunDateFromCron(cron) ?? (fallbackIso ? new Date(fallbackIso) : null);
+    if (!next) return '—';
+    const diff = next.getTime() - Date.now();
     if (diff <= 0) return 'Any moment now';
     const h = Math.floor(diff / 3_600_000);
     const m = Math.floor((diff % 3_600_000) / 60_000);
@@ -39,7 +79,7 @@ function useCountdown(iso?: string) {
     if (h >= 24) return 'tomorrow';
     if (h > 0) return `in ${h}h ${m}m`;
     return `in ${m} minute${m !== 1 ? 's' : ''}`;
-  }, [iso]);
+  }, [cron, fallbackIso]);
 
   const [label, setLabel] = useState(compute);
   useEffect(() => {
@@ -205,7 +245,7 @@ function ScheduledAgentSidebar({
                 <Repeat className="w-4 h-4" /> Repeat
               </span>
               <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
-                {data.scheduleLabel}
+                {scheduleFromCron(data.cron)}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -213,7 +253,7 @@ function ScheduledAgentSidebar({
                 <CalendarClock className="w-4 h-4" /> Next run
               </span>
               <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
-                {fmt(data.nextRun)}
+                {fmt((nextRunDateFromCron(data.cron) ?? (data.nextRun ? new Date(data.nextRun) : null))?.toISOString())}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -283,8 +323,7 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
   const [isPausing, setIsPausing] = useState(false);
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const router = useRouter();
-  const countdown = useCountdown(data.nextRun);
+  const countdown = useCountdown(data.cron, data.nextRun);
 
   useEffect(() => { setMounted(true); }, []);
   const isDark = !mounted || resolvedTheme === 'dark';
@@ -379,7 +418,7 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
             <div className="flex items-center gap-1.5">
               <Repeat className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
               <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
-                {data.scheduleLabel}
+                {scheduleFromCron(data.cron)}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -393,7 +432,7 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
 
         {/* Footer actions */}
         <div className={cn(
-          "flex items-center justify-between px-4 py-2.5 border-t",
+          "flex items-center px-4 py-2.5 border-t",
           isDark ? "border-white/[0.06]" : "border-black/[0.05]"
         )}>
           <button
@@ -411,18 +450,6 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
               ? <><Pause className="w-3.5 h-3.5" /> Pause</>
               : <><Play className="w-3.5 h-3.5" /> Resume</>
             }
-          </button>
-
-          <button
-            onClick={(e) => { e.stopPropagation(); router.push('/dashboard/agents'); }}
-            className={cn(
-              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all",
-              isDark
-                ? "bg-white/[0.07] text-white/70 hover:bg-white/[0.12] hover:text-white/90"
-                : "bg-black/[0.05] text-neutral-600 hover:bg-black/[0.09] hover:text-neutral-900"
-            )}
-          >
-            View Agents <ExternalLink className="w-3 h-3" />
           </button>
         </div>
       </motion.div>

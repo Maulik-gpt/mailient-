@@ -24,7 +24,19 @@ function cronToLabel(cron: string): string {
   return `At ${at} (${cron})`;
 }
 
-function nextRunIso(cron: string): string | null {
+function getUtcOffsetMinutes(tz: string, date: Date): number {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const get = (t: string) => parseInt(fmt.formatToParts(date).find((p: any) => p.type === t)?.value ?? '0');
+    const localAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+    return (localAsUtc - date.getTime()) / 60000;
+  } catch { return 0; }
+}
+
+function nextRunIso(cron: string, tz = 'UTC'): string | null {
   const p = cron.trim().split(/\s+/);
   if (p.length !== 5) return null;
   const [minS, hourS, , , dowS] = p;
@@ -33,7 +45,7 @@ function nextRunIso(cron: string): string | null {
   if (hourS.startsWith('*/')) {
     const step = parseInt(hourS.slice(2)) || 1;
     next.setMinutes(/^\d+$/.test(minS) ? parseInt(minS) : 0, 0, 0);
-    while (next <= now || next.getHours() % step !== 0) next.setHours(next.getHours() + 1);
+    while (next <= now || next.getUTCHours() % step !== 0) next.setHours(next.getHours() + 1);
     return next.toISOString();
   }
   if (minS.startsWith('*/')) {
@@ -44,14 +56,30 @@ function nextRunIso(cron: string): string | null {
   }
   const h = parseInt(hourS), m = parseInt(minS);
   if (isNaN(h) || isNaN(m)) return null;
-  next.setHours(h, m, 0, 0);
+  const offsetMin = getUtcOffsetMinutes(tz, now);
+  const nowLocal = new Date(now.getTime() + offsetMin * 60000);
+  const y = nowLocal.getUTCFullYear(), mo = nowLocal.getUTCMonth(), d = nowLocal.getUTCDate();
+  let targetLocal = new Date(Date.UTC(y, mo, d, h, m, 0, 0));
   if (/^\d$/.test(dowS)) {
     const targetDow = Number(dowS);
-    while (next <= now || next.getDay() !== targetDow) next.setDate(next.getDate() + 1);
-  } else if (next <= now) {
-    next.setDate(next.getDate() + 1);
+    while (targetLocal <= nowLocal || targetLocal.getUTCDay() !== targetDow) {
+      targetLocal = new Date(targetLocal.getTime() + 86_400_000);
+    }
+  } else if (targetLocal <= nowLocal) {
+    targetLocal = new Date(targetLocal.getTime() + 86_400_000);
   }
-  return next.toISOString();
+  return new Date(targetLocal.getTime() - offsetMin * 60000).toISOString();
+}
+
+async function getUserTimezone(supabase: any, userId: string): Promise<string> {
+  try {
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    return (data?.preferences as Record<string, unknown>)?.timezone as string || 'UTC';
+  } catch { return 'UTC'; }
 }
 
 export async function POST(request: NextRequest) {
@@ -96,7 +124,8 @@ export async function POST(request: NextRequest) {
     }
 
     const scheduleLabel = cronToLabel(cron);
-    const nextRun = nextRunIso(cron);
+    const userTz = await getUserTimezone(supabase, userId);
+    const nextRun = nextRunIso(cron, userTz);
 
     return NextResponse.json({
       agent: {
