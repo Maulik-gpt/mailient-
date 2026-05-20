@@ -216,11 +216,23 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
         </button>
       </div>
 
+      {/* Spec preview — dimmed to show what's waiting to be created */}
+      <div className="mx-4 mt-3 mb-3 px-3 py-2.5 rounded-xl bg-white/[0.025] border border-white/[0.06] opacity-60">
+        <p className="text-[13px] font-bold text-arcus-fg leading-none mb-1">{data.agentName}</p>
+        <p className="text-[11px] text-arcus-fg-muted line-clamp-2 leading-relaxed mb-2">
+          {data.agentParams.task_description}
+        </p>
+        <div className="flex items-center gap-3 text-[11px] text-arcus-fg-tertiary">
+          <span>📅 {data.agentParams.cron_schedule}</span>
+          <span>→</span>
+          <span className="capitalize">{data.agentParams.output_channel}</span>
+        </div>
+      </div>
+
       {/* Body */}
-      <div className="px-4 pt-3 pb-2 space-y-2">
-        <p className="text-[13px] text-arcus-fg-secondary leading-snug mb-3">
-          <span className="text-arcus-fg font-semibold">{data.agentName}</span> needs the following
-          integrations to run. Connect any missing ones, then create the agent.
+      <div className="px-4 pb-2 space-y-2">
+        <p className="text-[12px] text-arcus-fg-muted leading-snug mb-2">
+          Connect the missing integrations below to activate this agent.
         </p>
 
         {data.required.map(id => {
@@ -282,21 +294,14 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between px-4 py-3 border-t border-white/[0.06]">
-        <button
-          onClick={() => createAgent(true)}
-          disabled={isCreating}
-          className="px-3 py-1.5 text-[12px] font-medium text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors disabled:opacity-40"
-        >
-          Skip & create anyway
-        </button>
+      <div className="px-4 py-3 border-t border-white/[0.06] flex flex-col items-end gap-2">
         <button
           onClick={() => createAgent(false)}
           disabled={!allConnected || isCreating}
           className={cn(
-            'flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all',
+            'flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all w-full justify-center',
             allConnected && !isCreating
-              ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
+              ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_16px_rgba(52,211,153,0.3)]'
               : 'bg-white/[0.05] text-arcus-fg-muted cursor-not-allowed',
           )}
         >
@@ -305,6 +310,13 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
           ) : (
             <><Zap className="w-3 h-3" /> Create Agent</>
           )}
+        </button>
+        <button
+          onClick={() => createAgent(true)}
+          disabled={isCreating}
+          className="text-[11px] text-arcus-fg-muted hover:text-arcus-fg-tertiary transition-colors disabled:opacity-40"
+        >
+          Create without connecting (agent may fail)
         </button>
       </div>
 

@@ -1,11 +1,54 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, X, Repeat, CalendarClock, ShieldCheck, History } from 'lucide-react';
+import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play, ExternalLink } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+
+// ── Channel icons ──────────────────────────────────────────────────────────────
+
+function GmailIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636C.732 21.002 0 20.27 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h.273L12 10.728 21.091 3.821h.273c.904 0 1.636.732 1.636 1.636z" fill="#EA4335"/>
+    </svg>
+  );
+}
+
+function SlackIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M5.042 15.165a2.528 2.528 0 01-2.52 2.521A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z" fill="#E01E5A"/>
+    </svg>
+  );
+}
+
+// ── Next-run countdown ─────────────────────────────────────────────────────────
+
+function useCountdown(iso?: string) {
+  const compute = useCallback(() => {
+    if (!iso) return '—';
+    const diff = new Date(iso).getTime() - Date.now();
+    if (diff <= 0) return 'Any moment now';
+    const h = Math.floor(diff / 3_600_000);
+    const m = Math.floor((diff % 3_600_000) / 60_000);
+    if (h >= 48) return `in ${Math.floor(h / 24)} days`;
+    if (h >= 24) return 'tomorrow';
+    if (h > 0) return `in ${h}h ${m}m`;
+    return `in ${m} minute${m !== 1 ? 's' : ''}`;
+  }, [iso]);
+
+  const [label, setLabel] = useState(compute);
+  useEffect(() => {
+    setLabel(compute());
+    const id = setInterval(() => setLabel(compute()), 60_000);
+    return () => clearInterval(id);
+  }, [compute]);
+  return label;
+}
 
 export interface ScheduledAgentData {
   id: string;
@@ -234,59 +277,155 @@ function ScheduledAgentSidebar({
 
 // ── Inline chat card ───────────────────────────────────────────────────────────
 
-export function ScheduledAgentCard({ data }: { data: ScheduledAgentData }) {
+export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgentData }) {
+  const [data, setData] = useState(initialData);
   const [open, setOpen] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
   const { resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const router = useRouter();
+  const countdown = useCountdown(data.nextRun);
+
+  useEffect(() => { setMounted(true); }, []);
   const isDark = !mounted || resolvedTheme === 'dark';
+
+  const isActive = data.status !== 'paused';
+
+  const togglePause = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsPausing(true);
+    const nextStatus = isActive ? 'paused' : 'active';
+    try {
+      const res = await fetch('/api/arcus/agents', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: data.id, status: nextStatus }),
+      });
+      if (res.ok) setData(d => ({ ...d, status: nextStatus }));
+    } catch { /* keep current state */ } finally {
+      setIsPausing(false);
+    }
+  };
+
+  const channel = data.channel?.toLowerCase() || 'gmail';
 
   return (
     <>
-      <motion.button
-        type="button"
-        onClick={() => setOpen(true)}
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      <motion.div
+        initial={{ opacity: 0, y: 16, scale: 0.97 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ type: 'spring', damping: 26, stiffness: 300 }}
         className={cn(
-          "mt-3 mb-1 w-full text-left p-4 rounded-2xl border transition-all duration-300",
-          isDark 
-            ? "bg-white/[0.04] border-white/8 hover:bg-white/[0.07] hover:border-white/15" 
-            : "bg-black/[0.02] border-black/[0.06] hover:bg-black/[0.04] hover:border-black/[0.12] shadow-sm"
+          "mt-3 mb-1 w-full rounded-[20px] border overflow-hidden",
+          isDark
+            ? "bg-white/[0.04] border-white/[0.08]"
+            : "bg-black/[0.02] border-black/[0.07] shadow-sm"
         )}
       >
-        <div className="flex items-center gap-2 mb-2">
-          <Clock className={cn("w-4 h-4 flex-shrink-0", isDark ? "text-emerald-300" : "text-emerald-600")} />
-          <span className={cn("text-[15px] font-bold truncate", isDark ? "text-white/90" : "text-neutral-900")}>
+        {/* Header */}
+        <div className={cn(
+          "flex items-center justify-between px-4 py-3 border-b",
+          isDark ? "border-white/[0.07]" : "border-black/[0.05]"
+        )}>
+          <div className="flex items-center gap-2">
+            {/* Pulse dot */}
+            <span className="relative flex h-2 w-2">
+              {isActive && (
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              )}
+              <span className={cn(
+                "relative inline-flex rounded-full h-2 w-2",
+                isActive ? "bg-emerald-400" : "bg-amber-400"
+              )} />
+            </span>
+            <span className={cn(
+              "text-[11px] font-bold uppercase tracking-widest",
+              isActive
+                ? (isDark ? "text-emerald-400" : "text-emerald-700")
+                : (isDark ? "text-amber-400" : "text-amber-700")
+            )}>
+              {isActive ? "Active Agent" : "Paused"}
+            </span>
+          </div>
+          {/* Channel icons */}
+          <div className="flex items-center gap-1.5">
+            {(channel === 'gmail' || channel === 'both') && (
+              <div className={cn("w-6 h-6 rounded-md flex items-center justify-center", isDark ? "bg-white/[0.06]" : "bg-black/[0.04]")}>
+                <GmailIcon className="w-3.5 h-3.5" />
+              </div>
+            )}
+            {(channel === 'slack' || channel === 'both') && (
+              <div className={cn("w-6 h-6 rounded-md flex items-center justify-center", isDark ? "bg-white/[0.06]" : "bg-black/[0.04]")}>
+                <SlackIcon className="w-3.5 h-3.5" />
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Body */}
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="w-full text-left px-4 pt-3 pb-4"
+        >
+          <h3 className={cn("text-[16px] font-bold leading-snug mb-1", isDark ? "text-white/95" : "text-neutral-900")}>
             {data.name}
-          </span>
-          <span
+          </h3>
+          <p className={cn("text-[12px] leading-relaxed line-clamp-2 mb-4", isDark ? "text-white/45" : "text-neutral-500")}>
+            {data.task}
+          </p>
+
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Repeat className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
+              <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
+                {data.scheduleLabel}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
+              <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
+                {countdown}
+              </span>
+            </div>
+          </div>
+        </button>
+
+        {/* Footer actions */}
+        <div className={cn(
+          "flex items-center justify-between px-4 py-2.5 border-t",
+          isDark ? "border-white/[0.06]" : "border-black/[0.05]"
+        )}>
+          <button
+            onClick={togglePause}
+            disabled={isPausing}
             className={cn(
-              "text-[10px] font-semibold px-2 py-0.5 rounded-full uppercase tracking-wide border",
-              data.status === 'paused'
-                ? (isDark ? 'bg-amber-500/15 text-amber-300 border-transparent' : 'bg-amber-50 text-amber-800 border-amber-200/60')
-                : (isDark ? 'bg-emerald-500/15 text-emerald-300 border-transparent' : 'bg-emerald-50 text-emerald-800 border-emerald-200/60')
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all",
+              isActive
+                ? (isDark ? "text-white/50 hover:text-white/80 hover:bg-white/[0.06]" : "text-neutral-500 hover:text-neutral-800 hover:bg-black/[0.05]")
+                : "text-emerald-500 hover:text-emerald-400 hover:bg-emerald-500/10",
+              isPausing && "opacity-50 cursor-not-allowed"
             )}
           >
-            {data.status === 'paused' ? 'Paused' : 'Live'}
-          </span>
+            {isActive
+              ? <><Pause className="w-3.5 h-3.5" /> Pause</>
+              : <><Play className="w-3.5 h-3.5" /> Resume</>
+            }
+          </button>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push('/dashboard/agents'); }}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all",
+              isDark
+                ? "bg-white/[0.07] text-white/70 hover:bg-white/[0.12] hover:text-white/90"
+                : "bg-black/[0.05] text-neutral-600 hover:bg-black/[0.09] hover:text-neutral-900"
+            )}
+          >
+            View Agents <ExternalLink className="w-3 h-3" />
+          </button>
         </div>
-        <p className={cn("text-[12px] leading-relaxed line-clamp-2 mb-3", isDark ? "text-white/45" : "text-neutral-500")}>
-          {data.task}
-        </p>
-        <div className="flex items-center justify-between text-[12px]">
-          <span className={isDark ? "text-white/40" : "text-neutral-450"}>Repeat</span>
-          <span className={cn("font-semibold", isDark ? "text-white/80" : "text-neutral-800")}>{data.scheduleLabel}</span>
-        </div>
-        <div className="flex items-center justify-between text-[12px] mt-1">
-          <span className={isDark ? "text-white/40" : "text-neutral-450"}>Next run</span>
-          <span className={cn("font-semibold", isDark ? "text-white/80" : "text-neutral-800")}>{fmt(data.nextRun)}</span>
-        </div>
-        <p className={cn("text-[11px] mt-3 font-medium", isDark ? "text-white/30" : "text-neutral-400")}>Click to view details →</p>
-      </motion.button>
+      </motion.div>
 
       <AnimatePresence>
         {open && <ScheduledAgentSidebar data={data} onClose={() => setOpen(false)} />}
