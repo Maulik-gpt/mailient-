@@ -333,7 +333,10 @@ export function LinearLanding() {
           <BlurFade delay={0.4} duration={1.0} inView>
             <div 
               onClick={(e) => togglePlay(e)} 
-              className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group cursor-pointer"
+              className={cn(
+                "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative overflow-hidden group cursor-pointer transition-shadow duration-500",
+                isPlaying ? "shadow-none" : "shadow-[0_50px_100px_rgba(0,0,0,0.85)]"
+              )}
             >
               <video 
                 ref={videoRef}
