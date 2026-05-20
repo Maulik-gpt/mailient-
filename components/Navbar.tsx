@@ -107,86 +107,155 @@ export function Navbar({ theme = "light" }: NavbarProps) {
             <AnimatePresence>
               {dropdownOpen && (
                 <motion.div
-                  initial={{ opacity: 0, y: 8, scale: 0.98, filter: "blur(4px)" }}
+                  initial={{ opacity: 0, y: 12, scale: 0.97, filter: "blur(6px)" }}
                   animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-                  exit={{ opacity: 0, y: 6, scale: 0.98, filter: "blur(4px)" }}
-                  transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                  className={cn(
-                    "absolute top-full left-1/2 -translate-x-1/2 mt-2 w-60 rounded-2xl border p-1.5 shadow-[0_20px_40px_rgba(0,0,0,0.4)] backdrop-blur-2xl",
-                    isDark 
-                      ? "border-white/[0.08] bg-neutral-950/90 shadow-[0_30px_70px_rgba(0,0,0,0.8)]" 
-                      : "border-neutral-200/50 bg-white/90"
-                  )}
+                  exit={{ opacity: 0, y: 8, scale: 0.97, filter: "blur(6px)" }}
+                  transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-4 z-50 pointer-events-auto cursor-default"
                 >
-                  <div className="grid gap-0.5">
-                    <Link
-                      href="/product/sift"
-                      className={cn(
-                        "flex items-center gap-3 p-2 rounded-xl transition-all duration-205 group",
-                        isDark ? "hover:bg-white/[0.03]" : "hover:bg-neutral-50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-7 h-7 rounded-lg border flex items-center justify-center transition-colors",
-                        isDark 
-                          ? "bg-neutral-900 border-neutral-800 text-white group-hover:bg-neutral-800" 
-                          : "bg-neutral-50 border-neutral-200/50 text-neutral-800 group-hover:bg-white group-hover:border-neutral-300"
-                      )}>
-                        <Layers className="w-3.5 h-3.5" />
-                      </div>
-                      <div>
-                        <p className={cn("font-bold text-[11px]", isDark ? "text-white" : "text-neutral-800")}>Sift</p>
-                        <p className="text-[9px] text-neutral-500 font-light mt-0.5">Autonomous inbox triage</p>
-                      </div>
-                    </Link>
+                  {/* Mega Menu Obsidian Box */}
+                  <div className={cn(
+                    "w-[760px] rounded-[32px] border p-8 shadow-[0_45px_100px_rgba(0,0,0,0.8)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
+                    isDark 
+                      ? "border-white/[0.08] bg-black/95 shadow-[0_50px_120px_rgba(0,0,0,0.95)]" 
+                      : "border-neutral-200/50 bg-white/95"
+                  )}>
+                    {/* Blue Ambient Neon Spotlight behind Links */}
+                    <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_60%_40%,rgba(59,130,246,0.15),transparent_60%)] pointer-events-none" />
 
-                    <Link
-                      href="/product/drafts"
-                      className={cn(
-                        "flex items-center gap-3 p-2 rounded-xl transition-all duration-205 group",
-                        isDark ? "hover:bg-white/[0.03]" : "hover:bg-neutral-50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-7 h-7 rounded-lg border flex items-center justify-center transition-colors",
-                        isDark 
-                          ? "bg-neutral-900 border-neutral-800 text-white group-hover:bg-neutral-800" 
-                          : "bg-neutral-50 border-neutral-200/50 text-neutral-800 group-hover:bg-white group-hover:border-neutral-300"
-                      )}>
-                        <Send className="w-3.5 h-3.5" />
+                    <div className="grid grid-cols-3 gap-10 relative z-10">
+                      
+                      {/* Column 1: ChatGPT For -> Mailient For */}
+                      <div className="flex flex-col">
+                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
+                          Mailient For
+                        </h4>
+                        <div className="flex flex-col space-y-4">
+                          <Link href="/product/sift" className="group">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Students & Academics
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Filter courses, assignments, and campus alerts.
+                            </span>
+                          </Link>
+                          <Link href="/product/sift" className="group">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Founders & Leaders
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Triage capital rounds and deck applications.
+                            </span>
+                          </Link>
+                          <Link href="/product/drafts" className="group">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Operations Managers
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Sync client onboarding tasks automatically.
+                            </span>
+                          </Link>
+                          <Link href="/product/drafts" className="group">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Customer Support
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Pre-draft premium client responses.
+                            </span>
+                          </Link>
+                        </div>
                       </div>
-                      <div>
-                        <p className={cn("font-bold text-[11px]", isDark ? "text-white" : "text-neutral-800")}>Draft Reply</p>
-                        <p className="text-[9px] text-neutral-500 font-light mt-0.5">Contextual drafts</p>
-                      </div>
-                    </Link>
 
-                    <Link
-                      href="/product/arcus"
-                      className={cn(
-                        "flex items-center gap-3 p-2 rounded-xl transition-all duration-205 group",
-                        isDark ? "hover:bg-white/[0.03]" : "hover:bg-neutral-50"
-                      )}
-                    >
-                      <div className={cn(
-                        "w-7 h-7 rounded-lg flex items-center justify-center",
-                        isDark ? "bg-white text-neutral-950" : "bg-neutral-950 text-white"
-                      )}>
-                        <Cpu className="w-3.5 h-3.5" />
+                      {/* Column 2: Inspiration -> Core Tech */}
+                      <div className="flex flex-col">
+                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
+                          Core Technology
+                        </h4>
+                        <div className="flex flex-col space-y-4">
+                          <Link href="/product/sift" className="group flex items-start gap-2.5">
+                            <div className="w-4 h-4 rounded bg-neutral-900 border border-white/5 flex items-center justify-center text-[9px] text-neutral-400 mt-0.5">
+                              S
+                            </div>
+                            <div>
+                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                                Sift / Intake
+                              </span>
+                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                                Autonomous inbox classification & sorting.
+                              </span>
+                            </div>
+                          </Link>
+                          <Link href="/product/drafts" className="group flex items-start gap-2.5">
+                            <div className="w-4 h-4 rounded bg-neutral-900 border border-white/5 flex items-center justify-center text-[9px] text-neutral-400 mt-0.5">
+                              D
+                            </div>
+                            <div>
+                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                                Drafts / Plan
+                              </span>
+                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                                Contextual responses tailored to your tone.
+                              </span>
+                            </div>
+                          </Link>
+                          <Link href="/product/arcus" className="group flex items-start gap-2.5">
+                            <div className="w-4 h-4 rounded bg-white text-black flex items-center justify-center text-[9px] font-bold mt-0.5">
+                              A
+                            </div>
+                            <div>
+                              <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                                Arcus Flagship
+                              </span>
+                              <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                                Multi-agent logic command reasoning.
+                              </span>
+                            </div>
+                          </Link>
+                        </div>
                       </div>
-                      <div>
-                        <p className={cn("font-bold text-[11px] flex items-center gap-1", isDark ? "text-white" : "text-neutral-800")}>
-                          Arcus
-                          <span className={cn(
-                            "px-1 py-0.2 rounded text-[7px] font-black uppercase tracking-wider",
-                            isDark ? "bg-neutral-900 text-neutral-450" : "bg-neutral-100 text-neutral-600"
-                          )}>
-                            Flagship
-                          </span>
-                        </p>
-                        <p className="text-[9px] text-neutral-500 font-light mt-0.5">Command-driven reasoning AI</p>
+
+                      {/* Column 3: Ways to Use -> Integrations */}
+                      <div className="flex flex-col">
+                        <h4 className="text-[10px] font-bold text-neutral-500 uppercase tracking-[0.2em] mb-5 font-mono">
+                          Integrations
+                        </h4>
+                        <div className="flex flex-col space-y-4">
+                          <div className="group cursor-pointer">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Gmail & Google Tasks
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Secure transactional in-memory indexing.
+                            </span>
+                          </div>
+                          <div className="group cursor-pointer">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Cal.com & Meet API
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Conflict-free booking pipelines.
+                            </span>
+                          </div>
+                          <div className="group cursor-pointer">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Notion Calendars
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Synchronized event logging.
+                            </span>
+                          </div>
+                          <div className="group cursor-pointer">
+                            <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
+                              Slack Real-time Alerts
+                            </span>
+                            <span className="text-[9px] text-neutral-500 font-light block mt-0.5">
+                              Instant briefing push notifications.
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </Link>
+
+                    </div>
                   </div>
                 </motion.div>
               )}

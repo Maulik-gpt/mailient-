@@ -40,7 +40,7 @@ const Dithering = lazy(() =>
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
 );
 
-export default function LinearLanding() {
+export function LinearLanding() {
   const [activeStep, setActiveStep] = useState(0);
   
   // Custom scroll animations for smooth cinematic feel
