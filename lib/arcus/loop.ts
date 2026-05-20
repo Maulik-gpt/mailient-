@@ -62,6 +62,12 @@ const MAX_NUDGES = 3;
 // ── Pattern guards ─────────────────────────────────────────────────────────────
 
 const INTENT_PATTERN = /^(searching|looking|checking|reading|finding|fetching|let me|i['']ll|i will|i am going to|going to|will (search|check|look|read|find|fetch)|now (searching|checking|reading))/i;
+
+// Catches future-intent phrases ANYWHERE in the text — handles planning paragraphs
+// that don't start with intent words but end with "I'll set that up now." etc.
+const INTENT_ANYWHERE_PATTERN =
+  /\b(i['']ll\s+(?:set\s+(?:that|this|it)\s+up|proceed(?:\s+now)?|create\s+(?:the|an?\s+|this\s+)\w|start(?:\s+(?:now|this|that))?|do\s+(?:this|that)\s+now|handle\s+this|call\s+the\s+tools?|use\s+the\s+tools?)|i\s+will\s+(?:now|proceed|create|set\s+up|schedule|run|execute|build|make)\b|setting\s+(?:this|that|it)\s+up\s+now|proceeding\s+now|will\s+proceed\s+now)\b/i;
+
 const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*link|link here|pending|tbd|insert|placeholder|meet link|google meet link|conference link|calendar link|meeting link)\s*[^\]]*?\]/i;
 
 // Bracketed directives where the model *describes* a tool action instead of
@@ -71,7 +77,10 @@ const PLACEHOLDER_PATTERN = /\[\s*(I will|will be|to be|once generated|actual.*l
 const ACTION_PLACEHOLDER_PATTERN = /\[\s*(open(s|ing)?\s+(the\s+)?canvas|canvas\s*:|(create|generate|render|build|produce|put)\s+(a\s+|the\s+|this\s+)?(canvas|notion|page|document|report|summary|draft|plan|table)|draft\s+(a\s+|the\s+)?(reply|email|response|message)|schedule\s+(a\s+|the\s+)?(meeting|call|event)|send\s+(a\s+|an?\s+|the\s+)?(email|message|slack|reply))\b[^\]]*\]/i;
 
 function isIntentText(text: string): boolean {
-  return text.trim().length > 0 && text.trim().length < 500 && INTENT_PATTERN.test(text.trim());
+  const t = text.trim();
+  if (!t) return false;
+  if (t.length < 500 && INTENT_PATTERN.test(t)) return true;
+  return INTENT_ANYWHERE_PATTERN.test(t);
 }
 
 function hasPlaceholders(text: string): boolean {

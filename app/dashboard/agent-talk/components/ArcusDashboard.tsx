@@ -115,17 +115,17 @@ function ConversationalStarter({
       onClick={onClick}
       className={cn(
         "flex items-center gap-2.5 px-4 py-2.5 rounded-xl",
-        "bg-white/[0.02] border border-white/[0.05]",
-        "hover:border-white/[0.12] hover:bg-white/[0.04]",
+        "bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.05]",
+        "hover:border-black/[0.12] dark:hover:border-white/[0.12] hover:bg-black/[0.04] dark:hover:bg-white/[0.04]",
         "transition-all group/starter active:scale-[0.98]",
         "text-left w-full"
       )}
     >
-      <MessageCircle className="w-3.5 h-3.5 text-white/15 group-hover/starter:text-white/40 transition-colors flex-shrink-0" />
-      <span className="text-[12px] text-white/40 group-hover/starter:text-white/70 transition-colors truncate">
+      <MessageCircle className="w-3.5 h-3.5 text-neutral-400 dark:text-white/15 group-hover/starter:text-neutral-700 dark:group-hover/starter:text-white/40 transition-colors flex-shrink-0" />
+      <span className="text-[12px] text-neutral-500 dark:text-white/40 group-hover/starter:text-neutral-800 dark:group-hover/starter:text-white/70 transition-colors truncate">
         {text}
       </span>
-      <ArrowRight className="w-3 h-3 text-white/0 group-hover/starter:text-white/30 transition-all flex-shrink-0 ml-auto" />
+      <ArrowRight className="w-3 h-3 text-transparent dark:text-white/0 group-hover/starter:text-neutral-400 dark:group-hover/starter:text-white/30 transition-all flex-shrink-0 ml-auto" />
     </motion.button>
   );
 }
@@ -217,12 +217,12 @@ export function ArcusDashboard({
                     <ArcusLogo size={64} />
                   </div>
                   <h1
-                    className="text-4xl md:text-6xl font-medium text-white tracking-tighter mb-4"
+                    className="text-4xl md:text-6xl font-medium text-neutral-900 dark:text-white tracking-tighter mb-4"
                     style={{ fontFamily: "'Montserrat', sans-serif" }}
                   >
                     {greetingText || (userName ? `Hey ${userName.trim()}` : 'Ask anything about your emails')}
                   </h1>
-                  <p className="text-[15px] text-white/35 max-w-lg mx-auto leading-relaxed">
+                  <p className="text-[15px] text-neutral-500 dark:text-white/35 max-w-lg mx-auto leading-relaxed">
                     Arcus reads your inbox, drafts replies in your tone, books meetings, and manages everything — so you don't have to.
                   </p>
                 </div>
