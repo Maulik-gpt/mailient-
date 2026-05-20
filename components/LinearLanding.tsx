@@ -455,8 +455,12 @@ export function LinearLanding() {
           <div className="absolute w-[460px] h-[460px] rounded-full border border-white/[0.01]" />
 
           {/* Central Black & White Mailient Grayscale Logo */}
-          <div className="absolute w-14 h-14 rounded-full bg-white text-black font-mono font-bold flex items-center justify-center text-base z-30 shadow-[0_0_40px_rgba(255,255,255,0.25)] border border-neutral-300">
-            M
+          <div className="absolute w-14 h-14 rounded-full overflow-hidden z-30 shadow-[0_0_40px_rgba(255,255,255,0.25)] border border-neutral-300 bg-white">
+            <img 
+              src="/mailient-logo-premium.png" 
+              alt="Mailient Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
 
           {/* Orbit 1 App: Google Calendar */}

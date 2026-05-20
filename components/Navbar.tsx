@@ -62,15 +62,12 @@ export function Navbar({ theme = "light" }: NavbarProps) {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group relative z-10">
-          <div className={cn(
-            "relative w-7 h-7 rounded-full flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105",
-            isDark ? "bg-white" : "bg-neutral-950"
-          )}>
-            <span className={cn(
-              "font-black text-sm tracking-tighter",
-              isDark ? "text-neutral-950" : "text-white"
-            )}>M</span>
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="relative w-7 h-7 rounded-full overflow-hidden transition-all duration-500 group-hover:scale-105 border border-white/10 shadow-md bg-white">
+            <img 
+              src="/mailient-logo-premium.png" 
+              alt="Mailient Logo" 
+              className="w-full h-full object-cover"
+            />
           </div>
           <span className={cn(
             "font-extrabold text-[15px] tracking-tight transition-colors font-satoshi",
