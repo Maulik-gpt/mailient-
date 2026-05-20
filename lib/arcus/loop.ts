@@ -293,6 +293,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let taskCount = 0;
         let archivedCount = 0;
         const outcomes: ToolOutcome[] = [];
+        let forceNextToolCall = false;
 
         // ── Context Switching Elimination: Unified context sweep ───────────
         // For broad tasks ("morning brief", "prepare for tomorrow", "what did I miss"),
@@ -393,7 +394,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         // ── Main agentic loop ───────────────────────────────────────────────
         while (true) {
-          const response = await callLLM(messages, availableTools);
+          const response = await callLLM(messages, availableTools, { forceToolCall: forceNextToolCall });
+          forceNextToolCall = false;
           messages.push({ role: 'assistant', content: response.content });
 
           const toolCalls = getToolCalls(response.content);
@@ -553,6 +555,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // ── Case 2a: Intent text without tools — nudge ────────────────────
           if (totalToolCalls === 0 && nudgeCount < MAX_NUDGES && isIntentText(textContent)) {
             nudgeCount++;
+            forceNextToolCall = true;
             emit('thinking', { status: 'Working on it…' });
             messages.push({
               role: 'user',
@@ -564,6 +567,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // ── Case 2b: Unfilled placeholders — nudge ────────────────────────
           if (nudgeCount < MAX_NUDGES && hasPlaceholders(textContent)) {
             nudgeCount++;
+            forceNextToolCall = true;
             emit('thinking', { status: 'Completing task…' });
             messages.push({
               role: 'user',

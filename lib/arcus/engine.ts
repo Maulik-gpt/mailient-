@@ -215,7 +215,7 @@ function parseOpenAIResponse(data: any): LLMResponse | null {
 export async function callLLM(
   messages: LLMMessage[],
   tools: ToolSchema[],
-  options: { maxTokens?: number; temperature?: number } = {}
+  options: { maxTokens?: number; temperature?: number; forceToolCall?: boolean } = {}
 ): Promise<LLMResponse> {
   const keys = getKeys();
   if (!keys.length) {
@@ -234,7 +234,7 @@ export async function callLLM(
   };
   if (openAITools) {
     baseBody.tools = openAITools;
-    baseBody.tool_choice = 'auto';
+    baseBody.tool_choice = options.forceToolCall ? 'required' : 'auto';
   }
 
   const deadKeys = new Set<string>();
