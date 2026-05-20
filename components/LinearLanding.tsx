@@ -243,7 +243,7 @@ export function LinearLanding() {
             rotateY={-14} 
             rotateX={5} 
             perspective={1100} 
-            fadeColor="#000000"
+fadeColor="#000000" 
             background="#000000"
             className="w-full h-full"
           />
@@ -254,78 +254,139 @@ export function LinearLanding() {
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
-          {/* Left panel: cycle controls */}
-          <div className="lg:col-span-5 space-y-6">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">CORE CAPABILITIES</span>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
-              One coordinate loop. <br />Three pillars.
-            </h2>
-            <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-md pb-6 border-b border-white/[0.06]">
-              Mailient replaces scattered assistants with a robust, integrated multi-agent sequence that operates directly on top of your standard communication platforms.
-            </p>
+          {/* Left panel: Vertical connected capability selectors */}
+          <div className="lg:col-span-5 space-y-12">
+            {/* Step 1 */}
+            <div 
+              onClick={() => setActiveStep(0)}
+              className="group cursor-pointer select-none text-left"
+            >
+              <span className={cn(
+                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
+              )}>
+                01 // Sift Intake Triage
+              </span>
+              <h3 className={cn(
+                "font-medium tracking-tight leading-tight transition-all duration-500",
+                activeStep === 0 
+                  ? "text-3xl md:text-[38px] text-white" 
+                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+              )}>
+                Isolate noise. Route priorities.
+              </h3>
+              {activeStep === 0 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-4 space-y-4"
+                >
+                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                    Sift isolates notifications, tags priority customer queries, and drops them into structured queues autonomously.
+                  </p>
+                  <Link 
+                    href="/product/sift" 
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                  >
+                    Explore Sift Engine
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
+              )}
+            </div>
 
-            <div className="flex flex-col space-y-4">
-              {/* Pillar 1 */}
-              <div 
-                onClick={() => setActiveStep(0)}
-                className={cn(
-                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
-                  activeStep === 0 
-                    ? "border-white/10 bg-white/[0.02]" 
-                    : "border-transparent opacity-60 hover:opacity-100"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs">📂</span>
-                  <span className="text-sm font-semibold text-white">Sift Intake Triage</span>
-                </div>
-                <p className="text-[11px] text-neutral-400 font-light font-sans">
-                  Isolates noise, tags priorities, and routes customer queries. Links to <Link href="/product/sift" className="text-white hover:underline">/product/sift</Link>.
-                </p>
-              </div>
+            {/* Step 2 */}
+            <div 
+              onClick={() => setActiveStep(1)}
+              className="group cursor-pointer select-none text-left"
+            >
+              <span className={cn(
+                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                activeStep === 1 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
+              )}>
+                02 // Tone-Matched Drafts
+              </span>
+              <h3 className={cn(
+                "font-medium tracking-tight leading-tight transition-all duration-500",
+                activeStep === 1 
+                  ? "text-3xl md:text-[38px] text-white" 
+                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+              )}>
+                Drafts compiled in your voice.
+              </h3>
+              {activeStep === 1 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-4 space-y-4"
+                >
+                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                    Extracts a Stylistic Tone Signature from your historic outbound emails to compose custom, context-aware drafts automatically.
+                  </p>
+                  <Link 
+                    href="/product/drafts" 
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                  >
+                    Explore Drafts Engine
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </motion.div>
+              )}
+            </div>
 
-              {/* Pillar 2 */}
-              <div 
-                onClick={() => setActiveStep(1)}
-                className={cn(
-                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
-                  activeStep === 1 
-                    ? "border-white/10 bg-white/[0.02]" 
-                    : "border-transparent opacity-60 hover:opacity-100"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs">✍️</span>
-                  <span className="text-sm font-semibold text-white">Tone-Matched Drafts</span>
-                </div>
-                <p className="text-[11px] text-neutral-400 font-light font-sans">
-                  Constructs a Stylistic Signature of your tone. Links to <Link href="/product/drafts" className="text-white hover:underline">/product/drafts</Link>.
-                </p>
-              </div>
-
-              {/* Pillar 3 */}
-              <div 
-                onClick={() => setActiveStep(2)}
-                className={cn(
-                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
-                  activeStep === 2 
-                    ? "border-white/10 bg-white/[0.02]" 
-                    : "border-transparent opacity-60 hover:opacity-100"
-                )}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-xs">📅</span>
-                  <span className="text-sm font-semibold text-white">Autonomous Scheduling</span>
-                </div>
-                <p className="text-[11px] text-neutral-400 font-light font-sans">
-                  Schedules client slots, manages bookings, and logs meeting adapters silently.
-                </p>
-              </div>
+            {/* Step 3 */}
+            <div 
+              onClick={() => setActiveStep(2)}
+              className="group cursor-pointer select-none text-left"
+            >
+              <span className={cn(
+                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
+              )}>
+                03 // Autonomous Scheduling
+              </span>
+              <h3 className={cn(
+                "font-medium tracking-tight leading-tight transition-all duration-500",
+                activeStep === 2 
+                  ? "text-3xl md:text-[38px] text-white" 
+                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+              )}>
+                Meeting sweeps on autopilot.
+              </h3>
+              {activeStep === 2 && (
+                <motion.div 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4 }}
+                  className="mt-4 space-y-4"
+                >
+                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                    Schedules meetings directly in your calendar, coordinates with client slots, and generates Google Meet links silently overnight.
+                  </p>
+                  <a 
+                    href="#pricing" 
+                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                  >
+                    Unlock Autonomous Engine
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </a>
+                </motion.div>
+              )}
             </div>
           </div>
 
-          {/* Right panel: dynamic animated video visualization */}
-          <div className="lg:col-span-7 bg-[#050505] border border-white/[0.06] rounded-[24px] p-8 shadow-2xl h-[480px] flex flex-col justify-between relative overflow-hidden">
+          {/* Right panel: dynamic high-contrast visual display */}
+          <div className="lg:col-span-7 bg-[#050505] border border-white/[0.08] rounded-[24px] p-8 md:p-10 shadow-2xl h-[500px] flex flex-col justify-between relative overflow-hidden">
+            {/* Custom Dither Dot Grid Overlay */}
+            <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none opacity-[0.08] mix-blend-screen select-none"
+                 style={{
+                   backgroundImage: "radial-gradient(circle, #ffffff 1px, transparent 1px)",
+                   backgroundSize: "16px 16px",
+                 }}
+            />
+            
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
             <AnimatePresence mode="wait">
@@ -338,25 +399,54 @@ export function LinearLanding() {
                   transition={{ duration: 0.4 }}
                   className="flex-1 flex flex-col justify-between font-mono h-full"
                 >
-                  <div>
-                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">INBOX CLASSIFIER SIMULATOR</span>
-                    <h3 className="text-base font-bold text-white mb-2">Sift AI Classifier</h3>
+                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
+                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">sift-triage.log</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">TRIAGE ACTIVE</span>
                   </div>
 
-                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
-                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
-                      <span>INCOMING EMAIL</span>
-                      <span className="text-yellow-500">Triage Pending</span>
+                  <div className="space-y-4 my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden">
+                    <div className="flex items-center justify-between text-[10px] border-b border-white/[0.04] pb-3 text-neutral-500">
+                      <span>INCOMING INBOX STREAM</span>
+                      <span>3 MATCHES FOUND</span>
                     </div>
-                    <p className="text-white font-semibold">From: support@capital-vcs.com</p>
-                    <p className="text-neutral-400">"Hey Austin, reviewing your pitch deck drafts. Can we align on a slot tomorrow at 10 AM EST?"</p>
-                    <div className="flex gap-2 pt-2">
-                      <span className="px-2 py-0.5 rounded bg-blue-950/40 text-blue-400 border border-blue-900/60 uppercase text-[8px] font-bold">Pitch Desk</span>
-                      <span className="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-900/60 uppercase text-[8px] font-bold">Priority T1</span>
+                    
+                    {/* Item 1 */}
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-white/[0.02]">
+                      <div className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-white font-medium">review-capital-rounds.eml</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-mono">PRIORITY T1</span>
+                    </div>
+
+                    {/* Item 2 */}
+                    <div className="flex items-center justify-between text-xs py-1 border-b border-white/[0.02]">
+                      <div className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                        <span className="text-white font-medium">deck-application-feedback.eml</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-blue-950/20 text-blue-400 border border-blue-900/40 text-[8px] font-mono">VENTURE ROUND</span>
+                    </div>
+
+                    {/* Item 3 */}
+                    <div className="flex items-center justify-between text-xs py-1">
+                      <div className="flex items-center gap-3">
+                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-650" />
+                        <span className="text-neutral-400">marketing-promotions-digest.eml</span>
+                      </div>
+                      <span className="px-2 py-0.5 rounded bg-neutral-900/50 text-neutral-500 border border-white/[0.04] text-[8px] font-mono">MUTED</span>
                     </div>
                   </div>
 
-                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // CLASSIFICATION RECORD LOGGED</span>
+                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
+                    <span>INBOX STREAM ACTIVE</span>
+                    <span>SECURE IN-MEMORY SWEEP</span>
+                  </div>
                 </motion.div>
               )}
 
@@ -369,22 +459,35 @@ export function LinearLanding() {
                   transition={{ duration: 0.4 }}
                   className="flex-1 flex flex-col justify-between font-mono h-full"
                 >
-                  <div>
-                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">VOICE PROFILER SYSTEM</span>
-                    <h3 className="text-base font-bold text-white mb-2">Stylistic Response Signatures</h3>
-                  </div>
-
-                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
-                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
-                      <span>OUTBOX DRAFT ENGINE</span>
-                      <span className="text-emerald-500">Draft Compiled</span>
+                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
+                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">voice-profiler.js</span>
                     </div>
-                    <p className="text-white font-semibold">Subject: Re: review capital slot</p>
-                    <p className="text-neutral-300 italic">"Hey Sarah, tomorrow at 10 AM works great. Austin is scheduling the Google Meet link shortly. Let's sync then. Best, Austin."</p>
-                    <span className="text-[9px] text-[#8a8f98]">Tone Signature Match: 99.4% (Direct, Minimalist)</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">99.4% SIGNATURE MATCH</span>
                   </div>
 
-                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // RESPONSE DRAFT PUSHED TO OUTBOX</span>
+                  <div className="my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden space-y-4">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-white/[0.04] pb-2">
+                      <span>STYLISTIC CONTEXT SIGNATURE</span>
+                      <span className="text-emerald-400">Direct / Minimalist</span>
+                    </div>
+                    <div className="text-xs leading-relaxed space-y-2 text-neutral-400">
+                      <p className="text-neutral-300 font-sans italic">"Hey Sarah, tomorrow at 10 AM works great. Austin is scheduling the Google Meet link shortly. Let's sync then."</p>
+                      <div className="flex items-center gap-4 text-[10px] pt-2 border-t border-white/[0.02]">
+                        <span className="text-white">Sentences: 3</span>
+                        <span className="text-white">Pronouns: Minimal</span>
+                        <span className="text-white">Valediction: Best, Austin</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
+                    <span>DRAFT GENERATED SUCCESFULLY</span>
+                    <span>SYNCED TO OUTBOX</span>
+                  </div>
                 </motion.div>
               )}
 
@@ -397,24 +500,37 @@ export function LinearLanding() {
                   transition={{ duration: 0.4 }}
                   className="flex-1 flex flex-col justify-between font-mono h-full"
                 >
-                  <div>
-                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">CALENDAR ADAPTER ENGINE</span>
-                    <h3 className="text-base font-bold text-white mb-2">Autonomous Meeting Booking</h3>
+                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
+                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">calendar-adapter.py</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-blue-950/20 text-blue-400 border border-blue-900/60 text-[9px] font-bold">BOOKING CONFIRMED</span>
                   </div>
 
-                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
-                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
-                      <span>SCHEDULER AGENT LOOP</span>
-                      <span className="text-blue-400">Confirmed Booking</span>
+                  <div className="my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden space-y-4">
+                    <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-white/[0.04] pb-2">
+                      <span>RESOLVING TIMEZONE CONFLICTS</span>
+                      <span className="text-blue-400">America/New_York</span>
                     </div>
-                    <div className="space-y-1.5">
-                      <p className="text-white font-semibold">Event: Capital VCS / Mailient Pitch Sync</p>
-                      <p className="text-neutral-400">Date: Tomorrow, 10:00 AM - 10:30 AM EST</p>
-                      <p className="text-neutral-500">Platform: Google Meet (Link generated in invite)</p>
+                    <div className="space-y-2 text-xs">
+                      <div className="flex items-center justify-between">
+                        <span className="text-neutral-400 font-medium">Event: Venture round alignment sync</span>
+                        <span className="text-neutral-500 font-mono">30 Min</span>
+                      </div>
+                      <div className="flex items-center justify-between text-neutral-400">
+                        <span>Time: May 22 14:00 EST (Tomorrow)</span>
+                        <span className="text-emerald-400">CONFLICT FREE</span>
+                      </div>
                     </div>
                   </div>
 
-                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // CALENDAR LOG CONFIRMED</span>
+                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
+                    <span>GOOGLE MEET LINK GENERATED</span>
+                    <span>OUTBOX DEPLOY CONFIRMED</span>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -427,7 +543,6 @@ export function LinearLanding() {
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
         
-        <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">INTEGRATIONS RADAR</span>
         <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl mb-24">
           Integrated directly with <br />your favourite platforms.
         </h2>

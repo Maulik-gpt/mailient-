@@ -8,6 +8,7 @@ import { ChevronDown, Mail, Cpu, Send, Layers } from "lucide-react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { LiquidButton } from "@/components/ui/liquid-glass-button";
+import { ArcusLogo } from "@/components/ui/arcus-logo";
 
 interface NavbarProps {
   theme?: "light" | "dark";
@@ -200,9 +201,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                             </div>
                           </Link>
                           <Link href="/product/arcus" className="group flex items-start gap-2.5">
-                            <div className="w-4 h-4 rounded bg-white text-black flex items-center justify-center text-[9px] font-bold mt-0.5">
-                              A
-                            </div>
+                            <ArcusLogo size={18} className="rounded-md border-0 bg-transparent shrink-0 mt-0.5" />
                             <div>
                               <span className="text-[12px] font-semibold text-neutral-300 group-hover:text-white transition-colors block">
                                 Arcus Flagship
