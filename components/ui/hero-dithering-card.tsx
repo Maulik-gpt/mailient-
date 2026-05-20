@@ -48,13 +48,15 @@ export function CTASection() {
             {/* Buttons row matching the screenshot */}
             <div className="flex flex-wrap items-center justify-center gap-4">
               {/* Left Button: Obsidian Pill */}
-              <button 
-                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              <a 
+                href="https://tally.so/r/b5KpB6"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group px-8 py-3.5 rounded-full bg-[#121316] border border-white/[0.08] hover:border-white/20 text-white font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] flex items-center gap-2 cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.02)]"
               >
-                Get Started Now!
+                Join waitlist
                 <ArrowRight className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-1" />
-              </button>
+              </a>
 
               {/* Right Button: Transparent/Black Pill */}
               <a 

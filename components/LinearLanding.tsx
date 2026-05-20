@@ -320,13 +320,15 @@ export function LinearLanding() {
           {/* Premium CTAs */}
           <BlurFade delay={0.3} duration={0.8} inView>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-              <button
-                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              <a
+                href="https://tally.so/r/b5KpB6"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
               >
-                Connect Gmail
+                Join waitlist
                 <ArrowRight className="w-3.5 h-3.5" />
-              </button>
+              </a>
 
               <a
                 href="#sample-brief"
