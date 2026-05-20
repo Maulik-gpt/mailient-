@@ -116,25 +116,9 @@ export function LinearLanding() {
           0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); }
           50% { transform: translateY(-12px) scale(1.03) rotate(3deg); }
         }
-        @keyframes radar-orbit-1 {
-          from { transform: rotate(0deg) translateX(110px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(110px) rotate(-360deg); }
-        }
-        @keyframes radar-orbit-2-a {
-          from { transform: rotate(120deg) translateX(170px) rotate(-120deg); }
-          to { transform: rotate(480deg) translateX(170px) rotate(-480deg); }
-        }
-        @keyframes radar-orbit-2-b {
-          from { transform: rotate(240deg) translateX(170px) rotate(-240deg); }
-          to { transform: rotate(600deg) translateX(170px) rotate(-600deg); }
-        }
-        @keyframes radar-orbit-3-a {
-          from { transform: rotate(0deg) translateX(230px) rotate(0deg); }
-          to { transform: rotate(360deg) translateX(230px) rotate(-360deg); }
-        }
-        @keyframes radar-orbit-3-b {
-          from { transform: rotate(180deg) translateX(230px) rotate(-180deg); }
-          to { transform: rotate(540deg) translateX(230px) rotate(-540deg); }
+        @keyframes laser-pulse {
+          from { stroke-dashoffset: 170; }
+          to { stroke-dashoffset: 0; }
         }
       `}} />
 
@@ -443,64 +427,170 @@ export function LinearLanding() {
           Integrated directly with <br />your favourite platforms.
         </h2>
 
-        {/* Orbit Radar Display Box */}
-        <div className="relative w-[500px] h-[500px] flex items-center justify-center select-none pointer-events-none mb-12 scale-90 md:scale-100">
+        {/* Structured Network Map Display Box */}
+        <div className="relative w-[600px] h-[400px] flex items-center justify-center mb-12 scale-90 md:scale-100 select-none">
           
-          {/* Inner Ambient Glow Radar Ring */}
-          <div className="absolute w-[200px] h-[200px] rounded-full border border-white/[0.02] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_60%)]" style={{ animation: "radar-pulse 4s infinite ease-in-out" }} />
+          {/* Animated SVG Connections Overlay */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
+            {/* Structural connection lines with subtle premium opacity */}
+            <path d="M 90,80 Q 195,140 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
+            <path d="M 60,200 L 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
+            <path d="M 90,320 Q 195,260 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
+            <path d="M 510,80 Q 405,140 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
+            <path d="M 540,200 L 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
+            <path d="M 510,320 Q 405,260 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
 
-          {/* Concentric Orbit Circles */}
-          <div className="absolute w-[220px] h-[220px] rounded-full border border-white/[0.03]" />
-          <div className="absolute w-[340px] h-[340px] rounded-full border border-white/[0.02] border-dashed" />
-          <div className="absolute w-[460px] h-[460px] rounded-full border border-white/[0.01]" />
+            {/* Glowing animated pulsing data laser beams */}
+            <path 
+              d="M 90,80 Q 195,140 300,200" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 4s linear infinite" }}
+            />
+            <path 
+              d="M 300,200 L 60,200" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 5.2s linear infinite reverse" }}
+            />
+            <path 
+              d="M 90,320 Q 195,260 300,200" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 6.2s linear infinite" }}
+            />
+            <path 
+              d="M 300,200 Q 405,140 510,80" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 4.6s linear infinite" }}
+            />
+            <path 
+              d="M 540,200 L 300,200" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 5.7s linear infinite" }}
+            />
+            <path 
+              d="M 300,200 Q 405,260 510,320" 
+              stroke="url(#laser-gradient)" 
+              strokeWidth="2" 
+              fill="none" 
+              strokeDasharray="25, 140" 
+              style={{ animation: "laser-pulse 4.9s linear infinite reverse" }}
+            />
 
-          {/* Central Black & White Mailient Grayscale Logo */}
-          <div className="absolute w-14 h-14 rounded-full overflow-hidden z-30 shadow-[0_0_40px_rgba(255,255,255,0.25)] border border-neutral-300 bg-white">
+            <defs>
+              <linearGradient id="laser-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+                <stop offset="50%" stopColor="#818cf8" stopOpacity="1" />
+                <stop offset="100%" stopColor="#c084fc" stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+
+          {/* Central Premium Mailient Hub Node */}
+          <div className="absolute left-[300px] top-[200px] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full overflow-hidden z-30 shadow-[0_0_50px_rgba(255,255,255,0.12)] border border-white/[0.1] bg-neutral-950 flex items-center justify-center group pointer-events-auto cursor-pointer hover:scale-105 transition-transform duration-300">
             <img 
               src="/mailient-logo-premium.png" 
-              alt="Mailient Logo" 
-              className="w-full h-full object-cover"
+              alt="Mailient Hub" 
+              className="w-10 h-10 object-cover"
             />
+            <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 px-2.5 py-1 rounded bg-neutral-900 border border-white/10 text-white font-mono text-[9px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none shadow-xl">
+              Mailient Core Hub
+            </div>
           </div>
 
-          {/* Orbit 1 App: Google Calendar */}
-          <div 
-            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
-            style={{ animation: "radar-orbit-1 12s linear infinite" }}
-          >
-            📅
+          {/* Node 1: Gmail */}
+          <div className="absolute left-[90px] top-[80px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                <polyline points="22,6 12,13 2,6"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                Gmail (Active Sync)
+              </div>
+            </div>
           </div>
 
-          {/* Orbit 2 App A: Notion */}
-          <div 
-            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
-            style={{ animation: "radar-orbit-2-a 18s linear infinite" }}
-          >
-            📓
+          {/* Node 2: Slack */}
+          <div className="absolute left-[60px] top-[200px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                Slack Notifications
+              </div>
+            </div>
           </div>
 
-          {/* Orbit 2 App B: Google Meet */}
-          <div 
-            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
-            style={{ animation: "radar-orbit-2-b 18s linear infinite" }}
-          >
-            🎥
+          {/* Node 3: Notion */}
+          <div className="absolute left-[90px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M4.2 3h15.6c.7 0 1.2.5 1.2 1.2v15.6c0 .7-.5 1.2-1.2 1.2H4.2C3.5 21 3 20.5 3 19.8V4.2C3 3.5 3.5 3 4.2 3zm2.3 3.2v11.6h1.9V8.6l5.7 8.2v-10.8h-1.9v8.2L6.5 6.2z"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                Notion Workspace Sync
+              </div>
+            </div>
           </div>
 
-          {/* Orbit 3 App A: Cal.com */}
-          <div 
-            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
-            style={{ animation: "radar-orbit-3-a 26s linear infinite" }}
-          >
-            🗓️
+          {/* Node 4: Google Calendar */}
+          <div className="absolute right-[90px] top-[80px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                Google Calendar Sweeper
+              </div>
+            </div>
           </div>
 
-          {/* Orbit 3 App B: Slack */}
-          <div 
-            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
-            style={{ animation: "radar-orbit-3-b 26s linear infinite" }}
-          >
-            💬
+          {/* Node 5: Cal.com */}
+          <div className="absolute right-[60px] top-[200px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+                <path d="M21 12H3M12 3v18"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                Cal.com Booking Engine
+              </div>
+            </div>
+          </div>
+
+          {/* Node 6: HubSpot */}
+          <div className="absolute right-[90px] top-[320px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
+              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="7" r="3"/>
+                <circle cx="6" cy="15" r="3"/>
+                <circle cx="18" cy="15" r="3"/>
+                <line x1="9" y1="13" x2="15" y2="13"/>
+                <line x1="7.5" y1="12" x2="10.5" y2="9"/>
+                <line x1="16.5" y1="12" x2="13.5" y2="9"/>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+                HubSpot CRM Auto-Log
+              </div>
+            </div>
           </div>
 
         </div>
