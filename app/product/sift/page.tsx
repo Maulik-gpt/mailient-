@@ -32,7 +32,7 @@ export default function SiftProductPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
       
       {/* 0. Custom Radar & Orbital Keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `

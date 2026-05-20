@@ -3606,4 +3606,28 @@ html {
   }
 }
 
+/* Theme definition for Strichpunkt Sans */
+.strichpunkt-theme,
+.strichpunkt-theme .font-inter,
+.strichpunkt-theme .font-sans,
+.strichpunkt-theme h1,
+.strichpunkt-theme h2,
+.strichpunkt-theme h3,
+.strichpunkt-theme h4,
+.strichpunkt-theme h5,
+.strichpunkt-theme h6,
+.strichpunkt-theme p,
+.strichpunkt-theme span,
+.strichpunkt-theme a,
+.strichpunkt-theme button,
+.strichpunkt-theme input,
+.strichpunkt-theme textarea,
+.strichpunkt-theme select {
+  font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
+.strichpunkt-theme :not(.font-mono):not([class*="font-mono"]):not(code):not(pre) {
+  font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+}
+
 
