@@ -15,6 +15,11 @@ import {
   Minus,
   Plus,
   Play,
+  Pause,
+  VolumeX,
+  Volume2,
+  Maximize,
+  MoreVertical,
   Lock,
   Globe,
   Server,
@@ -128,6 +133,60 @@ export function LinearLanding() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+
+  // Custom video controller state
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isMuted, setIsMuted] = useState(true);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (isPlaying) {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      videoRef.current.play().then(() => {
+        setIsPlaying(true);
+      }).catch(err => console.log("Play failed:", err));
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    const newMuted = !isMuted;
+    videoRef.current.muted = newMuted;
+    setIsMuted(newMuted);
+  };
+
+  const toggleFullscreen = () => {
+    if (!videoRef.current) return;
+    if (!document.fullscreenElement) {
+      videoRef.current.requestFullscreen().catch((err) => {
+        console.error("Error attempting to enable full-screen mode:", err);
+      });
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+  const formatTime = (time: number) => {
+    if (isNaN(time)) return "0:00";
+    const minutes = Math.floor(time / 60);
+    const seconds = Math.floor(time % 60);
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  };
+
+  const getSubtitles = (time: number) => {
+    if (time >= 0 && time < 5) return "Up until now, handling email was a manual chore.";
+    if (time >= 5 && time < 10) return "Mailient shifts your inbox operations to autopilot.";
+    if (time >= 10 && time < 15) return "Arcus engine reads threads and writes custom drafts in your voice.";
+    if (time >= 15 && time < 20) return "All resolved silently overnight, waiting for your approval.";
+    if (time >= 20 && time < 25) return "Zero-Knowledge client-side encryption keeps everything secure.";
+    if (time >= 25 && time < 35) return "Connect Gmail and experience the future of productivity today.";
+    return "";
+  };
 
   // Mouse position tracker for cursor-reactive lighting on cards
   const mouseX = useMotionValue(0);
@@ -243,15 +302,91 @@ export function LinearLanding() {
           <BlurFade delay={0.4} duration={1.0} inView>
             <div className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group">
               <video 
+                ref={videoRef}
                 src="/cap.mp4" 
                 autoPlay 
                 loop 
-                muted 
+                muted={isMuted} 
                 playsInline 
+                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 className="w-full h-full object-cover relative z-10" 
               />
               {/* Soft atmospheric overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none z-20" />
+
+              {/* Subtitles Overlay */}
+              {getSubtitles(currentTime) && (
+                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/75 border border-white/[0.08] px-4 py-2 rounded-xl text-xs md:text-sm text-white tracking-wide z-30 pointer-events-none select-none backdrop-blur-md max-w-lg font-sans shadow-lg">
+                  {getSubtitles(currentTime)}
+                </div>
+              )}
+
+              {/* Custom Video Controls Overlay */}
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 select-none">
+                
+                {/* Buttons Row */}
+                <div className="flex items-center justify-between px-2 pb-3 text-white/90">
+                  {/* Left: Play/Pause & Time */}
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={togglePlay}
+                      className="hover:text-white transition-colors focus:outline-none"
+                    >
+                      {isPlaying ? (
+                        <Pause className="w-4 h-4 fill-white stroke-none" />
+                      ) : (
+                        <Play className="w-4 h-4 fill-white stroke-none" />
+                      )}
+                    </button>
+                    <span className="text-[11px] font-mono tracking-wider opacity-85">
+                      {formatTime(currentTime)} / {formatTime(duration)}
+                    </span>
+                  </div>
+
+                  {/* Right: Mute, Fullscreen, More */}
+                  <div className="flex items-center gap-4">
+                    <button 
+                      onClick={toggleMute}
+                      className="hover:text-white transition-colors focus:outline-none"
+                    >
+                      {isMuted ? (
+                        <VolumeX className="w-4.5 h-4.5" />
+                      ) : (
+                        <Volume2 className="w-4.5 h-4.5" />
+                      )}
+                    </button>
+                    <button 
+                      onClick={toggleFullscreen}
+                      className="hover:text-white transition-colors focus:outline-none"
+                    >
+                      <Maximize className="w-4 h-4" />
+                    </button>
+                    <button className="hover:text-white transition-colors focus:outline-none">
+                      <MoreVertical className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Custom Progress Bar / Scrubber at the very bottom */}
+                <div 
+                  onClick={(e) => {
+                    if (!videoRef.current || !duration) return;
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const clickX = e.clientX - rect.left;
+                    const percentage = clickX / rect.width;
+                    const newTime = percentage * duration;
+                    videoRef.current.currentTime = newTime;
+                    setCurrentTime(newTime);
+                  }}
+                  className="w-full h-1 bg-white/20 hover:h-1.5 transition-all duration-200 cursor-pointer relative z-40"
+                >
+                  <div 
+                    className="h-full bg-white relative transition-all duration-100" 
+                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+                  />
+                </div>
+              </div>
             </div>
           </BlurFade>
 
