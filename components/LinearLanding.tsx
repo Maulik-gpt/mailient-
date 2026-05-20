@@ -300,7 +300,7 @@ export function LinearLanding() {
           <BlurFade delay={0.2} duration={0.8} inView>
             <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-3xl mt-8 font-light font-sans min-h-[4rem]">
               <WordBlurStream
-                text="Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously."
+                text="Manages your inbox while you sleep."
                 msPerWord={80}
                 startupMs={400}
                 holdMs={4500}
