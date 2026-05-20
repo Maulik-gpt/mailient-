@@ -40,6 +40,7 @@ import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Features8 } from "@/components/ui/features-8";
 import { CTASection } from "@/components/ui/hero-dithering-card";
+import { WordBlurStream } from "@/src/WordBlurStream";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -207,8 +208,13 @@ export function LinearLanding() {
             Hours of email, <br />handled overnight.
           </h1>
 
-          <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
-            Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously.
+          <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans min-h-[3rem]">
+            <WordBlurStream
+              text="Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously."
+              msPerWord={80}
+              startupMs={400}
+              holdMs={4500}
+            />
           </p>
 
           {/* Premium CTAs */}
@@ -845,8 +851,13 @@ fadeColor="#000000"
           <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
             Chaos vs Overnight Clarity.
           </h2>
-          <p className="text-xs text-[#8a8f98] leading-relaxed font-light max-w-md mt-4 font-sans">
-            Waking up to email is an operational bottleneck. Arcus shifts inbox tasks to overnight cycles, returning control back to founders.
+          <p className="text-xs text-[#8a8f98] leading-relaxed font-light max-w-md mt-4 font-sans min-h-[2.5rem]">
+            <WordBlurStream
+              text="Waking up to email is an operational bottleneck. Arcus shifts inbox tasks to overnight cycles, returning control back to founders."
+              msPerWord={80}
+              startupMs={300}
+              holdMs={5000}
+            />
           </p>
         </div>
 
