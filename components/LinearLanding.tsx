@@ -48,6 +48,7 @@ import { CTASection } from "@/components/ui/hero-dithering-card";
 import { WordBlurStream } from "@/src/WordBlurStream";
 import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
+import { SpecialText } from "@/components/ui/special-text";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -133,6 +134,28 @@ export function LinearLanding() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+
+  const DESCRIPTIONS = [
+    "Replies sent. Meetings booked. You were asleep.",
+    "Your inbox doesn't wait. Neither does Arcus.",
+    "Inbox zero. Every morning. No effort.",
+    "The email app that works when you don't.",
+    "Drafts written. Calendar full. You did nothing.",
+    "Your voice. Your replies. Arcus's work.",
+    "Hired an AI. Fired your inbox anxiety.",
+    "Open Gmail. Everything's already done.",
+    "The founder's inbox, on autopilot.",
+    "Less email. More everything else."
+  ];
+
+  const [descIndex, setDescIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setDescIndex((prev) => (prev + 1) % DESCRIPTIONS.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Custom video controller state
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -304,13 +327,10 @@ export function LinearLanding() {
           </BlurFade>
 
           <BlurFade delay={0.2} duration={0.8} inView>
-            <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-3xl mt-8 font-light font-sans min-h-[4rem]">
-              <WordBlurStream
-                text="Manages your inbox while you sleep."
-                msPerWord={80}
-                startupMs={400}
-                holdMs={4500}
-              />
+            <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-4xl mt-8 font-light min-h-[4rem] flex items-center justify-center">
+              <SpecialText speed={12} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
+                {DESCRIPTIONS[descIndex]}
+              </SpecialText>
             </p>
           </BlurFade>
 

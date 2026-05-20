@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useInView } from "framer-motion";
+import { useInView } from "motion/react";
 
 interface SpecialTextProps {
   children: string;
@@ -172,7 +172,7 @@ export function SpecialText({
   return (
     <span
       ref={containerRef}
-      className={`inline-flex font-mono font-medium ${className}`}
+      className={`h-4.5 leading-5 inline-flex font-mono font-medium ${className}`}
     >
       {displayText}
     </span>
