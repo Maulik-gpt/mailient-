@@ -244,21 +244,8 @@ export function LinearLanding() {
 
       {/* 1. HERO SECTION */}
       <section className="relative w-full pt-40 pb-0 md:pt-48 flex flex-col items-center text-center z-10 bg-gradient-to-b from-[#000000] via-[#09090b] to-[#16161a]">
-        
-        {/* WebGL Backing Shader */}
-        <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.25] blur-[50px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
-            <Dithering
-              colorBack="#000000" 
-              colorFront="#ffffff"
-              shape="warp"
-              type="4x4"
-              speed={0.15}
-              className="size-full"
-              minPixelRatio={1}
-            />
-          </div>
-        </Suspense>
+        {/* White-grey glow from the bottom of the hero section spreading up */}
+        <div className="absolute inset-x-0 bottom-0 h-[250px] bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.07),transparent_70%)] pointer-events-none z-0" />
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10 mx-auto px-6">
           
