@@ -153,10 +153,10 @@ export function LinearLanding() {
         
         {/* WebGL Backing Shader */}
         <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.12] blur-[90px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] blur-[90px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
             <Dithering
               colorBack="#000000" 
-              colorFront="#4b5563"
+              colorFront="#ffffff"
               shape="warp"
               type="4x4"
               speed={0.15}
