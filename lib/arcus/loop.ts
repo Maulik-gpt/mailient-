@@ -536,10 +536,34 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
             if (totalToolCalls >= toolCallLimit || Date.now() >= deadlineAt) {
               emit('thinking', { status: 'Preparing final response…' });
+              const canvasSchema = TOOL_SCHEMAS.find(s => s.name === 'open_canvas');
+              const finalTools = canvasSchema ? [canvasSchema] : [];
               const finalResponse = await callLLM(
-                [...messages, { role: 'user', content: 'Please provide your final response now based on everything you have found.' }],
-                [],
+                [
+                  ...messages,
+                  {
+                    role: 'user',
+                    content:
+                      'All data has been gathered. Now write your final response. ' +
+                      'If this task requires a report, summary, or document (anything longer than 3 paragraphs), ' +
+                      'call open_canvas with the full content NOW before writing your chat response. ' +
+                      'CRITICAL: Do NOT say "the report is in the Canvas panel" unless you actually call open_canvas in this response.',
+                  },
+                ],
+                finalTools,
               );
+              // Handle canvas call in the final forced response
+              const finalToolCalls = getToolCalls(finalResponse.content);
+              const canvasCall = finalToolCalls.find(tc => tc.name === 'open_canvas');
+              if (canvasCall) {
+                try {
+                  const canvasResult = await executeTool('open_canvas', canvasCall.input, userId);
+                  if (canvasResult.canvasData) {
+                    canvasContent = canvasResult.canvasData;
+                    emit('canvas', canvasResult.canvasData);
+                  }
+                } catch { /* non-fatal */ }
+              }
               finalText = sanitizeModelText(getText(finalResponse.content));
               break;
             }
@@ -624,11 +648,6 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               finalText = 'I wasn\'t able to complete that this time. Tell me a bit more and I\'ll take another run at it.';
             }
           }
-        }
-
-        // ── Layer 2 end: append archive count ──────────────────────────────
-        if (archivedCount > 0) {
-          finalText = finalText.trimEnd() + `\n\nArchived ${archivedCount} newsletter${archivedCount !== 1 ? 's' : ''} and promotional email${archivedCount !== 1 ? 's' : ''}.`;
         }
 
         // ── Layer 3 end: emit partial failure as structured SSE event ──────

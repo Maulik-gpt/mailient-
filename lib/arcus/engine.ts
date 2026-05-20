@@ -234,7 +234,7 @@ export async function callLLM(
   };
   if (openAITools) {
     baseBody.tools = openAITools;
-    baseBody.tool_choice = options.forceToolCall ? 'required' : 'auto';
+    baseBody.tool_choice = 'auto';
   }
 
   const deadKeys = new Set<string>();
