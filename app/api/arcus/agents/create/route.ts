@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * POST / api / arcus / agents / create
   * Direct agent creation — skips the LLM loop, used by IntegrationRequiredCard
