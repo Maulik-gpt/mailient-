@@ -9,10 +9,10 @@ export const metadata = {
   metadataBase: new URL('https://mailient.xyz'),
   icons: {
     icon: [
-      { url: "/favicon.png?v=9", type: "image/png" },
+      { url: "/favicon.png?v=10", type: "image/png" },
     ],
-    shortcut: "/favicon.png?v=9",
-    apple: "/apple-touch-icon.png?v=9",
+    shortcut: "/favicon.png?v=10",
+    apple: "/apple-touch-icon.png?v=10",
   },
   openGraph: {
     title: "Mailient",

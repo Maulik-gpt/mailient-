@@ -62,11 +62,11 @@ def main():
             print(f"Backed up: {src_file} -> {backup_file}")
     
     # Run rounding process on one image to get the master rounded image
-    master_src = os.path.join(public_dir, "favicon.png")
+    master_src = os.path.join(backup_dir, "favicon.png")
     master_rounded_path = os.path.join(backup_dir, "master_rounded.png")
     
-    # Round with a premium 100px radius (approx 19.5% border-radius)
-    master_img = round_corners_antialiased(master_src, master_rounded_path, radius=100, size=(512, 512))
+    # Round with a premium 104px radius for 528x528 size (exact multiple of 48 for Google's favicon guidelines)
+    master_img = round_corners_antialiased(master_src, master_rounded_path, radius=104, size=(528, 528))
     
     # Copy the master rounded PNG to all the target png files
     print("\nApplying rounded corners to all PNG logo files...")
