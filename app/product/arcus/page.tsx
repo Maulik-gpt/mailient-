@@ -12,6 +12,7 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { BlurFade } from "@/components/ui/blur-fade";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -578,6 +579,8 @@ export default function ArcusProductPage() {
         </div>
       </footer>
 
+      {/* Premium Liquid Glass Floating Navigation Overlay */}
+      <FloatingNavbar />
     </div>
   );
 }

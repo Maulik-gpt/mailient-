@@ -36,6 +36,7 @@ import { cn } from "@/lib/utils";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
 import PricingSection3 from "@/components/ui/pricing-section-3";
 import { useRouter } from "next/navigation";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -1185,6 +1186,8 @@ export function LinearLanding() {
         </div>
       </footer>
 
+      {/* Premium Liquid Glass Floating Navigation Overlay */}
+      <FloatingNavbar />
     </div>
   );
 }
