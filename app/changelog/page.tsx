@@ -15,7 +15,7 @@ export default function ChangelogPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative">
+    <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative">
       {/* Top Navbar */}
       <Navbar theme="dark" />
 

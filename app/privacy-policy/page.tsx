@@ -305,7 +305,7 @@ export default function PrivacyPolicy() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] font-sans selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] font-sans strichpunkt-theme selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
       
       {/* Top Header with Theme Toggle */}
       <div className="fixed top-8 right-8 z-50">
