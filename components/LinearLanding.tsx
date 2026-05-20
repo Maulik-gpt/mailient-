@@ -38,6 +38,7 @@ import PricingSection3 from "@/components/ui/pricing-section-3";
 import { useRouter } from "next/navigation";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { Features8 } from "@/components/ui/features-8";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -1199,6 +1200,9 @@ fadeColor="#000000"
           }} 
         />
       </section>
+
+      {/* Core Capability Grid */}
+      <Features8 />
 
       {/* 9. FINAL CALL TO ACTION FOLD */}
       <section className="py-44 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-center space-y-8">
