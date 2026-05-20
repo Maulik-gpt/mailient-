@@ -4,6 +4,7 @@ import React from "react";
 import { motion } from "framer-motion";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
+import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
 interface Section {
   id: number;
@@ -360,6 +361,8 @@ export default function PrivacyPolicy() {
 
       <FloatingNavbar />
 
+      <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40 animate-fade-in" />
+      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40 animate-fade-in" />
     </div>
   );
 }

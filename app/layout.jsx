@@ -2,7 +2,6 @@ import Script from "next/script";
 import "./globals.css";
 import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
-import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
 export const metadata = {
   title: "Mailient",
@@ -95,10 +94,6 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-sans antialiased satoshi-app bg-[#000000] text-foreground" data-new-gr-c-s-check-loaded="14.1258.0" data-gr-ext-installed="">
         <Providers>
-          {/* Global Progressive Blur Overlays */}
-          <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
-          <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
-
           {children}
           <Analytics />
         </Providers>

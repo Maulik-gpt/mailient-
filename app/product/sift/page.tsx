@@ -9,6 +9,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
+import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -309,6 +310,10 @@ export default function SiftProductPage() {
           </div>
         </div>
       </footer>
+
+      {/* Premium Progressive Blurs for Top/Bottom edges */}
+      <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
 
       {/* Premium Liquid Glass Floating Navigation Overlay */}
       <FloatingNavbar />
