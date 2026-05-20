@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense, lazy } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue } from "framer-motion";
+import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useMotionTemplate } from "framer-motion";
 import {
   Zap,
   Bot,
@@ -40,10 +40,57 @@ const Dithering = lazy(() =>
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
 );
 
+function ActiveCounter({ target = 1420 }: { target?: number }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const [isInView, setIsInView] = useState(false);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsInView(true);
+        }
+      },
+      { threshold: 0.1 }
+    );
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isInView) return;
+    let start = 0;
+    const duration = 2000; // 2s
+    const increment = target / (duration / 16);
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= target) {
+        setCount(target);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(start));
+      }
+    }, 16);
+    return () => clearInterval(timer);
+  }, [target, isInView]);
+
+  return <span ref={ref}>{count.toLocaleString()}</span>;
+}
+
 export function LinearLanding() {
   const [activeStep, setActiveStep] = useState(0);
   
   // State for active interactive steps
+
+  // Mouse position tracker for cursor-reactive lighting on cards
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const { left, top } = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - left);
+    mouseY.set(e.clientY - top);
+  };
 
   // Simulated Webhook Stream (interactive state)
   const [webhookLogs, setWebhookLogs] = useState([
@@ -65,6 +112,34 @@ export function LinearLanding() {
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative selection:bg-white selection:text-black">
       
+      {/* 0. Premium Custom Design Keyframes & Volumetric Shading */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        @keyframes triage-pulse {
+          0% { stroke-dashoffset: 80; }
+          100% { stroke-dashoffset: 0; }
+        }
+        @keyframes orb-float {
+          0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); }
+          50% { transform: translateY(-12px) scale(1.03) rotate(3deg); }
+        }
+        @keyframes light-shimmer {
+          0% { background-position: -200% 0; }
+          100% { background-position: 200% 0; }
+        }
+      `}} />
+
+      {/* Volumetric Floating Glass AI Orb (Atmospheric Lighting & Fog) */}
+      <div 
+        className="absolute top-[380px] right-[12%] w-[130px] h-[130px] rounded-full bg-white/[0.01] border border-white/[0.08] shadow-[0_0_60px_rgba(255,255,255,0.03),inset_0_1px_2px_rgba(255,255,255,0.15)] flex items-center justify-center pointer-events-none overflow-hidden select-none z-10 hidden lg:flex" 
+        style={{ animation: "orb-float 7s ease-in-out infinite" }}
+      >
+        <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-blue-500/[0.04] via-neutral-950/80 to-white/[0.03] blur-[4px]" />
+        {/* Volumetric Neon Spotlight Glow inside Orb */}
+        <div className="absolute -bottom-8 w-24 h-12 bg-blue-500/10 blur-[18px] rounded-full" />
+        {/* Shifting glass reflection arc */}
+        <div className="absolute top-1.5 left-3 right-3 h-7 bg-gradient-to-b from-white/[0.06] to-transparent rounded-full opacity-70" />
+      </div>
+
       {/* 1. Sticky, Glassy Floating Navigation */}
       <Navbar theme="dark" />
 
@@ -105,26 +180,33 @@ export function LinearLanding() {
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
               </span>
               <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-                Mailient Platform v2.0
+                ARCUS — AI AGENT FOR YOUR INBOX
               </span>
             </div>
           </BlurFade>
 
-          {/* Tagline / Headline (Replicating Linear Font Size and Muted Gray Accent layout) */}
+          {/* Tagline / Headline */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
             <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-5xl">
-              A new species of email agent. <span className="text-[#8a8f98]">Purpose-built for modern teams with autonomous workflows at its core, Mailient sets a new standard for inbox productivity.</span>
+              The inbox agent that <br />works while you don't.
             </h1>
           </BlurFade>
 
-          {/* Capsule CTAs matching Screenshot 1 */}
+          {/* Subtitle */}
+          <BlurFade delay={0.22} duration={0.8} yOffset={15} inView>
+            <p className="text-base md:text-[17px] text-[#8a8f98] leading-relaxed max-w-3xl mt-6 font-light font-sans">
+              Arcus reads every email, drafts replies in your exact voice, books meetings, and runs silently in the background — delivering results before you ask for them.
+            </p>
+          </BlurFade>
+
+          {/* Capsule CTAs */}
           <BlurFade delay={0.3} duration={0.8} yOffset={10} inView>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
               <button
                 onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
                 className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-1.5"
               >
-                Connect Gmail
+                Try Arcus free
                 <ArrowRight className="w-3.5 h-3.5 text-black" />
               </button>
 
@@ -137,6 +219,16 @@ export function LinearLanding() {
               </a>
             </div>
           </BlurFade>
+
+          {/* What Arcus Is - Single Paragraph Copywriting */}
+          <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
+            <div className="max-w-2xl mx-auto mt-16 p-6 rounded-[20px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-md text-left shadow-2xl relative">
+              <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.01),transparent_70%)] rounded-[20px]" />
+              <p className="text-[12px] text-neutral-400 font-light leading-relaxed font-sans relative z-10">
+                <span className="text-white font-semibold">Arcus is not an email assistant.</span> It does not suggest. It does not summarise. <span className="text-white">It acts.</span> When an email arrives, Arcus reads the full thread, understands the context, checks your calendar, drafts a reply that sounds exactly like you, and — if you want — sends it. When you are not around, it runs on schedule, sweeps your inbox, handles routine workflows, and drops a clean briefing in your Gmail or Slack before you open your laptop. You do not configure it. You do not prompt it. You describe what you want once, in plain English, and Arcus does it.
+              </p>
+            </div>
+          </BlurFade>
         </div>
 
         {/* 3. ISOMETRIC OUTLINE WIREFRAME COLUMNS (Exactly Replicating Screenshot 1 Grid) */}
@@ -144,14 +236,24 @@ export function LinearLanding() {
           
           {/* Column 1: Fig 0.2 */}
           <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
-            <div className="flex flex-col">
+            <div 
+              className="flex flex-col group relative"
+              onMouseMove={handleMouseMove}
+            >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
                 FIG 0.2
               </span>
               {/* Stacking rounded layers SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden group">
+              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
+                {/* Cursor-reactive spotlight */}
+                <motion.div
+                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
+                  }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105">
+                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
                   <path d="M 100,50 L 160,80 L 100,110 L 40,80 Z" className="stroke-neutral-800" />
                   <path d="M 100,70 L 160,100 L 100,130 L 40,100 Z" className="stroke-neutral-700" />
                   <path d="M 100,90 L 160,120 L 100,150 L 40,120 Z" className="stroke-neutral-600" />
@@ -171,14 +273,24 @@ export function LinearLanding() {
 
           {/* Column 2: Fig 0.3 */}
           <BlurFade delay={0.48} duration={0.8} yOffset={20} inView>
-            <div className="flex flex-col">
+            <div 
+              className="flex flex-col group relative"
+              onMouseMove={handleMouseMove}
+            >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
                 FIG 0.3
               </span>
               {/* Isometric blocks SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden group">
+              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
+                {/* Cursor-reactive spotlight */}
+                <motion.div
+                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
+                  }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105">
+                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
                   <path d="M 100,75 L 130,90 L 100,105 L 70,90 Z" />
                   <path d="M 70,90 L 70,120 L 100,135 L 100,105" />
                   <path d="M 130,90 L 130,120 L 100,135" />
@@ -205,14 +317,24 @@ export function LinearLanding() {
 
           {/* Column 3: Fig 0.4 */}
           <BlurFade delay={0.56} duration={0.8} yOffset={20} inView>
-            <div className="flex flex-col">
+            <div 
+              className="flex flex-col group relative"
+              onMouseMove={handleMouseMove}
+            >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
                 FIG 0.4
               </span>
               {/* Ascending staircase bar chart SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden group">
+              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
+                {/* Cursor-reactive spotlight */}
+                <motion.div
+                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                  style={{
+                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
+                  }}
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105">
+                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
                   <path d="M 50,130 L 50,110 L 60,115 L 60,135 Z" />
                   <path d="M 70,135 L 70,100 L 80,105 L 80,140 Z" />
                   <path d="M 90,140 L 90,85 L 100,90 L 100,145 Z" />
@@ -340,6 +462,15 @@ export function LinearLanding() {
                 </div>
               </div>
 
+            </div>
+
+            {/* Premium Animated Triage Pipeline Path (Workflow lines) */}
+            <div className="absolute left-[38%] right-[55%] top-[55%] -translate-y-1/2 h-12 pointer-events-none hidden lg:block z-20 overflow-visible">
+              <svg className="w-full h-full stroke-white/5 fill-none" viewBox="0 0 100 40">
+                <path d="M 0,20 Q 50,-5 100,20" className="stroke-white/[0.08] stroke-[1]" />
+                {/* Running glass laser pulse representing intelligence speed */}
+                <path d="M 0,20 Q 50,-5 100,20" className="stroke-white/[0.4] stroke-[1.5]" strokeDasharray="12 28" strokeDashoffset="80" style={{ animation: "triage-pulse 2.2s linear infinite" }} />
+              </svg>
             </div>
 
             {/* Right Pane: Kanban Task Dashboard Board */}
@@ -593,7 +724,41 @@ export function LinearLanding() {
           </h2>
         </BlurFade>
 
-        <BlurFade delay={0.2} duration={0.8} yOffset={10} inView>
+        {/* Dynamic Cognitive Leverage Metrics */}
+        <BlurFade delay={0.18} duration={0.8} yOffset={10} inView>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 w-full max-w-4xl mx-auto py-12 border-y border-white/[0.05] my-10 text-left">
+            <div className="flex flex-col space-y-1">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Triage Capacity</span>
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+                <ActiveCounter target={100} />k+
+              </span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Processed daily</span>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Response Speed</span>
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+                <ActiveCounter target={24} />x
+              </span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Faster triage cycles</span>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Leverage Factor</span>
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+                <ActiveCounter target={98} />%
+              </span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Noise isolation rate</span>
+            </div>
+            <div className="flex flex-col space-y-1">
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Founder Advantage</span>
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+                <ActiveCounter target={1240} />h
+              </span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Focus hours saved</span>
+            </div>
+          </div>
+        </BlurFade>
+
+        <BlurFade delay={0.25} duration={0.8} yOffset={10} inView>
           <div className="flex items-center justify-center gap-4 mt-4">
             <button 
               onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
