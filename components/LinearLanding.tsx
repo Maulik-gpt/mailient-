@@ -467,7 +467,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Filter noise. Highlight priorities.
+                Filter out noise.
               </h3>
               {activeStep === 0 && (
                 <motion.div 
@@ -507,7 +507,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Replies written in your voice.
+                Draft in your voice.
               </h3>
               {activeStep === 1 && (
                 <motion.div 
@@ -547,7 +547,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Book meetings on autopilot.
+                Book on autopilot.
               </h3>
               {activeStep === 2 && (
                 <motion.div 
