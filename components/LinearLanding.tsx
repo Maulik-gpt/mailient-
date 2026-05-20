@@ -34,6 +34,8 @@ import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
+import PricingSection3 from "@/components/ui/pricing-section-3";
+import { useRouter } from "next/navigation";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -78,6 +80,7 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
 }
 
 export function LinearLanding() {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
@@ -1069,6 +1072,15 @@ export function LinearLanding() {
           </div>
 
         </div>
+      </section>
+
+      {/* 8.5 MODULAR PRICING SECTION */}
+      <section className="w-full border-t border-white/[0.06] z-10 relative">
+        <PricingSection3 
+          handleSelectPlan={(planId) => {
+            router.push("/pricing");
+          }} 
+        />
       </section>
 
       {/* 9. FINAL CALL TO ACTION FOLD */}

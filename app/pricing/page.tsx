@@ -139,9 +139,9 @@ export default function PricingPage() {
             <thead>
               <tr className="border-b border-white/[0.06] text-neutral-450 uppercase font-bold tracking-widest text-[9px]">
                 <th className="py-4 px-6">Feature</th>
-                <th className="py-4 px-6">Monthly Plan</th>
-                <th className="py-4 px-6">Annual Plan</th>
-                <th className="py-4 px-6">Lifetime Plan</th>
+                <th className="py-4 px-6">Subscription (Monthly)</th>
+                <th className="py-4 px-6">Subscription (Annual)</th>
+                <th className="py-4 px-6">Lifetime Founder</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">
