@@ -2356,8 +2356,8 @@ export default function ChatInterface({
               const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
               finalContent = roadmapText;
 
-              // Open canvas panel if the agent produced canvas content (excluding email_draft and reply)
-              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply') {
+              // Open canvas panel if the agent produced canvas content (excluding email_draft, reply, and scheduled_agent)
+              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.markdown) {
                 const cv = data.canvasContent;
                 // email_draft needs structured content; everything else gets raw markdown string
                 const canvasContent = cv.type === 'email_draft' && cv.meta
