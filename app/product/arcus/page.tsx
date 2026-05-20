@@ -115,67 +115,8 @@ export default function ArcusProductPage() {
                 Connect Gmail for Arcus
                 <ArrowRight className="w-4 h-4" />
               </button>
-
-              {/* Trusted Logos Strip matching image layout */}
-              <div className="space-y-6">
-                <span className="text-[10px] font-mono tracking-[0.2em] text-[#555861] uppercase font-bold">
-                  Trusted by top teams
-                </span>
-                <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 opacity-[0.35] grayscale hover:opacity-50 transition-opacity">
-                  <span className="font-extrabold text-[14px] tracking-tight font-sans text-white">instacart</span>
-                  <span className="font-extrabold text-[14px] tracking-tight font-sans text-white">duolingo</span>
-                  <span className="font-semibold text-[14px] tracking-tight font-sans text-white">Vanta</span>
-                  <span className="font-normal text-[14px] tracking-tight font-sans text-white">virgin atlantic</span>
-                  <span className="font-bold text-[14px] tracking-tight font-sans text-white">miro</span>
-                </div>
-              </div>
             </div>
           </BlurFade>
-
-          {/* Interactive Premium Animated Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mt-24 w-full px-6">
-            {/* Card 1: Autonomous Triage */}
-            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10 space-y-4">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
-                  1
-                </div>
-                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Autonomous Triage</h3>
-                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                  Sweeps your outbox, auto-categorizes threads, and flags high-priority deals instantly with absolute accuracy.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 2: Neural Drafting */}
-            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10 space-y-4">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
-                  2
-                </div>
-                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Neural Voice Drafting</h3>
-                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                  Trained on your historical sent emails to construct drafts that replicate your tone, formatting, and signatures.
-                </p>
-              </div>
-            </div>
-
-            {/* Card 3: Autopilot Scheduling */}
-            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
-              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
-              <div className="relative z-10 space-y-4">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
-                  3
-                </div>
-                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Autopilot Scheduling</h3>
-                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                  Coordinates directly with Google Calendar to parse invite requests, handle conflicts, and lock appointments.
-                </p>
-              </div>
-            </div>
-          </div>
 
         </div>
       </section>
