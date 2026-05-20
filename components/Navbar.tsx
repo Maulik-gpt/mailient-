@@ -116,12 +116,15 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                   className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-4 z-[100] pointer-events-auto cursor-default"
                 >
                   {/* Mega Menu Obsidian Box */}
-                  <div className={cn(
-                    "w-[700px] rounded-2xl border p-6 pb-4 shadow-[0_50px_100px_rgba(0,0,0,0.85)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
-                    isDark 
-                      ? "border-white/[0.12] bg-neutral-900/55" 
-                      : "border-neutral-200/50 bg-white/95"
-                  )}>
+                  <div 
+                    style={{
+                      backgroundColor: isDark ? "rgba(23, 23, 23, 0.75)" : "rgba(255, 255, 255, 0.95)"
+                    }}
+                    className={cn(
+                      "w-[700px] rounded-2xl border p-6 pb-4 shadow-[0_50px_100px_rgba(0,0,0,0.85)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
+                      isDark ? "border-white/[0.12]" : "border-neutral-200/50"
+                    )}
+                  >
                     
                     <div className="grid grid-cols-3 gap-8 relative z-10">
                       
