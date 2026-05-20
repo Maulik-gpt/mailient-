@@ -18,6 +18,7 @@ import { DraftReplyBox } from './components/DraftReplyBox';
 import { ActionResultCard } from './components/ActionResultCard';
 import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
+import { ConfirmationCard, type ConfirmationData } from './components/ConfirmationCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
@@ -540,6 +541,8 @@ interface AgentMessage {
     };
     scheduledAgent?: ScheduledAgentData;
     integrationRequired?: IntegrationRequiredData;
+    confirmationData?: ConfirmationData;
+    confirmationStatus?: 'confirmed' | 'cancelled';
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
@@ -1967,6 +1970,7 @@ export default function ChatInterface({
       case 'get_sent_emails': return isActive ? 'Analyzing your writing style...' : 'Analyzed writing style';
       case 'draft_reply': return isActive ? `Drafting reply${params?.subject ? ` to "${params.subject}"` : '...'}` : `Drafted reply${params?.subject ? ` to "${params.subject}"` : ''}`;
       case 'send_email': return isActive ? 'Sending email...' : 'Sent email';
+      case 'request_confirmation': return isActive ? 'Waiting for your approval…' : 'Confirmation requested';
       case 'schedule_meeting': return isActive ? `Scheduling meeting${params?.title ? ` "${params.title}"` : '...'}` : `Scheduled meeting${params?.title ? ` "${params.title}"` : ''}`;
       case 'get_calendar_events': return isActive ? 'Reading your calendar...' : 'Read calendar';
       case 'search_notion': return isActive ? `Searching Notion${params?.query ? ` for "${params.query}"` : '...'}` : `Searched Notion${params?.query ? ` for "${params.query}"` : ''}`;
@@ -2182,6 +2186,21 @@ export default function ChatInterface({
                 break;
               }
 
+              // ── Confirmation required card ───────────────────────────────────
+              if (cv.type === 'confirmation_required' && cv.pageMeta) {
+                const pm = cv.pageMeta as any;
+                const confirmationData: ConfirmationData = {
+                  action: pm.action || cv.title || 'Action',
+                  description: pm.description || '',
+                  details: pm.details || {},
+                };
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), confirmationData } };
+                }));
+                break;
+              }
+
               // ── Action result cards (Notion page, Calendar event) ────────────
               // These get a rich inline card rather than opening the canvas panel.
               const isActionCard = cv.type === 'notion_page' || cv.type === 'calendar_event';
@@ -2364,7 +2383,7 @@ export default function ChatInterface({
               finalContent = roadmapText;
 
               // Open canvas panel if the agent produced canvas content (excluding inline-card types)
-              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.markdown) {
+              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.type !== 'confirmation_required' && data.canvasContent.markdown) {
                 const cv = data.canvasContent;
                 // email_draft needs structured content; everything else gets raw markdown string
                 const canvasContent = cv.type === 'email_draft' && cv.meta
@@ -4517,29 +4536,76 @@ export default function ChatInterface({
                                       />
                                     )}
 
-                                    {/* Scheduled Agent Card — directly below the spec doc card */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && (
-                                      <ScheduledAgentCard
-                                        data={(msg as AgentMessage).meta!.scheduledAgent!}
-                                      />
+                                    {/* Scheduled-agent flow — swap IntegrationRequired → ScheduledAgent with a smooth transition */}
+                                    {msg.role === 'assistant' && ((msg as AgentMessage).meta?.scheduledAgent || (msg as AgentMessage).meta?.integrationRequired) && (
+                                      <AnimatePresence mode="wait" initial={false}>
+                                        {(msg as AgentMessage).meta?.scheduledAgent ? (
+                                          <motion.div
+                                            key="scheduled"
+                                            initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                            transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                                          >
+                                            <ScheduledAgentCard
+                                              data={(msg as AgentMessage).meta!.scheduledAgent!}
+                                            />
+                                          </motion.div>
+                                        ) : (
+                                          <motion.div
+                                            key="integration"
+                                            initial={{ opacity: 0, y: 8 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8, scale: 0.97 }}
+                                            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                                          >
+                                            <IntegrationRequiredCard
+                                              data={(msg as AgentMessage).meta!.integrationRequired!}
+                                              onAgentCreated={(agent) => {
+                                                setMessages(msgs => msgs.map(m => {
+                                                  if (m.id !== msg.id || m.type !== 'agent') return m;
+                                                  return {
+                                                    ...m,
+                                                    meta: {
+                                                      ...(m as AgentMessage).meta,
+                                                      scheduledAgent: agent,
+                                                      integrationRequired: undefined,
+                                                    },
+                                                  };
+                                                }));
+                                              }}
+                                            />
+                                          </motion.div>
+                                        )}
+                                      </AnimatePresence>
                                     )}
 
-                                    {/* Integration Required Card — shown when create_scheduled_agent is blocked */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.integrationRequired && !((msg as AgentMessage).meta?.scheduledAgent) && (
-                                      <IntegrationRequiredCard
-                                        data={(msg as AgentMessage).meta!.integrationRequired!}
-                                        onAgentCreated={(agent) => {
+                                    {/* Confirmation card — shown when AI needs user approval before a major action */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.confirmationData && (
+                                      <ConfirmationCard
+                                        data={(msg as AgentMessage).meta!.confirmationData!}
+                                        status={(msg as AgentMessage).meta?.confirmationStatus}
+                                        onAction={(action) => {
+                                          // Mark the card as resolved
                                           setMessages(msgs => msgs.map(m => {
                                             if (m.id !== msg.id || m.type !== 'agent') return m;
                                             return {
                                               ...m,
                                               meta: {
                                                 ...(m as AgentMessage).meta,
-                                                scheduledAgent: agent,
-                                                integrationRequired: undefined,
+                                                confirmationStatus: action === 'confirm' ? 'confirmed' : 'cancelled',
                                               },
                                             };
                                           }));
+                                          // Resume the agent with the user's decision
+                                          const response = action === 'confirm'
+                                            ? `Confirmed — please proceed with the action.`
+                                            : `Cancelled — please skip this action and let me know if you'd like to do something else.`;
+                                          setTimeout(() => {
+                                            if (currentConversationId) {
+                                              processAgentLoopMessage(response, currentConversationId, false);
+                                            }
+                                          }, 300);
                                         }}
                                       />
                                     )}

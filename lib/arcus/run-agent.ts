@@ -42,7 +42,7 @@ export interface AgentRunBudget {
  * identical agent behaviour.
  */
 export async function buildAgentLoopArgs(
-  agent: { user_id: string; task_description: string },
+  agent: { user_id: string; task_description: string; skip_confirmations?: boolean },
   budget: AgentRunBudget = {},
 ) {
   const userId = agent.user_id;
@@ -59,6 +59,7 @@ export async function buildAgentLoopArgs(
     connectedIntegrations,
     memories,
     isBackgroundAgent: true,
+    skipConfirmations: agent.skip_confirmations ?? false,
     agentTaskDescription: taskDescription,
   });
 

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
-import { CheckCircle2, Circle, Zap, ArrowRight, RefreshCw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CheckCircle2, Circle, Zap, ArrowRight, RefreshCw, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ScheduledAgentData } from './ScheduledAgentCard';
 
@@ -108,6 +108,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
   const [isCreating, setIsCreating] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [lastFailedId, setLastFailedId] = useState<string | null>(null);
   const [connectingId, setConnectingId] = useState<string | null>(null);
 
   const allConnected = data.required.every(r => connectedSet.has(r));
@@ -137,6 +138,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
   const connectIntegration = async (integrationId: string) => {
     setConnectingId(integrationId);
     setError(null);
+    setLastFailedId(null);
     try {
       const res = await fetch('/api/connectors/oauth', {
         method: 'POST',
@@ -146,7 +148,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
           redirectUri: `${window.location.origin}/api/connectors/callback`,
         }),
       });
-      if (!res.ok) throw new Error('Failed to start OAuth');
+      if (!res.ok) throw new Error("Couldn't start the connection. Try again in a moment.");
       const { oauthUrl } = await res.json();
 
       const w = 500, h = 600;
@@ -155,17 +157,35 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
         'Connect Integration',
         `width=${w},height=${h},left=${window.screenX + (window.outerWidth - w) / 2},top=${window.screenY + (window.outerHeight - h) / 2}`,
       );
-      if (!popup) throw new Error('Popup blocked — please allow popups and try again.');
+      if (!popup) throw new Error('Popup was blocked — allow popups for this site and retry.');
 
-      const poll = setInterval(() => {
+      const poll = setInterval(async () => {
         if (popup.closed) {
           clearInterval(poll);
           setConnectingId(null);
-          refresh();
+          // refresh and check if this integration actually connected
+          await refresh();
+          // Use a fresh fetch result rather than relying on stale state
+          try {
+            const r = await fetch('/api/arcus/v3/integrations');
+            const j = r.ok ? await r.json() : { integrations: [] };
+            const providers: string[] = (j.integrations || []).map((i: any) => i.provider as string);
+            const statusRes = await fetch('/api/integrations/status').catch(() => null);
+            if (statusRes?.ok) {
+              const status = await statusRes.json();
+              if (status.gmail) providers.push('gmail');
+              if (status.google_calendar) providers.push('gcal');
+            }
+            if (!providers.includes(integrationId)) {
+              setLastFailedId(integrationId);
+              setError("The connection didn't complete. Retry below — make sure to finish the Google/Slack/Notion sign-in.");
+            }
+          } catch { /* non-fatal */ }
         }
       }, 800);
     } catch (err: any) {
-      setError(err.message || 'Connection failed');
+      setLastFailedId(integrationId);
+      setError(err.message || 'Connection failed — try again.');
       setConnectingId(null);
     }
   };
@@ -265,32 +285,57 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
               </div>
 
               {/* Status / connect */}
-              {isConnected ? (
-                <div className="flex items-center gap-1.5 text-emerald-400 shrink-0">
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span className="text-[11px] font-semibold">Connected</span>
-                </div>
-              ) : (
-                <button
-                  onClick={() => connectIntegration(id)}
-                  disabled={isConnecting}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold bg-white text-black hover:bg-white/90 transition-all shrink-0 disabled:opacity-60"
-                >
-                  {isConnecting ? (
-                    <RefreshCw className="w-3 h-3 animate-spin" />
-                  ) : (
-                    <ArrowRight className="w-3 h-3" />
-                  )}
-                  {isConnecting ? 'Connecting…' : 'Connect'}
-                </button>
-              )}
+              <AnimatePresence mode="wait" initial={false}>
+                {isConnected ? (
+                  <motion.div
+                    key="connected"
+                    initial={{ opacity: 0, scale: 0.7 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.7 }}
+                    transition={{ type: 'spring', damping: 18, stiffness: 320 }}
+                    className="flex items-center gap-1.5 text-emerald-400 shrink-0"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span className="text-[11px] font-semibold">Connected</span>
+                  </motion.div>
+                ) : (
+                  <motion.button
+                    key="connect"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    onClick={() => connectIntegration(id)}
+                    disabled={isConnecting}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold bg-white text-black hover:bg-white/90 transition-all shrink-0 disabled:opacity-60"
+                  >
+                    {isConnecting ? (
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                    ) : lastFailedId === id ? (
+                      <RefreshCw className="w-3 h-3" />
+                    ) : (
+                      <ArrowRight className="w-3 h-3" />
+                    )}
+                    {isConnecting ? 'Connecting…' : lastFailedId === id ? 'Retry' : 'Connect'}
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
           );
         })}
 
-        {error && (
-          <p className="text-[12px] text-red-400/80 mt-1 px-1">{error}</p>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="flex items-start gap-2 mt-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20"
+            >
+              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-[12px] text-red-300 leading-snug">{error}</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* Footer */}

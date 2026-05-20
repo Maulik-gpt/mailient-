@@ -3,8 +3,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play } from 'lucide-react';
+import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play, ArrowUpRight } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
 // ── Channel icons ──────────────────────────────────────────────────────────────
@@ -322,8 +323,17 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
   const [open, setOpen] = useState(false);
   const [isPausing, setIsPausing] = useState(false);
   const { resolvedTheme } = useTheme();
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const countdown = useCountdown(data.cron, data.nextRun);
+  const nextRunAbsolute = (() => {
+    const next = nextRunDateFromCron(data.cron) ?? (data.nextRun ? new Date(data.nextRun) : null);
+    if (!next || isNaN(next.getTime())) return null;
+    return next.toLocaleString('en-US', {
+      weekday: 'short', month: 'short', day: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+    });
+  })();
 
   useEffect(() => { setMounted(true); }, []);
   const isDark = !mounted || resolvedTheme === 'dark';
@@ -421,18 +431,25 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
                 {scheduleFromCron(data.cron)}
               </span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
-              <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
-                {countdown}
-              </span>
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <Clock className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
+                <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
+                  {countdown}
+                </span>
+              </div>
+              {nextRunAbsolute && (
+                <span className={cn("text-[10.5px] leading-tight mt-0.5 pl-5", isDark ? "text-white/35" : "text-neutral-400")}>
+                  {nextRunAbsolute}
+                </span>
+              )}
             </div>
           </div>
         </button>
 
         {/* Footer actions */}
         <div className={cn(
-          "flex items-center px-4 py-2.5 border-t",
+          "flex items-center justify-between px-4 py-2.5 border-t",
           isDark ? "border-white/[0.06]" : "border-black/[0.05]"
         )}>
           <button
@@ -450,6 +467,17 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
               ? <><Pause className="w-3.5 h-3.5" /> Pause</>
               : <><Play className="w-3.5 h-3.5" /> Resume</>
             }
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); router.push('/dashboard/agents'); }}
+            className={cn(
+              "flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all",
+              isDark
+                ? "text-white/65 hover:text-white hover:bg-white/[0.08]"
+                : "text-neutral-600 hover:text-neutral-900 hover:bg-black/[0.05]"
+            )}
+          >
+            View Agents <ArrowUpRight className="w-3.5 h-3.5" />
           </button>
         </div>
       </motion.div>

@@ -1,1652 +1,1011 @@
-"use client"
+"use client";
 
-import { useState, useEffect, useRef } from "react"
-import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion"
+import { useState, useEffect, useRef } from "react";
+import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
 import {
-    Mail,
-    Zap,
-    Shield,
-    ArrowRight,
-    ChevronRight,
-    Layout,
-    MousePointer2,
-    Search,
-    Command,
-    Sparkles,
-    Check,
-    ShieldCheck,
-    Lock,
-    Globe,
-    BarChart3,
-    Activity,
-    Cpu,
-    RefreshCw,
-    Bot,
-    Layers,
-    Star,
-    Plus,
-    Inbox,
-    Filter,
-    ChevronDown,
-    Quote,
-    ArrowRightLeft
-} from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { BackgroundShaders } from "@/components/ui/background-paper-shaders"
-import { PricingSection } from "@/components/ui/pricing"
-import { useRouter } from "next/navigation"
-import { useSession, signIn } from "next-auth/react"
-import { HeroGeometric } from "@/components/ui/shape-landing-hero"
-import { LiquidButton } from "@/components/ui/liquid-glass-button"
-import { CTASection } from "@/components/ui/hero-dithering-card"
-import { useSmoothScroll } from "@/hooks/use-smooth-scroll"
+  Zap,
+  Bot,
+  Layers,
+  Cpu,
+  Clock,
+  ShieldCheck,
+  Lock,
+  Check,
+  ChevronDown,
+  Mail,
+  ArrowRight,
+  ArrowUpRight,
+  Activity,
+  Globe,
+  Calendar,
+  Sparkles,
+  Inbox,
+  Minus,
+  Plus
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
+
 
 declare global {
-    interface Window {
-        google: any;
-    }
+  interface Window {
+    google: any;
+  }
 }
 
+// ----------------------------------------------------------------------
+// DATA & CONFIG
+// ----------------------------------------------------------------------
 
-const features = [
-    {
-        title: "Signal Intelligence",
-        description: "Automatically extract revenue opportunities and high-priority leads from the noise.",
-        icon: Zap,
-        color: "text-zinc-100",
-    },
-    {
-        title: "Neural Drafting",
-        description: "AI that learns your voice and context to draft perfect replies in seconds. All actions require your manual approval.",
-        icon: Bot,
-        color: "text-zinc-300",
-    },
-    {
-        title: "Relationship Graph",
-        description: "Visualize and track your most important connections across every thread.",
-        icon: Layers,
-        color: "text-zinc-500",
-    }
-]
+const PARTNER_LOGOS = [
+  { name: "Google", stat: "Google Cloud Partner" },
+  { name: "Notion", stat: "10,000+ Syncs" },
+  { name: "Linear", stat: "SOC2 Compliance" },
+  { name: "Stripe", stat: "PCI Level 1" },
+  { name: "Vercel", stat: "99.99% Uptime" },
+  { name: "Retool", stat: "Enterprise Security" },
+  { name: "Cal.com", stat: "0ms Calendar Sync" },
+  { name: "OpenAI", stat: "Enterprise LLM Gateway" }
+];
 
-const plans = [
-    {
-        name: "Free",
-        info: "Experience the power of Mailient AI — no credit card required",
-        price: { monthly: 0, yearly: 0 },
-        features: [
-            { text: "1 AI Draft per day" },
-            { text: "1 Sift Analysis per day" },
-            { text: "3 Email Summaries per day" },
-            { text: "Secure Google OAuth" },
-            { text: "Basic Relationship Tracking" }
-        ],
-        btn: { text: "Join Waitlist", href: "#waitlist" }
-    },
-    {
-        name: "Starter",
-        info: "For solopreneurs ready to automate their inbox at scale",
-        price: { monthly: 7.99, yearly: 7.99 },
-        features: [
-            { text: "10 AI Drafts per day" },
-            { text: "10 Sift Analyses per day" },
-            { text: "20 Arcus AI queries per day" },
-            { text: "30 Email Summaries per day" },
-            { text: "Standard Relationship Tracking" }
-        ],
-        btn: { text: "Join Waitlist", href: "#waitlist" },
-        highlighted: true
-    },
-    {
-        name: "Pro",
-        info: "Unlimited power for teams and power users who demand the best",
-        price: { monthly: 29.99, yearly: 29.99 },
-        features: [
-            { text: "Everything in Starter" },
-            { text: "Unlimited AI Processing" },
-            { text: "Advanced Relationship Tracking" },
-            { text: "Custom Neural Voice" },
-            { text: "Priority Support" },
-            { text: "Unlimited Draft Replies" }
-        ],
-        btn: { text: "Join Waitlist", href: "#waitlist" }
-    }
+const FAQS = [
+  {
+    q: "How quickly can systems be deployed?",
+    a: "Mailient integrates with your Google Workspace in under 2 minutes. Once authorized via secure OAuth, our autonomous indexers begin ingestion immediately. Your first inbox analysis is ready within 180 seconds, and background drafting begins overnight."
+  },
+  {
+    q: "Can AI integrate into existing workflows?",
+    a: "Yes. Mailient sits directly on top of Gmail and Google Calendar, with native Webhook triggers and integrations for Slack, Notion, and Cal.com. It enhances your current email routine without requiring you to switch to a new communication client."
+  },
+  {
+    q: "Is enterprise data secure?",
+    a: "Absolutely. Mailient is SOC2 Type II compliant and employs AES-256 bank-grade encryption at rest and in transit. Your emails are parsed in memory, and we enforce a zero-retention policy for model training: we never train public AI models on your private data."
+  },
+  {
+    q: "Do you build custom systems?",
+    a: "Yes. For our enterprise partners, we offer custom fine-tuned models that mimic your company's proprietary tone, sync with internal CRMs (like Salesforce or HubSpot), and enforce custom business logic for autonomous scheduling."
+  }
 ];
 
 export function LinearLanding() {
-    const router = useRouter()
-    const { data: session, status } = useSession()
-    const [scrolled, setScrolled] = useState(false)
-    const [activeSection, setActiveSection] = useState("")
-    const { handleClick } = useSmoothScroll()
-    const [activeStep, setActiveStep] = useState(0)
-    const containerRef = useRef<HTMLDivElement>(null)
-
-    // Google One Tap Login Initialization
-    useEffect(() => {
-        // Only trigger for unauthenticated guest users
-        if (status !== "unauthenticated") return;
-
-        const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-        if (!clientId) {
-            console.warn("One Tap Login skipped: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing.");
-            return;
-        }
-
-        // Load Google Identity script
-        const script = document.createElement("script");
-        script.src = "https://accounts.google.com/gsi/client";
-        script.async = true;
-        script.defer = true;
-        script.onload = () => {
-            const google = (window as any).google;
-            if (google) {
-                google.accounts.id.initialize({
-                    client_id: clientId,
-                    callback: async (response: any) => {
-                        console.log("🚀 One Tap Credential Received. Bridging Login...");
-                        await signIn("google-one-tap", {
-                            credential: response.credential,
-                            callbackUrl: "/onboarding",
-                            redirect: true,
-                        });
-                    },
-                    auto_select: false,
-                    cancel_on_tap_outside: true,
-                    context: "signin",
-                });
-                
-                // Show the "Smart Toggle" prompt from the screenshot
-                google.accounts.id.prompt();
-            }
-        };
-        document.head.appendChild(script);
-
-        return () => {
-            // Clean up to prevent script duplication
-            if (document.head.contains(script)) {
-                document.head.removeChild(script);
-            }
-        };
-    }, [status]);
-
-    const { scrollYProgress } = useScroll({
-        target: containerRef,
-        offset: ["start start", "end end"]
-    })
-
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 50)
-        window.addEventListener("scroll", handleScroll)
-        return () => window.removeEventListener("scroll", handleScroll)
-    }, [])
-
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveStep((prev) => (prev + 1) % 3)
-        }, 8000)
-        return () => clearInterval(interval)
-    }, [])
-
-    return (
-        <div ref={containerRef} className="relative min-h-screen bg-black text-white selection:bg-white selection:text-black font-satoshi overflow-x-hidden scroll-smooth">
-            {/* Background Layer - Optimized */}
-            <div className="fixed inset-0 z-0 pointer-events-none select-none" style={{ willChange: "transform" }}>
-                <BackgroundShaders />
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px]" />
-            </div>
-
-            {/* Navigation */}
-            <motion.nav
-                initial={false}
-                animate={scrolled ? "scrolled" : "top"}
-                variants={{
-                    top: {
-                        width: "95%",
-                        maxWidth: "1280px",
-                        backgroundColor: "rgba(0, 0, 0, 0)",
-                        backdropFilter: "blur(0px)",
-                        borderRadius: "0px",
-                        paddingTop: "24px",
-                        paddingBottom: "24px",
-                        y: 0,
-                        borderWidth: "1px",
-                        borderColor: "rgba(255, 255, 255, 0)",
-                    },
-                    scrolled: {
-                        width: "85%",
-                        maxWidth: "1024px",
-                        backgroundColor: "rgba(0, 0, 0, 0.4)",
-                        backdropFilter: "blur(16px)",
-                        borderRadius: "32px",
-                        paddingTop: "12px",
-                        paddingBottom: "12px",
-                        y: 12,
-                        borderWidth: "1px",
-                        borderColor: "rgba(255, 255, 255, 0.08)",
-                        boxShadow: "0 20px 40px -15px rgba(0, 0, 0, 0.9), 0 0 40px 10px rgba(255, 255, 255, 0.08)",
-                    }
-                }}
-                transition={{
-                    type: "spring",
-                    stiffness: 400,
-                    damping: 40,
-                    mass: 1
-                }}
-                style={{ willChange: "transform, width, padding" }}
-                className="fixed top-0 left-1/2 -translate-x-1/2 z-50 overflow-hidden"
-            >
-                <div className="w-full px-4 md:px-8 flex items-center justify-between">
-                    <div className="flex items-center gap-4 md:gap-8">
-                        <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-                            <div className="w-7 h-7 md:w-8 md:h-8 rounded flex items-center justify-center group-hover:rotate-6 transition-transform overflow-hidden relative">
-                                <img
-                                    src="/mailient-logo-v3.png"
-                                    alt="Mailient Logo"
-                                    className="w-full h-full object-cover"
-                                />
-                            </div>
-                            <span className="font-bold tracking-tight text-lg md:text-xl">Mailient</span>
-                        </div>
-
-                        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-zinc-500">
-                            <a href="#benefits" onClick={(e) => handleClick(e, 'benefits')} className="hover:text-white transition-colors">Benefits</a>
-                            <a href="#features" onClick={(e) => handleClick(e, 'features')} className="hover:text-white transition-colors">Features</a>
-                            <a href="#integration" onClick={(e) => handleClick(e, 'integration')} className="hover:text-white transition-colors">Security</a>
-
-                            <a href="/workspace-setup" className="hover:text-white transition-colors">Setup</a>
-                            <a href="#pricing" onClick={(e) => handleClick(e, 'pricing')} className="hover:text-white transition-colors">Pricing</a>
-                            <a href="#faq" onClick={(e) => handleClick(e, 'faq')} className="hover:text-white transition-colors">FAQ</a>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 md:gap-4">
-                        {status === "authenticated" ? (
-                            <Button variant="secondary" onClick={() => router.push('/home-feed?welcome=true')} className="bg-white/10 hover:bg-white/20 text-white border-none rounded-full px-4 md:px-6 text-sm md:text-base">
-                                Dashboard
-                            </Button>
-                        ) : (
-                            <>
-                                <button onClick={() => router.push('/auth/signin')} className="hidden sm:block text-sm font-medium text-zinc-500 hover:text-white transition-colors">Log in</button>
-                                <LiquidButton 
-                                    onClick={() => {
-                                        const el = document.getElementById('waitlist');
-                                        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                    }} 
-                                    size="default" 
-                                    className="text-white"
-                                >
-                                    Join Waitlist
-                                </LiquidButton>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </motion.nav>
-
-            <CTASection />
-
-            <div className="relative z-10 pb-20">
-                <div className="text-center px-4">
-
-                    {/* Hero Video */}
-                    <div className="relative w-full max-w-5xl mx-auto aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden group shadow-[0_0_50px_-12px_rgba(255,255,255,0.1)] mb-12">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none z-10" />
-                        <iframe
-                            src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
-                            title="Mailient Product Demo"
-                            className="absolute inset-0 w-full h-full"
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                            allowFullScreen
-                            loading="lazy"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Pain Section - The Consequences */}
-            <section className="py-20 md:py-32 px-6 z-10 relative overflow-hidden bg-black">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col items-center mb-16 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 mb-8"
-                        >
-                            <Activity className="h-3 w-3 text-amber-500" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-amber-500/80">The Cost of Friction</span>
-                        </motion.div>
-
-                        <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
-                        >
-                            Your inbox is a <span className="text-amber-200">bottleneck.</span>
-                        </motion.h2>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="text-zinc-400 max-w-2xl mx-auto text-lg leading-relaxed"
-                        >
-                            Every hour spent triaging emails is an hour stolen from growing your business.
-                            The noise isn't just annoying—it's expensive.
-                        </motion.p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                        {[
-                            {
-                                title: "Lost Revenue",
-                                desc: "High-ticket opportunities buried under 50 newsletters you never signed up for.",
-                                icon: BarChart3,
-                                color: "text-amber-500"
-                            },
-                            {
-                                title: "Executive Burnout",
-                                desc: "The micro-stress of 200+ unread threads kills your creative deep-work state.",
-                                icon: Cpu,
-                                color: "text-amber-500"
-                            },
-                            {
-                                title: "Missed Momentum",
-                                desc: "Speed is a founder's only edge. Slow replies are killing your deal velocity.",
-                                icon: Zap,
-                                color: "text-amber-500"
-                            }
-                        ].map((item, i) => (
-                            <motion.div
-                                key={i}
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: i * 0.1 }}
-                                className="p-8 rounded-3xl border border-white/5 bg-zinc-950/50 hover:border-amber-500/20 transition-colors group"
-                            >
-                                <item.icon className={`w-8 h-8 ${item.color} mb-6 group-hover:scale-110 transition-transform`} />
-                                <h3 className="text-xl font-bold mb-4">{item.title}</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed">{item.desc}</p>
-                            </motion.div>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* Demo Section - Single Video with Fading Text */}
-            <section id="demo-section" className="py-16 md:py-32 px-4 md:px-6 z-10 relative bg-zinc-950/30">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col items-center mb-10 md:mb-20 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
-                        >
-                            <Sparkles className="h-3 w-3 text-white/60" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">See How It Works</span>
-                        </motion.div>
-
-                        <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tight mb-4 md:mb-6"
-                        >
-                            Mailient in action.
-                        </motion.h2>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="text-zinc-400 max-w-2xl mx-auto text-base md:text-lg leading-relaxed px-4"
-                        >
-                            Watch how AI transforms your chaotic inbox into clear opportunities.
-                        </motion.p>
-                    </div>
-
-                    {/* Single Video + Fading Text */}
-                    <div className="max-w-5xl mx-auto">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 items-center">
-                            {/* Text Section - Fading Steps */}
-                            <div className="relative h-72 sm:h-80 md:h-96 overflow-hidden order-2 lg:order-1">
-                                <AnimatePresence mode="wait">
-                                    {activeStep === 0 && (
-                                        <motion.div
-                                            key="step-1"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                            className="absolute inset-0 flex flex-col justify-center"
-                                        >
-                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
-                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">1</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Connect Gmail</h3>
-                                            </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">AI scans your inbox chaos in seconds.</p>
-                                            <div className="space-y-3 md:space-y-4">
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">AI scans inbox in seconds</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Finds opportunities</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Flags urgent replies</span>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {activeStep === 1 && (
-                                        <motion.div
-                                            key="step-2"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                            className="absolute inset-0 flex flex-col justify-center"
-                                        >
-                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
-                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">2</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">Smart Sifting</h3>
-                                            </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Opportunities and urgent threads are prioritized.</p>
-                                            <div className="space-y-3 md:space-y-4">
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Opportunities highlighted</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Urgent replies first</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Smart boxes for all</span>
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-                                    {activeStep === 2 && (
-                                        <motion.div
-                                            key="step-3"
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-                                            className="absolute inset-0 flex flex-col justify-center"
-                                        >
-                                            <div className="flex items-center gap-3 md:gap-4 mb-4 md:mb-6">
-                                                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl md:rounded-2xl bg-white text-black flex items-center justify-center font-bold text-base md:text-lg shadow-[0_0_20px_rgba(255,255,255,0.3)]">3</div>
-                                                <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white tracking-tight">One-Click Action</h3>
-                                            </div>
-                                            <p className="text-base md:text-xl text-zinc-400 mb-6 md:mb-8 leading-relaxed">Draft replies or schedule meetings instantly.</p>
-                                            <div className="space-y-3 md:space-y-4">
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">AI drafts replies</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Schedule meetings</span>
-                                                </div>
-                                                <div className="flex items-center gap-3 md:gap-4 group">
-                                                    <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500/20 transition-colors flex-shrink-0">
-                                                        <Check className="w-3 h-3 md:w-3.5 md:h-3.5 text-emerald-400" />
-                                                    </div>
-                                                    <span className="text-zinc-300 font-medium text-sm md:text-base">Archive confidently</span>
-                                                </div>
-                                                <p className="text-[10px] text-zinc-500 italic mt-6 border-l border-white/10 pl-4 py-1">
-                                                    All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
-                                                </p>
-                                            </div>
-                                        </motion.div>
-                                    )}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Video Section */}
-                            <div className="flex-1 order-1 lg:order-2">
-                                <div className="relative aspect-video rounded-2xl border border-white/10 bg-zinc-900/50 backdrop-blur-sm overflow-hidden shadow-2xl">
-                                    <iframe
-                                        src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1&playsinline=1"
-                                        title="Mailient Feature Demo"
-                                        className="absolute inset-0 w-full h-full"
-                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                                        allowFullScreen
-                                        loading="lazy"
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Final CTA */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.5 }}
-                            className="text-center mt-20"
-                        >
-                            <div className="flex flex-col items-center gap-6">
-                                <div className="inline-flex items-center gap-6 p-8 rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm">
-                                    <div className="text-left">
-                                        <h3 className="text-2xl font-bold text-white mb-2">Ready to save 10+ hours/week?</h3>
-                                        <p className="text-zinc-400">Join founders who transformed their inbox.</p>
-                                    </div>
-                                    <LiquidButton
-                                        onClick={(e) => handleClick(e, 'waitlist')}
-                                        size="xxl"
-                                        className="text-white"
-                                    >
-                                        Join Waitlist
-                                        <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                    </LiquidButton>
-                                </div>
-                                <div className="flex flex-col items-center gap-6 mt-4">
-                                    <div className="flex flex-wrap items-center justify-center gap-3">
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-                                            <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
-                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">Google Workspace Auth</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-                                            <Lock className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">Encrypted</span>
-                                        </div>
-                                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-                                            <Zap className="w-3.5 h-3.5 text-amber-400" />
-                                            <span className="whitespace-nowrap uppercase tracking-widest font-black text-[9px] text-white">2 Min Setup</span>
-                                        </div>
-                                    </div>
-                                    <p className="text-[10px] sm:text-xs text-white/20 italic max-w-md">
-                                        All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval.
-                                    </p>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Benefits Section - Premium Bento Layout */}
-            <section id="benefits" className="py-40 px-6 z-10 relative overflow-hidden bg-black">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col items-center mb-24 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
-                        >
-                            <Star className="h-3 w-3 fill-white/80" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Benefits</span>
-                        </motion.div>
-
-                        <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="text-4xl md:text-6xl font-bold tracking-tight mb-6"
-                        >
-                            The Mailient Advantage
-                        </motion.h2>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed"
-                        >
-                            Intelligence that understands your business. Built for high-performance founders.
-                        </motion.p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 px-2 md:px-0">
-                        {/* Feature Card 1: Signal Intelligence */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                            {/* Visual: Radar/Scanner */}
-                            <div className="h-36 md:h-48 w-full flex items-center justify-center mb-6 md:mb-8">
-                                <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full border border-white/10 flex items-center justify-center">
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                        className="absolute inset-0 border-t-2 border-white/20 rounded-full"
-                                    />
-                                    <div className="w-2 h-2 bg-white rounded-full shadow-[0_0_15px_white]" />
-                                    <div className="absolute top-10 left-10 w-1 h-1 bg-white/40 rounded-full" />
-                                    <div className="absolute bottom-12 right-8 w-1 h-1 bg-white/60 rounded-full" />
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Find What Matters</h3>
-                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
-                                AI scans your inbox to surface important emails, opportunities, and urgent items you might miss.
-                            </p>
-                        </motion.div>
-
-                        {/* Feature Card 2: AI Driven Growth */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                            {/* Visual: Growth Bars - Simplified for mobile */}
-                            <div className="h-36 md:h-48 w-full flex items-end justify-center gap-2 md:gap-3 mb-6 md:mb-8 px-2 md:px-4">
-                                {[0.4, 0.7, 1.0, 0.6, 0.8].map((val, i) => (
-                                    <div key={i} className="relative w-full bg-white/5 rounded-t-lg overflow-visible flex flex-col justify-end h-full">
-                                        <motion.div
-                                            initial={{ height: 0 }}
-                                            whileInView={{ height: `${val * 100}%` }}
-                                            viewport={{ once: true }}
-                                            transition={{ duration: 1, delay: 0.5 + (i * 0.1) }}
-                                            className="w-full bg-white/10"
-                                        />
-                                        {i === 2 && (
-                                            <div className="absolute -top-6 left-1/2 -translate-x-1/2 px-1.5 md:px-2 py-0.5 bg-white rounded text-[8px] md:text-[10px] text-black font-bold whitespace-nowrap">
-                                                <span className="hidden sm:inline">80% </span>Auto
-                                            </div>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-
-                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Save 10+ Hours/Week</h3>
-                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
-                                Automate email triage, draft replies instantly, and reclaim time for what truly matters.
-                            </p>
-                        </motion.div>
-
-                        {/* Feature Card 3: Neural Sync */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 40 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="group relative h-[380px] md:h-[450px] p-6 md:p-8 rounded-3xl border border-white/5 bg-zinc-950 flex flex-col items-center text-center overflow-hidden shadow-[0_0_40px_-15px_rgba(255,255,255,0.05)]"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                            {/* Visual: Neural Orbit */}
-                            <div className="h-36 md:h-48 w-full flex items-center justify-center mb-6 md:mb-8">
-                                <div className="relative w-28 h-28 md:w-32 md:h-32 flex items-center justify-center">
-                                    <div className="absolute inset-0 rounded-full border border-white/10" />
-                                    <div className="absolute inset-[-16px] md:inset-[-20px] rounded-full border border-dashed border-white/5 animate-spin-slow" />
-                                    <motion.div
-                                        animate={{ scale: [1, 1.1, 1] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                        className="w-14 h-14 md:w-16 md:h-16 bg-white rounded-2xl flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)]"
-                                    >
-                                        <RefreshCw className="w-7 h-7 md:w-8 md:h-8 text-black" />
-                                    </motion.div>
-                                </div>
-                            </div>
-
-                            <h3 className="text-xl md:text-2xl font-bold mb-3 md:mb-4">Zero Inbox Anxiety</h3>
-                            <p className="text-zinc-400 text-sm leading-relaxed max-w-[280px] md:max-w-[240px]">
-                                Wake up to a clean, organized inbox. Know exactly what needs your attention right now.
-                            </p>
-                        </motion.div>
-                    </div>
-                </div>
-            </section>
-            {/* Features Section - Premium Bento Layout */}
-            <section id="features" className="py-20 md:py-40 px-4 md:px-6 z-10 relative overflow-hidden bg-black">
-                <div className="max-w-7xl mx-auto">
-                    <div className="flex flex-col items-center mb-24 text-center">
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
-                        >
-                            <Sparkles className="h-3 w-3 text-white/60" />
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/60">Features</span>
-                        </motion.div>
-
-                        <motion.h2
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="text-4xl md:text-7xl font-bold tracking-tight mb-6"
-                        >
-                            One tool, all features.
-                        </motion.h2>
-                        <motion.p
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="text-zinc-400 max-w-xl mx-auto text-lg leading-relaxed"
-                        >
-                            Simplify workflows, grow faster.
-                        </motion.p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-                        {/* Arcus - Large Card */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            className="md:col-span-1 group relative h-[450px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
-                        >
-                            <div className="flex-1 p-8 flex flex-col justify-center relative z-10">
-                                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
-                                    <Cpu className="w-5 h-5 text-white" />
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4">Arcus</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed">
-                                    Command-driven AI that understands context and executes complex tasks with intelligent reasoning. Arcus transforms your email workflow into an intuitive, conversational experience.
-                                </p>
-                            </div>
-                            <div className="flex-1 bg-gradient-to-br from-white/5 to-transparent relative p-12 overflow-hidden hidden lg:flex items-center justify-center">
-                                <div className="relative w-64 h-64 flex items-center justify-center">
-                                    {/* Concentric Orbital Rings */}
-                                    {[1, 2, 3].map((ring) => (
-                                        <motion.div
-                                            key={ring}
-                                            animate={{ rotate: 360 * (ring % 2 === 0 ? 1 : -1) }}
-                                            transition={{ duration: 15 + ring * 5, repeat: Infinity, ease: "linear" }}
-                                            className="absolute border border-white/5 rounded-full"
-                                            style={{
-                                                width: `${100 - ring * 25}%`,
-                                                height: `${100 - ring * 25}%`,
-                                                borderStyle: ring === 2 ? 'dashed' : 'solid'
-                                            }}
-                                        />
-                                    ))}
-                                    {/* Pulsing Core */}
-                                    <motion.div
-                                        animate={{ scale: [1, 1.1, 1], opacity: [0.3, 0.6, 0.3] }}
-                                        transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
-                                        className="w-16 h-16 bg-white/10 blur-xl rounded-full absolute"
-                                    />
-                                    <Bot className="w-12 h-12 text-white/40 relative z-10" />
-
-                                    {/* Orbiting particles */}
-                                    {[1, 2, 3, 4].map((p) => (
-                                        <motion.div
-                                            key={p}
-                                            animate={{
-                                                rotate: 360,
-                                                scale: [1, 1.2, 1]
-                                            }}
-                                            transition={{
-                                                rotate: { duration: 8 + p * 2, repeat: Infinity, ease: "linear" },
-                                                scale: { duration: 2, repeat: Infinity, ease: "easeInOut" }
-                                            }}
-                                            className="absolute w-1.5 h-1.5 bg-white/30 rounded-full"
-                                            style={{ top: '10%', left: '50%', originY: '200%' }}
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </motion.div>
-
-                        {/* Mailient Sift */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.1 }}
-                            className="group h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
-                        >
-                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10 relative z-10">
-                                <Activity className="w-5 h-5 text-white" />
-                            </div>
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-bold mb-4">Mailient Sift</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-                                    Start intelligence analysis and let the AI distribute your emails to smart insights like Opportunities, Urgent and Follow-ups followed by one-click smart actions.
-                                </p>
-                            </div>
-
-                            {/* Scanning Visualization */}
-                            <div className="absolute right-8 top-1/2 -translate-y-1/2 w-48 h-64 bg-white/[0.02] border border-white/5 rounded-2xl hidden lg:flex flex-col p-4 gap-3 overflow-hidden">
-                                <motion.div
-                                    animate={{ y: [0, 240, 0] }}
-                                    transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-                                    className="absolute inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-white/40 to-transparent z-20"
-                                />
-                                {[
-                                    { text: "Opportunity", color: "bg-emerald-500/20 text-emerald-400" },
-                                    { text: "Urgent", color: "bg-rose-500/20 text-rose-400" },
-                                    { text: "Follow-up", color: "bg-blue-500/20 text-blue-400" },
-                                    { text: "Revenue", color: "bg-amber-500/20 text-amber-400" }
-                                ].map((pill, i) => (
-                                    <motion.div
-                                        key={i}
-                                        initial={{ opacity: 0.3 }}
-                                        whileInView={{ opacity: 1 }}
-                                        transition={{ delay: i * 0.2 }}
-                                        className={`px-3 py-1 rounded-full text-[10px] font-bold border border-white/5 w-fit ${pill.color}`}
-                                    >
-                                        {pill.text}
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </motion.div>
-
-                        {/* Notes */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.2 }}
-                            className="group h-[450px] p-8 rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm shadow-2xl overflow-hidden flex flex-col justify-center relative hover:border-white/10 transition-colors"
-                        >
-                            <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10 relative z-10">
-                                <Layers className="w-5 h-5 text-white" />
-                            </div>
-                            <div className="relative z-10">
-                                <h3 className="text-2xl font-bold mb-4">Notes</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed max-w-sm">
-                                    Add AI-assisted notes, share them as text or image with your team seamlessly. You don't have to miss important stuff now!
-                                </p>
-                            </div>
-
-                            {/* Fanning Stacked Cards */}
-                            <div className="absolute right-12 top-1/2 -translate-y-1/2 w-40 h-52 hidden lg:block">
-                                {[2, 1, 0].map((i) => (
-                                    <motion.div
-                                        key={i}
-                                        whileHover={{
-                                            rotate: i * 15 - 15,
-                                            x: i * 40 - 40,
-                                            y: i * 10 - 5
-                                        }}
-                                        className="absolute inset-0 bg-zinc-900 border border-white/10 rounded-xl p-4 shadow-xl origin-bottom"
-                                        style={{ zIndex: 10 - i }}
-                                    >
-                                        <div className="w-8 h-1 bg-white/10 rounded-full mb-3" />
-                                        <div className="space-y-2">
-                                            <div className="w-full h-1 bg-white/5 rounded-full" />
-                                            <div className="w-3/4 h-1 bg-white/5 rounded-full" />
-                                            {i === 0 && <Sparkles className="w-4 h-4 text-white/20 absolute bottom-4 right-4" />}
-                                        </div>
-                                    </motion.div>
-                                ))}
-                            </div>
-                        </motion.div>
-
-                        {/* Traditional Inbox */}
-                        <motion.div
-                            initial={{ opacity: 0, y: 30 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            viewport={{ once: true }}
-                            transition={{ delay: 0.3 }}
-                            className="group relative h-[450px] rounded-3xl border border-white/5 bg-zinc-950/50 backdrop-blur-sm overflow-hidden flex flex-col md:flex-row shadow-2xl hover:border-white/10 transition-colors"
-                        >
-                            <div className="flex-1 bg-gradient-to-tl from-white/5 to-transparent relative p-8 lg:flex items-center justify-center hidden">
-                                <div className="w-full max-w-[240px] space-y-3 relative">
-                                    {/* Scanning Beam for Inbox */}
-                                    <motion.div
-                                        animate={{ height: ['0%', '100%', '0%'], top: ['0%', '0%', '100%'] }}
-                                        transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
-                                        className="absolute left-[-8px] w-[2px] bg-white/40 blur-[1px] z-20"
-                                    />
-                                    {[1, 2, 3, 4].map(p => (
-                                        <motion.div
-                                            key={p}
-                                            animate={p === 2 ? {
-                                                backgroundColor: ['rgba(24,24,27,1)', 'rgba(255,255,255,0.05)', 'rgba(24,24,27,1)'],
-                                                borderColor: ['rgba(255,255,255,0.05)', 'rgba(255,255,255,0.2)', 'rgba(255,255,255,0.05)']
-                                            } : {}}
-                                            transition={{ duration: 4, repeat: Infinity }}
-                                            className="h-12 bg-zinc-900 rounded-xl border border-white/5 flex items-center px-4 justify-between group/row"
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-2 h-2 rounded-full bg-white/20" />
-                                                <div className="h-2 w-16 bg-white/10 rounded-full" />
-                                            </div>
-                                            {p === 2 && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-white/10 border border-white/10"
-                                                >
-                                                    <Sparkles className="w-2.5 h-2.5 text-white/60" />
-                                                    <span className="text-[8px] font-bold text-white/60">AI DRAFT</span>
-                                                </motion.div>
-                                            )}
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="flex-1 p-8 flex flex-col justify-center relative z-10">
-                                <div className="w-10 h-10 rounded-lg bg-white/5 flex items-center justify-center mb-6 border border-white/10">
-                                    <Inbox className="w-5 h-5 text-white" />
-                                </div>
-                                <h3 className="text-2xl font-bold mb-4">Traditional Inbox</h3>
-                                <p className="text-zinc-400 text-sm leading-relaxed">
-                                    Inbox in a traditional way so you don't lose the record of your emails. Ask AI button in every email connected with Arcus intelligence.
-                                </p>
-                            </div>
-                        </motion.div>
-                    </div>
-
-                    <div className="flex flex-col sm:flex-row justify-center gap-4 mt-20">
-                        <LiquidButton
-                            onClick={(e) => handleClick(e, 'waitlist')}
-                            size="xxl"
-                            className="text-white"
-                        >
-                            Join Waitlist
-                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                        </LiquidButton>
-                        <Button
-                            variant="outline"
-                            className="border-white/10 bg-white/5 text-white hover:bg-white/10 rounded-full px-12 py-7 text-lg font-bold backdrop-blur-sm"
-                        >
-                            See Our Services
-                        </Button>
-                    </div>
-                </div>
-            </section>
-
-            {/* Comparison Section */}
-            <ComparisonSection />
-
-            {/* Security Section — Redesigned for Maximum Trust & Engagement */}
-            <section id="integration" className="py-32 px-6 bg-zinc-950/50 z-10 relative overflow-hidden">
-                {/* Subtle background glow effect */}
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-white/[0.01] blur-[150px] pointer-events-none rounded-full" />
-
-                <div className="max-w-4xl mx-auto text-center mb-20 relative z-10">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] mb-6">
-                        <ShieldCheck className="h-4 w-4 text-white" />
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-zinc-400">Military-Grade Core</span>
-                    </div>
-                    <h2 className="text-5xl md:text-7xl font-bold mb-6 tracking-tighter bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
-                        We literally cannot read your emails.
-                    </h2>
-                    <p className="text-lg md:text-xl text-zinc-400 leading-relaxed max-w-3xl mx-auto">
-                        We don't just promise privacy — <strong className="text-white font-semibold">we hardcoded it.</strong> Mailient uses a Zero-Knowledge architecture, meaning your personal data is locked with keys that stay on your physical device. 
-                    </p>
-                </div>
-
-                <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-                    {/* Big Dopamine Card: Zero-Knowledge Browser Vault */}
-                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        
-                        <div>
-                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
-                                <Lock className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Zero-Knowledge Browser Vault</h3>
-                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
-                                Your device acts as a hardware key. We encrypt your emails directly inside your browser <strong className="text-zinc-200">before they ever touch our servers</strong> using AES-256-GCM — the same encryption standard used by the NSA for top-secret documents. 
-                            </p>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Local Encryption</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">AES-256-GCM</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Zero Server-Sight</span>
-                        </div>
-                    </div>
-
-                    {/* AI Data Redaction Proxy */}
-                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        
-                        <div>
-                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
-                                <Cpu className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">AI Privacy Shield</h3>
-                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
-                                Your identity is safe from third parties. Before your content is processed by our AI models, our sanitization engine automatically <strong className="text-zinc-200">strips all personal data</strong>. Your name, email, phone, and card numbers are replaced with clean placeholders. The AI only sees context.
-                            </p>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">PII Redaction</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">No AI Training</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Anonymized Context</span>
-                        </div>
-                    </div>
-
-                    {/* Tamper-Proof Audit Logging */}
-                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        
-                        <div>
-                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
-                                <Activity className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Tamper-Proof Audit Logs</h3>
-                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
-                                Total transparency, completely immutable. Every login, email access, or AI draft is written to an append-only security log. Each entry is digitally signed using <strong className="text-zinc-200">HMAC-SHA256 signatures</strong>. If a record is tampered with, the cryptographic signature breaks instantly.
-                            </p>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Append-Only Logs</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Tamper Detection</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">My Activity Page</span>
-                        </div>
-                    </div>
-
-                    {/* Session Binding Fingerprints */}
-                    <div className="group p-8 md:p-10 rounded-[2.5rem] border border-white/5 bg-white/[0.01] backdrop-blur-md hover:border-white/10 transition-all duration-500 flex flex-col justify-between overflow-hidden relative">
-                        <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                        
-                        <div>
-                            <div className="mb-8 p-4 bg-white/5 rounded-2xl w-fit border border-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] group-hover:scale-110 transition-transform">
-                                <Zap className="w-8 h-8" />
-                            </div>
-                            <h3 className="text-2xl md:text-3xl font-bold mb-4 tracking-tight">Physical Session Binding</h3>
-                            <p className="text-zinc-400 text-base leading-relaxed mb-6">
-                                Hijacking is mathematically impossible. We lock your active session to your physical device fingerprint — combining your IP address and browser signature. If a malicious attacker steals your access token and tries to use it from anywhere else, <strong className="text-zinc-200">they are instantly kicked out</strong>.
-                            </p>
-                        </div>
-                        
-                        <div className="flex flex-wrap gap-2.5 mt-4 pt-4 border-t border-white/[0.05]">
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">IP + UA Binding</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Silent Guard</span>
-                            <span className="px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-bold text-white tracking-wider uppercase">Token Rotation</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Founder Section - Premium Redesign */}
-            <section className="py-40 px-6 z-10 relative overflow-hidden">
-                <div className="max-w-5xl mx-auto border border-white/5 rounded-[4rem] bg-zinc-950/30 backdrop-blur-3xl p-12 md:p-24 relative">
-                    <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
-                        <Quote className="w-32 h-32 text-white" />
-                    </div>
-
-                    <div className="flex flex-col md:flex-row items-center gap-16">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            viewport={{ once: true }}
-                            className="relative"
-                        >
-                            <div className="absolute inset-0 bg-white/5 blur-3xl rounded-full" />
-                            <div className="relative w-48 h-48 md:w-64 md:h-64 rounded-full border-2 border-white/10 overflow-hidden shadow-2xl">
-                                <img
-                                    src="/maulik.png"
-                                    alt="Maulik - Founder"
-                                    className="w-full h-full object-cover grayscale hover:grayscale-0 transition-all duration-700"
-                                />
-                            </div>
-                            <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 px-6 py-2 bg-white text-black text-xs font-black uppercase tracking-widest rounded-full shadow-xl">
-                                Founder
-                            </div>
-                        </motion.div>
-
-                        <div className="flex-1 text-center md:text-left">
-                            <motion.h3
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                className="text-2xl font-bold mb-2 tracking-widest uppercase text-white/40"
-                            >
-                                Maulik
-                            </motion.h3>
-                            <motion.p
-                                initial={{ opacity: 0, x: -20 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.1 }}
-                                className="text-zinc-400 font-bold mb-8 text-sm uppercase tracking-[0.4em]"
-                            >
-                                14 y/o founder
-                            </motion.p>
-
-                            <motion.blockquote
-                                initial={{ opacity: 0, y: 20 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.2 }}
-                                className="text-2xl md:text-3xl font-medium text-zinc-100 italic mb-10 leading-snug"
-                            >
-                                "I built Mailient because the inbox is the last frontier of friction for founders. My goal is to transform email from a chore into a high-leverage asset."
-                            </motion.blockquote>
-
-                            <motion.div
-                                initial={{ opacity: 0, y: 10 }}
-                                whileInView={{ opacity: 1, y: 0 }}
-                                viewport={{ once: true }}
-                                transition={{ delay: 0.3 }}
-                            >
-                                <Button variant="outline" className="rounded-full border-white/10 bg-white/5 hover:bg-white/10 text-white px-8 h-12" asChild>
-                                    <a href="https://x.com/Maulik_055" target="_blank" className="flex items-center gap-2">
-                                        Connect with me
-                                        <ArrowRight className="w-4 h-4" />
-                                    </a>
-                                </Button>
-                            </motion.div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* Pricing Section */}
-            <section id="pricing" className="py-32 bg-black z-10 relative">
-                <PricingSection
-                    plans={plans}
-                    heading="Simple Price For All"
-                    description="Choose the layer of intelligence that matches your output velocity."
-                    className="bg-transparent"
-                />
-            </section>
-
-            {/* FAQ Section */}
-            <section id="faq" className="py-40 px-6 z-10 relative bg-black">
-                <div className="max-w-4xl mx-auto">
-                    <div className="flex flex-col items-center mb-20 text-center">
-                        <div className="px-4 py-1.5 rounded-full border border-white/10 bg-white/5 mb-8">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-white/80">FAQ</span>
-                        </div>
-                        <h2 className="text-4xl md:text-7xl font-bold mb-6 tracking-tighter">Questions? Answers!</h2>
-                        <p className="text-zinc-400 text-lg max-w-2xl">
-                            Everything you need to know about Mailient. Can't find what you're looking for? <a href="mailto:support@mailient.com" className="text-white font-bold hover:underline">Contact us</a>.
-                        </p>
-                    </div>
-
-                    <div className="space-y-4 max-w-5xl mx-auto">
-                        <FAQItem
-                            question="Is Mailient compatible with any email provider?"
-                            answer="Currently, Mailient is optimized for Gmail. We focus on providing the deepest possible integration with Google's API to ensure real-time sync and high security."
-                        />
-                        <FAQItem
-                            question="Can I change my plan later?"
-                            answer="Absolutely! You can upgrade or downgrade your plan at any time. Changes take effect immediately, and we'll prorate the difference."
-                        />
-                        <FAQItem
-                            question="Is my data used to train public AI models?"
-                            answer="No. Your email data is strictly private and is never used to train public LLMs. We use isolated inference to ensure your business intelligence stays within your secure workspace."
-                        />
-                        <FAQItem
-                            question="Is my email data secure?"
-                            answer="Yes, security is our top priority. We use Zero-Knowledge End-to-End Encryption, ensuring that your decryption keys never leave your browser. We are built on high-level security protocols that protect your identity and data from any outside interference."
-                        />
-                        <FAQItem
-                            question="How does AI drafting match my unique voice?"
-                            answer="The AI analyzes your previous outgoing threads to learn your tone, signature style, and typical responses. Over time, it drafts replies that are indistinguishable from your own writing. Note: All email sending actions require you to draft and approve each message — Mailient does not send emails automatically without your approval."
-                        />
-                    </div>
-                </div>
-            </section>
-
-            {/* Final CTA Layer */}
-            <section className="py-20 px-6 z-10 relative">
-                <div className="max-w-6xl mx-auto">
-                    <motion.div
-                        initial={{ opacity: 0, y: 40 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="relative rounded-[3rem] border border-white/5 bg-zinc-950/50 backdrop-blur-xl overflow-hidden py-24 px-8 text-center"
-                    >
-                        {/* Subtle Background Glow */}
-                        <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/[0.03] to-transparent pointer-events-none" />
-
-                        <div className="max-w-3xl mx-auto relative z-10">
-                            <h2 className="text-4xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-b from-white to-white/50 bg-clip-text text-transparent">
-                                Ready to transform<br />your email workflow?
-                            </h2>
-                            <p className="text-zinc-400 text-lg md:text-xl mb-12 leading-relaxed">
-                                Connect your Gmail account today and see why people trust Mailient for their email automation.
-                            </p>
-
-                            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-10">
-                                <LiquidButton
-                                    onClick={(e) => handleClick(e, 'waitlist')}
-                                    size="xxl"
-                                >
-                                    Join Waitlist
-                                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                                </LiquidButton>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
-                                    size="lg"
-                                    className="border-white/10 bg-transparent text-white hover:bg-white/5 rounded-2xl px-12 py-7 text-lg font-bold transition-all"
-                                >
-                                    Talk to Founder
-                                </Button>
-                            </div>
-
-                            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-3 text-zinc-500 text-sm font-medium">
-                                <span className="flex items-center gap-2">
-                                    Direct access to founder (Google Workspace)
-                                </span>
-                                <span className="hidden sm:block text-zinc-800">•</span>
-                                <span className="flex items-center gap-2">
-                                    2 Whop apps provided
-                                </span>
-                                <span className="hidden sm:block text-zinc-800">•</span>
-                                <span className="flex items-center gap-2">
-                                    Setup in 2 minutes
-                                </span>
-                            </div>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* AI Summary Section */}
-            <section className="py-16 px-6 z-10 relative bg-zinc-950/50">
-                <div className="max-w-4xl mx-auto text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="mb-12"
-                    >
-                        <h2 className="text-2xl md:text-3xl font-bold text-white mb-4">
-                            Request an AI summary of Mailient
-                        </h2>
-                        <p className="text-zinc-400 text-sm md:text-base mb-8">
-                            Ask any AI platform about Mailient by website "mailient.xyz"
-                        </p>
-
-                        {/* AI Platform Buttons */}
-                        <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-8">
-                            <a
-                                href="https://chat.openai.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
-                            >
-                                <svg className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                                    <path d="M22.282 9.821a5.984 5.984 0 0 0-.516-4.91 6.046 6.046 0 0 0-6.51-2.9A6.065 6.065 0 0 0 4.981 4.18a5.984 5.984 0 0 0-3.998 2.9 6.046 6.046 0 0 0 .743 7.097 5.98 5.98 0 0 0 .51 4.911 6.051 6.051 0 0 0 6.515 2.9A5.985 5.985 0 0 0 13.259 24a6.056 6.056 0 0 0 5.771-4.205 5.989 5.989 0 0 0 3.997-2.9 6.055 6.055 0 0 0-.745-7.074zM13.259 22.45a4.575 4.575 0 0 1-2.686-.872l.163-.074 4.497-2.597a.795.795 0 0 0 .392-.682v-6.339l1.902 1.098a.072.072 0 0 1 .038.052v4.836a4.604 4.604 0 0 1-4.306 4.578zm-9.258-3.949a4.563 4.563 0 0 1-.546-3.074l.163.098 4.497 2.597a.77.77 0 0 0 .784 0l5.49-3.17v2.194a.08.08 0 0 1-.032.061L9.86 20.32a4.603 4.603 0 0 1-4.86-1.819zm-1.86-7.654a4.543 4.543 0 0 1 1.194-2.667V13.4a.77.77 0 0 0 .393.667l5.49 3.17-1.902 1.098a.072.072 0 0 1-.07 0l-4.531-2.615a4.603 4.603 0 0 1-1.574-4.873zm16.097 3.823l-5.49-3.17 1.902-1.098a.072.072 0 0 1 .07 0l4.531 2.615a4.603 4.603 0 0 1-.695 8.292v-4.85a.77.77 0 0 0-.318-.79zm1.886-3.074l-.163-.098-4.497-2.597a.77.77 0 0 0-.784 0l-5.49 3.17v-2.194a.08.08 0 0 1 .032-.061l4.531-2.615a4.603 4.603 0 0 1 6.371 4.395zm-6.693 2.312l-2.449-1.414-2.449 1.414v-2.828l2.449-1.414 2.449 1.414z" />
-                                </svg>
-                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">ChatGPT</span>
-                            </a>
-
-                            <a
-                                href="https://claude.ai/new?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
-                            >
-                                <svg className="w-5 h-5 text-[#D97757] group-hover:scale-110 transition-transform" viewBox="0 0 256 257" fill="currentColor">
-                                    <path d="m50.228 170.321 50.357-28.257.843-2.463-.843-1.361h-2.462l-8.426-.518-28.775-.778-24.952-1.037-24.175-1.296-6.092-1.297L0 125.796l.583-3.759 5.12-3.434 7.324.648 16.202 1.101 24.304 1.685 17.629 1.037 26.118 2.722h4.148l.583-1.685-1.426-1.037-1.101-1.037-25.147-17.045-27.22-18.017-14.258-10.37-7.713-5.25-3.888-4.925-1.685-10.758 7-7.713 9.397.649 2.398.648 9.527 7.323 20.35 15.75L94.817 91.9l3.889 3.24 1.555-1.102.195-.777-1.75-2.917-14.453-26.118-15.425-26.572-6.87-11.018-1.814-6.61c-.648-2.723-1.102-4.991-1.102-7.778l7.972-10.823L71.42 0 82.05 1.426l4.472 3.888 6.61 15.101 10.694 23.786 16.591 32.34 4.861 9.592 2.592 8.879.973 2.722h1.685v-1.556l1.36-18.211 2.528-22.36 2.463-28.776.843-8.1 4.018-9.722 7.971-5.25 6.222 2.981 5.12 7.324-.713 4.73-3.046 19.768-5.962 30.98-3.889 20.739h2.268l2.593-2.593 10.499-13.934 17.628-22.036 7.778-8.749 9.073-9.657 5.833-4.601h11.018l8.1 12.055-3.628 12.443-11.342 14.388-9.398 12.184-13.48 18.147-8.426 14.518.778 1.166 2.01-.194 30.46-6.481 16.462-2.982 19.637-3.37 8.88 4.148.971 4.213-3.5 8.62-20.998 5.184-24.628 4.926-36.682 8.685-.454.324.519.648 16.526 1.555 7.065.389h17.304l32.21 2.398 8.426 5.574 5.055 6.805-.843 5.184-12.962 6.611-17.498-4.148-40.83-9.721-14-3.5h-1.944v1.167l11.666 11.406 21.387 19.314 26.767 24.887 1.36 6.157-3.434 4.86-3.63-.518-23.526-17.693-9.073-7.972-20.545-17.304h-1.36v1.814l4.73 6.935 25.017 37.59 1.296 11.536-1.814 3.76-6.481 2.268-7.13-1.297-14.647-20.544-15.1-23.138-12.185-20.739-1.49.843-7.194 77.448-3.37 3.953-7.778 2.981-6.48-4.925-3.436-7.972 3.435-15.749 4.148-20.544 3.37-16.333 3.046-20.285 1.815-6.74-.13-.454-1.49.194-15.295 20.999-23.267 31.433-18.406 19.702-4.407 1.75-7.648-3.954.713-7.064 4.277-6.286 25.47-32.405 15.36-20.092 9.917-11.6-.065-1.686h-.583L44.07 198.125l-12.055 1.555-5.185-4.86.648-7.972 2.463-2.593 20.35-13.999-.064.065Z" />
-                                </svg>
-                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Claude</span>
-                            </a>
-
-                            <a
-                                href="https://gemini.google.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
-                            >
-                                <svg className="w-5 h-5 text-[#3186FF] group-hover:scale-110 transition-transform" viewBox="0 0 296 298" fill="currentColor">
-                                    <path d="M141.201 4.886c2.282-6.17 11.042-6.071 13.184.148l5.985 17.37a184.004 184.004 0 0 0 111.257 113.049l19.304 6.997c6.143 2.227 6.156 10.91.02 13.155l-19.35 7.082a184.001 184.001 0 0 0-109.495 109.385l-7.573 20.629c-2.241 6.105-10.869 6.121-13.133.025l-7.908-21.296a184 184 0 0 0-109.02-108.658l-19.698-7.239c-6.102-2.243-6.118-10.867-.025-13.132l20.083-7.467A183.998 183.998 0 0 0 133.291 26.28l7.91-21.394Z" />
-                                </svg>
-                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Gemini</span>
-                            </a>
-
-                            <a
-                                href="https://www.perplexity.ai/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
-                            >
-                                <svg className="w-5 h-5 text-[#20808d] group-hover:scale-110 transition-transform" viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M24 4.5v39M13.73 16.573v-9.99L24 16.573m0 14.5L13.73 41.417V27.01L24 16.573m0 0l10.27-9.99v9.99" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.73 31.396H9.44V16.573h29.12v14.823h-4.29" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M24 16.573L34.27 27.01v14.407L24 31.073" />
-                                </svg>
-                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Perplexity</span>
-                            </a>
-
-                            <a
-                                href="https://copilot.microsoft.com/?q=Tell%20me%20about%20Mailient%20by%20website%20mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="group flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900/80 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-900 transition-all duration-300"
-                            >
-                                <svg className="w-5 h-5 text-zinc-400 group-hover:text-white transition-colors" viewBox="0 0 256 208" fill="currentColor">
-                                    <path d="M205.3 31.4c14 14.8 20 35.2 22.5 63.6 6.6 0 12.8 1.5 17 7.2l7.8 10.6c2.2 3 3.4 6.6 3.4 10.4v28.7a12 12 0 0 1-4.8 9.5C215.9 187.2 172.3 208 128 208c-49 0-98.2-28.3-123.2-46.6a12 12 0 0 1-4.8-9.5v-28.7c0-3.8 1.2-7.4 3.4-10.5l7.8-10.5c4.2-5.7 10.4-7.2 17-7.2 2.5-28.4 8.4-48.8 22.5-63.6C77.3 3.2 112.6 0 127.6 0h.4c14.7 0 50.4 2.9 77.3 31.4Z" />
-                                </svg>
-                                <span className="text-zinc-300 group-hover:text-white text-sm font-medium transition-colors">Copilot</span>
-                            </a>
-                        </div>
-                    </motion.div>
-                </div>
-            </section>
-
-            {/* Footer */}
-            <footer className="py-20 px-6 border-t border-zinc-900 z-10 relative bg-zinc-950">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-12">
-                    <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-white rounded flex items-center justify-center">
-                            <Mail className="w-4 h-4 text-black" />
-                        </div>
-                        <span className="font-bold tracking-tight text-white">Mailient</span>
-                    </div>
-                    <div className="flex gap-8 text-sm font-bold text-zinc-400 uppercase tracking-widest">
-                        <a href="https://x.com/Maulik_055" target="_blank" className="hover:text-white transition-colors">Twitter</a>
-
-                        <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
-                        <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
-                    </div>
-                    <div className="flex flex-col md:flex-row items-center gap-8">
-                        <div className="flex items-center gap-6">
-                            <a
-                                href="https://www.producthunt.com/products/mailient?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-mailient"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                            >
-                                <img
-                                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1059008&theme=dark&t=1768213643164"
-                                    alt="Maileint - Stop managing emails, Start automating them. | Product Hunt"
-                                    className="h-8 w-auto grayscale hover:grayscale-0"
-                                />
-                            </a>
-                            <a
-                                href="https://www.foundrlist.com/product/mailient-2"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                            >
-                                <img
-                                    src="https://www.foundrlist.com/api/badge/mailient-2"
-                                    alt="Live on FoundrList"
-                                    width={160}
-                                    height={64}
-                                    className="w-auto grayscale hover:grayscale-0"
-                                />
-                            </a>
-                            <a
-                                href="https://launchigniter.com/product/mailient?ref=badge-mailient"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                            >
-                                <img
-                                    src="https://launchigniter.com/api/badge/mailient?theme=dark"
-                                    alt="Featured on LaunchIgniter"
-                                    className="h-8 w-auto grayscale hover:grayscale-0"
-                                />
-                            </a>
-                            <a
-                                href="https://www.launchit.site/project/mailient"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                            >
-                                <img
-                                    src="/badges/featured-dark.svg"
-                                    alt="Launched on Launchit"
-                                    className="h-8 w-auto grayscale hover:grayscale-0"
-                                />
-                            </a>
-                            <a
-                                href="https://fazier.com/launches/mailient.xyz"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="opacity-40 hover:opacity-100 transition-all duration-500 scale-90 hover:scale-100"
-                            >
-                                <img
-                                    src="https://fazier.com/api/v1//public/badges/launch_badges.svg?badge_type=launched&theme=dark"
-                                    width={120}
-                                    alt="Fazier badge"
-                                    className="w-auto grayscale hover:grayscale-0"
-                                />
-                            </a>
-                        </div>
-                        <p className="text-xs text-zinc-600">© 2026 Mailient Intelligence.</p>
-                    </div>
-                </div>
-                <div className="flex justify-center pt-10 text-zinc-500 text-xs text-center max-w-2xl mx-auto">
-                    <p>
-                        Mailient is a product of Maulik. All claims and features are based on the developer's statements and are subject to verification.
-                    </p>
-                </div>
-                <div className="pt-20 -mb-20 flex justify-center opacity-[0.03] select-none pointer-events-none w-full overflow-hidden">
-                    <span className="text-[15vw] md:text-[22vw] font-black uppercase tracking-tighter leading-none text-white whitespace-nowrap">
-                        mailient
-                    </span>
-                </div>
-            </footer>
-
-
-        </div>
-    )
-}
-
-function SecurityCard({ icon, title, desc }: { icon: React.ReactNode, title: string, desc: string }) {
-    return (
-        <div className="group p-8 rounded-3xl border border-white/5 bg-white/[0.02] backdrop-blur-sm hover:border-white/10 transition-colors">
-            <div className="mb-6 p-4 bg-white/5 rounded-2xl w-fit group-hover:scale-110 transition-transform">
-                {icon}
-            </div>
-            <h3 className="text-xl font-bold mb-4">{title}</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">{desc}</p>
-        </div>
-    );
-}
-
-
-function ComparisonSection() {
-    const { handleClick } = useSmoothScroll();
-    const mailientFeatures = [
-        "Automated AI workflows",
-        "Personalized neural voice strategies",
-        "Real-time relationship intelligence",
-        "Scalable AI-native systems",
-        "Advanced context-aware chatbots",
-        "Rapid, high-fidelity AI replies",
-        "Real-time inbox data analysis"
-    ];
-
-    const otherFeatures = [
-        "Manual triage workflows",
-        "Generic, one-size-fits-all templates",
-        "Basic chronological email views",
-        "Lacks relationship scalability",
-        "Standard keyword-based bots",
-        "Time-consuming manual drafting",
-        "Static and disconnected data"
-    ];
-
-    return (
-        <section className="py-32 px-6 z-10 relative overflow-hidden bg-black">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="flex flex-col items-center mb-20 text-center">
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full bg-white/[0.03] border border-white/[0.08] mb-8"
-                    >
-                        <ArrowRightLeft className="h-3.5 w-3.5 text-white/60" />
-                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/60">Comparison</span>
-                    </motion.div>
-
-                    <motion.h2
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.1 }}
-                        className="text-5xl md:text-7xl font-bold tracking-tight mb-6 bg-gradient-to-b from-white to-white/40 bg-clip-text text-transparent"
-                    >
-                        Precision vs Basic
-                    </motion.h2>
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: 0.2 }}
-                        className="text-zinc-500 max-w-xl mx-auto text-lg leading-relaxed"
-                    >
-                        See how our AI outperforms traditional tools with speed and intelligence.
-                    </motion.p>
-                </div>
-
-                {/* Cards Container */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto relative">
-                    {/* Background Glow for Mailient */}
-                    <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-white/5 blur-[100px] pointer-events-none" />
-
-                    {/* Mailient Card */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        className="group relative p-8 md:p-12 rounded-[2.5rem] border border-white/10 bg-zinc-950/50 backdrop-blur-xl shadow-[0_0_50px_-12px_rgba(255,255,255,0.05)] overflow-hidden"
-                    >
-                        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] to-transparent pointer-events-none" />
-
-                        <div className="mb-12 relative">
-                            <h3 className="text-4xl font-bold tracking-tight flex items-center">
-                                Mailient
-                                <motion.span
-                                    animate={{ opacity: [1, 0] }}
-                                    transition={{ duration: 0.8, repeat: Infinity }}
-                                    className="inline-block w-[2px] h-8 bg-white ml-1"
-                                />
-                            </h3>
-                            <div className="h-px w-full bg-gradient-to-r from-white/10 to-transparent mt-8" />
-                        </div>
-
-                        <ul className="space-y-5 mb-12">
-                            {mailientFeatures.map((feature, i) => (
-                                <motion.li
-                                    key={i}
-                                    initial={{ opacity: 0, x: -10 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="flex items-center gap-3 text-zinc-400"
-                                >
-                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                                        <Check className="w-3 h-3 text-white" />
-                                    </div>
-                                    <span className="text-sm font-medium">{feature}</span>
-                                </motion.li>
-                            ))}
-                        </ul>
-
-                        <Button
-                            className="w-full bg-white text-black hover:bg-zinc-200 rounded-2xl py-6 text-base font-bold group/btn shadow-[0_20px_40px_-15px_rgba(255,255,255,0.15)]"
-                            onClick={(e) => handleClick(e, 'waitlist')}
-                        >
-                            Join Waitlist
-                            <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                        </Button>
-                    </motion.div>
-
-                    {/* Others Card */}
-                    <motion.div
-                        initial={{ opacity: 0, x: 20 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        className="relative p-8 md:p-12 rounded-[2.5rem] border border-white/5 bg-zinc-950/20 backdrop-blur-sm grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-500"
-                    >
-                        <div className="mb-12">
-                            <h3 className="text-4xl font-bold tracking-tight text-zinc-400">Others</h3>
-                            <div className="h-px w-full bg-gradient-to-r from-white/5 to-transparent mt-8 border-dashed border-b border-zinc-800" />
-                        </div>
-
-                        <ul className="space-y-5">
-                            {otherFeatures.map((feature, i) => (
-                                <motion.li
-                                    key={i}
-                                    initial={{ opacity: 0, x: 10 }}
-                                    whileInView={{ opacity: 1, x: 0 }}
-                                    viewport={{ once: true }}
-                                    transition={{ delay: i * 0.1 }}
-                                    className="flex items-center gap-3 text-zinc-500"
-                                >
-                                    <div className="flex-shrink-0 w-5 h-5 rounded-full bg-white/5 border border-white/5 flex items-center justify-center">
-                                        <Check className="w-3 h-3 text-zinc-600" />
-                                    </div>
-                                    <span className="text-sm font-medium">{feature}</span>
-                                </motion.li>
-                            ))}
-                        </ul>
-                    </motion.div>
-                </div>
-            </div>
-        </section>
-    );
-}
-
-function FAQItem({ question, answer }: { question: string, answer: string }) {
-    const [isOpen, setIsOpen] = useState(false);
-    return (
-        <div
-            className={`border rounded-2xl transition-all duration-300 ${isOpen ? 'bg-zinc-900/40 border-white/10' : 'bg-transparent border-white/5 hover:border-white/10'}`}
+  const router = useRouter();
+  const { data: session, status } = useSession();
+  const [activeStep, setActiveStep] = useState(0); // 0: Sift, 1: Draft, 2: Book
+  const [activeFaq, setActiveFaq] = useState<number | null>(null);
+  
+  // Interactive Mouse position for glowing light effect
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [heroHover, setHeroHover] = useState(false);
+
+  // Background Grid ref
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Scroll animations
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"]
+  });
+
+  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const heroOpacity = useTransform(scrollYProgress, [0, 0.25], [1, 0]);
+
+  // Google One Tap Login Initialization
+  useEffect(() => {
+    if (status !== "unauthenticated") return;
+
+    const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!clientId) {
+      console.warn("One Tap Login skipped: NEXT_PUBLIC_GOOGLE_CLIENT_ID is missing.");
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      const google = (window as any).google;
+      if (google) {
+        google.accounts.id.initialize({
+          client_id: clientId,
+          callback: async (response: any) => {
+            console.log("🚀 One Tap Credential Received. Bridging Login...");
+            await signIn("google-one-tap", {
+              credential: response.credential,
+              callbackUrl: "/onboarding",
+              redirect: true,
+            });
+          },
+          auto_select: false,
+          cancel_on_tap_outside: true,
+          context: "signin",
+        });
+        google.accounts.id.prompt();
+      }
+    };
+    document.head.appendChild(script);
+
+    return () => {
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
+    };
+  }, [status]);
+
+  // Autoplay step animations
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 3);
+    }, 8000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setMousePos({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top
+    });
+  };
+
+  return (
+    <div
+      ref={containerRef}
+      className="relative min-h-screen bg-white text-neutral-900 selection:bg-neutral-900 selection:text-white font-satoshi overflow-x-hidden scroll-smooth"
+    >
+      {/* 1. Translucent Navigation */}
+      <Navbar />
+
+      {/* Global Background Grid & Atmospheric Fog */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
+        {/* Fine Linear Grid */}
+        <div 
+          className="absolute inset-0 opacity-[0.025]"
+          style={{
+            backgroundImage: `radial-gradient(circle, #000 1px, transparent 1px)`,
+            backgroundSize: "24px 24px"
+          }}
+        />
+        {/* Soft atmospheric radial gradients */}
+        <div className="absolute top-[10%] left-[20%] w-[800px] h-[800px] rounded-full bg-neutral-100/40 blur-[120px] pointer-events-none" />
+        <div className="absolute top-[40%] right-[10%] w-[600px] h-[600px] rounded-full bg-neutral-50/60 blur-[100px] pointer-events-none" />
+        <div className="absolute bottom-[20%] left-[10%] w-[900px] h-[900px] rounded-full bg-neutral-100/30 blur-[150px] pointer-events-none" />
+      </div>
+
+      {/* 2. HERO SECTION */}
+      <section 
+        className="relative pt-40 pb-20 md:pt-48 md:pb-32 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10 overflow-hidden"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHeroHover(true)}
+        onMouseLeave={() => setHeroHover(false)}
+      >
+        {/* Ambient Mouse Lighting */}
+        {heroHover && (
+          <div 
+            className="absolute pointer-events-none w-[600px] h-[600px] rounded-full bg-neutral-100/50 blur-[80px] -z-10 transition-opacity duration-500"
+            style={{
+              left: mousePos.x - 300,
+              top: mousePos.y - 300
+            }}
+          />
+        )}
+
+        <motion.div
+          style={{ scale: heroScale, opacity: heroOpacity }}
+          className="w-full flex flex-col items-center"
         >
+          {/* Subheader Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+            className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-50 border border-neutral-200/50 shadow-sm mb-8"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-neutral-800" />
+            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-neutral-700">
+              Autonomous Email Agent
+            </span>
+          </motion.div>
+
+          {/* Tagline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
+            className="text-5xl md:text-8xl font-normal tracking-tight text-neutral-900 max-w-4xl leading-[1.05]"
+          >
+            Hours of email, <br />
+            <span className="font-extralight italic text-neutral-500">handled overnight.</span>
+          </motion.h1>
+
+          {/* Subheadline (one line on what it does) */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="text-neutral-500 text-lg md:text-xl font-light max-w-2xl mt-8 leading-relaxed"
+          >
+            Mailient sifts your inbox, drafts contextual replies in your personal voice, and books your calendar meetings automatically.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 25 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="flex flex-wrap items-center justify-center gap-4 mt-10"
+          >
             <button
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full p-6 text-left flex items-center justify-between group"
+              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              className="relative group overflow-hidden px-8 py-3.5 rounded-full bg-neutral-950 text-white text-[13px] font-semibold tracking-tight transition-all duration-300 hover:bg-black hover:shadow-[0_4px_30px_rgba(0,0,0,0.15)] flex items-center gap-2"
             >
-                <span className={`text-lg font-bold transition-colors ${isOpen ? 'text-white' : 'text-zinc-200'}`}>
-                    {question}
-                </span>
-                <div className={`p-1 rounded-full transition-colors ${isOpen ? 'bg-white/10' : 'bg-transparent'}`}>
-                    <ChevronDown className={`w-5 h-5 text-zinc-400 transition-transform duration-500 ease-in-out ${isOpen ? 'rotate-180 text-white' : ''}`} />
-                </div>
+              <Mail className="w-4 h-4" />
+              Connect Gmail
+              <ArrowRight className="w-4 h-4 transition-transform duration-300 group-hover:translate-x-1" />
+              <div className="absolute inset-0 w-1/2 h-full bg-white/10 skew-x-12 -translate-x-full group-hover:translate-x-[250%] transition-transform duration-1000 ease-out" />
             </button>
-            <AnimatePresence initial={false}>
-                {isOpen && (
-                    <motion.div
-                        key="content"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.4, ease: [0.04, 0.62, 0.23, 0.98] }}
-                    >
-                        <div className="px-6 pb-6 text-zinc-400 text-base leading-relaxed max-w-4xl">
-                            {answer}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+
+            <a
+              href="#sift-reply-section"
+              className="px-8 py-3.5 rounded-full bg-white border border-neutral-200 text-neutral-800 text-[13px] font-semibold tracking-tight hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-all duration-300 flex items-center gap-1.5"
+            >
+              See a sample brief
+            </a>
+          </motion.div>
+        </motion.div>
+
+        {/* Hero Video Visual (translucent glass frame) */}
+        <motion.div
+          initial={{ opacity: 0, y: 40, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 1, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="relative w-full max-w-5xl mt-20 aspect-video rounded-[32px] border border-neutral-200 bg-neutral-50/50 backdrop-blur-md p-3 md:p-4 shadow-[0_30px_70px_-15px_rgba(0,0,0,0.08),0_0_1px_1px_rgba(255,255,255,0.8)_inset] overflow-hidden group"
+        >
+          <div className="absolute inset-0 bg-gradient-to-tr from-white/20 via-transparent to-neutral-200/10 pointer-events-none z-10 rounded-[32px]" />
+          
+          {/* Glass Inner Frame */}
+          <div className="relative w-full h-full rounded-[20px] bg-white border border-neutral-100 shadow-sm overflow-hidden flex items-center justify-center">
+            {/* Embed Space */}
+            <iframe
+              src="https://cap.so/embed/rpter2vmzaz3vyk?autoplay=1&muted=1&controls=1&loop=1&playsinline=1"
+              title="Mailient Product Demo"
+              className="absolute inset-0 w-full h-full border-none"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+              loading="lazy"
+            />
+          </div>
+        </motion.div>
+
+        {/* Trusted by companies - Animated Marquee */}
+        <div className="w-full mt-24 overflow-hidden border-y border-neutral-200/50 py-8 relative">
+          <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+          
+          <motion.div 
+            className="flex gap-20 whitespace-nowrap"
+            animate={{ x: [0, -1200] }}
+            transition={{ ease: "linear", duration: 35, repeat: Infinity }}
+          >
+            {/* Repeat partner list twice to ensure infinite scroll */}
+            {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-4 shrink-0">
+                <span className="text-[14px] font-semibold text-neutral-800 font-satoshi uppercase tracking-widest">
+                  {item.name}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-neutral-300" />
+                <span className="text-[11px] font-medium text-neutral-400 font-satoshi tracking-tight">
+                  {item.stat}
+                </span>
+              </div>
+            ))}
+          </motion.div>
         </div>
-    );
+      </section>
+
+      {/* 3. THREE THINGS IT DOES SECTION */}
+      <section 
+        id="sift-reply-section" 
+        className="py-32 px-6 max-w-7xl mx-auto border-t border-neutral-100 z-10 relative"
+      >
+        <div className="text-center mb-16">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400 mb-4">
+            Intelligence in Action
+          </h2>
+          <p className="text-3xl md:text-5xl font-light text-neutral-900 tracking-tight">
+            An email engine built to execute.
+          </p>
+        </div>
+
+        {/* Feature Row / Interaction Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12 items-center">
+          
+          {/* Menu Column (Left) */}
+          <div className="lg:col-span-5 space-y-4">
+            
+            {/* Feature 1: Sift */}
+            <div
+              onClick={() => setActiveStep(0)}
+              className={cn(
+                "p-6 rounded-2xl border cursor-pointer transition-all duration-300",
+                activeStep === 0
+                  ? "bg-neutral-50/80 border-neutral-300/80 shadow-sm"
+                  : "bg-white border-neutral-100 hover:border-neutral-200"
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                  <Layers className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-neutral-800 text-sm">Sift</h3>
+                    <Link href="/product/sift" className="text-xs text-neutral-500 hover:text-neutral-900 flex items-center gap-0.5">
+                      View details <ArrowUpRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                  <p className="text-xs text-neutral-500 leading-relaxed font-light">
+                    Mailient autonomous intelligence parses and labels every incoming thread. Important opportunities are grouped into action items, eliminating noise instantly.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 2: Draft Reply */}
+            <div
+              onClick={() => setActiveStep(1)}
+              className={cn(
+                "p-6 rounded-2xl border cursor-pointer transition-all duration-300",
+                activeStep === 1
+                  ? "bg-neutral-50/80 border-neutral-300/80 shadow-sm"
+                  : "bg-white border-neutral-100 hover:border-neutral-200"
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-neutral-800 text-sm">Draft Reply</h3>
+                    <Link href="/product/drafts" className="text-xs text-neutral-500 hover:text-neutral-900 flex items-center gap-0.5">
+                      View details <ArrowUpRight className="w-3 h-3" />
+                    </Link>
+                  </div>
+                  <p className="text-xs text-neutral-500 leading-relaxed font-light">
+                    Neural context mapping drafts highly accurate, professional replies mirroring your personal phrasing. Ready in your drafts folder; requires one click to approve.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Feature 3: Book Meetings */}
+            <div
+              onClick={() => setActiveStep(2)}
+              className={cn(
+                "p-6 rounded-2xl border cursor-pointer transition-all duration-300",
+                activeStep === 2
+                  ? "bg-neutral-50/80 border-neutral-300/80 shadow-sm"
+                  : "bg-white border-neutral-100 hover:border-neutral-200"
+              )}
+            >
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 flex items-center justify-center text-white flex-shrink-0 shadow-sm">
+                  <Calendar className="w-5 h-5" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center justify-between mb-1">
+                    <h3 className="font-semibold text-neutral-800 text-sm">Book Meetings</h3>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 font-medium text-neutral-500 uppercase tracking-wider">
+                      Auto Slot
+                    </span>
+                  </div>
+                  <p className="text-xs text-neutral-500 leading-relaxed font-light">
+                    When clients request calendar availability, Mailient cross-checks Cal.com and Google Calendar to propose conflict-free booking links automatically.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Interactive Live Screen Column (Right) */}
+          <div className="lg:col-span-7 bg-neutral-50/60 border border-neutral-200/50 rounded-3xl p-6 md:p-8 aspect-video flex flex-col justify-between overflow-hidden relative shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)]">
+            
+            {/* Top Bar for Card Mockup */}
+            <div className="flex items-center justify-between pb-4 border-b border-neutral-200/50">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-neutral-200" />
+                <div className="w-2.5 h-2.5 rounded-full bg-neutral-200" />
+                <div className="w-2.5 h-2.5 rounded-full bg-neutral-200" />
+              </div>
+              <span className="text-[10px] text-neutral-400 font-mono tracking-tight uppercase">
+                mailient-agent-core // live_sandbox
+              </span>
+            </div>
+
+            {/* Dynamic Card Content */}
+            <div className="flex-1 flex flex-col justify-center mt-6">
+              <AnimatePresence mode="wait">
+                
+                {/* STEP 0: SIFT DISPLAY */}
+                {activeStep === 0 && (
+                  <motion.div
+                    key="sift"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.4 }}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="px-2.5 py-1 rounded bg-amber-50 text-[10px] font-bold text-amber-700 tracking-wide uppercase border border-amber-200/50">
+                        Urgent Deal
+                      </span>
+                      <h4 className="text-sm font-semibold text-neutral-800">
+                        Investment Inquiry: Seed Extension Round
+                      </h4>
+                    </div>
+                    <p className="text-xs text-neutral-500 font-mono italic">
+                      Parsing inbound message signature... Extracting partner credentials...
+                    </p>
+                    {/* Live Sorted Indicator Grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="bg-white border border-neutral-200 p-3 rounded-xl shadow-sm text-center">
+                        <p className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">Priority</p>
+                        <p className="text-xs font-bold text-emerald-600">HIGH-SIGNAL</p>
+                      </div>
+                      <div className="bg-white border border-neutral-200 p-3 rounded-xl shadow-sm text-center">
+                        <p className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">Opportunity</p>
+                        <p className="text-xs font-bold text-neutral-800">$250,000</p>
+                      </div>
+                      <div className="bg-white border border-neutral-200 p-3 rounded-xl shadow-sm text-center">
+                        <p className="text-[9px] uppercase tracking-wider text-neutral-400 font-semibold mb-1">Time Action</p>
+                        <p className="text-xs font-bold text-neutral-800">2 Hours</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 1: DRAFT DISPLAY */}
+                {activeStep === 1 && (
+                  <motion.div
+                    key="draft"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.4 }}
+                    className="space-y-3"
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className="w-5 h-5 rounded-full bg-neutral-900 text-white flex items-center justify-center text-[10px]">
+                        AI
+                      </div>
+                      <h4 className="text-sm font-semibold text-neutral-800">Drafting reply to Sarah Miller...</h4>
+                    </div>
+                    <div className="bg-white border border-neutral-200 p-4 rounded-xl shadow-sm text-xs text-neutral-600 font-light space-y-2 relative">
+                      <p className="font-medium text-neutral-800">Subject: Re: Partner Meeting Setup</p>
+                      <p>
+                        Hi Sarah, <br />
+                        Thanks for reaching out. I'd love to chat. Our system security fits SOC2 specs perfectly. Does next Tuesday at 2 PM PST work? Here is my booking link.
+                      </p>
+                      <div className="absolute right-3 bottom-3 flex items-center gap-1 bg-neutral-50 px-2 py-1 rounded border border-neutral-200">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-[9px] text-neutral-500 font-semibold uppercase">Manual Approve Ready</span>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* STEP 2: BOOK MEETINGS */}
+                {activeStep === 2 && (
+                  <motion.div
+                    key="book"
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.4 }}
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between">
+                      <h4 className="text-sm font-semibold text-neutral-800">Conflict-Free Calendar Parsing</h4>
+                      <span className="text-[10px] text-neutral-400 font-mono">Cal.com active API</span>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-white border border-neutral-200 p-3 rounded-xl shadow-sm space-y-1">
+                        <p className="text-[9px] uppercase tracking-wider text-neutral-400">Incoming Request</p>
+                        <p className="text-xs font-semibold text-neutral-800">"Let's chat next week"</p>
+                      </div>
+                      <div className="bg-white border border-emerald-200 p-3 rounded-xl shadow-sm space-y-1 bg-emerald-50/10">
+                        <p className="text-[9px] uppercase tracking-wider text-emerald-600 font-semibold">Suggested Options</p>
+                        <p className="text-xs font-bold text-neutral-800">Mon 10am, Tue 3pm</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 text-xs text-neutral-500 bg-neutral-100/50 p-2.5 rounded-lg border border-neutral-200/50">
+                      <Clock className="w-3.5 h-3.5 text-neutral-400" />
+                      <span>Proposed calendar slots automatically queued for outbound message draft.</span>
+                    </div>
+                  </motion.div>
+                )}
+
+              </AnimatePresence>
+            </div>
+            
+            {/* Embedded Mini Video Placeholder */}
+            <div className="relative mt-4 aspect-video h-12 w-fit border border-neutral-200/50 rounded-lg bg-neutral-100 flex items-center justify-center overflow-hidden">
+              <iframe
+                src="https://cap.so/embed/58ekyq8enhrfq3z?autoplay=1&muted=1&controls=0&loop=1&playsinline=1"
+                title="Mini Feature Clip"
+                className="absolute inset-0 w-full h-full border-none pointer-events-none scale-105"
+              />
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 4. RADAR ORBIT INTEGRATIONS SECTION */}
+      <section className="py-24 px-6 border-t border-neutral-100 bg-neutral-50/30 z-10 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-16">
+          
+          {/* Left Text */}
+          <div className="max-w-md space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 border border-neutral-200 shadow-sm">
+              <Activity className="w-3 h-3 text-neutral-800" />
+              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-600">Integrations</span>
+            </div>
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight text-neutral-900 leading-tight">
+              Connect your favorite apps.
+            </h2>
+            <p className="text-neutral-500 font-light text-sm leading-relaxed">
+              Mailient syncs securely with your entire digital suite. By maintaining constant in-memory integration, your relational calendars, notes, and workflows are processed autonomously with bank-level encryption.
+            </p>
+          </div>
+
+          {/* Right Radar Canvas (Orbital Animation) */}
+          <div className="relative w-80 h-80 md:w-96 md:h-96 flex items-center justify-center bg-white rounded-full border border-neutral-200/60 shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)]">
+            
+            {/* Center Mailient Logo */}
+            <div className="z-10 w-16 h-16 rounded-2xl bg-neutral-950 flex items-center justify-center shadow-lg border border-neutral-800 relative">
+              <span className="text-white font-extrabold text-2xl tracking-tighter">M</span>
+              <div className="absolute -inset-1 rounded-2xl border border-dashed border-neutral-300 animate-spin-slow opacity-60" />
+            </div>
+
+            {/* Orbit 1: Inner (Dashed) */}
+            <motion.div
+              className="absolute w-44 h-44 rounded-full border border-dashed border-neutral-200"
+              animate={{ rotate: 360 }}
+              transition={{ ease: "linear", duration: 15, repeat: Infinity }}
+            >
+              {/* App: Notion */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-lg bg-white border border-neutral-200 shadow-sm flex items-center justify-center font-bold text-xs text-neutral-800">
+                N
+              </div>
+              {/* App: Cal.com */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-8 h-8 rounded-lg bg-white border border-neutral-200 shadow-sm flex items-center justify-center font-bold text-[10px] text-neutral-800">
+                Cal
+              </div>
+            </motion.div>
+
+            {/* Orbit 2: Outer (Solid) */}
+            <motion.div
+              className="absolute w-68 h-68 md:w-72 md:h-72 rounded-full border border-neutral-200/60"
+              animate={{ rotate: -360 }}
+              transition={{ ease: "linear", duration: 25, repeat: Infinity }}
+            >
+              {/* App: Google Calendar */}
+              <div className="absolute top-1/2 left-0 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-white border border-neutral-200 shadow-sm flex items-center justify-center text-xs">
+                📅
+              </div>
+              {/* App: Google Meet */}
+              <div className="absolute top-1/2 right-0 translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-lg bg-white border border-neutral-200 shadow-sm flex items-center justify-center text-xs">
+                📹
+              </div>
+            </motion.div>
+
+            {/* Radar Sweeper Visual Effect */}
+            <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-neutral-100/10 to-transparent animate-spin" style={{ animationDuration: "6s" }} />
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 5. ARCUS FLAGSHIP SECTION */}
+      <section className="py-32 px-6 max-w-7xl mx-auto z-10 relative">
+        
+        {/* Large Flagship Container (frosted dark grey palette for elite tech vibe) */}
+        <div className="relative rounded-[40px] border border-neutral-200 bg-neutral-900 text-white p-8 md:p-16 overflow-hidden shadow-2xl flex flex-col lg:flex-row items-center justify-between gap-12 group">
+          
+          {/* Subtly moving background gradients inside dark card */}
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.05),_transparent_60%)] pointer-events-none" />
+          <div className="absolute bottom-[-150px] left-[-150px] w-96 h-96 rounded-full bg-neutral-800/40 blur-[100px] pointer-events-none" />
+
+          {/* Text content */}
+          <div className="max-w-xl space-y-6 relative z-10 lg:w-1/2">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 shadow-sm">
+              <Cpu className="w-3.5 h-3.5 text-neutral-200" />
+              <span className="text-[10px] font-black uppercase tracking-wider text-neutral-300">
+                Flagship Model
+              </span>
+            </div>
+            
+            <h2 className="text-4xl md:text-6xl font-light tracking-tight text-white leading-tight">
+              Meet Arcus.
+            </h2>
+            
+            <p className="text-neutral-400 font-light text-sm md:text-base leading-relaxed">
+              Meet Arcus — your command-driven flagship AI. Arcus doesn't just read your email; it reasons over your entire relational graph. Ask Arcus to coordinate calendar conflicts, research incoming leads, or summarize weeks of context in a single query.
+            </p>
+
+            <div className="pt-4">
+              <Link
+                href="/product/arcus"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white text-neutral-950 font-semibold text-xs transition-transform duration-300 hover:scale-[1.02] shadow-md group-hover:bg-neutral-50"
+              >
+                Explore Arcus
+                <ArrowRight className="w-4 h-4 text-neutral-950" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Terminal / Chat Simulator Widget (Right) */}
+          <div className="lg:w-1/2 w-full max-w-lg bg-black/60 rounded-3xl p-6 border border-white/10 relative z-10 font-mono text-xs space-y-4 shadow-xl">
+            
+            <div className="flex items-center justify-between pb-3 border-b border-white/5 text-[10px] text-neutral-500">
+              <span>SYSTEM: Arcus-Node-v3</span>
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-neutral-400">
+                <span className="text-white font-bold">&gt;</span> Arcus, draft a follow-up detailing our security policy
+              </p>
+              
+              <div className="text-neutral-500 space-y-1">
+                <p className="text-[10px] text-neutral-500">Executing relational context mapping...</p>
+                <p className="text-[10px] text-neutral-500">Ingesting encryption certificates...</p>
+              </div>
+
+              <div className="p-3 bg-white/5 rounded-lg border border-white/10 text-neutral-300 space-y-2">
+                <p className="font-semibold text-[10px] text-white">Proposed Draft Reply (Sarah Miller):</p>
+                <p className="text-[11px] leading-relaxed text-neutral-300 font-light">
+                  Hi Sarah, Mailient ensures SOC2 Type II standard encryption at rest (AES-256) and in-memory execution. No email is sent without human approval.
+                </p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 6. BEFORE / AFTER INBOX VISUAL (Side-by-side) */}
+      <section className="py-24 px-6 bg-neutral-50/20 border-t border-neutral-100 z-10 relative">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="text-center mb-16 space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">
+              The Morning Triage
+            </h2>
+            <p className="text-3xl md:text-5xl font-light text-neutral-900 tracking-tight">
+              The morning, side by side.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+            
+            {/* Left Card: BEFORE (Chaotic Inbox) */}
+            <div className="rounded-3xl border border-neutral-200 bg-white p-6 md:p-8 flex flex-col justify-between shadow-sm relative group overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/[0.01] rounded-full blur-[60px] pointer-events-none" />
+              
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                    <span className="font-bold text-xs uppercase text-red-500 tracking-wider">Before Mailient</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-neutral-400">142 unread threads</span>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between text-xs text-neutral-600 opacity-80">
+                    <div>
+                      <p className="font-semibold text-neutral-800">Google Workspace Newsletter</p>
+                      <p className="font-light">Update on storage capabilities...</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-neutral-200">Updates</span>
+                  </div>
+
+                  <div className="p-3 bg-neutral-50 rounded-xl border border-neutral-100 flex items-center justify-between text-xs text-neutral-600 opacity-80">
+                    <div>
+                      <p className="font-semibold text-neutral-800">Support Ticket #82921</p>
+                      <p className="font-light">Client asking for dashboard query reload...</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-neutral-200">Support</span>
+                  </div>
+
+                  <div className="p-3 bg-neutral-50 rounded-xl border border-red-100 flex items-center justify-between text-xs text-neutral-600 relative overflow-hidden bg-red-50/5">
+                    <div>
+                      <p className="font-bold text-neutral-900 flex items-center gap-1.5">
+                        Sarah Miller (Acme VC)
+                        <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                      </p>
+                      <p className="font-light text-neutral-500">"Is your security package SOC2 compliant? Ready..."</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-red-100 text-red-700 font-bold">Buried Opportunity</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-neutral-100 text-center">
+                <p className="text-[11px] font-medium text-neutral-400 italic">
+                  Average morning focus: Lost in noise, missing high-value partnerships.
+                </p>
+              </div>
+            </div>
+
+            {/* Right Card: AFTER (Sieved Mailient) */}
+            <div className="rounded-3xl border border-neutral-300 bg-white p-6 md:p-8 flex flex-col justify-between shadow-[0_15px_40px_-20px_rgba(0,0,0,0.05)] relative group overflow-hidden">
+              {/* Premium Glow effect */}
+              <div className="absolute -top-10 -right-10 w-40 h-40 bg-neutral-100 rounded-full blur-[80px] opacity-100" />
+
+              <div>
+                <div className="flex items-center justify-between pb-4 border-b border-neutral-100 mb-6">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-neutral-900" />
+                    <span className="font-bold text-xs uppercase text-neutral-800 tracking-wider">After Mailient</span>
+                  </div>
+                  <span className="text-[11px] font-mono text-emerald-600 font-bold">3 High-Priority Briefs ready</span>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="p-3.5 bg-neutral-50/80 rounded-xl border border-neutral-200 flex items-center justify-between text-xs text-neutral-600">
+                    <div>
+                      <p className="font-bold text-neutral-900 flex items-center gap-1.5">
+                        Sarah Miller (Acme VC)
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      </p>
+                      <p className="font-light text-neutral-500">"Is your security package SOC2 compliant?..."</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold uppercase tracking-wider">
+                      Draft Prepared
+                    </span>
+                  </div>
+
+                  <div className="p-3 bg-neutral-50/50 rounded-xl border border-neutral-100 flex items-center justify-between text-xs text-neutral-400 opacity-60">
+                    <p className="font-light">139 Noise & Newsletters archived automatically</p>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-neutral-100 text-neutral-500">Auto Archived</span>
+                  </div>
+
+                  <div className="p-3 bg-neutral-50/80 rounded-xl border border-neutral-200 flex items-center justify-between text-xs text-neutral-600">
+                    <div>
+                      <p className="font-bold text-neutral-900">1 Calendar Appointment Scheduled</p>
+                      <p className="font-light text-neutral-500">Sarah Miller // Tuesday at 2 PM PST</p>
+                    </div>
+                    <span className="text-[9px] px-2 py-0.5 rounded bg-neutral-200 font-semibold">Scheduled</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 pt-4 border-t border-neutral-100 text-center">
+                <p className="text-[11px] font-semibold text-neutral-800 uppercase tracking-widest flex items-center justify-center gap-1">
+                  <Check className="w-3.5 h-3.5 text-emerald-600" strokeWidth={3} />
+                  0 Minutes spent triaging noise today
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 7. SOCIAL PROOF (Founder Quotes & Metrics) */}
+      <section className="py-28 px-6 max-w-7xl mx-auto z-10 relative">
+        
+        {/* Quotes Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 max-w-5xl mx-auto">
+          
+          <div className="space-y-6">
+            <span className="text-4xl text-neutral-200 font-serif">“</span>
+            <p className="text-lg md:text-xl font-light text-neutral-800 leading-relaxed italic">
+              Mailient has completely shifted how we manage VC and strategic relationships. Opportunities that used to sit buried for days are now answered in minutes in my exact personal phrasing.
+            </p>
+            <div>
+              <p className="font-semibold text-sm text-neutral-800">Marcus Thorne</p>
+              <p className="text-xs text-neutral-400">Founder, Aether Tech</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <span className="text-4xl text-neutral-200 font-serif">“</span>
+            <p className="text-lg md:text-xl font-light text-neutral-800 leading-relaxed italic">
+              Building a large engineering company means zero time for inbox maintenance. Mailient operates in the background, sifting through the clutter to queue up drafts and lock in meetings automatically.
+            </p>
+            <div>
+              <p className="font-semibold text-sm text-neutral-800">Evelyn Vance</p>
+              <p className="text-xs text-neutral-400">CEO, Retooling Corp</p>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Metric Row */}
+        <div className="grid grid-cols-3 gap-6 md:gap-8 max-w-3xl mx-auto mt-24 border-t border-neutral-200/60 pt-16 text-center">
+          <div>
+            <p className="text-3xl md:text-5xl font-extralight text-neutral-900 font-satoshi">1.2M+</p>
+            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold mt-2">Emails Sifted</p>
+          </div>
+          <div>
+            <p className="text-3xl md:text-5xl font-extralight text-neutral-900 font-satoshi">94%</p>
+            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold mt-2">Response Velocity</p>
+          </div>
+          <div>
+            <p className="text-3xl md:text-5xl font-extralight text-neutral-900 font-satoshi">14h</p>
+            <p className="text-[10px] uppercase tracking-widest text-neutral-400 font-semibold mt-2">Saved / Founder / wk</p>
+          </div>
+        </div>
+
+      </section>
+
+      {/* 8. SECURITY STRIP */}
+      <section className="bg-neutral-50 border-y border-neutral-200/50 py-4 px-6 text-center z-10 relative">
+        <Link 
+          href="/security"
+          className="inline-flex items-center gap-2 group text-xs text-neutral-600 hover:text-neutral-950 transition-colors"
+        >
+          <Lock className="w-3.5 h-3.5 text-neutral-400" />
+          <span>
+            Enterprise-grade data security: SOC2 compliant, AES-256 encryption, zero model training.
+          </span>
+          <span className="font-semibold text-neutral-800 group-hover:translate-x-1 transition-transform flex items-center gap-0.5">
+            Learn more &rarr;
+          </span>
+        </Link>
+      </section>
+
+      {/* 9. PRICING TEASER */}
+      <section className="py-24 px-6 text-center z-10 relative">
+        <div className="max-w-4xl mx-auto rounded-[32px] border border-neutral-200 bg-white p-8 md:p-12 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8 group">
+          <div className="text-left space-y-2">
+            <span className="text-[9px] px-2 py-0.5 rounded bg-neutral-100 font-black uppercase text-neutral-600 tracking-wider">
+              PRICING
+            </span>
+            <h3 className="text-2xl md:text-3xl font-light text-neutral-900 tracking-tight">
+              One subscription. Every feature.
+            </h3>
+            <p className="text-neutral-500 font-light text-xs max-w-md">
+              Start with our flexible subscription structure designed to scale with your inbox output velocity.
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end shrink-0 gap-3">
+            <div className="text-right">
+              <span className="text-sm text-neutral-400 font-medium">Starting at</span>
+              <p className="text-3xl md:text-4xl font-extrabold text-neutral-900">$16.58/mo</p>
+            </div>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-1.5 px-6 py-3 rounded-full bg-neutral-950 text-white font-semibold text-xs transition-transform duration-300 hover:scale-[1.02] shadow-md"
+            >
+              View pricing plans
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 10. FAQ SECTION */}
+      <section className="py-24 px-6 max-w-4xl mx-auto z-10 relative">
+        <div className="text-center mb-16 space-y-2">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.25em] text-neutral-400">
+            Frequently Asked
+          </h2>
+          <p className="text-3xl md:text-5xl font-light text-neutral-900 tracking-tight">
+            Frequently Asked Questions
+          </p>
+        </div>
+
+        {/* Expandable Accordions */}
+        <div className="space-y-4">
+          {FAQS.map((faq, idx) => {
+            const isOpen = activeFaq === idx;
+            return (
+              <div 
+                key={idx} 
+                className="rounded-2xl border border-neutral-200 bg-white overflow-hidden transition-all duration-300"
+              >
+                <button
+                  onClick={() => setActiveFaq(isOpen ? null : idx)}
+                  className="w-full px-6 py-5 flex items-center justify-between text-left focus:outline-none"
+                >
+                  <span className="font-semibold text-xs md:text-sm text-neutral-800">
+                    {faq.q}
+                  </span>
+                  <div className="w-6 h-6 rounded-full bg-neutral-50 flex items-center justify-center border border-neutral-100 flex-shrink-0">
+                    {isOpen ? (
+                      <Minus className="w-3.5 h-3.5 text-neutral-500" />
+                    ) : (
+                      <Plus className="w-3.5 h-3.5 text-neutral-500" />
+                    )}
+                  </div>
+                </button>
+
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0 }}
+                      animate={{ height: "auto" }}
+                      exit={{ height: 0 }}
+                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden border-t border-neutral-100"
+                    >
+                      <div className="px-6 py-5 text-xs md:text-sm text-neutral-500 font-light leading-relaxed bg-neutral-50/50">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* 11. FINAL CTA SECTION */}
+      <section className="relative py-32 px-6 text-center border-t border-neutral-100 bg-neutral-50/40 z-10 overflow-hidden">
+        
+        {/* Soft atmospheric gradient in background */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom,_rgba(240,240,240,0.5),_transparent_70%)] pointer-events-none" />
+
+        <div className="max-w-4xl mx-auto space-y-8 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 border border-neutral-200 shadow-sm">
+            <Zap className="w-3.5 h-3.5 text-neutral-800" />
+            <span className="text-[10px] font-black uppercase tracking-wider text-neutral-600">
+              Operating Scale
+            </span>
+          </div>
+
+          <h2 className="text-4xl md:text-7xl font-light tracking-tight text-neutral-900 leading-[1.1]">
+            Build the operating system <br />
+            your company deserves.
+          </h2>
+
+          <p className="text-neutral-500 font-light text-base md:text-lg max-w-xl mx-auto">
+            Modern companies don’t scale with headcount anymore. Connect Gmail to automate your inbox now.
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-6">
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              className="relative group overflow-hidden px-8 py-3.5 rounded-full bg-neutral-950 text-white text-[13px] font-semibold tracking-tight transition-all duration-300 hover:bg-black hover:shadow-[0_4px_30px_rgba(0,0,0,0.15)] flex items-center gap-2"
+            >
+              <Mail className="w-4 h-4" />
+              Connect Gmail
+            </button>
+
+            <a
+              href="mailto:partner@mailient.xyz?subject=Strategy%20Call"
+              className="px-8 py-3.5 rounded-full bg-white border border-neutral-200 text-neutral-800 text-[13px] font-semibold tracking-tight hover:bg-neutral-50 hover:border-neutral-300 shadow-sm transition-all duration-300 flex items-center gap-1.5"
+            >
+              Book Strategy Call
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* 12. FOOTER */}
+      <Footer />
+    </div>
+  );
 }

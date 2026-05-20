@@ -407,6 +407,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'request_confirmation',
+    description: 'Pause execution and show the user a confirmation card before performing a major action. Call this BEFORE: send_email (direct send), schedule_meeting (create calendar event), send_slack_message to any channel, create_notion_page. Do NOT use for draft_reply (drafts are reviewed in the UI). After calling, STOP — do not call any more tools in this turn. When the user confirms, proceed with the action in the next run.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        action: { type: 'string', description: 'Short label for the action, e.g. "Send email", "Create calendar event", "Post to Slack"' },
+        description: { type: 'string', description: 'One sentence describing exactly what will happen.' },
+        details: {
+          type: 'object',
+          description: 'Key field/value pairs shown to the user (e.g. { "To": "john@example.com", "Subject": "Project update", "Channel": "#general" })',
+          additionalProperties: { type: 'string' },
+        },
+      },
+      required: ['action', 'description'],
+    },
+  },
+  {
     name: 'ask_user',
     description: 'Ask the user clarifying questions before proceeding. Use this ONLY when the instruction is genuinely ambiguous and you cannot make a reasonable default decision. Keep questions concise. Provide 2-3 short option labels when the answer space is bounded; omit options for open-ended questions. Maximum 3 questions per call.',
     input_schema: {
@@ -470,12 +487,13 @@ export function getAvailableTools(connectedIntegrations: string[]): ToolSchema[]
 
 export interface ToolResult {
   output: string;
+  requiresConfirmation?: boolean;
   canvasData?: {
     title: string;
     type: string;
     markdown: string;
     draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string };
-    pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[] };
+    pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
   };
 }
 
@@ -495,6 +513,7 @@ export async function executeTool(
       case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
       case 'send_email':        result = await sendEmail(userId, input); break;
+      case 'request_confirmation': result = await requestConfirmation(input); break;
       case 'schedule_meeting':  result = await scheduleMeeting(userId, input); break;
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
       case 'search_notion':     result = await searchNotion(userId, input); break;
@@ -1213,6 +1232,29 @@ async function getUserTimezone(userId: string): Promise<string> {
       .maybeSingle();
     return (data?.preferences as Record<string, unknown>)?.timezone as string || 'UTC';
   } catch { return 'UTC'; }
+}
+
+async function requestConfirmation(input: any): Promise<ToolResult> {
+  const details: Record<string, string> = {};
+  if (input.details && typeof input.details === 'object') {
+    for (const [k, v] of Object.entries(input.details)) {
+      if (v !== null && v !== undefined && v !== '') details[k] = String(v);
+    }
+  }
+  return {
+    output: `Confirmation requested. Waiting for user to approve: "${input.action}". Do NOT call any more tools — the loop will stop here.`,
+    requiresConfirmation: true,
+    canvasData: {
+      title: input.action || 'Confirm action',
+      type: 'confirmation_required',
+      markdown: '',
+      pageMeta: {
+        action: input.action || 'Action',
+        description: input.description || '',
+        details,
+      },
+    },
+  };
 }
 
 async function createScheduledAgent(userId: string, input: any): Promise<ToolResult> {

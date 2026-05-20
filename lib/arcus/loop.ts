@@ -484,11 +484,26 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
                 if (result.canvasData) {
                   // Don't overwrite canvasContent with inline-card types
-                  // (scheduled_agent, integration_required — rendered as cards, not the canvas panel)
-                  if (result.canvasData.type !== 'scheduled_agent' && result.canvasData.type !== 'integration_required') {
+                  // (scheduled_agent, integration_required, confirmation_required — rendered as cards, not the canvas panel)
+                  if (
+                    result.canvasData.type !== 'scheduled_agent' &&
+                    result.canvasData.type !== 'integration_required' &&
+                    result.canvasData.type !== 'confirmation_required'
+                  ) {
                     canvasContent = result.canvasData;
                   }
                   emit('canvas', result.canvasData);
+                }
+
+                // If the tool requires user confirmation, end this run immediately.
+                // The frontend shows the ConfirmationCard; when the user responds,
+                // processAgentLoopMessage is called again with the full history.
+                if (result.requiresConfirmation) {
+                  toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
+                  messages.push({ role: 'user', content: toolResults as any });
+                  emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
+                  controller.close();
+                  return;
                 }
 
                 log('info', `tool_result ok`, { tool: tc.name, outputLen: result.output.length, hasCanvas: !!result.canvasData });
