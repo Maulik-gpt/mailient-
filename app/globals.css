@@ -3538,4 +3538,44 @@ html {
   scrollbar-color: rgba(255, 255, 255, 0.12) rgba(0, 0, 0, 0.4);
 }
 
+/* ===== LINEAR ESTHETICS: GRID TEXTURE & GRADIENTS ===== */
+.linear-grid-card {
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.045) 0%, transparent 70%), #050508;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  border-radius: 28px;
+}
+
+.linear-grid-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  background-size: 16px 16px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.linear-cta {
+  position: relative;
+  background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%), #181922;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  border-radius: 9999px;
+}
+
+.linear-cta:hover {
+  background: linear-gradient(180deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 100%), #1d1e2b;
+  border-color: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  transform: translateY(-1px);
+}
+
 

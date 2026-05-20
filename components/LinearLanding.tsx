@@ -599,7 +599,7 @@ export function LinearLanding() {
       {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
       <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <div 
-          className="w-full bg-[#050505] border border-white/[0.08] rounded-[32px] p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative overflow-hidden group shadow-[0_50px_120px_rgba(0,0,0,0.95)]"
+          className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
           onMouseMove={handleMouseMove}
         >
           {/* Card Cursor Lighting Glow spotlight */}
@@ -626,7 +626,7 @@ export function LinearLanding() {
             <div className="pt-6">
               <Link 
                 href="/product/arcus"
-                className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-transform duration-300 hover:scale-[1.02] flex items-center gap-2 w-fit cursor-pointer"
+                className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
               >
                 Review Arcus Flagship
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -635,7 +635,7 @@ export function LinearLanding() {
           </div>
 
           {/* Glass dashboard preview right side */}
-          <div className="flex-1 w-full bg-[#0a0a0a] border border-white/[0.04] p-6 rounded-2xl h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative overflow-hidden">
+          <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
             <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
@@ -777,7 +777,7 @@ export function LinearLanding() {
 
           {/* Quotes grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-24">
-            <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.08),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left">
+            <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
                 Mailient restored my momentum. I wake up to resolved threads and booked calls, not a wall of noise.
@@ -785,7 +785,7 @@ export function LinearLanding() {
               <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Austin, Founder at Aether Labs</span>
             </div>
 
-            <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.08),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left">
+            <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
                 Autonomous workflows are the ultimate leverage. Arcus handles the routine, keeping our team focused on shipping.
@@ -795,7 +795,7 @@ export function LinearLanding() {
           </div>
 
           {/* Security Strip */}
-          <div className="w-full py-4 px-6 rounded-[20px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_15px_30px_rgba(0,0,0,0.6),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_20px_40px_rgba(16,185,129,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
+          <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(16,185,129,0.06)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span className="text-[11px] text-neutral-400 font-sans">
@@ -822,7 +822,7 @@ export function LinearLanding() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto text-left items-stretch">
           {/* Monthly Plan */}
-          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group">
+          <div className="linear-grid-card p-8 flex flex-col justify-between h-[450px] group">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
                 <span className="text-[10px] text-indigo-400">✦</span>
@@ -855,14 +855,14 @@ export function LinearLanding() {
 
             <Link 
               href="/pricing"
-              className="px-6 py-2.5 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-center text-[10.5px] hover:bg-neutral-800 transition-colors w-full"
+              className="px-6 py-2.5 linear-cta text-white text-[10.5px] w-full"
             >
               Start Monthly
             </Link>
           </div>
 
           {/* Annual Plan */}
-          <div className="p-8 rounded-[28px] border border-white/[0.08] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.15),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group shadow-2xl">
+          <div className="linear-grid-card p-8 flex flex-col justify-between h-[450px] group !border-white/[0.12]">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
             
             <div>
@@ -907,7 +907,7 @@ export function LinearLanding() {
           </div>
 
           {/* Lifetime Plan */}
-          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(99,102,241,0.1),inset_0_1px_1px_rgba(255,255,255,0.05)] hover:border-white/[0.1] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-[450px] group">
+          <div className="linear-grid-card p-8 flex flex-col justify-between h-[450px] group">
             <div>
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
                 <span className="text-[10px] text-amber-500">✦</span>
@@ -940,7 +940,7 @@ export function LinearLanding() {
 
             <Link 
               href="/pricing"
-              className="px-6 py-2.5 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-center text-[10.5px] hover:bg-neutral-800 transition-colors w-full"
+              className="px-6 py-2.5 linear-cta text-white text-[10.5px] w-full"
             >
               Own It (Lifetime)
             </Link>

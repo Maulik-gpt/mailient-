@@ -149,7 +149,7 @@ export default function ArcusProductPage() {
         </div>
 
         {/* Triple Pane Obsidian Mockup Box */}
-        <div className="w-full bg-[#050608] border border-white/[0.08] rounded-[24px] shadow-[0_50px_120px_rgba(0,0,0,0.95)] overflow-hidden font-mono text-[11px] text-neutral-300 relative flex flex-col md:flex-row h-[580px]">
+        <div className="w-full linear-grid-card !rounded-[24px] overflow-hidden font-mono text-[11px] text-neutral-300 relative flex flex-col md:flex-row h-[580px]">
           <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.005] to-white/[0.02] pointer-events-none" />
 
           {/* Pane 1: Left Threads Sidebar */}
@@ -483,7 +483,7 @@ export default function ArcusProductPage() {
 
       {/* 4. SECURITY & INTEGRITY STRIP */}
       <section className="py-20 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div className="w-full py-4 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between text-left hover:border-white/[0.08] transition-colors cursor-pointer">
+        <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(99,102,241,0.06)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <span className="text-[11px] text-neutral-400 font-sans">

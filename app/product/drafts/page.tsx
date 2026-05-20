@@ -107,7 +107,7 @@ export default function DraftsProductPage() {
 
             <a
               href="#drafts-showcase"
-              className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+              className="px-8 py-3 linear-cta text-white font-medium text-xs flex items-center gap-2 cursor-pointer"
             >
               <Play className="w-3 h-3 fill-white" />
               Watch Drafts work
@@ -120,7 +120,7 @@ export default function DraftsProductPage() {
       {/* 2. INTERACTIVE SHOWCASE */}
       <section id="drafts-showcase" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <div 
-          className="w-full bg-[#050505] border border-white/[0.08] rounded-[32px] p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative overflow-hidden group shadow-[0_50px_120px_rgba(0,0,0,0.95)]"
+          className="w-full linear-grid-card !rounded-[32px] p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
           onMouseMove={handleMouseMove}
         >
           {/* Card Cursor Lighting Glow spotlight */}
@@ -161,7 +161,7 @@ export default function DraftsProductPage() {
           </div>
 
           {/* Interactive Screen Mockup (Draft Process) */}
-          <div className="flex-1 w-full bg-[#0a0a0a] border border-white/[0.04] p-6 rounded-2xl h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative overflow-hidden">
+          <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.03] text-[10px] text-neutral-500">
@@ -198,7 +198,7 @@ export default function DraftsProductPage() {
 
       {/* 3. SECURITY STRIP */}
       <section className="py-20 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div className="w-full py-4 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between text-left hover:border-white/[0.08] transition-colors cursor-pointer">
+        <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(99,102,241,0.06)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-[11px] text-neutral-400 font-sans">
