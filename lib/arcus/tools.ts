@@ -11,6 +11,7 @@
 import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
+import { getConnectedIntegrations } from './system-prompt';
 import type { ToolSchema } from './engine';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
@@ -1111,6 +1112,23 @@ async function sendSlackMessage(userId: string, input: any): Promise<ToolResult>
 
 // ── Scheduled agent creation ───────────────────────────────────────────────────
 
+const INTEGRATION_DETECTION: Record<string, RegExp> = {
+  gmail: /\b(gmail|email|mail|inbox|newsletter|draft|outreach|cold[\s-]?outreach|send.*email|email.*send|unread)\b/i,
+  gcal:  /\b(calendar|meeting|schedule|event|appointment|book.*meeting|meet.*link|google[\s-]?meet)\b/i,
+  slack: /\b(slack|slack[\s-]?message|slack[\s-]?dm|post.*slack|slack.*channel)\b/i,
+  notion: /\b(notion|notes|page|database|write.*notion|notion.*page|notion.*db)\b/i,
+};
+
+function detectRequiredIntegrations(taskDescription: string, outputChannel: string): string[] {
+  const needed = new Set<string>();
+  for (const [key, re] of Object.entries(INTEGRATION_DETECTION)) {
+    if (re.test(taskDescription)) needed.add(key);
+  }
+  if (outputChannel === 'gmail' || outputChannel === 'email') needed.add('gmail');
+  if (outputChannel === 'slack') needed.add('slack');
+  return [...needed];
+}
+
 const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 /** Human-readable label for the cron patterns the create form / LLM produce. */
@@ -1170,6 +1188,38 @@ async function createScheduledAgent(userId: string, input: any): Promise<ToolRes
   if (cron.split(/\s+/).length !== 5) {
     return { output: `Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).` };
   }
+
+  // ── Integration gate ────────────────────────────────────────────────────────
+  const required = detectRequiredIntegrations(input.task_description, input.output_channel || 'gmail');
+  if (required.length > 0) {
+    const connected = await getConnectedIntegrations(userId);
+    const missing = required.filter(r => !connected.includes(r));
+    if (missing.length > 0) {
+      return {
+        output: `Cannot create the scheduled agent yet — the following integrations are required but not connected: ${missing.join(', ')}. Ask the user to connect them using the card below, then call create_scheduled_agent again.`,
+        canvasData: {
+          title: input.name.trim(),
+          type: 'integration_required',
+          markdown: '',
+          pageMeta: {
+            required,
+            connected: required.filter(r => connected.includes(r)),
+            missing,
+            agentParams: {
+              name: input.name.trim(),
+              task_description: input.task_description.trim(),
+              cron_schedule: cron,
+              output_channel: input.output_channel || 'gmail',
+              slack_channel: input.slack_channel || null,
+              skip_confirmations: input.skip_confirmations ?? false,
+              expires_at: input.expires_at || null,
+            },
+          } as any,
+        },
+      };
+    }
+  }
+  // ── End integration gate ────────────────────────────────────────────────────
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase

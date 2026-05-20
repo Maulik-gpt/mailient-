@@ -482,9 +482,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 }
 
                 if (result.canvasData) {
-                  // Don't overwrite canvasContent with scheduled_agent canvas data
-                  // (it has markdown: '' and is rendered as an inline card, not a canvas panel)
-                  if (result.canvasData.type !== 'scheduled_agent') {
+                  // Don't overwrite canvasContent with inline-card types
+                  // (scheduled_agent, integration_required — rendered as cards, not the canvas panel)
+                  if (result.canvasData.type !== 'scheduled_agent' && result.canvasData.type !== 'integration_required') {
                     canvasContent = result.canvasData;
                   }
                   emit('canvas', result.canvasData);

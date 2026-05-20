@@ -17,6 +17,7 @@ import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
 import { ActionResultCard } from './components/ActionResultCard';
 import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
+import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
@@ -553,6 +554,7 @@ interface AgentMessage {
       contentPreview?: string;
     };
     scheduledAgent?: ScheduledAgentData;
+    integrationRequired?: IntegrationRequiredData;
     searchExecution?: {
       mainQuery: string;
       subQueries: Array<{
@@ -2068,6 +2070,7 @@ export default function ChatInterface({
       let currentPlanText = '';                       // populated by plan_text event
       let currentCanvasResult: any = null;            // populated by canvas event (reports/docs)
       let currentScheduledAgent: ScheduledAgentData | null = null; // populated by canvas scheduled_agent
+      let currentIntegrationRequired: IntegrationRequiredData | null = null; // populated by canvas integration_required
       let currentActionResult: any = null;            // populated by canvas notion_page / calendar_event
       let currentDraftReply: any = null;              // populated by canvas email_draft
 
@@ -2171,6 +2174,25 @@ export default function ChatInterface({
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, meta: { ...(m.meta || {}), scheduledAgent } };
+                }));
+                break;
+              }
+
+              // ── Integration required gate ────────────────────────────────────
+              // Emitted when create_scheduled_agent detects missing integrations.
+              if (cv.type === 'integration_required' && cv.pageMeta) {
+                const pm = cv.pageMeta as any;
+                const integrationRequired: IntegrationRequiredData = {
+                  agentName: cv.title,
+                  required: pm.required || [],
+                  connected: pm.connected || [],
+                  missing: pm.missing || [],
+                  agentParams: pm.agentParams || {},
+                };
+                currentIntegrationRequired = integrationRequired;
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), integrationRequired } };
                 }));
                 break;
               }
@@ -2356,8 +2378,8 @@ export default function ChatInterface({
               const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
               finalContent = roadmapText;
 
-              // Open canvas panel if the agent produced canvas content (excluding email_draft, reply, and scheduled_agent)
-              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.markdown) {
+              // Open canvas panel if the agent produced canvas content (excluding inline-card types)
+              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.markdown) {
                 const cv = data.canvasContent;
                 // email_draft needs structured content; everything else gets raw markdown string
                 const canvasContent = cv.type === 'email_draft' && cv.meta
@@ -2593,6 +2615,7 @@ export default function ChatInterface({
             ...(currentTaskList ? { taskList: currentTaskList } : {}),
             ...(currentPlanText ? { planText: currentPlanText } : {}),
             ...(currentScheduledAgent ? { scheduledAgent: currentScheduledAgent } : {}),
+            ...(currentIntegrationRequired ? { integrationRequired: currentIntegrationRequired } : {}),
             ...(currentActionResult ? { actionResult: currentActionResult } : {}),
             ...(currentDraftReply ? { draftReply: currentDraftReply } : {}),
             ...(currentCanvasResult ? { result: currentCanvasResult } : {}),
@@ -4477,6 +4500,26 @@ export default function ChatInterface({
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.scheduledAgent && (
                                       <ScheduledAgentCard
                                         data={(msg as AgentMessage).meta!.scheduledAgent!}
+                                      />
+                                    )}
+
+                                    {/* Integration Required Card — shown when create_scheduled_agent is blocked */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.integrationRequired && !((msg as AgentMessage).meta?.scheduledAgent) && (
+                                      <IntegrationRequiredCard
+                                        data={(msg as AgentMessage).meta!.integrationRequired!}
+                                        onAgentCreated={(agent) => {
+                                          setMessages(msgs => msgs.map(m => {
+                                            if (m.id !== msg.id || m.type !== 'agent') return m;
+                                            return {
+                                              ...m,
+                                              meta: {
+                                                ...(m as AgentMessage).meta,
+                                                scheduledAgent: agent,
+                                                integrationRequired: undefined,
+                                              },
+                                            };
+                                          }));
+                                        }}
                                       />
                                     )}
 
