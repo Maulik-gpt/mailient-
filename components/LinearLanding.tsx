@@ -83,6 +83,49 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
   return <span ref={ref}>{count.toLocaleString()}</span>;
 }
 
+const landingFaqs = [
+  {
+    q: "Is there a free plan?",
+    a: "No — Mailient is a single plan with full access to everything. You can choose monthly at $29, annual at $199 (two months free), or grab a Lifetime Founding Member seat for $499 while they last. Every plan includes Arcus, Sift AI, Voice Profile, background agents, and Zero-Knowledge encryption. No free tier, no feature gating, no surprises - just the full product from day one."
+  },
+  {
+    q: "Does Mailient replace Gmail?",
+    a: "No. Mailient works on top of your existing Gmail account through a secure OAuth connection. Your emails still live in Gmail. Mailient makes them intelligent. You can use both side by side or live entirely inside Mailient — your choice."
+  },
+  {
+    q: "How does Mailient learn my writing style?",
+    a: "When you connect Gmail, Mailient reads your last 90 days of sent emails and builds a Neural Voice Profile — your tone, your greeting style, your typical sign-off, how formal you are with different types of people. Every draft Arcus writes uses this profile. It improves the more you use it."
+  },
+  {
+    q: "Is my email data private?",
+    a: "Yes — and not just as a policy. Your emails are encrypted inside your own browser using AES-256-GCM before they ever reach Mailient's servers. Personal data is stripped before the AI processes anything. We cannot read your emails. That is an architecture decision, not a promise."
+  },
+  {
+    q: "Can I cancel anytime?",
+    a: "Monthly plan cancels at the end of your billing period. Annual plan can be cancelled anytime — you keep full access for the year you paid for. No retention calls. No dark patterns. One click in settings."
+  },
+  {
+    q: "What happens when I hit my usage limit on the free plan?",
+    a: "AI features pause until your daily limit resets at midnight. Your inbox, traditional email view, and all non-AI features remain fully accessible. Nothing is locked — just throttled until tomorrow."
+  },
+  {
+    q: "How long does setup take?",
+    a: "Two minutes. Connect your Google account, grant Gmail and Calendar access, and Mailient starts working immediately. There is nothing to configure. Arcus begins learning your voice in the background from the moment you connect."
+  },
+  {
+    q: "Does Mailient work for teams?",
+    a: "Currently Mailient is built for individual founders, freelancers, and consultants — one Gmail account per workspace. Team and multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at maulik@mailient.xyz."
+  },
+  {
+    q: "What if I'm not satisfied?",
+    a: "Email Maulik within 30 days of your first payment and get a full refund — no questions asked. This is a founder-to-founder promise backed by a real human, not a support ticket system."
+  },
+  {
+    q: "Who built Mailient?",
+    a: "Maulik — a 14-year-old founder who built Mailient because he watched smart people lose deals, miss opportunities, and burn hours on email every single day. The product exists because the problem is real. You can talk to him directly at @mailientz on X or maulikbuilder@gmail.com."
+  }
+];
+
 export function LinearLanding() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
@@ -1099,84 +1142,32 @@ fadeColor="#000000"
           </div>
 
           <div className="lg:col-span-8 flex flex-col space-y-4 w-full">
-            {/* FAQ 1 */}
-            <div className="border-b border-white/[0.06] pb-4 text-left">
-              <div 
-                onClick={() => setActiveAccordion(activeAccordion === 0 ? null : 0)}
-                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
-              >
-                <span>How does Arcus write email drafts in my exact voice?</span>
-                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 0 ? "[-]" : "[+]"}</span>
+            {landingFaqs.map((faq, index) => (
+              <div key={index} className="border-b border-white/[0.06] pb-4 text-left">
+                <div 
+                  onClick={() => setActiveAccordion(activeAccordion === index ? null : index)}
+                  className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                >
+                  <span>{faq.q}</span>
+                  <span className="text-xs text-neutral-500 font-mono">{activeAccordion === index ? "[-]" : "[+]"}</span>
+                </div>
+                <AnimatePresence>
+                  {activeAccordion === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
-              <AnimatePresence>
-                {activeAccordion === 0 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
-                      Our voice-profile engine extracts tone descriptors, structural signatures, and custom terminology from your sent folders. It then writes drafts according to these specific matches.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* FAQ 2 */}
-            <div className="border-b border-white/[0.06] pb-4 text-left">
-              <div 
-                onClick={() => setActiveAccordion(activeAccordion === 1 ? null : 1)}
-                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
-              >
-                <span>Is my email data secure and private?</span>
-                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 1 ? "[-]" : "[+]"}</span>
-              </div>
-              <AnimatePresence>
-                {activeAccordion === 1 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
-                      Yes. Mailient utilizes local PII sanitizers to ensure that personally identifiable information is sanitized on-device. All client-side credentials utilize AES-256 standard encryption keys.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* FAQ 3 */}
-            <div className="border-b border-white/[0.06] pb-4 text-left">
-              <div 
-                onClick={() => setActiveAccordion(activeAccordion === 2 ? null : 2)}
-                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
-              >
-                <span>Do I need to configure scheduling workflows manually?</span>
-                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 2 ? "[-]" : "[+]"}</span>
-              </div>
-              <AnimatePresence>
-                {activeAccordion === 2 && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: "auto", opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
-                      No. Arcus operates fully autonomously. It automatically connects with Cal.com, Zoom, Notion, and Google Meet adapters to crosscheck availability and books slots without prompting.
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
+            ))}
           </div>
 
         </div>
@@ -1189,6 +1180,93 @@ fadeColor="#000000"
             router.push("/pricing");
           }} 
         />
+      </section>
+
+      {/* WHY MAILIENT MANIFESTO SECTION */}
+      <section className="py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
+        <div className="w-full space-y-12">
+          
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-4 py-1.5 text-xs font-mono tracking-wider text-emerald-400 uppercase backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+              </span>
+              Why Mailient?
+            </div>
+            <h2 className="text-4xl md:text-6xl font-medium tracking-tight text-white leading-tight font-sans">
+              Email was supposed to be a tool. <br />
+              <span className="text-neutral-500">For most founders, it became the job.</span>
+            </h2>
+          </div>
+
+          <div className="space-y-8 text-neutral-400 font-sans font-light leading-relaxed text-base md:text-lg">
+            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug">
+              You already know the problem. You have felt it.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 01</span>
+                <p className="text-sm text-neutral-200">The email that sat in your inbox for three days while you meant to reply.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 02</span>
+                <p className="text-sm text-neutral-200">The client who went cold because you got buried in other threads.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 03</span>
+                <p className="text-sm text-neutral-200">The meeting that never got booked because the scheduling back-and-forth took a week.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 04</span>
+                <p className="text-sm text-neutral-200">The Sunday night dread of opening Gmail and seeing 200 unread messages staring back.</p>
+              </div>
+            </div>
+
+            <p>
+              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And unlike every other part of your business, the inbox does not scale. The more successful you get, the worse it becomes. More clients. More threads. More opportunities buried under newsletters you never asked for.
+            </p>
+
+            <p>
+              Every other solution asks you to work harder at email. Keyboard shortcuts to move faster. AI that suggests a reply you still have to write. Filters you have to set up and maintain. Tools that make you more efficient at a job you should not be doing in the first place.
+            </p>
+
+            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
+              Mailient does not make you faster at email. It removes email from your to-do list entirely.
+            </p>
+
+            <p>
+              When a client emails you at midnight, Mailient reads it. When you wake up, a draft is already waiting in your voice. When someone asks to meet, your calendar has already been checked and a slot has been held. When your inbox fills up overnight, an agent has already swept it, handled the routine, and left you a clean briefing of the three things that actually need your eyes.
+            </p>
+
+            <p>
+              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting Arcus learn your voice, and then you stop thinking about your inbox.
+            </p>
+
+            <div className="border-l-2 border-white/20 pl-6 my-8 py-2 italic text-neutral-300 text-lg">
+              "That is the product. That is why it exists."
+            </div>
+
+            <p>
+              There are smarter email tools. There are faster email tools. There is no other tool that simply takes the inbox off your hands — that wakes up before you do, does the work, and gets out of your way.
+            </p>
+
+            <p className="text-white font-medium">
+              Mailient is not a feature. It is a hire.
+            </p>
+            
+            <p>
+              The most reliable employee you will ever bring on board. One who never sleeps, never misses a message, never forgets a follow-up, and costs less per month than a single client lunch.
+            </p>
+
+            <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
+              Your inbox has been running you long enough.
+            </div>
+
+          </div>
+
+        </div>
       </section>
 
       {/* Core Capability Grid */}

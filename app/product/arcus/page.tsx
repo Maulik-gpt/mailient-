@@ -23,10 +23,54 @@ const Dithering = lazy(() =>
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
 );
 
+const arcusFaqs = [
+  {
+    q: "What exactly is Arcus?",
+    a: "Arcus is Mailient's AI agent — the part that takes action, not just answers. It reads your email threads, drafts replies in your voice, books meetings on your calendar, searches the web, reads your Notion, and runs scheduled tasks in the background while you sleep. It is the difference between an inbox tool and an inbox employee."
+  },
+  {
+    q: "Does Arcus actually send emails on my behalf?",
+    a: "Only when you explicitly approve it. Arcus drafts everything first and shows it to you before anything goes out. If you set up a background agent and turn on autonomous mode for that specific agent, it can send — but that is a deliberate choice you make per agent, not a default. You are always in control."
+  },
+  {
+    q: "How does Arcus learn to write like me?",
+    a: "Arcus reads your last 90 days of sent emails to understand how you write — your greeting, your sign-off, your tone with clients versus partners, your sentence length, your vocabulary. It builds a Neural Voice Profile that every draft is filtered through. Your clients should not be able to tell the difference."
+  },
+  {
+    q: "What are Scheduling Agents?",
+    a: "Scheduling Agents are autonomous tasks you create once in plain English and forget about. You tell Arcus what to do, when to do it, and where to send the results — Gmail, Slack, or both. Arcus runs it on schedule with no tab open, no prompt, no reminder needed. You wake up to the results in your inbox."
+  },
+  {
+    q: "Can Arcus access my Google Calendar and Notion?",
+    a: "Yes — if you grant it access. Arcus uses standard OAuth to connect to Google Calendar and Notion. It reads your schedule to check availability and book meetings, and reads your Notion to pull context when drafting or reporting. You can revoke access to any connected app instantly from your settings."
+  },
+  {
+    q: "Does Arcus train on my emails?",
+    a: "Never. What Arcus reads to complete a task stays in that session. Your emails are not used to train any AI model — not Mailient's, not Anthropic's, not anyone else's. Your data exists to serve you, not to improve a product you did not consent to contribute to."
+  },
+  {
+    q: "What is the Canvas Panel?",
+    a: "Canvas is a full workspace that slides open alongside the Arcus chat when a task is too big for a single reply — a proposal, a weekly digest, a meeting prep document, a client analysis. Arcus writes into it in real time. You can edit it inline, export it as a PDF, or send it directly as an email from inside Canvas."
+  },
+  {
+    q: "What happens if Arcus makes a mistake?",
+    a: "Arcus never sends anything without your approval unless you have explicitly enabled autonomous mode for a specific agent. If a draft is wrong, you edit it or discard it. If an agent produces a bad report, you tell Arcus and it adjusts. Nothing is irreversible until you say so."
+  },
+  {
+    q: "How many Arcus queries do I get?",
+    a: "Free plan includes three Arcus queries per day. Pro plan — monthly or annual — includes unlimited queries. The Lifetime Founding Member plan includes 500 queries per month with top-up available at $9 per 200 additional queries."
+  },
+  {
+    q: "Can I use Arcus without the rest of Mailient?",
+    a: "Arcus is built into Mailient and works alongside Sift AI and the inbox view. You cannot use it as a standalone product — but you do not need to use every feature. Many users open Mailient purely to talk to Arcus and never look at anything else."
+  }
+];
+
 export default function ArcusProductPage() {
   // Simulator sequence states
   const [activeStep, setActiveStep] = useState(0);
   const [selectedThread, setSelectedThread] = useState("q3-proposal");
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   // Mouse position tracker for spotlight glowing effects
   const mouseX = useMotionValue(0);
@@ -484,6 +528,52 @@ export default function ArcusProductPage() {
 
       {/* Core Arcus Capability Grid */}
       <Features8 />
+
+      {/* ARCUS FAQ ACCORDION SECTION */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          
+          <div className="lg:col-span-4 space-y-4 text-left">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">ARCUS AGENT FAQ</span>
+            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] text-white leading-tight">
+              Frequently asked questions.
+            </h2>
+            <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
+              Explore the technical details and capabilities of the Arcus Flagship agent loop.
+            </p>
+          </div>
+
+          <div className="lg:col-span-8 flex flex-col space-y-4 w-full">
+            {arcusFaqs.map((faq, index) => (
+              <div key={index} className="border-b border-white/[0.06] pb-4 text-left">
+                <div 
+                  onClick={() => setActiveAccordion(activeAccordion === index ? null : index)}
+                  className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                >
+                  <span>{faq.q}</span>
+                  <span className="text-xs text-neutral-500 font-mono">{activeAccordion === index ? "[-]" : "[+]"}</span>
+                </div>
+                <AnimatePresence>
+                  {activeAccordion === index && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
+                        {faq.a}
+                      </p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+
+        </div>
+      </section>
 
       {/* Premium Dithered CTA Section */}
       <CTASection />
