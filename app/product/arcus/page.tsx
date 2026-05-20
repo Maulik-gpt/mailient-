@@ -9,6 +9,8 @@ import {
   Layers, MessageSquare, Play, Lock, Eye, Monitor, Settings, Code 
 } from "lucide-react";
 import { signIn } from "next-auth/react";
+import AnimatedGradient from "@/components/ui/animated-gradient";
+
 
 export default function ArcusProductPage() {
   // Demo states for Section 4 (Live Conversation Demo)
@@ -95,7 +97,14 @@ Maulik`,
       </div>
 
       {/* 2. HERO SECTION */}
-      <section className="relative z-10 pt-40 pb-20 md:pt-48 md:pb-28 px-6 text-center max-w-5xl mx-auto flex flex-col items-center">
+      <section className="relative z-10 pt-40 pb-20 md:pt-48 md:pb-28 px-6 text-center max-w-5xl mx-auto flex flex-col items-center rounded-[40px] border border-neutral-900 mt-6 overflow-hidden">
+        
+        {/* WebGL Animated Background */}
+        <AnimatedGradient 
+          config={{ preset: "Plasma" }} 
+          noise={{ opacity: 0.02 }} 
+          className="opacity-20"
+        />
         
         {/* Eyebrow */}
         <motion.div
