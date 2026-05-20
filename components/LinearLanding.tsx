@@ -759,6 +759,7 @@ fadeColor="#000000"
                 Google Meet Video Loop
               </div>
             </div>
+          </div>
         </div>
       </section>
 
