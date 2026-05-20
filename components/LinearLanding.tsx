@@ -230,6 +230,16 @@ export function LinearLanding() {
           from { stroke-dashoffset: 170; }
           to { stroke-dashoffset: 0; }
         }
+        @keyframes drift-left {
+          0% { transform: translateX(0) scaleY(1); }
+          50% { transform: translateX(-25%) scaleY(1.05); }
+          100% { transform: translateX(-50%) scaleY(1); }
+        }
+        @keyframes drift-right {
+          0% { transform: translateX(-50%) scaleY(1); }
+          50% { transform: translateX(-25%) scaleY(1.08); }
+          100% { transform: translateX(0) scaleY(1); }
+        }
       `}} />
 
       {/* Atmospheric lighting */}
@@ -243,9 +253,40 @@ export function LinearLanding() {
       <Navbar theme="dark" />
 
       {/* 1. HERO SECTION */}
-      <section className="relative w-full pt-40 pb-0 md:pt-48 flex flex-col items-center text-center z-10 bg-gradient-to-b from-[#000000] via-[#09090b] to-[#16161a]">
+      <section className="relative w-full pt-40 pb-0 md:pt-48 flex flex-col items-center text-center z-10 bg-gradient-to-b from-[#000000] via-[#09090b] to-[#16161a] overflow-hidden">
         {/* White-grey glow from the bottom of the hero section spreading up */}
-        <div className="absolute inset-x-0 bottom-0 h-[250px] bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.07),transparent_70%)] pointer-events-none z-0" />
+        <div className="absolute inset-x-0 bottom-0 h-[250px] bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.08),transparent_70%)] pointer-events-none z-10" />
+
+        {/* Drifting Clouds Animation */}
+        <div className="absolute inset-x-0 bottom-0 top-1/4 z-0 pointer-events-none overflow-hidden select-none opacity-45 mix-blend-screen">
+          {/* Cloud Layer 1 */}
+          <div 
+            className="absolute bottom-0 w-[200%] h-[320px] opacity-25"
+            style={{
+              backgroundImage: `radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, rgba(200,200,200,0.04) 40%, transparent 70%)`,
+              filter: 'blur(45px)',
+              animation: 'drift-left 55s linear infinite',
+            }}
+          />
+          {/* Cloud Layer 2 */}
+          <div 
+            className="absolute bottom-0 w-[200%] h-[280px] opacity-20"
+            style={{
+              backgroundImage: `radial-gradient(ellipse at 30% 60%, rgba(240,240,250,0.07) 0%, rgba(180,180,190,0.03) 50%, transparent 80%)`,
+              filter: 'blur(55px)',
+              animation: 'drift-right 75s linear infinite',
+            }}
+          />
+          {/* Cloud Layer 3 */}
+          <div 
+            className="absolute bottom-0 w-[200%] h-[380px] opacity-18"
+            style={{
+              backgroundImage: `radial-gradient(ellipse at 70% 40%, rgba(255,255,255,0.09) 0%, rgba(220,220,230,0.04) 45%, transparent 75%)`,
+              filter: 'blur(65px)',
+              animation: 'drift-left 95s linear infinite',
+            }}
+          />
+        </div>
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10 mx-auto px-6">
           
@@ -412,10 +453,10 @@ export function LinearLanding() {
                 className="group cursor-pointer select-none text-left"
               >
               <span className={cn(
-                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                01 // Sift Intake Triage
+                01 // Inbox triage
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -423,7 +464,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Isolate noise. Route priorities.
+                Filter noise. Highlight priorities.
               </h3>
               {activeStep === 0 && (
                 <motion.div 
@@ -433,7 +474,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Sift isolates notifications, tags priority customer queries, and drops them into structured queues autonomously.
+                    Automatically filters out notifications and organizes important emails so you can respond faster.
                   </p>
                   <Link 
                     href="/product/sift" 
@@ -452,10 +493,10 @@ export function LinearLanding() {
               className="group cursor-pointer select-none text-left"
             >
               <span className={cn(
-                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 1 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                02 // Tone-Matched Drafts
+                02 // Smart drafts
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -463,7 +504,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Drafts compiled in your voice.
+                Replies written in your voice.
               </h3>
               {activeStep === 1 && (
                 <motion.div 
@@ -473,7 +514,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Extracts a Stylistic Tone Signature from your historic outbound emails to compose custom, context-aware drafts automatically.
+                    Learns your writing style from past messages to draft natural, custom replies automatically.
                   </p>
                   <Link 
                     href="/product/drafts" 
@@ -492,10 +533,10 @@ export function LinearLanding() {
               className="group cursor-pointer select-none text-left"
             >
               <span className={cn(
-                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                03 // Autonomous Scheduling
+                03 // Autopilot booking
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -503,7 +544,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white" 
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Meeting sweeps on autopilot.
+                Book meetings on autopilot.
               </h3>
               {activeStep === 2 && (
                 <motion.div 
@@ -513,7 +554,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Schedules meetings directly in your calendar, coordinates with client slots, and generates Google Meet links silently overnight.
+                    Coordinates slots, schedules meetings on your calendar, and sets up links overnight.
                   </p>
                   <a 
                     href="#pricing" 
