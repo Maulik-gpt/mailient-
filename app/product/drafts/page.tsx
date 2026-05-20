@@ -7,6 +7,7 @@ import { Navbar } from "@/components/Navbar";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -69,24 +70,30 @@ export default function DraftsProductPage() {
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
           {/* Eyebrow Platform Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
-            </span>
-            <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-              Product // Draft Tone Writer
-            </span>
-          </div>
+          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+            <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
+              </span>
+              <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
+                Product // Draft Tone Writer
+              </span>
+            </div>
+          </BlurFade>
 
           {/* Headline & Subtitle */}
-          <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
-            Elite context. <br />Approve in one click.
-          </h1>
+          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
+            <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
+              Elite context. <br />Approve in one click.
+            </h1>
+          </BlurFade>
 
-          <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
-            Draft Reply learns your personal tone, technical lexicon, and corporate policies to draft high-fidelity responses in your Gmail drafts folder automatically.
-          </p>
+          <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
+            <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
+              Draft Reply learns your personal tone, technical lexicon, and corporate policies to draft high-fidelity responses in your Gmail drafts folder automatically.
+            </p>
+          </BlurFade>
 
           {/* Premium CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
