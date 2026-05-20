@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense, lazy } from "react";
-import { motion, AnimatePresence, useScroll, useTransform, useMotionValue, useMotionTemplate } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, useMotionTemplate } from "framer-motion";
 import {
   Zap,
   Bot,
@@ -24,17 +24,16 @@ import {
   Terminal,
   Eye,
   Monitor,
-  ShieldCheck
+  ShieldCheck,
+  Clock,
+  Briefcase,
+  AlertCircle
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import AnimatedGradient from "@/components/ui/animated-gradient";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
-import { SpecialText } from "@/components/ui/special-text";
-import { BlurFade } from "@/components/ui/blur-fade";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -80,8 +79,7 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
 
 export function LinearLanding() {
   const [activeStep, setActiveStep] = useState(0);
-  
-  // State for active interactive steps
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   // Mouse position tracker for cursor-reactive lighting on cards
   const mouseX = useMotionValue(0);
@@ -92,74 +90,73 @@ export function LinearLanding() {
     mouseY.set(e.clientY - top);
   };
 
-  // Simulated Webhook Stream (interactive state)
-  const [webhookLogs, setWebhookLogs] = useState([
-    { id: 1, type: "Complained", time: "02:37:31", email: "emma@xerox.com", feedback: "Spam", agent: "Yahoo Mail", os: "Windows" },
-    { id: 2, type: "Complained", time: "02:37:28", email: "emma@gmail.com", feedback: "Spam", agent: "Gmail", os: "Windows" }
-  ]);
-
-  // Terminal API Log Simulator
-  const [terminalLogs, setTerminalLogs] = useState<string[]>([
-    'HTTP 200: { "id": "7722ee1d-5c4f-4f57-bd35-02ac8d8e55be" }',
-    'HTTP 200: { "id": "db90ae99-4b3b-4e10-a5a0-389854692d5b" }',
-    'HTTP 200: { "id": "c78ce76f-d030-4e48-a565-ecca3be68d42" }'
-  ]);
+  // Autoplay Three Things cycle
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 3);
+    }, 4500);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
-    document.title = "Mailient / Inbox Operations Reimagined";
+    document.title = "Mailient / Hours of email, handled overnight";
   }, []);
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative selection:bg-white selection:text-black">
       
-      {/* 0. Premium Custom Design Keyframes & Volumetric Shading */}
+      {/* 0. Custom Radar & Orbital Keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes triage-pulse {
-          0% { stroke-dashoffset: 80; }
-          100% { stroke-dashoffset: 0; }
+        @keyframes radar-pulse {
+          0% { transform: scale(0.95); opacity: 0.8; }
+          50% { transform: scale(1.05); opacity: 0.4; }
+          100% { transform: scale(0.95); opacity: 0.8; }
         }
         @keyframes orb-float {
           0%, 100% { transform: translateY(0px) scale(1) rotate(0deg); }
           50% { transform: translateY(-12px) scale(1.03) rotate(3deg); }
         }
-        @keyframes light-shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
+        @keyframes radar-orbit-1 {
+          from { transform: rotate(0deg) translateX(110px) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(110px) rotate(-360deg); }
+        }
+        @keyframes radar-orbit-2-a {
+          from { transform: rotate(120deg) translateX(170px) rotate(-120deg); }
+          to { transform: rotate(480deg) translateX(170px) rotate(-480deg); }
+        }
+        @keyframes radar-orbit-2-b {
+          from { transform: rotate(240deg) translateX(170px) rotate(-240deg); }
+          to { transform: rotate(600deg) translateX(170px) rotate(-600deg); }
+        }
+        @keyframes radar-orbit-3-a {
+          from { transform: rotate(0deg) translateX(230px) rotate(0deg); }
+          to { transform: rotate(360deg) translateX(230px) rotate(-360deg); }
+        }
+        @keyframes radar-orbit-3-b {
+          from { transform: rotate(180deg) translateX(230px) rotate(-180deg); }
+          to { transform: rotate(540deg) translateX(230px) rotate(-540deg); }
         }
       `}} />
 
-      {/* Volumetric Floating Glass AI Orb (Atmospheric Lighting & Fog) */}
-      <div 
-        className="absolute top-[380px] right-[12%] w-[130px] h-[130px] rounded-full bg-white/[0.01] border border-white/[0.08] shadow-[0_0_60px_rgba(255,255,255,0.03),inset_0_1px_2px_rgba(255,255,255,0.15)] flex items-center justify-center pointer-events-none overflow-hidden select-none z-10 hidden lg:flex" 
-        style={{ animation: "orb-float 7s ease-in-out infinite" }}
-      >
-        <div className="absolute inset-1 rounded-full bg-gradient-to-tr from-blue-500/[0.04] via-neutral-950/80 to-white/[0.03] blur-[4px]" />
-        {/* Volumetric Neon Spotlight Glow inside Orb */}
-        <div className="absolute -bottom-8 w-24 h-12 bg-blue-500/10 blur-[18px] rounded-full" />
-        {/* Shifting glass reflection arc */}
-        <div className="absolute top-1.5 left-3 right-3 h-7 bg-gradient-to-b from-white/[0.06] to-transparent rounded-full opacity-70" />
-      </div>
-
-      {/* 1. Sticky, Glassy Floating Navigation */}
-      <Navbar theme="dark" />
-
-      {/* Cinematic Ambient Spotlights */}
+      {/* Atmospheric lighting */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
-        <div className="absolute top-[5%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] rounded-full bg-neutral-900/10 blur-[180px]" />
+        <div className="absolute top-[4%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] rounded-full bg-neutral-900/10 blur-[180px]" />
         <div className="absolute top-[25%] left-[5%] w-[500px] h-[500px] rounded-full bg-white/[0.005] blur-[150px]" />
         <div className="absolute bottom-[20%] right-[5%] w-[800px] h-[800px] rounded-full bg-neutral-950/20 blur-[200px]" />
       </div>
 
-      {/* 2. ELITE HERO SECTION WITH DARKER & BLURRED BG SHADER */}
-      <section 
-        className="relative w-full pt-40 pb-24 md:pt-48 md:pb-36 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10"
-      >
-        {/* Slow Dithering WebGL Gradient behind Hero (Darker & Blurred) */}
+      {/* Sticky Translucent Header */}
+      <Navbar theme="dark" />
+
+      {/* 1. HERO SECTION */}
+      <section className="relative w-full pt-40 pb-20 md:pt-48 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10">
+        
+        {/* WebGL Backing Shader */}
         <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.15] blur-[80px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.12] blur-[90px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
             <Dithering
               colorBack="#000000" 
-              colorFront="#4b5563"  // Very dark slate/graphite gray
+              colorFront="#4b5563"
               shape="warp"
               type="4x4"
               speed={0.15}
@@ -169,610 +166,771 @@ export function LinearLanding() {
           </div>
         </Suspense>
 
-        <div
-          className="w-full flex flex-col items-center max-w-6xl z-10"
-        >
-          {/* Handcrafted Status Ring Badge */}
-          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
-            <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8 group cursor-pointer hover:border-white/[0.1] transition-colors">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
-              </span>
-              <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-                ARCUS — AI AGENT FOR YOUR INBOX
-              </span>
-            </div>
-          </BlurFade>
-
-          {/* Tagline / Headline */}
-          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-5xl">
-              The inbox agent that <br />works while you don't.
-            </h1>
-          </BlurFade>
-
-          {/* Subtitle */}
-          <BlurFade delay={0.22} duration={0.8} yOffset={15} inView>
-            <p className="text-base md:text-[17px] text-[#8a8f98] leading-relaxed max-w-3xl mt-6 font-light font-sans">
-              Arcus reads every email, drafts replies in your exact voice, books meetings, and runs silently in the background — delivering results before you ask for them.
-            </p>
-          </BlurFade>
-
-          {/* Capsule CTAs */}
-          <BlurFade delay={0.3} duration={0.8} yOffset={10} inView>
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-              <button
-                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-                className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-transform duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-1.5"
-              >
-                Try Arcus free
-                <ArrowRight className="w-3.5 h-3.5 text-black" />
-              </button>
-
-              <a
-                href="#triage-section"
-                className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-1.5"
-              >
-                <Play className="w-3 h-3 fill-white" />
-                Watch it work
-              </a>
-            </div>
-          </BlurFade>
-
-          {/* What Arcus Is - Single Paragraph Copywriting */}
-          <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
-            <div className="max-w-2xl mx-auto mt-16 p-6 rounded-[20px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-md text-left shadow-2xl relative">
-              <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_20%_20%,rgba(255,255,255,0.01),transparent_70%)] rounded-[20px]" />
-              <p className="text-[12px] text-neutral-400 font-light leading-relaxed font-sans relative z-10">
-                <span className="text-white font-semibold">Arcus is not an email assistant.</span> It does not suggest. It does not summarise. <span className="text-white">It acts.</span> When an email arrives, Arcus reads the full thread, understands the context, checks your calendar, drafts a reply that sounds exactly like you, and — if you want — sends it. When you are not around, it runs on schedule, sweeps your inbox, handles routine workflows, and drops a clean briefing in your Gmail or Slack before you open your laptop. You do not configure it. You do not prompt it. You describe what you want once, in plain English, and Arcus does it.
-              </p>
-            </div>
-          </BlurFade>
-                {/* 3. ISOMETRIC OUTLINE WIREFRAME COLUMNS (Exactly Replicating Screenshot 1 Grid) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl mt-36 border-t border-white/[0.06] pt-16 z-10 text-left">
+        <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
-          {/* Column 1: Fig 0.2 - Sift AI Classifier */}
-          <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
-            <div 
-              className="flex flex-col group relative"
-              onMouseMove={handleMouseMove}
+          {/* Eyebrow Platform Badge */}
+          <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
+            </span>
+            <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
+              Arcus Inbox Agent Loop v3.2
+            </span>
+          </div>
+
+          {/* Headline & Subtitle */}
+          <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
+            Hours of email, <br />handled overnight.
+          </h1>
+
+          <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
+            Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously.
+          </p>
+
+          {/* Premium CTAs */}
+          <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
             >
-              <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.2 // CLASSIFIER
-              </span>
-              {/* Stacking rounded layers SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
-                {/* Cursor-reactive spotlight */}
-                <motion.div
-                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
-                  <path d="M 100,50 L 160,80 L 100,110 L 40,80 Z" className="stroke-neutral-800" />
-                  <path d="M 100,70 L 160,100 L 100,130 L 40,100 Z" className="stroke-neutral-700" />
-                  <path d="M 100,90 L 160,120 L 100,150 L 40,120 Z" className="stroke-neutral-600" />
-                  {/* Highlight Ring */}
-                  <path d="M 100,40 L 140,60 L 100,80 L 60,60 Z" className="stroke-white/30 fill-white/[0.02]" />
-                  <circle cx="100" cy="60" r="6" className="stroke-white/40 fill-white/10" />
-                </svg>
-              </div>
-              <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Sift AI Triage Classifier
-              </h3>
-              <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Runs autonomous intake classification to isolate noise, group priority threads, and sanitize PII locally using vault-grade encryption before passing details to AI layers.
-              </p>
-            </div>
-          </BlurFade>
+              Connect Gmail
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
 
-          {/* Column 2: Fig 0.3 - Voice Profiler */}
-          <BlurFade delay={0.48} duration={0.8} yOffset={20} inView>
-            <div 
-              className="flex flex-col group relative"
-              onMouseMove={handleMouseMove}
+            <a
+              href="#sample-brief"
+              className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
             >
-              <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.3 // WRITER
-              </span>
-              {/* Isometric blocks SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
-                {/* Cursor-reactive spotlight */}
-                <motion.div
-                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
-                  <path d="M 100,75 L 130,90 L 100,105 L 70,90 Z" />
-                  <path d="M 70,90 L 70,120 L 100,135 L 100,105" />
-                  <path d="M 130,90 L 130,120 L 100,135" />
-                  
-                  <path d="M 135,55 L 165,70 L 135,85 L 105,70 Z" className="stroke-neutral-600" />
-                  <path d="M 105,70 L 105,95 L 135,110 L 135,85" className="stroke-neutral-600" />
-                  <path d="M 165,70 L 165,95 L 135,110" className="stroke-neutral-600" />
+              <Play className="w-3 h-3 fill-white" />
+              See a sample brief
+            </a>
+          </div>
 
-                  <path d="M 65,55 L 95,70 L 65,85 L 35,70 Z" className="stroke-neutral-600" />
-                  <path d="M 35,70 L 35,95 L 65,110 L 65,85" className="stroke-neutral-600" />
-                  <path d="M 95,70 L 95,95 L 65,110" className="stroke-neutral-600" />
-
-                  <circle cx="100" cy="50" r="5" className="stroke-white/40 fill-white/5" />
-                </svg>
+          {/* 16:9 Floating Obsidian Demo Video Window */}
+          <div className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
+            
+            {/* Visual Demo Elements */}
+            <div className="absolute inset-8 flex flex-col justify-between text-left font-mono">
+              <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
+                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
+                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
+                  <span className="text-[10px] text-neutral-500 ml-4">arcus-agent-loop.js</span>
+                </div>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px]">ACTIVE Overnight Loop</span>
               </div>
-              <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Voice Profile Signature
-              </h3>
-              <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Analyzes your sent folder history to model a high-fidelity Personal Voice Profile. Drafts highly customized replies that reflect your exact style, signature, and vocabulary.
-              </p>
-            </div>
-          </BlurFade>
 
-          {/* Column 3: Fig 0.4 - Multi-Agent Coord */}
-          <BlurFade delay={0.56} duration={0.8} yOffset={20} inView>
-            <div 
-              className="flex flex-col group relative"
-              onMouseMove={handleMouseMove}
-            >
-              <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.4 // LOOP
-              </span>
-              {/* Ascending staircase bar chart SVG */}
-              <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
-                {/* Cursor-reactive spotlight */}
-                <motion.div
-                  className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  style={{
-                    background: useMotionTemplate`radial-gradient(150px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.04), transparent 80%)`,
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-white/[0.01] to-transparent pointer-events-none" />
-                <svg viewBox="0 0 200 200" className="w-full h-32 stroke-neutral-700 fill-none stroke-[0.8] transition-transform duration-500 group-hover:scale-105 relative z-10">
-                  <path d="M 50,130 L 50,110 L 60,115 L 60,135 Z" />
-                  <path d="M 70,135 L 70,100 L 80,105 L 80,140 Z" />
-                  <path d="M 90,140 L 90,85 L 100,90 L 100,145 Z" />
-                  <path d="M 110,145 L 110,70 L 120,75 L 120,150 Z" />
-                  <path d="M 130,150 L 130,55 L 140,60 L 140,155 Z" className="stroke-white/20" />
-                  <path d="M 150,155 L 150,40 L 160,45 L 160,160 Z" className="stroke-white/40" />
-                </svg>
+              {/* Live typing webhook log mock */}
+              <div className="flex-1 flex flex-col justify-center space-y-3 font-mono text-xs text-neutral-400">
+                <p className="text-neutral-500">&gt; Initializing schedule sweep for timezone America/New_York...</p>
+                <p className="text-neutral-300 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+                  <span>Sifting inbox thread [TKT-2187]... Category identified: Priority Client</span>
+                </p>
+                <p className="text-neutral-400">&gt; Building high-fidelity Voice Profile signature context...</p>
+                <p className="text-white font-semibold">&gt; Response draft compiled. Calendars checked. Meeting slot logged for May 22 14:00.</p>
               </div>
-              <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Multi-Agent Logic Loop
-              </h3>
-              <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Runs an autonomous, state-driven execution loop. Schedules meetings, pushes tasks, and syncs calendars across Cal.com, Google Meet, Notion, Slack, and Google Tasks.
-              </p>
-            </div>
-          </BlurFade>
-        </div>  </div>
-      </section>
 
-      {/* 4. SECTION 2: HIGH-FIDELITY INTERACTIVE SHOWCASE (Slack Thread + Kanban Dashboard) */}
-      <section 
-        id="triage-section"
-        className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative"
-      >
-        {/* Title Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start mb-20 text-left">
-          <BlurFade delay={0.1} duration={0.8} yOffset={15} inView>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.02em] text-white leading-tight">
-              Make product operations <br />self-driving
-            </h2>
-          </BlurFade>
-
-          <BlurFade delay={0.2} duration={0.8} yOffset={15} inView>
-            <div className="space-y-4">
-              <p className="text-[#8a8f98] text-sm md:text-base leading-relaxed font-light max-w-lg">
-                Turn client feedback and communication noise into clear, actionable briefs and calendar slots that are routed, labeled, and synchronized with your workspace tools.
-              </p>
-              <div className="text-xs font-semibold text-white flex items-center gap-1.5 group cursor-pointer">
-                <span>1.0 Intake</span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+              <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
+                <span>INTAKE TRIAGE SYSTEM</span>
+                <span>CTRL + \ TO ACTIVATE PANEL</span>
               </div>
             </div>
-          </BlurFade>
+            
+            {/* Glass Reflector Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+          </div>
+
         </div>
 
-        {/* HIGH-FIDELITY DUAL-PANE INTERACTION BOARD (Replicating Screenshot 2 Exactly) */}
-        <BlurFade delay={0.3} duration={1} yOffset={25} inView>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 w-full">
-            
-            {/* Left Pane: Slack-style Feedback Intake Thread */}
-            <div className="lg:col-span-5 bg-[#090909] border border-white/[0.06] rounded-[24px] p-6 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden h-[480px]">
-              {/* Glass subtle spotlight */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white/[0.01] rounded-full blur-[40px]" />
-              
-              <div>
-                {/* Header */}
-                <div className="flex items-center justify-between pb-4 border-b border-white/[0.06] mb-6">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-neutral-800" />
-                    <span className="text-[11px] font-mono text-[#8a8f98] tracking-widest uppercase">Thread in #feedback</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span className="w-1 h-1 rounded-full bg-neutral-600" />
-                    <span className="w-1 h-1 rounded-full bg-neutral-600" />
-                    <span className="w-1 h-1 rounded-full bg-neutral-600" />
-                  </div>
+        {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE */}
+        <div className="w-full mt-36 relative h-28 overflow-hidden bg-black border-y border-white/[0.05]">
+          <PerspectiveMarquee 
+            fontSize={26} 
+            color="#a3a3a3" 
+            rotateY={-14} 
+            rotateX={5} 
+            perspective={1100} 
+            fadeColor="#000000"
+            background="#000000"
+            className="w-full h-full"
+          />
+        </div>
+      </section>
+
+      {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+          
+          {/* Left panel: cycle controls */}
+          <div className="lg:col-span-5 space-y-6">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">CORE CAPABILITIES</span>
+            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
+              One coordinate loop. <br />Three pillars.
+            </h2>
+            <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-md pb-6 border-b border-white/[0.06]">
+              Mailient replaces scattered assistants with a robust, integrated multi-agent sequence that operates directly on top of your standard communication platforms.
+            </p>
+
+            <div className="flex flex-col space-y-4">
+              {/* Pillar 1 */}
+              <div 
+                onClick={() => setActiveStep(0)}
+                className={cn(
+                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
+                  activeStep === 0 
+                    ? "border-white/10 bg-white/[0.02]" 
+                    : "border-transparent opacity-60 hover:opacity-100"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs">📂</span>
+                  <span className="text-sm font-semibold text-white">Sift Intake Triage</span>
                 </div>
-
-                {/* Messages stream */}
-                <div className="space-y-5">
-                  {/* Lena */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-neutral-400">L</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-white">lena</span>
-                        <span className="text-[9px] text-[#555]">2:33 PM</span>
-                      </div>
-                      <p className="text-xs text-[#8a8f98] leading-relaxed">
-                        Anyone else noticing the proposal drafts feel slow to generate when we get custom scheduling inputs?
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Didier */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-neutral-400">D</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-white">didier</span>
-                        <span className="text-[9px] text-[#555]">2:33 PM</span>
-                      </div>
-                      <p className="text-xs text-[#8a8f98] leading-relaxed">
-                        Yea, we're still manually verifying active calendars on Google Calendar and Cal.com every single time.
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Andreas */}
-                  <div className="flex items-start gap-3">
-                    <div className="w-7 h-7 rounded-full bg-neutral-800 flex items-center justify-center text-[10px] font-bold text-neutral-400">A</div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xs font-semibold text-white">andreas</span>
-                        <span className="text-[9px] text-[#555]">2:33 PM</span>
-                      </div>
-                      <p className="text-xs text-[#8a8f98] leading-relaxed">
-                        Feels like we could automate this context ingestion in the background. Probably worth scheduling a sync.
-                      </p>
-                    </div>
-                  </div>
-                </div>
+                <p className="text-[11px] text-neutral-400 font-light font-sans">
+                  Isolates noise, tags priorities, and routes customer queries. Links to <Link href="/product/sift" className="text-white hover:underline">/product/sift</Link>.
+                </p>
               </div>
 
-              {/* Glowing Interactive Input Area */}
-              <div className="mt-6 pt-4 border-t border-white/[0.04] relative">
-                <div className="bg-[#030303] border border-white/[0.06] rounded-xl p-3 flex items-center justify-between">
-                  <span className="text-xs text-neutral-500 font-mono">
-                    <span className="text-white">@Mailient</span> create urgent task and sync calendar...
-                  </span>
-                  <button className="h-7 px-3 bg-white text-black font-semibold text-[10px] rounded-lg hover:scale-102 transition-transform">
-                    Send
-                  </button>
+              {/* Pillar 2 */}
+              <div 
+                onClick={() => setActiveStep(1)}
+                className={cn(
+                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
+                  activeStep === 1 
+                    ? "border-white/10 bg-white/[0.02]" 
+                    : "border-transparent opacity-60 hover:opacity-100"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs">✍️</span>
+                  <span className="text-sm font-semibold text-white">Tone-Matched Drafts</span>
                 </div>
+                <p className="text-[11px] text-neutral-400 font-light font-sans">
+                  Constructs a Stylistic Signature of your tone. Links to <Link href="/product/drafts" className="text-white hover:underline">/product/drafts</Link>.
+                </p>
               </div>
 
+              {/* Pillar 3 */}
+              <div 
+                onClick={() => setActiveStep(2)}
+                className={cn(
+                  "p-5 rounded-2xl border transition-all duration-300 cursor-pointer flex flex-col space-y-1.5",
+                  activeStep === 2 
+                    ? "border-white/10 bg-white/[0.02]" 
+                    : "border-transparent opacity-60 hover:opacity-100"
+                )}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs">📅</span>
+                  <span className="text-sm font-semibold text-white">Autonomous Scheduling</span>
+                </div>
+                <p className="text-[11px] text-neutral-400 font-light font-sans">
+                  Schedules client slots, manages bookings, and logs meeting adapters silently.
+                </p>
+              </div>
             </div>
+          </div>
 
-            {/* Premium Animated Triage Pipeline Path (Workflow lines) */}
-            <div className="absolute left-[38%] right-[55%] top-[55%] -translate-y-1/2 h-12 pointer-events-none hidden lg:block z-20 overflow-visible">
-              <svg className="w-full h-full stroke-white/5 fill-none" viewBox="0 0 100 40">
-                <path d="M 0,20 Q 50,-5 100,20" className="stroke-white/[0.08] stroke-[1]" />
-                {/* Running glass laser pulse representing intelligence speed */}
-                <path d="M 0,20 Q 50,-5 100,20" className="stroke-white/[0.4] stroke-[1.5]" strokeDasharray="12 28" strokeDashoffset="80" style={{ animation: "triage-pulse 2.2s linear infinite" }} />
-              </svg>
-            </div>
+          {/* Right panel: dynamic animated video visualization */}
+          <div className="lg:col-span-7 bg-[#050505] border border-white/[0.06] rounded-[24px] p-8 shadow-2xl h-[480px] flex flex-col justify-between relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
-            {/* Right Pane: Kanban Task Dashboard Board */}
-            <div className="lg:col-span-7 bg-[#050505] border border-white/[0.06] rounded-[24px] p-6 shadow-2xl flex flex-col justify-between text-left relative overflow-hidden h-[480px]">
-              
-              <div>
-                {/* Dashboard Tabs / Tabs outline */}
-                <div className="flex items-center gap-6 pb-4 border-b border-white/[0.06] mb-6 overflow-x-auto scrollbar-none">
-                  <span className="text-xs font-semibold text-white border-b-2 border-white pb-4 -mb-4.5 cursor-pointer">
-                    Inbox Items
-                  </span>
-                  <span className="text-xs font-medium text-neutral-500 hover:text-white cursor-pointer transition-colors pb-4 -mb-4.5">
-                    Calendars
-                  </span>
-                  <span className="text-xs font-medium text-neutral-500 hover:text-white cursor-pointer transition-colors pb-4 -mb-4.5">
-                    Integrations
-                  </span>
-                  <span className="text-xs font-medium text-neutral-500 hover:text-white cursor-pointer transition-colors pb-4 -mb-4.5">
-                    History
-                  </span>
-                </div>
+            <AnimatePresence mode="wait">
+              {activeStep === 0 && (
+                <motion.div
+                  key="sift"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                >
+                  <div>
+                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">INBOX CLASSIFIER SIMULATOR</span>
+                    <h3 className="text-base font-bold text-white mb-2">Sift AI Classifier</h3>
+                  </div>
 
-                {/* Kanban grid layout */}
-                <div className="grid grid-cols-3 gap-4">
-                  
-                  {/* Column 1: Todo */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-semibold mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-neutral-600" />
-                      <span>Todo 71</span>
+                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
+                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
+                      <span>INCOMING EMAIL</span>
+                      <span className="text-yellow-500">Triage Pending</span>
                     </div>
-
-                    {/* Todo Card 1 */}
-                    <div className="bg-[#0b0b0b] border border-white/[0.04] p-3.5 rounded-xl space-y-3 hover:border-white/[0.08] transition-all duration-300">
-                      <div className="flex items-center justify-between text-[9px] font-mono text-[#8a8f98]">
-                        <span>OPP-926</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-800" />
-                      </div>
-                      <p className="text-[11px] text-neutral-300 font-semibold leading-tight">
-                        Remove UI inconsistencies from Q3 layout
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 rounded bg-red-950/20 text-[8px] font-bold text-red-400 uppercase">Bug</span>
-                        <span className="px-1.5 py-0.5 rounded bg-blue-950/20 text-[8px] font-bold text-blue-400 uppercase">Design</span>
-                      </div>
-                    </div>
-
-                    {/* Todo Card 2 */}
-                    <div className="bg-[#0b0b0b] border border-white/[0.04] p-3.5 rounded-xl space-y-3 opacity-60">
-                      <p className="text-[11px] text-neutral-400 font-medium">
-                        Optimize cache layers for Google OAuth flow
-                      </p>
+                    <p className="text-white font-semibold">From: support@capital-vcs.com</p>
+                    <p className="text-neutral-400">"Hey Austin, reviewing your pitch deck drafts. Can we align on a slot tomorrow at 10 AM EST?"</p>
+                    <div className="flex gap-2 pt-2">
+                      <span className="px-2 py-0.5 rounded bg-blue-950/40 text-blue-400 border border-blue-900/60 uppercase text-[8px] font-bold">Pitch Desk</span>
+                      <span className="px-2 py-0.5 rounded bg-red-950/40 text-red-400 border border-red-900/60 uppercase text-[8px] font-bold">Priority T1</span>
                     </div>
                   </div>
 
-                  {/* Column 2: In Progress */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-semibold mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                      <span>In Progress 3</span>
-                    </div>
+                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // CLASSIFICATION RECORD LOGGED</span>
+                </motion.div>
+              )}
 
-                    {/* In Progress Card 1 */}
-                    <div className="bg-[#0b0b0b] border border-white/[0.04] p-3.5 rounded-xl space-y-3 hover:border-white/[0.08] transition-all duration-300">
-                      <div className="flex items-center justify-between text-[9px] font-mono text-[#8a8f98]">
-                        <span>TKT-2088</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                      </div>
-                      <p className="text-[11px] text-neutral-300 font-semibold leading-tight">
-                        TypeError: Cannot read properties of undefined
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 rounded bg-red-950/20 text-[8px] font-bold text-red-400 uppercase">Bug</span>
-                      </div>
-                    </div>
+              {activeStep === 1 && (
+                <motion.div
+                  key="drafts"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                >
+                  <div>
+                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">VOICE PROFILER SYSTEM</span>
+                    <h3 className="text-base font-bold text-white mb-2">Stylistic Response Signatures</h3>
+                  </div>
 
-                    {/* In Progress Card 2 */}
-                    <div className="bg-[#0b0b0b] border border-white/[0.04] p-3.5 rounded-xl space-y-3 hover:border-white/[0.08] transition-all duration-300">
-                      <div className="flex items-center justify-between text-[9px] font-mono text-[#8a8f98]">
-                        <span>CAL-2187</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
-                      </div>
-                      <p className="text-[11px] text-neutral-300 font-semibold leading-tight">
-                        Sync open spots with Aether Capital VC
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 rounded bg-purple-950/20 text-[8px] font-bold text-purple-400 uppercase">AI</span>
-                      </div>
+                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
+                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
+                      <span>OUTBOX DRAFT ENGINE</span>
+                      <span className="text-emerald-500">Draft Compiled</span>
+                    </div>
+                    <p className="text-white font-semibold">Subject: Re: review capital slot</p>
+                    <p className="text-neutral-300 italic">"Hey Sarah, tomorrow at 10 AM works great. Austin is scheduling the Google Meet link shortly. Let's sync then. Best, Austin."</p>
+                    <span className="text-[9px] text-[#8a8f98]">Tone Signature Match: 99.4% (Direct, Minimalist)</span>
+                  </div>
+
+                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // RESPONSE DRAFT PUSHED TO OUTBOX</span>
+                </motion.div>
+              )}
+
+              {activeStep === 2 && (
+                <motion.div
+                  key="book"
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.4 }}
+                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                >
+                  <div>
+                    <span className="text-[10px] text-neutral-500 font-bold tracking-widest block mb-4">CALENDAR ADAPTER ENGINE</span>
+                    <h3 className="text-base font-bold text-white mb-2">Autonomous Meeting Booking</h3>
+                  </div>
+
+                  <div className="space-y-3 bg-[#0a0a0a] border border-white/[0.04] p-5 rounded-xl text-xs text-neutral-400">
+                    <div className="flex items-center justify-between border-b border-white/[0.03] pb-2 text-[10px]">
+                      <span>SCHEDULER AGENT LOOP</span>
+                      <span className="text-blue-400">Confirmed Booking</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      <p className="text-white font-semibold">Event: Capital VCS / Mailient Pitch Sync</p>
+                      <p className="text-neutral-400">Date: Tomorrow, 10:00 AM - 10:30 AM EST</p>
+                      <p className="text-neutral-500">Platform: Google Meet (Link generated in invite)</p>
                     </div>
                   </div>
 
-                  {/* Column 3: Done */}
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-1.5 text-[10px] text-neutral-400 font-semibold mb-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      <span>Done 12</span>
-                    </div>
-
-                    {/* Done Card 1 */}
-                    <div className="bg-[#0b0b0b] border border-[#10b981]/10 p-3.5 rounded-xl space-y-3 opacity-75">
-                      <div className="flex items-center justify-between text-[9px] font-mono text-emerald-400">
-                        <span>ENG-1487</span>
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      </div>
-                      <p className="text-[11px] text-neutral-350 font-medium leading-tight line-through">
-                        Verify AES-256 standard compilation
-                      </p>
-                      <div className="flex items-center gap-1.5">
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/30 text-[8px] font-bold text-emerald-400 uppercase">Done</span>
-                      </div>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
-
-              {/* Bottom tag / info */}
-              <div className="flex items-center justify-between border-t border-white/[0.04] pt-4 mt-6 text-[10px] text-neutral-500">
-                <span>Intake pipeline connected · 1.0</span>
-                <span className="text-neutral-400 font-semibold">Active Session</span>
-              </div>
-
-            </div>
+                  <span className="text-[9.5px] text-neutral-500 pt-4 border-t border-white/[0.03]">SUCCESS // CALENDAR LOG CONFIRMED</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           </div>
-        </BlurFade>
+
+        </div>
       </section>
 
-      {/* 5. SECTION 3: FIRST-CLASS DEV EXPERIENCE (Exactly Replicating Screenshot 5) */}
-      <section 
-        className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative"
-      >
-        <div className="text-left mb-20 space-y-4 max-w-3xl">
-          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
-            <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-[#8a8f98] mb-4">
-              developer ecosystem // API
-            </h2>
-          </BlurFade>
-          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <p className="text-3xl md:text-[44px] font-medium text-white tracking-[-0.03em] leading-tight">
-              First-class developer experience
-            </p>
-          </BlurFade>
-          <BlurFade delay={0.25} duration={0.8} yOffset={12} inView>
-            <p className="text-neutral-400 text-sm md:text-base font-light max-w-2xl leading-relaxed tracking-tight">
-              We are a team of engineers who love building tools for other engineers. Our goal is to create the email platform we've always wished we had — one that <span className="italic text-white">just works</span>.
-            </p>
-          </BlurFade>
-        </div>
+      {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
+        
+        <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">INTEGRATIONS RADAR</span>
+        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl mb-24">
+          Integrated directly with <br />your favourite platforms.
+        </h2>
 
-        {/* Showcase Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 w-full text-left">
+        {/* Orbit Radar Display Box */}
+        <div className="relative w-[500px] h-[500px] flex items-center justify-center select-none pointer-events-none mb-12 scale-90 md:scale-100">
           
-          {/* Card Left: Test Mode */}
-          <BlurFade delay={0.3} duration={0.8} yOffset={20} inView>
-            <div className="bg-[#090909] border border-white/[0.06] rounded-[24px] p-8 shadow-2xl flex flex-col justify-between h-[440px] relative overflow-hidden group">
-              <div>
-                {/* SVG icon test tube */}
-                <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-white/[0.08] flex items-center justify-center mb-6">
-                  <span className="text-xs">🧪</span>
-                </div>
-                <h3 className="text-base font-bold text-white mb-2">Test mode</h3>
-                <p className="text-xs text-[#8a8f98] leading-relaxed font-light mb-8 max-w-sm">
-                  Simulate events and experiment with our API without the risk of accidentally sending real emails to real people.
-                </p>
+          {/* Inner Ambient Glow Radar Ring */}
+          <div className="absolute w-[200px] h-[200px] rounded-full border border-white/[0.02] bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.015),transparent_60%)]" style={{ animation: "radar-pulse 4s infinite ease-in-out" }} />
 
-                {/* API Request Simulator Container (Screenshot 5 detail) */}
-                <div className="bg-black/60 border border-white/[0.06] rounded-xl p-4 font-mono text-[10px] space-y-3 relative overflow-hidden">
-                  <div className="flex items-center justify-between pb-2 border-b border-white/[0.04] mb-2">
-                    <span className="text-neutral-400">Simulator Terminal</span>
-                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-450 border border-emerald-900/60 uppercase text-[8px] font-bold">Active</span>
-                  </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-950/30 text-emerald-400 font-bold uppercase text-[8px]">Delivered</span>
-                      <span className="text-neutral-300">delivered@resend.dev</span>
-                    </div>
-                    <button className="px-2.5 py-1 rounded bg-neutral-900 hover:bg-neutral-800 text-white font-semibold text-[8px] border border-white/[0.06]">
-                      Send
-                    </button>
-                  </div>
-                  <div className="space-y-1.5 text-neutral-400">
-                    <p className="text-neutral-500">&gt; Triggering test payload compile...</p>
-                    <p>HTTP 200: &#123; "id": "7722ee1d-5c4f-4f57-bd35-02ac8d8e55be" &#125;</p>
-                    <p>HTTP 200: &#123; "id": "db90ae99-4b3b-4e10-a5a0-389854692d5b" &#125;</p>
-                  </div>
-                </div>
-              </div>
+          {/* Concentric Orbit Circles */}
+          <div className="absolute w-[220px] h-[220px] rounded-full border border-white/[0.03]" />
+          <div className="absolute w-[340px] h-[340px] rounded-full border border-white/[0.02] border-dashed" />
+          <div className="absolute w-[460px] h-[460px] rounded-full border border-white/[0.01]" />
 
-              <div className="text-[10px] text-neutral-500 font-semibold pt-4 border-t border-white/[0.04] mt-6 flex items-center justify-between">
-                <span>API Sandbox</span>
-                <span className="hover:text-white cursor-pointer transition-colors">Learn more &rarr;</span>
-              </div>
-            </div>
-          </BlurFade>
+          {/* Central Black & White Mailient Grayscale Logo */}
+          <div className="absolute w-14 h-14 rounded-full bg-white text-black font-mono font-bold flex items-center justify-center text-base z-30 shadow-[0_0_40px_rgba(255,255,255,0.25)] border border-neutral-300">
+            M
+          </div>
 
-          {/* Card Right: Webhooks Timeline */}
-          <BlurFade delay={0.38} duration={0.8} yOffset={20} inView>
-            <div className="bg-[#090909] border border-white/[0.06] rounded-[24px] p-8 shadow-2xl flex flex-col justify-between h-[440px] relative overflow-hidden group">
-              <div>
-                {/* SVG icon antenna */}
-                <div className="w-8 h-8 rounded-lg bg-neutral-900 border border-white/[0.08] flex items-center justify-center mb-6">
-                  <span className="text-xs">🔔</span>
-                </div>
-                <h3 className="text-base font-bold text-white mb-2">Modular webhooks</h3>
-                <p className="text-xs text-[#8a8f98] leading-relaxed font-light mb-8 max-w-sm">
-                  Receive real-time notifications directly to your server. Every time an email is delivered, opened, bounces, or a link is clicked.
-                </p>
+          {/* Orbit 1 App: Google Calendar */}
+          <div 
+            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
+            style={{ animation: "radar-orbit-1 12s linear infinite" }}
+          >
+            📅
+          </div>
 
-                {/* Timeline interface (Screenshot 5 detail) */}
-                <div className="space-y-4">
-                  {webhookLogs.map((log) => (
-                    <div key={log.id} className="flex items-start gap-4 border-l-2 border-neutral-800 pl-4 relative ml-2">
-                      <div className="absolute left-[-5px] top-1.5 w-2 h-2 rounded-full bg-yellow-500" />
-                      <div className="space-y-1.5 text-left flex-1">
-                        <div className="flex items-center gap-3">
-                          <span className="px-2 py-0.5 rounded bg-yellow-950/20 text-yellow-500 border border-yellow-900/60 uppercase text-[8px] font-bold">
-                            {log.type}
-                          </span>
-                          <span className="text-[9px] text-[#555] font-mono">May 20 {log.time}</span>
-                        </div>
-                        <p className="text-[10px] text-neutral-350 leading-relaxed font-sans">
-                          to <span className="font-semibold text-white font-mono">{log.email}</span> with feedback <span className="font-semibold text-white">{log.feedback}</span>
-                        </p>
-                        <p className="text-[9px] text-neutral-500">
-                          on agent <span className="text-neutral-450">{log.agent}</span> running on <span className="text-neutral-450">{log.os}</span>
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+          {/* Orbit 2 App A: Notion */}
+          <div 
+            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
+            style={{ animation: "radar-orbit-2-a 18s linear infinite" }}
+          >
+            📓
+          </div>
 
-              <div className="text-[10px] text-neutral-500 font-semibold pt-4 border-t border-white/[0.04] mt-6 flex items-center justify-between">
-                <span>Webhook Logs</span>
-                <span className="hover:text-white cursor-pointer transition-colors">Learn more &rarr;</span>
-              </div>
-            </div>
-          </BlurFade>
+          {/* Orbit 2 App B: Google Meet */}
+          <div 
+            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
+            style={{ animation: "radar-orbit-2-b 18s linear infinite" }}
+          >
+            🎥
+          </div>
+
+          {/* Orbit 3 App A: Cal.com */}
+          <div 
+            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
+            style={{ animation: "radar-orbit-3-a 26s linear infinite" }}
+          >
+            🗓️
+          </div>
+
+          {/* Orbit 3 App B: Slack */}
+          <div 
+            className="absolute w-8 h-8 rounded-lg bg-neutral-950 border border-white/[0.06] flex items-center justify-center text-xs z-20 shadow-xl"
+            style={{ animation: "radar-orbit-3-b 26s linear infinite" }}
+          >
+            💬
+          </div>
 
         </div>
       </section>
 
-      {/* 6. SECTION 4: CALL TO ACTION FOLD (Exactly Replicating Screenshot 4) */}
-      <section 
-        className="py-44 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-center space-y-8"
-      >
-        <BlurFade delay={0.1} duration={0.8} yOffset={15} inView>
-          <h2 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-tight">
-            Built for the future. <br />Available today.
-          </h2>
-        </BlurFade>
+      {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
+      <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div 
+          className="w-full bg-[#050505] border border-white/[0.08] rounded-[32px] p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative overflow-hidden group shadow-[0_50px_120px_rgba(0,0,0,0.95)]"
+          onMouseMove={handleMouseMove}
+        >
+          {/* Card Cursor Lighting Glow spotlight */}
+          <motion.div
+            className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+            style={{
+              background: useMotionTemplate`radial-gradient(800px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.015), transparent 80%)`,
+            }}
+          />
 
-        {/* Dynamic Cognitive Leverage Metrics */}
-        <BlurFade delay={0.18} duration={0.8} yOffset={10} inView>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 w-full max-w-4xl mx-auto py-12 border-y border-white/[0.05] my-10 text-left">
+          <div className="flex-1 space-y-6 text-left relative z-10">
+            <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
+              PLATFORM FLAGSHIP AGENT
+            </span>
+            
+            <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] text-white leading-tight font-sans">
+              Meet Arcus.
+            </h2>
+
+            <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
+              Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
+            </p>
+
+            <div className="pt-6">
+              <Link 
+                href="/product/arcus"
+                className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-transform duration-300 hover:scale-[1.02] flex items-center gap-2 w-fit cursor-pointer"
+              >
+                Review Arcus Flagship
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </div>
+
+          {/* Glass dashboard preview right side */}
+          <div className="flex-1 w-full bg-[#0a0a0a] border border-white/[0.04] p-6 rounded-2xl h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative overflow-hidden">
+            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
+
+            <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
+              <span>ARCUS MISSION DEPLOYMENT</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+
+            <div className="space-y-2.5">
+              <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
+              <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
+              <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
+              <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
+            </div>
+
+            <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
+              <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
+              <span>100% SUCCESS RATE</span>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 5. THE MORNING SIDE-BY-SIDE: Chaos vs Overnight Clarity */}
+      <section id="sample-brief" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div className="text-center flex flex-col items-center mb-24">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
+          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl">
+            Chaos vs Overnight Clarity.
+          </h2>
+          <p className="text-xs text-[#8a8f98] leading-relaxed font-light max-w-md mt-4 font-sans">
+            Waking up to email is an operational bottleneck. Arcus shifts inbox tasks to overnight cycles, returning control back to founders.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
+          {/* Left panel: Chaos */}
+          <div className="bg-[#050505] border border-red-950/20 p-8 rounded-3xl relative overflow-hidden text-left h-[440px] flex flex-col justify-between group">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.015),transparent_60%)] pointer-events-none" />
+            
+            <div>
+              <div className="flex items-center gap-2 mb-6 text-red-400 font-mono text-[10px] tracking-wider uppercase font-bold">
+                <AlertCircle className="w-4 h-4 text-red-500 animate-pulse" />
+                <span>The Chaos of Yesterday</span>
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">High stress inbox pile</h3>
+              <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
+                Waking up to 45 unread threads, urgent meeting booking queries, and complex response requirements.
+              </p>
+
+              {/* Stress rows */}
+              <div className="space-y-3 font-mono text-[11px] text-red-300/80">
+                <div className="p-3.5 rounded-xl border border-red-950/30 bg-red-950/5 flex items-center justify-between">
+                  <span>&gt; Thread: Pitch update (URGENT)</span>
+                  <span className="text-[9px] text-red-500">Unread</span>
+                </div>
+                <div className="p-3.5 rounded-xl border border-red-950/30 bg-red-950/5 flex items-center justify-between">
+                  <span>&gt; Meeting request: slot needed today</span>
+                  <span className="text-[9px] text-red-500">Unread</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03]">
+              STATUS // RED ZONE INBOX ACCUMULATION
+            </div>
+          </div>
+
+          {/* Right panel: Overnight Clarity */}
+          <div className="bg-[#050505] border border-white/[0.08] p-8 rounded-3xl relative overflow-hidden text-left h-[440px] flex flex-col justify-between group shadow-2xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.02),transparent_60%)] pointer-events-none" />
+            
+            <div>
+              <div className="flex items-center gap-2 mb-6 text-emerald-400 font-mono text-[10px] tracking-wider uppercase font-bold">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span>Overnight Clarity</span>
+              </div>
+              <h3 className="text-lg font-bold text-white mb-2">Autonomous Morning Briefing</h3>
+              <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
+                Start the morning with resolved outbox drafts, confirmed bookings, and a single dashboard brief.
+              </p>
+
+              {/* Clarity rows */}
+              <div className="space-y-3 font-mono text-[11px] text-emerald-300/80">
+                <div className="p-3.5 rounded-xl border border-emerald-950/30 bg-emerald-950/5 flex items-center justify-between">
+                  <span>&gt; 4 Meetings booked automatically</span>
+                  <span className="text-[9px] text-emerald-400">Resolved</span>
+                </div>
+                <div className="p-3.5 rounded-xl border border-emerald-950/30 bg-emerald-950/5 flex items-center justify-between">
+                  <span>&gt; 3 High-priority drafts waiting in outbox</span>
+                  <span className="text-[9px] text-emerald-400">Resolved</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03]">
+              STATUS // GREEN ZONE OPERATIONAL LEVERAGE
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      {/* 6. SOCIAL PROOF, STAT ROW, SECURITY STRIP */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div className="max-w-5xl mx-auto">
+          
+          {/* Stat row */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24 text-left">
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Triage Capacity</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
                 <ActiveCounter target={100} />k+
               </span>
               <span className="text-[10px] text-neutral-500 font-light font-sans">Processed daily</span>
             </div>
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Response Speed</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
                 <ActiveCounter target={24} />x
               </span>
               <span className="text-[10px] text-neutral-500 font-light font-sans">Faster triage cycles</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Leverage Factor</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
-                <ActiveCounter target={98} />%
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Accuracy rate</span>
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
+                <ActiveCounter target={99} />.4%
               </span>
               <span className="text-[10px] text-neutral-500 font-light font-sans">Noise isolation rate</span>
             </div>
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Founder Advantage</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white flex items-center gap-0.5">
+              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
                 <ActiveCounter target={1240} />h
               </span>
               <span className="text-[10px] text-neutral-500 font-light font-sans">Focus hours saved</span>
             </div>
           </div>
-        </BlurFade>
 
-        <BlurFade delay={0.25} duration={0.8} yOffset={10} inView>
-          <div className="flex items-center justify-center gap-4 mt-4">
-            <button 
-              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs transition-transform duration-300 hover:scale-[1.02] shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-            >
-              Open app
-            </button>
-            <button 
-              className="px-8 py-3 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-xs hover:bg-neutral-800 transition-colors"
-            >
-              Download
-            </button>
+          {/* Quotes grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-24">
+            <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-sm relative overflow-hidden">
+              <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
+              <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
+                Mailient restored my momentum. I wake up to resolved threads and booked calls, not a wall of noise.
+              </p>
+              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Austin, Founder at Aether Labs</span>
+            </div>
+
+            <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505]/40 backdrop-blur-sm relative overflow-hidden">
+              <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
+              <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
+                Autonomous workflows are the ultimate leverage. Arcus handles the routine, keeping our team focused on shipping.
+              </p>
+              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Sarah, COO at Linear VCs</span>
+            </div>
           </div>
-        </BlurFade>
+
+          {/* Security Strip */}
+          <div className="w-full py-4 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between text-left hover:border-white/[0.08] transition-colors cursor-pointer">
+            <div className="flex items-center gap-3">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span className="text-[11px] text-neutral-400 font-sans">
+                Vault-grade local PII sanitization with AES-256 local cache protection.
+              </span>
+            </div>
+            <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">
+              Read Security Standard
+              <ChevronRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+        </div>
       </section>
 
-      {/* 7. FIVE-COLUMN LUXURY FOOTER (Exactly Replicating Screenshot 4 Columns) */}
+      {/* 7. PRICING TEASER */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div className="text-center flex flex-col items-center mb-20">
+          <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">PRICING TIERS</span>
+          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
+            Transparent plans for modern teams.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto text-left">
+          {/* Starter Plan */}
+          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[420px] relative overflow-hidden group">
+            <div>
+              <span className="text-neutral-500 font-mono text-[10px] tracking-wider uppercase font-bold block mb-4">STARTER PLAN</span>
+              <h3 className="text-xl font-bold text-white mb-2">Inbox Triage</h3>
+              <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
+                Perfect for individuals seeking noise isolation and basic scheduling assistance.
+              </p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-3xl font-semibold">$0</span>
+                <span className="text-[10px] text-neutral-500 font-mono">/ month</span>
+              </div>
+
+              <ul className="space-y-2.5 text-[10.5px] text-neutral-400 font-sans font-light">
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>5 Sift AI classifications daily</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>10 Arcus AI agent runs daily</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-400" />
+                  <span>20 Email Summaries daily</span>
+                </li>
+              </ul>
+            </div>
+
+            <Link 
+              href="/pricing"
+              className="px-6 py-2.5 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-center text-[10.5px] hover:bg-neutral-800 transition-colors w-full"
+            >
+              Learn more about limits
+            </Link>
+          </div>
+
+          {/* Pro Plan */}
+          <div className="p-8 rounded-[24px] border border-white/[0.08] bg-[#050505] flex flex-col justify-between h-[420px] relative overflow-hidden group shadow-2xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
+            
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-white font-mono text-[10px] tracking-wider uppercase font-bold">PRO PLAN</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-bold">UNLIMITED ACCESS</span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Overnight Sweep</h3>
+              <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
+                Built for scaling operations requiring high-leverage context loops and unrestricted agent actions.
+              </p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-3xl font-semibold">$29</span>
+                <span className="text-[10px] text-neutral-500 font-mono">/ month</span>
+              </div>
+
+              <ul className="space-y-2.5 text-[10.5px] text-neutral-350 font-sans font-light">
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Unlimited Sift Triage classification</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Unlimited Arcus Multi-Agent runs</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Unlimited drafts and schedule bookings</span>
+                </li>
+              </ul>
+            </div>
+
+            <Link 
+              href="/pricing"
+              className="px-6 py-2.5 rounded-full bg-white text-black font-semibold text-center text-[10.5px] hover:bg-neutral-200 transition-colors w-full"
+            >
+              Upgrade to Pro
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* 8. FAQ ACCORDION SECTION */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          
+          <div className="lg:col-span-4 space-y-4 text-left">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>
+            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] text-white leading-tight">
+              Frequently asked questions.
+            </h2>
+            <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
+              Can't find what you are looking for? Read our documentation page or contact support.
+            </p>
+          </div>
+
+          <div className="lg:col-span-8 flex flex-col space-y-4 w-full">
+            {/* FAQ 1 */}
+            <div className="border-b border-white/[0.06] pb-4 text-left">
+              <div 
+                onClick={() => setActiveAccordion(activeAccordion === 0 ? null : 0)}
+                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
+              >
+                <span>How does Arcus write email drafts in my exact voice?</span>
+                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 0 ? "[-]" : "[+]"}</span>
+              </div>
+              <AnimatePresence>
+                {activeAccordion === 0 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
+                      Our voice-profile engine extracts tone descriptors, structural signatures, and custom terminology from your sent folders. It then writes drafts according to these specific matches.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* FAQ 2 */}
+            <div className="border-b border-white/[0.06] pb-4 text-left">
+              <div 
+                onClick={() => setActiveAccordion(activeAccordion === 1 ? null : 1)}
+                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
+              >
+                <span>Is my email data secure and private?</span>
+                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 1 ? "[-]" : "[+]"}</span>
+              </div>
+              <AnimatePresence>
+                {activeAccordion === 1 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
+                      Yes. Mailient utilizes local PII sanitizers to ensure that personally identifiable information is sanitized on-device. All client-side credentials utilize AES-256 standard encryption keys.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* FAQ 3 */}
+            <div className="border-b border-white/[0.06] pb-4 text-left">
+              <div 
+                onClick={() => setActiveAccordion(activeAccordion === 2 ? null : 2)}
+                className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-350 transition-colors"
+              >
+                <span>Do I need to configure scheduling workflows manually?</span>
+                <span className="text-xs text-neutral-500 font-mono">{activeAccordion === 2 ? "[-]" : "[+]"}</span>
+              </div>
+              <AnimatePresence>
+                {activeAccordion === 2 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
+                      No. Arcus operates fully autonomously. It automatically connects with Cal.com, Zoom, Notion, and Google Meet adapters to crosscheck availability and books slots without prompting.
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* 9. FINAL CALL TO ACTION FOLD */}
+      <section className="py-44 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-center space-y-8">
+        
+        <h2 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-tight">
+          Hours of email, <br />handled overnight.
+        </h2>
+
+        <div className="flex items-center justify-center gap-4 mt-4">
+          <button 
+            onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+            className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs transition-transform duration-300 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.15)]"
+          >
+            Connect Gmail
+          </button>
+          <Link 
+            href="/pricing"
+            className="px-8 py-3 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-xs hover:bg-neutral-800 transition-colors"
+          >
+            View pricing
+          </Link>
+        </div>
+
+      </section>
+
+      {/* 10. FIVE-COLUMN LUXURY FOOTER */}
       <footer className="w-full bg-[#000000] border-t border-white/[0.06] py-20 px-6 z-10 relative text-left">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-12 md:gap-8 mb-16">
           
@@ -780,13 +938,12 @@ export function LinearLanding() {
           <div className="flex flex-col space-y-4">
             <h4 className="text-xs font-semibold text-white">Product</h4>
             <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li><Link href="/product/sift" className="hover:text-white transition-colors">Intake</Link></li>
-              <li><Link href="/product/drafts" className="hover:text-white transition-colors">Plan</Link></li>
-              <li><Link href="/product/arcus" className="hover:text-white transition-colors">Build</Link></li>
-              <li className="hover:text-white cursor-pointer transition-colors">Diffs</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Monitor</li>
-              <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing</Link></li>
-              <li><Link href="/security" className="hover:text-white transition-colors">Security</Link></li>
+              <li><Link href="/product/sift" className="hover:text-white transition-colors">Intake Triage</Link></li>
+              <li><Link href="/product/drafts" className="hover:text-white transition-colors">Tone Writer</Link></li>
+              <li><Link href="/product/arcus" className="hover:text-white transition-colors">Arcus Flagship</Link></li>
+              <li className="hover:text-white cursor-pointer transition-colors">Vault Security</li>
+              <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing Limits</Link></li>
+              <li><Link href="/security" className="hover:text-white transition-colors">Security Strip</Link></li>
             </ul>
           </div>
 
@@ -794,13 +951,11 @@ export function LinearLanding() {
           <div className="flex flex-col space-y-4">
             <h4 className="text-xs font-semibold text-white">Features</h4>
             <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">Asks</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Agents</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Customer Requests</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Insights</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Mobile</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Integrations</li>
-              <li><Link href="/changelog" className="hover:text-white transition-colors">Changelog</Link></li>
+              <li className="hover:text-white cursor-pointer transition-colors">Triage Sift</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Voice Profiler</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Cal.com Booking</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Slack Notifications</li>
+              <li><Link href="/changelog" className="hover:text-white transition-colors">Platform Changelog</Link></li>
             </ul>
           </div>
 
@@ -808,13 +963,10 @@ export function LinearLanding() {
           <div className="flex flex-col space-y-4">
             <h4 className="text-xs font-semibold text-white">Company</h4>
             <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">About</li>
+              <li className="hover:text-white cursor-pointer transition-colors">About Us</li>
               <li className="hover:text-white cursor-pointer transition-colors">Customers</li>
               <li className="hover:text-white cursor-pointer transition-colors">Careers</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Blog</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Method</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Quality</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Brand</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Press</li>
             </ul>
           </div>
 
@@ -822,37 +974,27 @@ export function LinearLanding() {
           <div className="flex flex-col space-y-4">
             <h4 className="text-xs font-semibold text-white">Resources</h4>
             <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">Switch</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Download</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Documentation</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Developers</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Status</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Enterprise</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Startups</li>
+              <li className="hover:text-white cursor-pointer transition-colors">API Docs</li>
+              <li className="hover:text-white cursor-pointer transition-colors">System Status</li>
+              <li className="hover:text-white cursor-pointer transition-colors">PII Vault Specs</li>
             </ul>
           </div>
 
-          {/* Column 5: Connect */}
+          {/* Column 5: Legal */}
           <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Connect</h4>
+            <h4 className="text-xs font-semibold text-white">Legal</h4>
             <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">Contact us</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Community</li>
-              <li className="hover:text-white cursor-pointer transition-colors">X (Twitter)</li>
-              <li className="hover:text-white cursor-pointer transition-colors">GitHub</li>
-              <li className="hover:text-white cursor-pointer transition-colors">YouTube</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Terms of Service</li>
+              <li className="hover:text-white cursor-pointer transition-colors">Privacy Policy</li>
+              <li className="hover:text-white cursor-pointer transition-colors">GDPR Compliance</li>
             </ul>
           </div>
 
         </div>
 
-        {/* Bottom copyright & details */}
+        {/* Bottom footer copyright */}
         <div className="max-w-6xl mx-auto border-t border-white/[0.06] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            {/* Linear-style minimalist logo icon */}
-            <svg viewBox="0 0 20 20" className="w-5 h-5 fill-white">
-              <path d="M 10,0 C 4.47,0 0,4.47 0,10 C 0,15.53 4.47,20 10,20 C 15.53,20 20,15.53 20,10 C 20,4.47 15.53,0 10,0 Z M 10,18 C 5.58,18 2,14.42 2,10 C 2,5.58 5.58,2 10,2 C 14.42,2 18,5.58 18,10 C 18,14.42 14.42,18 10,18 Z" />
-            </svg>
             <span className="text-[11px] text-neutral-500 font-light font-mono">
               &copy; {new Date().getFullYear()} Mailient, Inc. All rights reserved.
             </span>
