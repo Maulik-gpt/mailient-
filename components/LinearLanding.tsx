@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
 import { SpecialText } from "@/components/ui/special-text";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 
 // Re-map premium company metadata
@@ -114,65 +115,53 @@ export function LinearLanding() {
           className="w-full flex flex-col items-center max-w-5xl"
         >
           {/* Handcrafted Status Ring Badge */}
-          <motion.div
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-            className="inline-flex items-center gap-2.5 px-4.5 py-1.5 rounded-full bg-white/[0.02] backdrop-blur-md border border-white/[0.06] shadow-2xl mb-10 group cursor-pointer hover:border-white/[0.12] transition-colors"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-300 uppercase">
-              Autonomous Intelligence Layer v1.0
-            </span>
-          </motion.div>
+          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+            <div className="inline-flex items-center gap-2.5 px-4.5 py-1.5 rounded-full bg-white/[0.02] backdrop-blur-md border border-white/[0.06] shadow-2xl mb-10 group cursor-pointer hover:border-white/[0.12] transition-colors">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-300 uppercase">
+                Autonomous Intelligence Layer v1.0
+              </span>
+            </div>
+          </BlurFade>
 
           {/* Tagline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
-            className="text-5xl md:text-8xl font-medium tracking-[-0.04em] text-white leading-[0.98] w-full"
-          >
-            Hours of email, <br />
-            <span className="font-extralight italic text-neutral-450 tracking-[-0.04em]">handled overnight.</span>
-          </motion.h1>
+          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
+            <h1 className="text-5xl md:text-8xl font-medium tracking-[-0.04em] text-white leading-[0.98] w-full">
+              Hours of email, <br />
+              <span className="font-extralight italic text-neutral-450 tracking-[-0.04em]">handled overnight.</span>
+            </h1>
+          </BlurFade>
 
           {/* Subheadline (Clean, luxury spacing) */}
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.25, ease: [0.16, 1, 0.3, 1] }}
-            className="text-neutral-400 text-base md:text-lg font-light max-w-2xl mt-10 leading-relaxed tracking-tight"
-          >
-            Mailient operates silently in memory. It triage-filters incoming threads, models reply drafts in your proprietary voice, and coordinates calendars without headcount.
-          </motion.p>
+          <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
+            <p className="text-neutral-400 text-base md:text-lg font-light max-w-2xl mt-10 leading-relaxed tracking-tight">
+              Mailient operates silently in memory. It triage-filters incoming threads, models reply drafts in your proprietary voice, and coordinates calendars without headcount.
+            </p>
+          </BlurFade>
 
           {/* CTAs with glass/liquid tactile border shadows */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className="flex flex-wrap items-center justify-center gap-5 mt-12"
-          >
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-black text-xs font-bold tracking-tight transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] flex items-center gap-2 border border-white/20"
-            >
-              <Mail className="w-3.5 h-3.5 text-black" />
-              Connect Gmail
-              <ArrowRight className="w-3.5 h-3.5 text-black transition-transform duration-300 group-hover:translate-x-1" />
-            </button>
+          <BlurFade delay={0.4} duration={0.8} yOffset={10} inView>
+            <div className="flex flex-wrap items-center justify-center gap-5 mt-12">
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+                className="relative group overflow-hidden px-9 py-4 rounded-full bg-white text-black text-xs font-bold tracking-tight transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_35px_rgba(255,255,255,0.2)] flex items-center gap-2 border border-white/20"
+              >
+                <Mail className="w-3.5 h-3.5 text-black" />
+                Connect Gmail
+                <ArrowRight className="w-3.5 h-3.5 text-black transition-transform duration-300 group-hover:translate-x-1" />
+              </button>
 
-            <a
-              href="#triage-fold"
-              className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.08] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] backdrop-blur-md transition-all duration-300 flex items-center gap-1.5 shadow-inner hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
-            >
-              Review specifications
-            </a>
-          </motion.div>
+              <a
+                href="#triage-fold"
+                className="px-9 py-4 rounded-full bg-white/[0.02] border border-white/[0.08] text-white text-xs font-semibold tracking-tight hover:bg-white/[0.06] backdrop-blur-md transition-all duration-300 flex items-center gap-1.5 shadow-inner hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.02)]"
+              >
+                Review specifications
+              </a>
+            </div>
+          </BlurFade>
         </motion.div>
 
         {/* Handcrafted Liquid Glass Dashboard Preview Frame */}

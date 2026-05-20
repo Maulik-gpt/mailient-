@@ -9,6 +9,8 @@ import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import AnimatedGradient from "@/components/ui/animated-gradient";
+import { BlurFade } from "@/components/ui/blur-fade";
+
 
 const POLAR_CHECKOUT_URLS = {
   starter: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
@@ -127,19 +129,26 @@ export default function PricingPage() {
 
       {/* Header */}
       <div className="relative z-10 text-center mb-10 mt-36 px-6 max-w-3xl space-y-4">
-        <div className="inline-block px-3.5 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[10px] font-medium tracking-widest uppercase text-neutral-300 mb-4 shadow-2xl">
-          <span className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5 text-neutral-300" />
-            Pricing Plans
-          </span>
-        </div>
+        <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+          <div className="inline-block px-3.5 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[10px] font-medium tracking-widest uppercase text-neutral-300 mb-4 shadow-2xl">
+            <span className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-neutral-300" />
+              Pricing Plans
+            </span>
+          </div>
+        </BlurFade>
         
-        <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-white leading-tight">
-          One subscription. <span className="font-medium italic text-neutral-350">Absolute access.</span>
-        </h1>
-        <p className="text-neutral-400 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed tracking-tight">
-          Scale your email output autonomously with a flat, predictable subscription designed for high-performance institutions.
-        </p>
+        <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
+          <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-white leading-tight">
+            One subscription. <span className="font-medium italic text-neutral-350">Absolute access.</span>
+          </h1>
+        </BlurFade>
+
+        <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
+          <p className="text-neutral-400 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed tracking-tight">
+            Scale your email output autonomously with a flat, predictable subscription designed for high-performance institutions.
+          </p>
+        </BlurFade>
       </div>
 
       {/* 3-Way Pricing Toggle (Monthly / Annual / Lifetime) */}

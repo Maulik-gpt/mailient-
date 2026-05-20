@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
+import { BlurFade } from "@/components/ui/blur-fade";
+
 
 
 export default function ArcusProductPage() {
@@ -107,64 +109,71 @@ Maulik`,
         />
         
         {/* Eyebrow */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-sm mb-6"
-        >
-          <Cpu className="w-3.5 h-3.5 text-neutral-300" />
-          <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-300">
-            ARCUS — AI AGENT FOR YOUR INBOX
-          </span>
-        </motion.div>
+        <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-neutral-900 border border-neutral-800 shadow-sm mb-6">
+            <Cpu className="w-3.5 h-3.5 text-neutral-300" />
+            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-300">
+              ARCUS — AI AGENT FOR YOUR INBOX
+            </span>
+          </div>
+        </BlurFade>
 
         {/* Logo */}
-        <span className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4 block">
-          Arcus by Mailient
-        </span>
+        <BlurFade delay={0.1} duration={0.8} yOffset={8} inView>
+          <span className="text-xs font-semibold text-neutral-500 uppercase tracking-widest mb-4 block">
+            Arcus by Mailient
+          </span>
+        </BlurFade>
 
         {/* Headline */}
-        <h1 className="text-5xl md:text-8xl font-black tracking-tight text-white mb-8 leading-[1.02]">
-          The inbox agent <br />
-          <span className="font-extralight italic text-neutral-400">that works while you don't.</span>
-        </h1>
+        <BlurFade delay={0.18} duration={0.8} yOffset={15} inView>
+          <h1 className="text-5xl md:text-8xl font-black tracking-tight text-white mb-8 leading-[1.02]">
+            The inbox agent <br />
+            <span className="font-extralight italic text-neutral-400">that works while you don't.</span>
+          </h1>
+        </BlurFade>
 
         {/* Subheading */}
-        <p className="text-neutral-400 text-base md:text-xl font-light max-w-3xl leading-relaxed mb-12">
-          Arcus reads every email, drafts replies in your exact voice, books meetings, and runs silently in the background — delivering results before you ask for them.
-        </p>
+        <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
+          <p className="text-neutral-400 text-base md:text-xl font-light max-w-3xl leading-relaxed mb-12">
+            Arcus reads every email, drafts replies in your exact voice, books meetings, and runs silently in the background — delivering results before you ask for them.
+          </p>
+        </BlurFade>
 
         {/* CTAs */}
-        <div className="flex flex-wrap items-center justify-center gap-4 mb-20">
-          <button
-            onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-            className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] border border-white/20 flex items-center gap-2"
-          >
-            Try Arcus free
-            <ArrowRight className="w-4 h-4 text-neutral-950" />
-          </button>
-          <a
-            href="#live-demo-section"
-            className="px-8 py-3.5 rounded-full bg-white/[0.02] border border-white/[0.08] text-white font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] backdrop-blur-md flex items-center gap-1.5 shadow-inner"
-          >
-            <Play className="w-3.5 h-3.5 fill-white" />
-            Watch it work
-          </a>
-        </div>
+        <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
+          <div className="flex flex-wrap items-center justify-center gap-4 mb-20">
+            <button
+              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+              className="px-8 py-3.5 rounded-full bg-white text-neutral-950 font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:shadow-[0_0_30px_rgba(255,255,255,0.2)] border border-white/20 flex items-center gap-2"
+            >
+              Try Arcus free
+              <ArrowRight className="w-4 h-4 text-neutral-950" />
+            </button>
+            <a
+              href="#live-demo-section"
+              className="px-8 py-3.5 rounded-full bg-white/[0.02] border border-white/[0.08] text-white font-extrabold text-xs transition-all duration-300 hover:scale-[1.01] hover:bg-white/[0.06] backdrop-blur-md flex items-center gap-1.5 shadow-inner"
+            >
+              <Play className="w-3.5 h-3.5 fill-white" />
+              Watch it work
+            </a>
+          </div>
+        </BlurFade>
 
         {/* What Arcus Is (Single Paragraph Description) */}
-        <div className="w-full max-w-4xl border border-neutral-850 rounded-[32px] bg-neutral-900/60 p-8 md:p-12 text-left relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 to-transparent pointer-events-none" />
-          <div className="relative z-10 space-y-4">
-            <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">
-              Core Definition
-            </span>
-            <p className="text-sm md:text-base text-neutral-300 leading-relaxed font-light font-sans">
-              <strong>Arcus is not an email assistant.</strong> It does not suggest. It does not summarise. <strong>It acts.</strong> When an email arrives, Arcus reads the full thread, understands the context, checks your calendar, drafts a reply that sounds exactly like you, and — if you want — sends it. When you are not around, it runs on schedule, sweeps your inbox, handles the routine, and drops a clean briefing in your Gmail or Slack before you open your laptop. You do not configure it. You do not prompt it. You describe what you want once, in plain English, and Arcus does it — every day, without being asked again.
-            </p>
+        <BlurFade delay={0.45} duration={0.8} yOffset={15} inView>
+          <div className="w-full max-w-4xl border border-neutral-850 rounded-[32px] bg-neutral-900/60 p-8 md:p-12 text-left relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-r from-neutral-900 to-transparent pointer-events-none" />
+            <div className="relative z-10 space-y-4">
+              <span className="text-[10px] font-black uppercase tracking-widest text-neutral-400 block">
+                Core Definition
+              </span>
+              <p className="text-sm md:text-base text-neutral-300 leading-relaxed font-light font-sans">
+                <strong>Arcus is not an email assistant.</strong> It does not suggest. It does not summarise. <strong>It acts.</strong> When an email arrives, Arcus reads the full thread, understands the context, checks your calendar, drafts a reply that sounds exactly like you, and — if you want — sends it. When you are not around, it runs on schedule, sweeps your inbox, handles the routine, and drops a clean briefing in your Gmail or Slack before you open your laptop. You do not configure it. You do not prompt it. You describe what you want once, in plain English, and Arcus does it — every day, without being asked again.
+              </p>
+            </div>
           </div>
-        </div>
+        </BlurFade>
 
       </section>
 
@@ -172,52 +181,59 @@ Maulik`,
       <section className="py-32 px-6 w-full max-w-6xl mx-auto border-t border-neutral-900 relative z-10">
         
         <div className="text-center mb-24">
-          <h2 className="text-xs font-black uppercase tracking-[0.25em] text-neutral-500 mb-4">
-            Platform Capabilities
-          </h2>
-          <p className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
-            Designed to execute, not suggest.
-          </p>
+          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+            <h2 className="text-xs font-black uppercase tracking-[0.25em] text-neutral-500 mb-4">
+              Platform Capabilities
+            </h2>
+          </BlurFade>
+          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
+            <p className="text-3xl md:text-5xl font-black text-white tracking-tight leading-tight">
+              Designed to execute, not suggest.
+            </p>
+          </BlurFade>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           
           {/* Block 1: Neural Voice */}
-          <div className="rounded-3xl border border-neutral-900 bg-neutral-950 p-8 flex flex-col justify-between hover:border-neutral-800 transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.01] rounded-full blur-[40px] pointer-events-none" />
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white mb-6">
-                <MessageSquare className="w-5 h-5 text-neutral-200" />
+          <BlurFade delay={0.2} duration={0.8} yOffset={20} inView>
+            <div className="h-full rounded-3xl border border-neutral-900 bg-neutral-950 p-8 flex flex-col justify-between hover:border-neutral-800 transition-all duration-300 relative group overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.01] rounded-full blur-[40px] pointer-events-none" />
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white mb-6">
+                  <MessageSquare className="w-5 h-5 text-neutral-200" />
+                </div>
+                <h3 className="text-base font-extrabold text-white mb-4">
+                  Replies that sound like you wrote them.
+                </h3>
+                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
+                  Arcus reads your last 90 days of sent email. It learns how you open messages, how you close them, how formal you are with clients versus collaborators, how long your sentences run, which words you never use. When it drafts a reply, it writes the way you write — not the way AI usually sounds. Your clients will not know. You will barely need to edit.
+                </p>
               </div>
-              <h3 className="text-base font-extrabold text-white mb-4">
-                Replies that sound like you wrote them.
-              </h3>
-              <p className="text-xs text-neutral-400 font-light leading-relaxed">
-                Arcus reads your last 90 days of sent email. It learns how you open messages, how you close them, how formal you are with clients versus collaborators, how long your sentences run, which words you never use. When it drafts a reply, it writes the way you write — not the way AI usually sounds. Your clients will not know. You will barely need to edit.
-              </p>
+              <div className="mt-8 pt-4 border-t border-neutral-900 flex items-center gap-1.5 text-[9px] uppercase font-black text-neutral-500">
+                <Check className="w-3.5 h-3.5 text-white" />
+                <span>90-day semantic analysis</span>
+              </div>
             </div>
-            <div className="mt-8 pt-4 border-t border-neutral-900 flex items-center gap-1.5 text-[9px] uppercase font-black text-neutral-500">
-              <Check className="w-3.5 h-3.5 text-white" />
-              <span>90-day semantic analysis</span>
-            </div>
-          </div>
+          </BlurFade>
 
           {/* Block 2: Autonomous Tool Use */}
-          <div className="rounded-3xl border border-neutral-900 bg-neutral-950 p-8 flex flex-col justify-between hover:border-neutral-800 transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.01] rounded-full blur-[40px] pointer-events-none" />
-            <div>
-              <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white mb-6">
-                <Settings className="w-5 h-5 text-neutral-200" />
+          <BlurFade delay={0.28} duration={0.8} yOffset={20} inView>
+            <div className="h-full rounded-3xl border border-neutral-900 bg-neutral-950 p-8 flex flex-col justify-between hover:border-neutral-800 transition-all duration-300 relative group overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.01] rounded-full blur-[40px] pointer-events-none" />
+              <div>
+                <div className="w-10 h-10 rounded-xl bg-neutral-900 border border-neutral-800 flex items-center justify-center text-white mb-6">
+                  <Settings className="w-5 h-5 text-neutral-200" />
+                </div>
+                <h3 className="text-base font-extrabold text-white mb-4">
+                  One instruction. A dozen actions.
+                </h3>
+                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
+                  Tell Arcus to reply to Priya about tomorrow's meeting. Arcus reads the thread, checks your Google Calendar, finds an open slot, creates the event, generates a Meet link, drafts the reply with the link embedded, and saves it to drafts — waiting for your approval. You typed seven words. Arcus did the rest. That is the difference between a chatbot and an agent.
+                </p>
               </div>
-              <h3 className="text-base font-extrabold text-white mb-4">
-                One instruction. A dozen actions.
-              </h3>
-              <p className="text-xs text-neutral-400 font-light leading-relaxed">
-                Tell Arcus to reply to Priya about tomorrow's meeting. Arcus reads the thread, checks your Google Calendar, finds an open slot, creates the event, generates a Meet link, drafts the reply with the link embedded, and saves it to drafts — waiting for your approval. You typed seven words. Arcus did the rest. That is the difference between a chatbot and an agent.
-              </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-neutral-900 flex items-center gap-1.5 text-[9px] uppercase font-black text-neutral-500">
-              <Check className="w-3.5 h-3.5 text-white" />
+              <div className="mt-8 pt-4 border-t border-neutral-900 flex items-center gap-1.5 text-[9px] uppercase font-black text-neutral-500">
+                <Check className="w-3.5 h-3.5 text-white" />
               <span>Full Tool Layer active</span>
             </div>
           </div>
