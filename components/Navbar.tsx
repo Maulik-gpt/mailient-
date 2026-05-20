@@ -47,7 +47,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
     >
       <div
         className={cn(
-          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-2xl relative overflow-hidden",
+          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-[24px] saturate-[180%] relative",
           scrolled
             ? isDark
               ? "border-white/[0.08] bg-neutral-950/75 shadow-[0_25px_60px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)]"
@@ -58,7 +58,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
         )}
       >
         {/* Fine Glass Reflection Line Overlay */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-white/[0.03] pointer-events-none" />
+        <div className="absolute inset-0 z-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-white/[0.03] pointer-events-none rounded-full" />
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group relative z-10">
@@ -108,7 +108,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                   animate={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
                   exit={{ opacity: 0, y: 8, scale: 0.97, filter: "blur(6px)" }}
                   transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                  className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-4 z-50 pointer-events-auto cursor-default"
+                  className="absolute top-full left-1/2 -translate-x-1/2 mt-0 pt-4 z-[100] pointer-events-auto cursor-default"
                 >
                   {/* Mega Menu Obsidian Box */}
                   <div className={cn(
