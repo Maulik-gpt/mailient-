@@ -41,6 +41,8 @@ import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Features8 } from "@/components/ui/features-8";
 import { CTASection } from "@/components/ui/hero-dithering-card";
 import { WordBlurStream } from "@/src/WordBlurStream";
+import { BlurFade } from "@/components/ui/blur-fade";
+import NumberFlow from "@number-flow/react";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -65,23 +67,18 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
   }, []);
 
   useEffect(() => {
-    if (!isInView) return;
-    let start = 0;
-    const duration = 2000; // 2s
-    const increment = target / (duration / 16);
-    const timer = setInterval(() => {
-      start += increment;
-      if (start >= target) {
-        setCount(target);
-        clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
-      }
-    }, 16);
-    return () => clearInterval(timer);
+    if (isInView) {
+      setCount(target);
+    } else {
+      setCount(0);
+    }
   }, [target, isInView]);
 
-  return <span ref={ref}>{count.toLocaleString()}</span>;
+  return (
+    <span ref={ref} className="inline-flex items-center">
+      <NumberFlow value={count} />
+    </span>
+  );
 }
 
 const landingFaqs = [
@@ -145,7 +142,7 @@ export function LinearLanding() {
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % 3);
-    }, 4500);
+    }, 10000);
     return () => clearInterval(timer);
   }, []);
 
@@ -188,7 +185,7 @@ export function LinearLanding() {
         
         {/* WebGL Backing Shader */}
         <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] blur-[90px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.25] blur-[50px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
             <Dithering
               colorBack="#000000" 
               colorFront="#ffffff"
@@ -204,74 +201,59 @@ export function LinearLanding() {
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
           {/* Headline & Subtitle */}
-          <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] leading-[1.08] max-w-4xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-            Hours of email, <br />handled overnight.
-          </h1>
+          <BlurFade delay={0.1} duration={0.8} inView>
+            <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.05] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+              Hours of email, <br />handled overnight.
+            </h1>
+          </BlurFade>
 
-          <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans min-h-[3rem]">
-            <WordBlurStream
-              text="Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously."
-              msPerWord={80}
-              startupMs={400}
-              holdMs={4500}
-            />
-          </p>
+          <BlurFade delay={0.2} duration={0.8} inView>
+            <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-3xl mt-8 font-light font-sans min-h-[4rem]">
+              <WordBlurStream
+                text="Arcus by Mailient reads your threads, writes custom drafts in your voice, and schedules calendar events — fully autonomously."
+                msPerWord={80}
+                startupMs={400}
+                holdMs={4500}
+              />
+            </p>
+          </BlurFade>
 
           {/* Premium CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
-            >
-              Connect Gmail
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+          <BlurFade delay={0.3} duration={0.8} inView>
+            <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+                className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
+              >
+                Connect Gmail
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
 
-            <a
-              href="#sample-brief"
-              className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
-            >
-              <Play className="w-3 h-3 fill-white" />
-              See a sample brief
-            </a>
-          </div>
+              <a
+                href="#sample-brief"
+                className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+              >
+                <Play className="w-3 h-3 fill-white" />
+                See a sample brief
+              </a>
+            </div>
+          </BlurFade>
 
           {/* 16:9 Floating Obsidian Demo Video Window */}
-          <div className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_30%,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
-            
-            {/* Visual Demo Elements */}
-            <div className="absolute inset-8 flex flex-col justify-between text-left font-mono">
-              <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
-                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
-                  <span className="w-3 h-3 rounded-full bg-neutral-800" />
-                  <span className="text-[10px] text-neutral-500 ml-4">arcus-engine.js</span>
-                </div>
-                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px]">ACTIVE Overnight Sweep</span>
-              </div>
-
-              {/* Live typing webhook log mock */}
-              <div className="flex-1 flex flex-col justify-center space-y-3 font-mono text-xs text-neutral-400">
-                <p className="text-neutral-500">&gt; Initializing schedule sweep for timezone America/New_York...</p>
-                <p className="text-neutral-300 flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
-                  <span>Sifting inbox thread [TKT-2187]... Category identified: Priority Client</span>
-                </p>
-                <p className="text-neutral-400">&gt; Building high-fidelity Voice Profile signature context...</p>
-                <p className="text-white font-semibold">&gt; Response draft compiled. Calendars checked. Meeting slot logged for May 22 14:00.</p>
-              </div>
-
-              <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
-                <span>INTAKE TRIAGE SYSTEM</span>
-                <span>CTRL + \ TO ACTIVATE PANEL</span>
-              </div>
+          <BlurFade delay={0.4} duration={1.0} inView>
+            <div className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group">
+              <video 
+                src="/cap.mp4" 
+                autoPlay 
+                loop 
+                muted 
+                playsInline 
+                className="w-full h-full object-cover relative z-10" 
+              />
+              {/* Soft atmospheric overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none z-20" />
             </div>
-            
-            {/* Glass Reflector Overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
-          </div>
+          </BlurFade>
 
         </div>
 
@@ -295,14 +277,15 @@ fadeColor="#000000"
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
           {/* Left panel: Vertical connected capability selectors */}
-          <div className="lg:col-span-5 space-y-12">
-            {/* Step 1 */}
-            <div 
-              onClick={() => setActiveStep(0)}
-              className="group cursor-pointer select-none text-left"
-            >
+          <BlurFade delay={0.1} duration={0.8} inView className="lg:col-span-5 w-full">
+            <div className="space-y-12">
+              {/* Step 1 */}
+              <div 
+                onClick={() => setActiveStep(0)}
+                className="group cursor-pointer select-none text-left"
+              >
               <span className={cn(
-                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
                 activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
                 01 // Sift Intake Triage
@@ -310,8 +293,8 @@ fadeColor="#000000"
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 0 
-                  ? "text-3xl md:text-[38px] text-white" 
-                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-4xl md:text-[48px] text-white" 
+                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
                 Isolate noise. Route priorities.
               </h3>
@@ -322,12 +305,12 @@ fadeColor="#000000"
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
-                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                  <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Sift isolates notifications, tags priority customer queries, and drops them into structured queues autonomously.
                   </p>
                   <Link 
                     href="/product/sift" 
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
                   >
                     Explore Sift Engine
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -342,7 +325,7 @@ fadeColor="#000000"
               className="group cursor-pointer select-none text-left"
             >
               <span className={cn(
-                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
                 activeStep === 1 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
                 02 // Tone-Matched Drafts
@@ -350,8 +333,8 @@ fadeColor="#000000"
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 1 
-                  ? "text-3xl md:text-[38px] text-white" 
-                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-4xl md:text-[48px] text-white" 
+                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
                 Drafts compiled in your voice.
               </h3>
@@ -362,12 +345,12 @@ fadeColor="#000000"
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
-                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                  <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Extracts a Stylistic Tone Signature from your historic outbound emails to compose custom, context-aware drafts automatically.
                   </p>
                   <Link 
                     href="/product/drafts" 
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
                   >
                     Explore Drafts Engine
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -382,7 +365,7 @@ fadeColor="#000000"
               className="group cursor-pointer select-none text-left"
             >
               <span className={cn(
-                "font-mono text-[9px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
+                "font-mono text-[10px] tracking-[0.2em] uppercase font-bold block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
                 03 // Autonomous Scheduling
@@ -390,8 +373,8 @@ fadeColor="#000000"
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 2 
-                  ? "text-3xl md:text-[38px] text-white" 
-                  : "text-xl md:text-2xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-4xl md:text-[48px] text-white" 
+                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
                 Meeting sweeps on autopilot.
               </h3>
@@ -402,12 +385,12 @@ fadeColor="#000000"
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
-                  <p className="text-xs md:text-sm text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
+                  <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Schedules meetings directly in your calendar, coordinates with client slots, and generates Google Meet links silently overnight.
                   </p>
                   <a 
                     href="#pricing" 
-                    className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white hover:text-neutral-300 transition-colors"
+                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
                   >
                     Unlock Autonomous Engine
                     <ArrowRight className="w-3.5 h-3.5" />
@@ -415,10 +398,11 @@ fadeColor="#000000"
                 </motion.div>
               )}
             </div>
-          </div>
+          </BlurFade>
 
           {/* Right panel: dynamic high-contrast visual display */}
-          <div className="lg:col-span-7 bg-[#050505] border border-white/[0.08] rounded-[24px] p-8 md:p-10 shadow-2xl h-[500px] flex flex-col justify-between relative overflow-hidden">
+          <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-7 w-full h-[500px]">
+            <div className="bg-[#050505] border border-white/[0.08] rounded-[24px] p-8 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
             {/* Custom Dither Dot Grid Overlay */}
             <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none opacity-[0.08] mix-blend-screen select-none"
                  style={{
@@ -749,11 +733,8 @@ fadeColor="#000000"
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-amber-500/20" />
               <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z" fill="#111827" stroke="#ffffff" strokeWidth="1.5" />
-                <path d="M16 2V6M8 2V6M3 10H21" stroke="#ffffff" strokeWidth="1.5" />
-                <circle cx="8" cy="14" r="1.5" fill="#F59E0B" />
-                <circle cx="16" cy="14" r="1.5" fill="#3B82F6" />
-                <circle cx="12" cy="18" r="1.5" fill="#10B981" />
+                <rect width="24" height="24" rx="5" fill="#111111" />
+                <path d="M6 8h12M6 12h12M6 16h8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Cal.com Booking Engine
@@ -776,157 +757,174 @@ fadeColor="#000000"
                 Google Meet Video Loop
               </div>
             </div>
-          </div>
-
+          </BlurFade>
         </div>
       </section>
 
       {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
       <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div 
-          className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
-          onMouseMove={handleMouseMove}
-        >
-          {/* Card Cursor Lighting Glow spotlight */}
-          <motion.div
-            className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-            style={{
-              background: useMotionTemplate`radial-gradient(800px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.015), transparent 80%)`,
-            }}
-          />
+        <BlurFade delay={0.1} duration={0.9} inView>
+          <div 
+            className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
+            onMouseMove={handleMouseMove}
+          >
+            {/* Card Cursor Lighting Glow spotlight */}
+            <motion.div
+              className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              style={{
+                background: useMotionTemplate`radial-gradient(800px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.015), transparent 80%)`,
+              }}
+            />
 
-          <div className="flex-1 space-y-6 text-left relative z-10">
-            <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-              PLATFORM FLAGSHIP AGENT
-            </span>
-            
-            <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-              Meet Arcus.
-            </h2>
+            <div className="flex-1 space-y-6 text-left relative z-10">
+              <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
+                PLATFORM FLAGSHIP AGENT
+              </span>
+              
+              <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+                Meet Arcus.
+              </h2>
 
-            <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-              Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
-            </p>
+              <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
+                Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
+              </p>
 
-            <div className="pt-6">
-              <Link 
-                href="/product/arcus"
-                className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
-              >
-                Review Arcus Flagship
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              <div className="pt-6">
+                <Link 
+                  href="/product/arcus"
+                  className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
+                >
+                  Review Arcus Flagship
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
+
+            {/* Glass dashboard preview right side */}
+            <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
+                <span>ARCUS MISSION DEPLOYMENT</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+
+              <div className="space-y-2.5">
+                <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
+                <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
+                <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
+                <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
+              </div>
+
+              <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
+                <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
+                <span>100% SUCCESS RATE</span>
+              </div>
+            </div>
+
           </div>
-
-          {/* Glass dashboard preview right side */}
-          <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
-
-            <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
-              <span>ARCUS MISSION DEPLOYMENT</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            </div>
-
-            <div className="space-y-2.5">
-              <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
-              <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
-              <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
-              <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
-            </div>
-
-            <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-              <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
-              <span>100% SUCCESS RATE</span>
-            </div>
-          </div>
-
-        </div>
+        </BlurFade>
       </section>
 
       {/* 5. THE MORNING SIDE-BY-SIDE: Chaos vs Overnight Clarity */}
       <section id="sample-brief" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div className="text-center flex flex-col items-center mb-24">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
-          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-            Chaos vs Overnight Clarity.
-          </h2>
-          <p className="text-xs text-[#8a8f98] leading-relaxed font-light max-w-md mt-4 font-sans min-h-[2.5rem]">
-            <WordBlurStream
-              text="Waking up to email is an operational bottleneck. Arcus shifts inbox tasks to overnight cycles, returning control back to founders."
-              msPerWord={80}
-              startupMs={300}
-              holdMs={5000}
-            />
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
-          {/* Left panel: Chaos */}
-          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(239,68,68,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left h-[440px] flex flex-col justify-between group">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.015),transparent_60%)] pointer-events-none" />
-            
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
-                <span className="text-[10px] text-red-500">✦</span>
-                <span>The Chaos of Yesterday</span>
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">High stress inbox pile</h3>
-              <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                Waking up to 45 unread threads, urgent meeting booking queries, and complex response requirements.
-              </p>
-
-              {/* Stress rows with neumorphic inset style */}
-              <div className="space-y-3 font-mono text-[11px] text-red-300/80">
-                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
-                  <span>&gt; Thread: Pitch update (URGENT)</span>
-                  <span className="text-[9px] text-red-500">Unread</span>
-                </div>
-                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
-                  <span>&gt; Meeting request: slot needed today</span>
-                  <span className="text-[9px] text-red-500">Unread</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03]">
-              STATUS // RED ZONE INBOX ACCUMULATION
-            </div>
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <div className="text-center flex flex-col items-center mb-24">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
+            <h2 className="text-4xl md:text-[56px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+              Chaos vs Overnight Clarity.
+            </h2>
+            <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
+              <WordBlurStream
+                text="Waking up to email is an operational drag. Arcus shifts inbox tasks to overnight autopilot, delivering focus leverage back to founders."
+                msPerWord={80}
+                startupMs={300}
+                holdMs={5000}
+              />
+            </p>
           </div>
 
-          {/* Right panel: Overnight Clarity */}
-          <div className="p-8 rounded-[28px] border border-white/[0.06] bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.06),inset_0_1px_1px_rgba(255,255,255,0.04)] transition-all duration-300 relative overflow-hidden text-left h-[440px] flex flex-col justify-between group shadow-2xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.02),transparent_60%)] pointer-events-none" />
-            
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-neutral-950/60 border border-white/[0.06] shadow-[0_4px_12px_rgba(0,0,0,0.4),inset_0_1px_1px_rgba(255,255,255,0.03)] text-[9px] font-mono tracking-wider uppercase text-neutral-400 mb-6">
-                <span className="text-[10px] text-emerald-400">✦</span>
-                <span>Overnight Clarity</span>
-              </div>
-              <h3 className="text-lg font-bold text-white mb-2">Autonomous Morning Briefing</h3>
-              <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                Start the morning with resolved outbox drafts, confirmed bookings, and a single dashboard brief.
-              </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
+            {/* Left panel: Chaos */}
+            <div className="p-8 rounded-[28px] border border-red-950/20 bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] hover:shadow-[0_25px_60px_rgba(239,68,68,0.06)] transition-all duration-300 relative overflow-hidden text-left h-[460px] flex flex-col justify-between group">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.025),transparent_60%)] pointer-events-none" />
+              
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/20 border border-red-900/30 text-[9px] font-mono tracking-wider uppercase text-red-400 mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                  <span>The Chaos of Yesterday</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Reactive Intake Fatigue</h3>
+                <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
+                  Waking up to 45 unread threads, urgent meeting booking queries, and complex response drag.
+                </p>
 
-              {/* Clarity rows with neumorphic inset style */}
-              <div className="space-y-3 font-mono text-[11px] text-emerald-300/80">
-                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
-                  <span>&gt; 4 Meetings booked automatically</span>
-                  <span className="text-[9px] text-emerald-400">Resolved</span>
+                {/* Stress rows with beautiful high-fidelity styling */}
+                <div className="space-y-3 font-mono text-[11px]">
+                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-neutral-300 font-semibold">Thread: Pitch deck update (Venture Partner)</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-red-950/40 border border-red-900/50 text-red-400">14h Drag</span>
+                  </div>
+                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
+                      <span className="text-neutral-300 font-semibold">Meeting request: slots needed today</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-red-950/40 border border-red-900/50 text-red-400">8h Delay</span>
+                  </div>
                 </div>
-                <div className="p-3.5 rounded-xl border border-white/[0.04] bg-[#08090d]/60 shadow-[inset_0_2px_4px_rgba(0,0,0,0.8)] flex items-center justify-between">
-                  <span>&gt; 3 High-priority drafts waiting in outbox</span>
-                  <span className="text-[9px] text-emerald-400">Resolved</span>
-                </div>
+              </div>
+
+              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
+                <span>STATUS // RED ZONE INBOX ACCUMULATION</span>
+                <span className="text-red-400 font-semibold">FATIGUE: 100%</span>
               </div>
             </div>
 
-            <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03]">
-              STATUS // GREEN ZONE OPERATIONAL LEVERAGE
+            {/* Right panel: Overnight Clarity */}
+            <div className="p-8 rounded-[28px] border border-emerald-950/20 bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.06)] transition-all duration-300 relative overflow-hidden text-left h-[460px] flex flex-col justify-between group shadow-2xl">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.025),transparent_60%)] pointer-events-none" />
+              
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/20 border border-emerald-900/30 text-[9px] font-mono tracking-wider uppercase text-emerald-400 mb-6">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Overnight Clarity</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Autonomous Morning Briefing</h3>
+                <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
+                  Start the morning with resolved outbox drafts, confirmed bookings, and a single dashboard brief.
+                </p>
+
+                {/* Clarity rows with premium detailed cards */}
+                <div className="space-y-3 font-mono text-[11px]">
+                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
+                      <span className="text-neutral-200">Venture partner pitch reply drafted & queued</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 font-sans">TONE SIGNED</span>
+                  </div>
+                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
+                      <span className="text-neutral-200">Venture round alignment sync booked automatically</span>
+                    </div>
+                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-950/40 border border-blue-900/50 text-blue-400 font-sans">CAL.COM</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
+                <span>STATUS // GREEN ZONE OPERATIONAL LEVERAGE</span>
+                <span className="text-emerald-400 font-semibold">NO ACTION REQUIRED</span>
+              </div>
             </div>
+
           </div>
-
-        </div>
+        </BlurFade>
       </section>
 
       {/* 6. SOCIAL PROOF, STAT ROW, SECURITY STRIP */}
@@ -1036,9 +1034,14 @@ fadeColor="#000000"
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
-                        {faq.a}
-                      </p>
+                      <div className="text-sm text-[#8a8f98] font-light leading-relaxed font-sans pb-4 min-h-[3rem]">
+                        <WordBlurStream
+                          text={faq.a}
+                          msPerWord={20}
+                          loop={false}
+                          startupMs={100}
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

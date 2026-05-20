@@ -16,7 +16,6 @@ import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { ArcusLogo } from "@/components/ui/arcus-logo";
 import { WordBlurStream } from "@/src/WordBlurStream";
-import { Features8 } from "@/components/ui/features-8";
 import { CTASection } from "@/components/ui/hero-dithering-card";
 
 const Dithering = lazy(() => 
@@ -526,9 +525,6 @@ export default function ArcusProductPage() {
         </div>
       </section>
 
-      {/* Core Arcus Capability Grid */}
-      <Features8 />
-
       {/* ARCUS FAQ ACCORDION SECTION */}
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
@@ -562,9 +558,14 @@ export default function ArcusProductPage() {
                       transition={{ duration: 0.3 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-xs text-[#8a8f98] font-light leading-relaxed font-sans pb-4">
-                        {faq.a}
-                      </p>
+                      <div className="text-sm text-[#8a8f98] font-light leading-relaxed font-sans pb-4 min-h-[3rem]">
+                        <WordBlurStream
+                          text={faq.a}
+                          msPerWord={20}
+                          loop={false}
+                          startupMs={100}
+                        />
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -14,7 +14,7 @@ export function Features8() {
         
         {/* Headings */}
         <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase font-bold">ARCUS CORE CAPABILITIES</span>
+          <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase font-bold">AUTOMATION AT IT'S PEAK</span>
           <h2 className="text-3xl md:text-[44px] font-medium tracking-tight text-white leading-tight">
             Engineered for absolute accuracy.
           </h2>
