@@ -512,83 +512,108 @@ export function LinearLanding() {
           </div>
 
           {/* Node 1: Gmail */}
-          <div className="absolute left-[90px] top-[80px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-                <polyline points="22,6 12,13 2,6"/>
+          <div 
+            className="absolute left-[90px] top-[80px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 5.5s ease-in-out infinite", animationDelay: "0.2s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#ea4335]/40 hover:shadow-[0_0_20px_rgba(234,67,53,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-[#ea4335]/25" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#EA4335" />
+                <path d="M20 6L12 11L4 6V8L12 13L20 8V6Z" fill="#ffffff" opacity="0.85" />
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-                Gmail (Active Sync)
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
+                Gmail Ingestion (Active)
               </div>
             </div>
           </div>
 
           {/* Node 2: Slack */}
-          <div className="absolute left-[60px] top-[200px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <div 
+            className="absolute left-[60px] top-[200px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 6.2s ease-in-out infinite", animationDelay: "0.8s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#36c5f0]/40 hover:shadow-[0_0_20px_rgba(54,197,240,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-[#36c5f0]/25" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523 2.528 2.528 0 0 1-2.522-2.523 2.528 2.528 0 0 1 2.522-2.52h2.52v2.52zm1.261 0a2.528 2.528 0 0 1 2.52-2.52h5.043a2.528 2.528 0 0 1 2.522 2.52 2.528 2.528 0 0 1-2.522 2.523H8.823a2.528 2.528 0 0 1-2.52-2.523z" fill="#E01E5A"/>
+                <path d="M8.823 5.043a2.528 2.528 0 0 1 2.52-2.52 2.528 2.528 0 0 1 2.522 2.52v2.52h-2.522a2.528 2.528 0 0 1-2.52-2.52zm0 1.26a2.528 2.528 0 0 1 2.52 2.522v5.043a2.528 2.528 0 0 1-2.52 2.522 2.528 2.528 0 0 1-2.523-2.522V8.825a2.528 2.528 0 0 1 2.523-2.522z" fill="#2EB67D"/>
+                <path d="M18.958 8.825a2.528 2.528 0 0 1 2.52-2.522 2.528 2.528 0 0 1 2.522 2.522 2.528 2.528 0 0 1-2.522 2.52h-2.52v-2.52zm-1.262 0a2.528 2.528 0 0 1-2.52 2.52h-5.043a2.528 2.528 0 0 1-2.522-2.52 2.528 2.528 0 0 1 2.522-2.523h5.043a2.528 2.528 0 0 1 2.52 2.523z" fill="#36C5F0"/>
+                <path d="M15.177 18.957a2.528 2.528 0 0 1-2.522 2.52 2.528 2.528 0 0 1-2.52-2.52v-2.52h2.52a2.528 2.528 0 0 1 2.522 2.52zm0-1.262a2.528 2.528 0 0 1-2.522-2.52v-5.043a2.528 2.528 0 0 1 2.52-2.522 2.528 2.528 0 0 1 2.523 2.522v5.043a2.528 2.528 0 0 1-2.523 2.52z" fill="#ECB22E"/>
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Slack Notifications
               </div>
             </div>
           </div>
 
           {/* Node 3: Notion */}
-          <div className="absolute left-[90px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M4.2 3h15.6c.7 0 1.2.5 1.2 1.2v15.6c0 .7-.5 1.2-1.2 1.2H4.2C3.5 21 3 20.5 3 19.8V4.2C3 3.5 3.5 3 4.2 3zm2.3 3.2v11.6h1.9V8.6l5.7 8.2v-10.8h-1.9v8.2L6.5 6.2z"/>
+          <div 
+            className="absolute left-[90px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 5.8s ease-in-out infinite", animationDelay: "1.4s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-white/10" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 4.2C3 3.53726 3.53726 3 4.2 3H19.8C20.4627 3 21 3.53726 21 4.2V19.8C21 20.4627 20.4627 21 19.8 21H4.2C3.53726 21 3 20.4627 3 19.8V4.2ZM6.5 6.2V17.8H8.4V9.6L14.1 17.8H16V6.2H14.1V14.4L8.4 6.2H6.5Z" fill="#ffffff" />
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Notion Workspace Sync
               </div>
             </div>
           </div>
 
           {/* Node 4: Google Calendar */}
-          <div className="absolute right-[90px] top-[80px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                <line x1="16" y1="2" x2="16" y2="6"/>
-                <line x1="8" y1="2" x2="8" y2="6"/>
-                <line x1="3" y1="10" x2="21" y2="10"/>
+          <div 
+            className="absolute right-[90px] top-[80px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 6s ease-in-out infinite", animationDelay: "0.5s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#4285f4]/40 hover:shadow-[0_0_20px_rgba(66,133,244,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-[#4285f4]/25" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3 4.9 3 6V20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z" fill="#4285F4" />
+                <path d="M5 9H19V20H5V9Z" fill="#ffffff" />
+                <path d="M12 12H7V17H12V12Z" fill="#4285F4" />
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Google Calendar Sweeper
               </div>
             </div>
           </div>
 
           {/* Node 5: Cal.com */}
-          <div className="absolute right-[60px] top-[200px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-                <path d="M21 12H3M12 3v18"/>
+          <div 
+            className="absolute right-[60px] top-[200px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 5.7s ease-in-out infinite", animationDelay: "1.1s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-amber-500/20" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 4H5C3.9 4 3 4.9 3 6V20C3 21.1 3.9 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z" fill="#111827" stroke="#ffffff" strokeWidth="1.5" />
+                <path d="M16 2V6M8 2V6M3 10H21" stroke="#ffffff" strokeWidth="1.5" />
+                <circle cx="8" cy="14" r="1.5" fill="#F59E0B" />
+                <circle cx="16" cy="14" r="1.5" fill="#3B82F6" />
+                <circle cx="12" cy="18" r="1.5" fill="#10B981" />
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Cal.com Booking Engine
               </div>
             </div>
           </div>
 
-          {/* Node 6: HubSpot */}
-          <div className="absolute right-[90px] top-[320px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto">
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-indigo-500/40 hover:shadow-[0_0_20px_rgba(99,102,241,0.15)] transition-all duration-300 cursor-pointer relative group">
-              <svg className="w-5 h-5 text-neutral-300 group-hover:text-white transition-colors" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="12" cy="7" r="3"/>
-                <circle cx="6" cy="15" r="3"/>
-                <circle cx="18" cy="15" r="3"/>
-                <line x1="9" y1="13" x2="15" y2="13"/>
-                <line x1="7.5" y1="12" x2="10.5" y2="9"/>
-                <line x1="16.5" y1="12" x2="13.5" y2="9"/>
+          {/* Node 6: Google Meet */}
+          <div 
+            className="absolute right-[90px] top-[320px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
+            style={{ animation: "float-node 6.4s ease-in-out infinite", animationDelay: "1.7s" }}
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#0f9d58]/40 hover:shadow-[0_0_20px_rgba(15,157,88,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-[#0f9d58]/25" />
+              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15 8V12L19 8V16L15 12V16C15 17.1 14.1 18 13 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6H13C14.1 6 15 6.9 15 8Z" fill="#0F9D58" />
+                <path d="M6 10H12V14H6V10Z" fill="#ffffff" opacity="0.9" />
               </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md">
-                HubSpot CRM Auto-Log
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
+                Google Meet Video Loop
               </div>
             </div>
           </div>
