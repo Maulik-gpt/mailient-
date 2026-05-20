@@ -730,32 +730,32 @@ export function LinearLanding() {
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-4xl mx-auto text-left">
-          {/* Starter Plan */}
-          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[420px] relative overflow-hidden group">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-full max-w-5xl mx-auto text-left items-stretch">
+          {/* Monthly Plan */}
+          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group">
             <div>
-              <span className="text-neutral-500 font-mono text-[10px] tracking-wider uppercase font-bold block mb-4">STARTER PLAN</span>
-              <h3 className="text-xl font-bold text-white mb-2">Inbox Triage</h3>
+              <span className="text-neutral-500 font-mono text-[9px] tracking-wider uppercase font-bold block mb-4">MONTHLY TIER</span>
+              <h3 className="text-lg font-bold text-white mb-2">Solo Builder</h3>
               <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
-                Perfect for individuals seeking noise isolation and basic scheduling assistance.
+                For solo builders looking for autonomous triage. Cancel anytime.
               </p>
               <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-3xl font-semibold">$0</span>
+                <span className="text-3xl font-semibold">$29</span>
                 <span className="text-[10px] text-neutral-500 font-mono">/ month</span>
               </div>
 
               <ul className="space-y-2.5 text-[10.5px] text-neutral-400 font-sans font-light">
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>5 Sift AI classifications daily</span>
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Full access to Sift</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>10 Arcus AI agent runs daily</span>
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Unlimited projects</span>
                 </li>
                 <li className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-neutral-400" />
-                  <span>20 Email Summaries daily</span>
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Cancel anytime</span>
                 </li>
               </ul>
             </div>
@@ -764,40 +764,40 @@ export function LinearLanding() {
               href="/pricing"
               className="px-6 py-2.5 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-center text-[10.5px] hover:bg-neutral-800 transition-colors w-full"
             >
-              Learn more about limits
+              Start Monthly
             </Link>
           </div>
 
-          {/* Pro Plan */}
-          <div className="p-8 rounded-[24px] border border-white/[0.08] bg-[#050505] flex flex-col justify-between h-[420px] relative overflow-hidden group shadow-2xl">
+          {/* Annual Plan */}
+          <div className="p-8 rounded-[24px] border border-white/[0.08] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.015),transparent_60%)] pointer-events-none" />
             
             <div>
               <div className="flex items-center justify-between mb-4">
-                <span className="text-white font-mono text-[10px] tracking-wider uppercase font-bold">PRO PLAN</span>
-                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-bold">UNLIMITED ACCESS</span>
+                <span className="text-white font-mono text-[9px] tracking-wider uppercase font-bold">BEST VALUE TIER</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-bold">RECOMMENDED</span>
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Overnight Sweep</h3>
+              <h3 className="text-lg font-bold text-white mb-2">Enterprise Scale</h3>
               <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
-                Built for scaling operations requiring high-leverage context loops and unrestricted agent actions.
+                Full enterprise scale: Sift Triage, Draft Replies, and priority Arcus.
               </p>
               <div className="flex items-baseline gap-1 mb-8">
-                <span className="text-3xl font-semibold">$29</span>
+                <span className="text-3xl font-semibold">$16.58</span>
                 <span className="text-[10px] text-neutral-500 font-mono">/ month</span>
               </div>
 
               <ul className="space-y-2.5 text-[10.5px] text-neutral-350 font-sans font-light">
                 <li className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Unlimited Sift Triage classification</span>
+                  <span>Advanced Relational Sift</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Unlimited Arcus Multi-Agent runs</span>
+                  <span>Draft Replies in your voice</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Unlimited drafts and schedule bookings</span>
+                  <span>Cal.com & Notion Sync integrations</span>
                 </li>
               </ul>
             </div>
@@ -806,7 +806,44 @@ export function LinearLanding() {
               href="/pricing"
               className="px-6 py-2.5 rounded-full bg-white text-black font-semibold text-center text-[10.5px] hover:bg-neutral-200 transition-colors w-full"
             >
-              Upgrade to Pro
+              Get Best Value
+            </Link>
+          </div>
+
+          {/* Lifetime Plan */}
+          <div className="p-8 rounded-[24px] border border-white/[0.04] bg-[#050505] flex flex-col justify-between h-[440px] relative overflow-hidden group">
+            <div>
+              <span className="text-neutral-500 font-mono text-[9px] tracking-wider uppercase font-bold block mb-4">FOUNDING TIER</span>
+              <h3 className="text-lg font-bold text-white mb-2">Lifetime Access</h3>
+              <p className="text-[11px] text-[#8a8f98] leading-relaxed mb-6 font-light max-w-xs">
+                Own Mailient forever. Full access, diamond founding status, 500 monthly queries.
+              </p>
+              <div className="flex items-baseline gap-1 mb-8">
+                <span className="text-3xl font-semibold">$499</span>
+                <span className="text-[10px] text-neutral-500 font-mono">once</span>
+              </div>
+
+              <ul className="space-y-2.5 text-[10.5px] text-neutral-400 font-sans font-light">
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Full access forever</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>500 AI queries/month</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-3.5 h-3.5 text-neutral-500" />
+                  <span>Diamond Founding Badge</span>
+                </li>
+              </ul>
+            </div>
+
+            <Link 
+              href="/pricing"
+              className="px-6 py-2.5 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-center text-[10.5px] hover:bg-neutral-800 transition-colors w-full"
+            >
+              Own It (Lifetime)
             </Link>
           </div>
         </div>
