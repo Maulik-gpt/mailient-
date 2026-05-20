@@ -213,7 +213,7 @@ export function LinearLanding() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter relative selection:bg-white selection:text-black">
       
       {/* 0. Custom Radar & Orbital Keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `
@@ -251,7 +251,7 @@ export function LinearLanding() {
           
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
-            <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.05] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+            <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.12] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent pb-4">
               Hours of email, <br />handled overnight.
             </h1>
           </BlurFade>
