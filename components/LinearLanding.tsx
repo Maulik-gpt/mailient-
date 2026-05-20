@@ -49,6 +49,7 @@ import { WordBlurStream } from "@/src/WordBlurStream";
 import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
 import { SpecialText } from "@/components/ui/special-text";
+import { EtheralShadow } from "@/components/ui/etheral-shadow";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -289,34 +290,13 @@ export function LinearLanding() {
         {/* White-grey glow from the bottom of the hero section spreading up */}
         <div className="absolute inset-x-0 bottom-0 h-[250px] bg-[radial-gradient(ellipse_at_bottom,rgba(255,255,255,0.08),transparent_70%)] pointer-events-none z-10" />
 
-        {/* Drifting Clouds Animation */}
-        <div className="absolute inset-x-0 bottom-0 top-1/4 z-0 pointer-events-none overflow-hidden select-none opacity-45 mix-blend-screen">
-          {/* Cloud Layer 1 */}
-          <div 
-            className="absolute bottom-0 w-[200%] h-[320px] opacity-25"
-            style={{
-              backgroundImage: `radial-gradient(ellipse at center, rgba(255,255,255,0.08) 0%, rgba(200,200,200,0.04) 40%, transparent 70%)`,
-              filter: 'blur(45px)',
-              animation: 'drift-left 55s linear infinite',
-            }}
-          />
-          {/* Cloud Layer 2 */}
-          <div 
-            className="absolute bottom-0 w-[200%] h-[280px] opacity-20"
-            style={{
-              backgroundImage: `radial-gradient(ellipse at 30% 60%, rgba(240,240,250,0.07) 0%, rgba(180,180,190,0.03) 50%, transparent 80%)`,
-              filter: 'blur(55px)',
-              animation: 'drift-right 75s linear infinite',
-            }}
-          />
-          {/* Cloud Layer 3 */}
-          <div 
-            className="absolute bottom-0 w-[200%] h-[380px] opacity-18"
-            style={{
-              backgroundImage: `radial-gradient(ellipse at 70% 40%, rgba(255,255,255,0.09) 0%, rgba(220,220,230,0.04) 45%, transparent 75%)`,
-              filter: 'blur(65px)',
-              animation: 'drift-left 95s linear infinite',
-            }}
+        {/* Etheral Shadow Background Layer */}
+        <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-screen select-none">
+          <EtheralShadow
+            color="rgba(128, 128, 128, 1)"
+            animation={{ scale: 100, speed: 90 }}
+            noise={{ opacity: 1, scale: 1.2 }}
+            sizing="fill"
           />
         </div>
 
