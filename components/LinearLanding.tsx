@@ -398,7 +398,8 @@ fadeColor="#000000"
                 </motion.div>
               )}
             </div>
-          </BlurFade>
+          </div>
+        </BlurFade>
 
           {/* Right panel: dynamic high-contrast visual display */}
           <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-7 w-full h-[500px]">
