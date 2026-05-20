@@ -164,7 +164,7 @@ export function LinearLanding() {
               <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
             </span>
             <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-              Arcus Inbox Agent Loop v3.2
+              Mailient Autonomous Engine
             </span>
           </div>
 
@@ -207,9 +207,9 @@ export function LinearLanding() {
                   <span className="w-3 h-3 rounded-full bg-neutral-800" />
                   <span className="w-3 h-3 rounded-full bg-neutral-800" />
                   <span className="w-3 h-3 rounded-full bg-neutral-800" />
-                  <span className="text-[10px] text-neutral-500 ml-4">arcus-agent-loop.js</span>
+                  <span className="text-[10px] text-neutral-500 ml-4">arcus-engine.js</span>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px]">ACTIVE Overnight Loop</span>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px]">ACTIVE Overnight Sweep</span>
               </div>
 
               {/* Live typing webhook log mock */}

@@ -159,7 +159,7 @@ export default function ArcusProductPage() {
               </div>
 
               <div className="space-y-3">
-                <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Active Loops</div>
+                <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Active Outboxes</div>
                 <div className="space-y-1">
                   <button 
                     onClick={() => setSelectedThread("q3-proposal")}
@@ -412,7 +412,7 @@ export default function ArcusProductPage() {
               {/* Floating elegant concurrent loop card */}
               <div className="w-[340px] bg-[#08090c] border border-white/[0.08] rounded-xl p-4 shadow-2xl space-y-3 font-mono text-[10px] text-neutral-300 relative z-10 transition-transform group-hover:scale-[1.02] duration-300">
                 <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-neutral-500">
-                  <span>Loop Orchestrator</span>
+                  <span>Agent Orchestrator</span>
                   <span className="text-indigo-400 font-bold">RUNNING</span>
                 </div>
                 <div className="space-y-2 text-neutral-400">
