@@ -213,10 +213,16 @@ export function LinearLanding() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter relative selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter strichpunkt-theme relative selection:bg-white selection:text-black">
       
       {/* 0. Custom Radar & Orbital Keyframes */}
       <style dangerouslySetInnerHTML={{ __html: `
+        .strichpunkt-theme {
+          font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+        .strichpunkt-theme :not(.font-mono):not([class*="font-mono"]):not(code):not(pre) {
+          font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
         @keyframes radar-pulse {
           0% { transform: scale(0.95); opacity: 0.8; }
           50% { transform: scale(1.05); opacity: 0.4; }
