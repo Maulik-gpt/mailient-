@@ -620,7 +620,7 @@ fadeColor="#000000"
           </svg>
 
           {/* Central Premium Mailient Hub Node */}
-          <div className="absolute left-[300px] top-[200px] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-full overflow-hidden z-30 shadow-[0_0_50px_rgba(255,255,255,0.12)] border border-white/[0.1] bg-neutral-950 flex items-center justify-center group pointer-events-auto cursor-pointer hover:scale-105 transition-transform duration-300">
+          <div className="absolute left-[300px] top-[200px] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-[25%] overflow-hidden z-30 shadow-[0_0_50px_rgba(255,255,255,0.12)] border border-white/[0.1] bg-neutral-950 flex items-center justify-center group pointer-events-auto cursor-pointer hover:scale-105 transition-transform duration-300">
             <img 
               src="/mailient-logo-premium.png" 
               alt="Mailient Hub" 

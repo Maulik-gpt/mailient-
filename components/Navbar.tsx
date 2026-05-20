@@ -67,7 +67,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group relative z-10">
-          <div className="relative w-7 h-7 rounded-full overflow-hidden transition-all duration-500 group-hover:scale-105 border border-white/10 shadow-md bg-white">
+          <div className="relative w-7 h-7 rounded-[25%] overflow-hidden transition-all duration-500 group-hover:scale-105 border border-white/10 shadow-md bg-white">
             <img 
               src="/mailient-logo-premium.png" 
               alt="Mailient Logo" 
