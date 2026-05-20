@@ -1023,6 +1023,9 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
 }
 
 function openCanvas(input: any): ToolResult {
+  if (!input.markdown?.trim()) {
+    return { output: 'Error: open_canvas requires non-empty markdown content. Write the full document content and pass it in the markdown parameter, then call open_canvas again.' };
+  }
   const isAgentSpec = input.type === 'report' && (
     input.title?.toLowerCase().includes('agent') ||
     input.markdown?.toLowerCase().includes('agent objective') ||

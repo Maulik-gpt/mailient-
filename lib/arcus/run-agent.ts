@@ -86,6 +86,8 @@ export async function runAgentTask(
   let finalText = '';
   let currentEventType = '';
 
+  let canvasMarkdown = '';
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -95,6 +97,7 @@ export async function runAgentTask(
 
     for (const line of lines) {
       if (line.startsWith('event: ')) { currentEventType = line.slice(7).trim(); continue; }
+
       if (line.startsWith('data: ') && currentEventType === 'message') {
         try {
           const data = JSON.parse(line.slice(6).trim());
@@ -102,8 +105,21 @@ export async function runAgentTask(
         } catch { /* ok */ }
         currentEventType = '';
       }
+
+      if (line.startsWith('data: ') && currentEventType === 'canvas') {
+        try {
+          const data = JSON.parse(line.slice(6).trim());
+          // Capture the full report markdown; skip scheduled_agent canvas events
+          if (data.markdown && data.type !== 'scheduled_agent') {
+            canvasMarkdown = data.markdown;
+          }
+        } catch { /* ok */ }
+        currentEventType = '';
+      }
     }
   }
 
-  return finalText || 'Agent completed but produced no report.';
+  // Canvas markdown is the full report; message event text is typically just
+  // a brief "The report is in the Canvas panel." fallback sentence.
+  return canvasMarkdown || finalText || 'Agent completed but produced no report.';
 }

@@ -497,6 +497,7 @@ interface AgentMessage {
     isStreaming?: boolean;
     actionHistory?: any[];
     taskList?: TaskList;
+    planText?: string;
     agentSteps?: AgentStep[];
     agentNarratives?: AgentNarrative[];
     agentRunId?: string;
@@ -2064,6 +2065,11 @@ export default function ChatInterface({
       let currentAgentSteps: AgentStep[] = [];       // populated only by tool_call events
       let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
       let currentTaskList: TaskList | null = null;    // populated by task_list event
+      let currentPlanText = '';                       // populated by plan_text event
+      let currentCanvasResult: any = null;            // populated by canvas event (reports/docs)
+      let currentScheduledAgent: ScheduledAgentData | null = null; // populated by canvas scheduled_agent
+      let currentActionResult: any = null;            // populated by canvas notion_page / calendar_event
+      let currentDraftReply: any = null;              // populated by canvas email_draft
 
       while (true) {
         const { done, value } = await reader.read();
@@ -2130,6 +2136,17 @@ export default function ChatInterface({
               break;
             }
 
+            case 'plan_text': {
+              if (data.content) {
+                currentPlanText = data.content;
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), planText: data.content } };
+                }));
+              }
+              break;
+            }
+
             case 'canvas': {
               const cv = data;
               if (!cv?.title) break;
@@ -2150,6 +2167,7 @@ export default function ChatInterface({
                   status: a[4] || 'active',
                   nextRun: cv.pageMeta.startTime,
                 };
+                currentScheduledAgent = scheduledAgent;
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, meta: { ...(m.meta || {}), scheduledAgent } };
@@ -2161,21 +2179,22 @@ export default function ChatInterface({
               // These get a rich inline card rather than opening the canvas panel.
               const isActionCard = cv.type === 'notion_page' || cv.type === 'calendar_event';
               if (isActionCard && cv.pageMeta) {
+                currentActionResult = {
+                  type: cv.type,
+                  title: cv.title,
+                  url: cv.pageMeta.url,
+                  meetLink: cv.pageMeta.meetLink,
+                  startTime: cv.pageMeta.startTime,
+                  attendees: cv.pageMeta.attendees,
+                  contentPreview: cv.pageMeta.contentPreview,
+                };
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return {
                     ...m,
                     meta: {
                       ...(m.meta || {}),
-                      actionResult: {
-                        type: cv.type,
-                        title: cv.title,
-                        url: cv.pageMeta.url,
-                        meetLink: cv.pageMeta.meetLink,
-                        startTime: cv.pageMeta.startTime,
-                        attendees: cv.pageMeta.attendees,
-                        contentPreview: cv.pageMeta.contentPreview,
-                      },
+                      actionResult: currentActionResult,
                     },
                   };
                 }));
@@ -2205,21 +2224,23 @@ export default function ChatInterface({
                         threadId: cv.draftMeta.threadId,
                       }
                     : undefined;
+                  if (draftReply) currentDraftReply = draftReply;
+                  currentCanvasResult = {
+                    type: cv.type || 'notes',
+                    title: cv.title || 'Action Results Summary',
+                    canvasData: {
+                      type: cv.type || 'notes',
+                      title: cv.title || 'Action Results Summary',
+                      content: canvasContent,
+                      raw: cv.markdown,
+                    },
+                  };
                   return {
                     ...m,
                     meta: {
                       ...(m.meta || {}),
                       ...(draftReply ? { draftReply } : {}),
-                      result: {
-                        type: cv.type || 'notes',
-                        title: cv.title || 'Action Results Summary',
-                        canvasData: {
-                          type: cv.type || 'notes',
-                          title: cv.title || 'Action Results Summary',
-                          content: canvasContent,
-                          raw: cv.markdown,
-                        },
-                      },
+                      result: currentCanvasResult,
                     },
                   };
                 }));
@@ -2570,6 +2591,11 @@ export default function ChatInterface({
             agentSteps: currentAgentSteps,
             agentNarratives: currentAgentNarratives,
             ...(currentTaskList ? { taskList: currentTaskList } : {}),
+            ...(currentPlanText ? { planText: currentPlanText } : {}),
+            ...(currentScheduledAgent ? { scheduledAgent: currentScheduledAgent } : {}),
+            ...(currentActionResult ? { actionResult: currentActionResult } : {}),
+            ...(currentDraftReply ? { draftReply: currentDraftReply } : {}),
+            ...(currentCanvasResult ? { result: currentCanvasResult } : {}),
           }
         };
 
@@ -4093,6 +4119,13 @@ export default function ChatInterface({
                                          content={(msg as AgentMessage).meta!.liveThinking!} 
                                          isComplete={(msg as AgentMessage).meta?.thinkingComplete}
                                        />
+                                     )}
+
+                                     {/* Plan text — what Arcus is about to do, shown before execution steps */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planText && (
+                                       <p className="text-[14px] text-white/80 leading-[1.7] mb-3">
+                                         {(msg as AgentMessage).meta!.planText}
+                                       </p>
                                      )}
 
                                      {/* Execution steps — above message text, collapsible */}

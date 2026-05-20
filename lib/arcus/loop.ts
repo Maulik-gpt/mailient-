@@ -364,27 +364,33 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 {
                   role: 'system',
                   content:
-                    'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls (e.g. search inbox → read thread → draft reply, or search → schedule → notify). ' +
-                    'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents. ' +
-                    'Simple tasks (casual replies, single questions, short responses, basic greetings, anything needing 0-2 tool calls) do NOT get a task list — output an empty array []. ' +
-                    'For complex tasks only, output a JSON array of 3-5 short action items (max 10 words each). ' +
-                    'Output ONLY the raw JSON array with no extra text, no markdown fences. ' +
-                    'Examples of complex (output array): "Search my inbox and draft a reply" → ["Search inbox for matching emails","Read top email thread","Analyze writing style","Draft reply matching tone"] ' +
-                    'Examples of simple (output []): "write a friendly reply", "say hello", "what should I do today", "reply casually"',
+                    'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls.\n' +
+                    'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents.\n' +
+                    'Simple tasks (casual replies, single questions, greetings) are NOT complex.\n\n' +
+                    'For COMPLEX tasks: output a JSON object with two fields:\n' +
+                    '  "plan": a single sentence (max 220 chars) describing concretely what will be done — which tools, what will be found, what will be produced.\n' +
+                    '  "tasks": array of 3-5 short action items (max 10 words each).\n' +
+                    'For SIMPLE tasks: output exactly {}  (empty object).\n' +
+                    'Output ONLY raw JSON. No markdown fences, no extra text.\n' +
+                    'Example complex: {"plan":"I\'ll search your Gmail for the past 7 days, read each thread, and compile a full activity report in Canvas.","tasks":["Search Gmail last 7 days","Read top email threads","Compile key metrics","Open activity report in Canvas"]}\n' +
+                    'Example simple: {}',
                 },
                 { role: 'user', content: userMessage },
               ],
               [],
-              { maxTokens: 200 },
+              { maxTokens: 250 },
             );
             const raw = getText(tlRes.content).trim();
-            const match = raw.match(/\[[\s\S]*\]/);
-            if (match) {
-              const tasks: string[] = JSON.parse(match[0]);
-              if (Array.isArray(tasks) && tasks.length >= 3) {
-                const clean = tasks.slice(0, 6).map(t => String(t).trim()).filter(Boolean);
+            const objMatch = raw.match(/\{[\s\S]*\}/);
+            if (objMatch) {
+              const parsed = JSON.parse(objMatch[0]);
+              if (parsed.tasks && Array.isArray(parsed.tasks) && parsed.tasks.length >= 3) {
+                const clean = parsed.tasks.slice(0, 6).map((t: any) => String(t).trim()).filter(Boolean);
                 taskCount = clean.length;
                 emit('task_list', { tasks: clean });
+              }
+              if (parsed.plan && typeof parsed.plan === 'string' && parsed.plan.trim().length > 10) {
+                emit('plan_text', { content: parsed.plan.trim() });
               }
             }
           } catch { /* task list is optional */ }
