@@ -229,19 +229,17 @@ export function LinearLanding() {
               </p>
             </div>
           </BlurFade>
-        </div>
-
-        {/* 3. ISOMETRIC OUTLINE WIREFRAME COLUMNS (Exactly Replicating Screenshot 1 Grid) */}
+                {/* 3. ISOMETRIC OUTLINE WIREFRAME COLUMNS (Exactly Replicating Screenshot 1 Grid) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl mt-36 border-t border-white/[0.06] pt-16 z-10 text-left">
           
-          {/* Column 1: Fig 0.2 */}
+          {/* Column 1: Fig 0.2 - Sift AI Classifier */}
           <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
             <div 
               className="flex flex-col group relative"
               onMouseMove={handleMouseMove}
             >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.2
+                FIG 0.2 // CLASSIFIER
               </span>
               {/* Stacking rounded layers SVG */}
               <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
@@ -263,22 +261,22 @@ export function LinearLanding() {
                 </svg>
               </div>
               <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Built for purpose
+                Sift AI Triage Classifier
               </h3>
               <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Mailient is shaped by the practices and principles of world-class operational teams.
+                Runs autonomous intake classification to isolate noise, group priority threads, and sanitize PII locally using vault-grade encryption before passing details to AI layers.
               </p>
             </div>
           </BlurFade>
 
-          {/* Column 2: Fig 0.3 */}
+          {/* Column 2: Fig 0.3 - Voice Profiler */}
           <BlurFade delay={0.48} duration={0.8} yOffset={20} inView>
             <div 
               className="flex flex-col group relative"
               onMouseMove={handleMouseMove}
             >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.3
+                FIG 0.3 // WRITER
               </span>
               {/* Isometric blocks SVG */}
               <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
@@ -307,22 +305,22 @@ export function LinearLanding() {
                 </svg>
               </div>
               <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Powered by AI agents
+                Voice Profile Signature
               </h3>
               <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Designed for workflows shared by humans and agents. From drafting PRDs to pushing PRs.
+                Analyzes your sent folder history to model a high-fidelity Personal Voice Profile. Drafts highly customized replies that reflect your exact style, signature, and vocabulary.
               </p>
             </div>
           </BlurFade>
 
-          {/* Column 3: Fig 0.4 */}
+          {/* Column 3: Fig 0.4 - Multi-Agent Coord */}
           <BlurFade delay={0.56} duration={0.8} yOffset={20} inView>
             <div 
               className="flex flex-col group relative"
               onMouseMove={handleMouseMove}
             >
               <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] mb-4 uppercase">
-                FIG 0.4
+                FIG 0.4 // LOOP
               </span>
               {/* Ascending staircase bar chart SVG */}
               <div className="w-full h-44 flex items-center justify-center bg-white/[0.01] border border-white/[0.03] rounded-2xl p-4 mb-6 relative overflow-hidden">
@@ -344,15 +342,14 @@ export function LinearLanding() {
                 </svg>
               </div>
               <h3 className="font-semibold text-sm tracking-tight text-white mb-2 font-sans">
-                Designed for speed
+                Multi-Agent Logic Loop
               </h3>
               <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-                Reduces noise and restores momentum to help teams ship with high velocity and focus.
+                Runs an autonomous, state-driven execution loop. Schedules meetings, pushes tasks, and syncs calendars across Cal.com, Google Meet, Notion, Slack, and Google Tasks.
               </p>
             </div>
           </BlurFade>
-
-        </div>
+        </div>  </div>
       </section>
 
       {/* 4. SECTION 2: HIGH-FIDELITY INTERACTIVE SHOWCASE (Slack Thread + Kanban Dashboard) */}
