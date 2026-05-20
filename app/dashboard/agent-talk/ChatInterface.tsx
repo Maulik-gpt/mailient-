@@ -315,29 +315,14 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       !isUser && "max-w-none prose prose-invert prose-headings:mb-4 prose-p:mb-4 prose-li:mb-1 prose-table:my-6"
     )}>
       {isTyping && !textContent && (
-        <div className="flex flex-col gap-3 py-2 opacity-60">
-          <motion.div 
-            className="h-3 w-full bg-white/20 rounded-full relative overflow-hidden"
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1.5 }}
+        <div className="flex items-center gap-2 mt-3 mb-2 min-w-0">
+          <SpiralLoader size={28} className="flex-shrink-0 opacity-85" />
+          <motion.span
+            className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none whitespace-nowrap shrink-0"
+            style={{ backgroundSize: '250% 100%', animation: 'shimmer-text 3s linear infinite' }}
           >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-[200%]"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
-            />
-          </motion.div>
-          <motion.div 
-            className="h-3 w-[90%] bg-white/20 rounded-full relative overflow-hidden"
-            animate={{ opacity: [0.3, 0.6, 0.3] }}
-            transition={{ repeat: Infinity, duration: 1.5, delay: 0.2 }}
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent w-[200%]"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 1.5, ease: "linear", delay: 0.2 }}
-            />
-          </motion.div>
+            Executing
+          </motion.span>
         </div>
       )}
       <ReactMarkdown
