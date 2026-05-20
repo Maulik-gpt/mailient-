@@ -235,6 +235,9 @@ export function LinearLanding() {
     document.title = "Mailient";
   }, []);
 
+  const currentText = DESCRIPTIONS[descIndex];
+  const dynamicSpeed = Math.max(4, Math.floor(750 / (currentText.length * 4)));
+
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter strichpunkt-theme relative selection:bg-white selection:text-black">
       
@@ -328,8 +331,8 @@ export function LinearLanding() {
 
           <BlurFade delay={0.2} duration={0.8} inView>
             <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-4xl mt-8 font-light min-h-[4rem] flex items-center justify-center">
-              <SpecialText speed={12} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
-                {DESCRIPTIONS[descIndex]}
+              <SpecialText speed={dynamicSpeed} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
+                {currentText}
               </SpecialText>
             </p>
           </BlurFade>
