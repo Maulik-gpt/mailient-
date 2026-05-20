@@ -561,9 +561,10 @@ fadeColor="#000000"
             </AnimatePresence>
 
           </div>
+        </BlurFade>
 
-        </div>
-      </section>
+      </div>
+    </section>
 
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
@@ -758,7 +759,6 @@ fadeColor="#000000"
                 Google Meet Video Loop
               </div>
             </div>
-          </BlurFade>
         </div>
       </section>
 
