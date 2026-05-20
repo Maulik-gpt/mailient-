@@ -4702,9 +4702,9 @@ export default function ChatInterface({
                     >
                       {/* Dynamic, theme-aware shadow gradient to hide content seamlessly as it scrolls under the prompt box */}
                       <div
-                        className="absolute bottom-full left-0 right-0 h-12 pointer-events-none"
+                        className="absolute bottom-full left-0 right-0 h-4 pointer-events-none"
                         style={{
-                          background: `linear-gradient(to top, ${isDark ? '#0D0D0D' : '#EBEBEB'} 0%, ${isDark ? 'rgba(13, 13, 13, 0.95)' : 'rgba(235, 235, 235, 0.95)'} 50%, transparent 100%)`
+                          background: `linear-gradient(to top, ${isDark ? 'rgba(13, 13, 13, 0.5)' : 'rgba(235, 235, 235, 0.5)'} 0%, transparent 100%)`
                         }}
                       />
 
