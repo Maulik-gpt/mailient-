@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { ArcusLogo } from "@/components/ui/arcus-logo";
+import { WordBlurStream } from "@/src/WordBlurStream";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -80,15 +82,9 @@ export default function ArcusProductPage() {
           
           {/* Premium Logo and Title Sideways Container */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <div className="flex items-center gap-5 mb-8 justify-center">
-              {/* Arcus Logo - Stylized Geometric Cat Head */}
-              <div className="relative w-16 h-16 rounded-[20px] bg-[#0d0e12] border border-white/[0.08] flex items-center justify-center shadow-[0_15px_45px_rgba(255,255,255,0.05)] overflow-hidden group flex-shrink-0">
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/5 via-white/[0.02] to-transparent opacity-100 transition-opacity" />
-                <svg className="w-9 h-9 text-white relative z-10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 21c-4.418 0-8-3.582-8-8 0-1.62.48-3.13 1.3-4.4L3 3l5.6 2.3A7.95 7.95 0 0112 5c1.4 0 2.73.36 3.9 1L21 3.7l-2.3 5.6c.82 1.27 1.3 2.78 1.3 4.4 0 4.418-3.582 8-8 8z" />
-                  <path strokeLinecap="round" d="M9.5 13h.01M14.5 13h.01M9 16c1 1 5 1 6 0" />
-                </svg>
-              </div>
+            <div className="flex items-center gap-6 mb-4 justify-center">
+              {/* Official Arcus Cat Logo Component */}
+              <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
               
               <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] text-white leading-[1.05] font-sans">
                 Arcus
@@ -96,11 +92,16 @@ export default function ArcusProductPage() {
             </div>
           </BlurFade>
 
-          {/* Sleek Subtitle */}
+          {/* Sleek Detailed Word Blur Streaming Subtitle */}
           <BlurFade delay={0.25} duration={0.8} yOffset={12} inView>
-            <p className="text-base md:text-[20px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans tracking-tight">
-              An inbox agent that helps you build and ship with AI—powered by Mailient.
-            </p>
+            <div className="text-base md:text-[20px] text-[#8a8f98] leading-relaxed max-w-2xl mt-4 font-light font-sans tracking-tight">
+              <WordBlurStream
+                text="An autonomous inbox engine that sweeps your incoming threads, generates smart drafts matching your style, and manages your scheduling completely on autopilot."
+                msPerWord={80}
+                startupMs={400}
+                holdMs={3500}
+              />
+            </div>
           </BlurFade>
 
           {/* Thick Solid Black Clean Pill Button */}
@@ -129,6 +130,51 @@ export default function ArcusProductPage() {
               </div>
             </div>
           </BlurFade>
+
+          {/* Interactive Premium Animated Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mt-24 w-full px-6">
+            {/* Card 1: Autonomous Triage */}
+            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
+                  1
+                </div>
+                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Autonomous Triage</h3>
+                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
+                  Sweeps your outbox, auto-categorizes threads, and flags high-priority deals instantly with absolute accuracy.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 2: Neural Drafting */}
+            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
+                  2
+                </div>
+                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Neural Voice Drafting</h3>
+                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
+                  Trained on your historical sent emails to construct drafts that replicate your tone, formatting, and signatures.
+                </p>
+              </div>
+            </div>
+
+            {/* Card 3: Autopilot Scheduling */}
+            <div className="group/card relative rounded-[24px] bg-neutral-950/40 border border-white/[0.06] p-6 hover:border-white/[0.12] transition-all duration-500 overflow-hidden backdrop-blur-md select-none text-left">
+              <div className="absolute inset-0 bg-gradient-to-b from-white/[0.02] via-transparent to-transparent opacity-0 group-hover/card:opacity-100 transition-opacity duration-500" />
+              <div className="relative z-10 space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-white font-semibold font-sans">
+                  3
+                </div>
+                <h3 className="text-sm font-semibold tracking-tight text-white font-sans">Autopilot Scheduling</h3>
+                <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
+                  Coordinates directly with Google Calendar to parse invite requests, handle conflicts, and lock appointments.
+                </p>
+              </div>
+            </div>
+          </div>
 
         </div>
       </section>
