@@ -1,0 +1,341 @@
+"use client";
+import React, { useRef, useState } from "react";
+import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import { TimelineContent } from "@/components/ui/timeline-animation";
+import { VerticalCutReveal } from "@/components/ui/vertical-cut-reveal";
+import { cn } from "@/lib/utils";
+import NumberFlow from "@number-flow/react";
+import { Check, Crown, Sparkles, Lock, ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+
+interface PricingProps {
+  isLoading?: boolean;
+  currentPlan?: string | null;
+  handleSelectPlan?: (planId: "monthly" | "annual" | "lifetime") => void;
+}
+
+const PricingSwitch = ({
+  onSwitch,
+  className,
+}: {
+  onSwitch: (value: string) => void;
+  className?: string;
+}) => {
+  const [selected, setSelected] = useState("1"); // Default to Annual/Yearly
+
+  const handleSwitch = (value: string) => {
+    setSelected(value);
+    onSwitch(value);
+  };
+
+  return (
+    <div className={cn("flex justify-center", className)}>
+      <div className="relative z-10 mx-auto flex w-fit rounded-full bg-white/[0.02] border border-white/[0.08] p-1 shadow-2xl backdrop-blur-md">
+        <button
+          onClick={() => handleSwitch("0")}
+          className={cn(
+            "relative z-10 w-fit sm:h-11 cursor-pointer h-9 rounded-full sm:px-6 px-4 sm:py-1.5 py-1 text-xs font-semibold transition-colors duration-300",
+            selected === "0" ? "text-[#030303]" : "text-neutral-400 hover:text-white"
+          )}
+        >
+          {selected === "0" && (
+            <motion.span
+              layoutId="pricing-switch"
+              className="absolute inset-0 w-full h-full rounded-full bg-white"
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            />
+          )}
+          <span className="relative z-10">Monthly</span>
+        </button>
+
+        <button
+          onClick={() => handleSwitch("1")}
+          className={cn(
+            "relative z-10 w-fit cursor-pointer sm:h-11 h-9 flex-shrink-0 rounded-full sm:px-6 px-4 sm:py-1.5 py-1 text-xs font-semibold transition-colors duration-300",
+            selected === "1" ? "text-[#030303]" : "text-neutral-400 hover:text-white"
+          )}
+        >
+          {selected === "1" && (
+            <motion.span
+              layoutId="pricing-switch"
+              className="absolute inset-0 w-full h-full rounded-full bg-white"
+              transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            />
+          )}
+          <span className="relative z-10 flex items-center gap-1.5">
+            Annual
+            <span className={cn(
+              "px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider",
+              selected === "1" ? "bg-[#030303] text-white" : "bg-white text-[#030303]"
+            )}>
+              Save 40%
+            </span>
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default function PricingSection3({
+  isLoading = false,
+  currentPlan = null,
+  handleSelectPlan = (planId) => {
+    console.log(`Select plan requested: ${planId}`);
+  },
+}: PricingProps) {
+  const [isYearly, setIsYearly] = useState(true); // Default to Yearly
+  const pricingRef = useRef<HTMLDivElement>(null);
+
+  const revealVariants = {
+    visible: (i: number) => ({
+      y: 0,
+      opacity: 1,
+      filter: "blur(0px)",
+      transition: {
+        delay: i * 0.25,
+        duration: 0.5,
+      },
+    }),
+    hidden: {
+      filter: "blur(10px)",
+      y: -20,
+      opacity: 0,
+    },
+  };
+
+  const togglePricingPeriod = (value: string) => {
+    setIsYearly(Number.parseInt(value) === 1);
+  };
+
+  const plans = [
+    {
+      id: "subscription" as const,
+      name: "Autonomous Subscription",
+      description: "Scale your email operations autonomously. Triages, drafts in your voice, and logs CRM entries in real time.",
+      price: 29,
+      yearlyPrice: 16.58,
+      buttonText: "Start Subscription",
+      popular: false,
+      features: [
+        "Full Sift email ingestion & triage",
+        "Unlimited custom voice-cloned drafts",
+        "Active Sync integrations (Notion, Cal.com)",
+        "Standard Arcus AI query access",
+        "Gold Founding Badge status",
+        "Gold Slack channel entry"
+      ],
+      tag: "Flexible Membership"
+    },
+    {
+      id: "lifetime" as const,
+      name: "Lifetime Founder Plan",
+      description: "Secure absolute access forever. One-time payment, zero recurring subscription fees. Complete diamond status.",
+      price: 499,
+      yearlyPrice: 499, // ALWAYS STAYS $499 - clicking annual only converts subscription!
+      buttonText: "Own Mailient Forever",
+      popular: true, // Prioritize and highlight Lifetime tier!
+      features: [
+        "One-time purchase, zero API overhead fees",
+        "Lifetime access to Sift, Drafts & Arcus",
+        "500 AI queries/month (refilled automatically)",
+        "Exclusive Diamond Founding Badge status",
+        "VIP Diamond feedback Slack channel",
+        "Dedicated founding institutional support SLA"
+      ],
+      tag: "Elite Founding Tier"
+    }
+  ];
+
+  return (
+    <div
+      className="px-4 py-20 min-h-screen max-w-6xl mx-auto relative text-white"
+      ref={pricingRef}
+    >
+      {/* Visual background textures inside pricing panel */}
+      <div className="absolute inset-0 pointer-events-none select-none overflow-hidden -z-10">
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-white/[0.015] blur-[120px]" />
+      </div>
+
+      <article className="flex md:flex-row flex-col pb-16 md:items-center items-start justify-between border-b border-white/[0.04] mb-16 gap-6">
+        <div className="text-left max-w-2xl">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[9px] font-bold tracking-widest uppercase text-neutral-300 mb-4 shadow-xl">
+            <Sparkles className="w-3 h-3 text-neutral-300" />
+            Pricing Packages
+          </div>
+          
+          <h2 className="text-3xl md:text-5xl font-light tracking-[-0.03em] leading-tight text-white mb-4">
+            <VerticalCutReveal
+              splitBy="words"
+              staggerDuration={0.12}
+              staggerFrom="first"
+              reverse={true}
+              containerClassName="justify-start"
+            >
+              Choose your autonomous model.
+            </VerticalCutReveal>
+          </h2>
+
+          <TimelineContent
+            as="p"
+            animationNum={0}
+            timelineRef={pricingRef}
+            customVariants={revealVariants}
+            className="text-neutral-400 text-sm leading-relaxed"
+          >
+            Predictable flat options designed for scaling institutions and high-volume operators. Secure complete peace of mind.
+          </TimelineContent>
+        </div>
+
+        <TimelineContent
+          as="div"
+          animationNum={1}
+          timelineRef={pricingRef}
+          customVariants={revealVariants}
+          className="shrink-0"
+        >
+          <PricingSwitch onSwitch={togglePricingPeriod} className="shrink-0" />
+        </TimelineContent>
+      </article>
+
+      <TimelineContent
+        as="div"
+        animationNum={2}
+        timelineRef={pricingRef}
+        customVariants={revealVariants}
+        className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch"
+      >
+        {plans.map((plan, index) => {
+          const isLifetime = plan.id === "lifetime";
+          const displayPrice = isLifetime ? plan.price : (isYearly ? plan.yearlyPrice : plan.price);
+          const isCurrentPlanActive = isLifetime ? (currentPlan === "lifetime") : (isYearly ? currentPlan === "starter" : currentPlan === "pro");
+
+          return (
+            <TimelineContent
+              as="div"
+              key={plan.name}
+              animationNum={index + 3}
+              timelineRef={pricingRef}
+              customVariants={revealVariants}
+              className="flex"
+            >
+              <Card
+                className={cn(
+                  "relative w-full flex flex-col justify-between rounded-[32px] p-8 transition-all duration-500 overflow-hidden group backdrop-blur-md",
+                  plan.popular
+                    ? "linear-grid-card border-white/[0.12] ring-1 ring-white/10"
+                    : "bg-white/[0.01] border-white/[0.04] hover:border-white/[0.08]"
+                )}
+              >
+                {/* Visual glow backdrop for popular lifetime card */}
+                {plan.popular && (
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(245,158,11,0.06),_transparent_70%)] pointer-events-none" />
+                )}
+
+                <CardContent className="pt-0 relative z-10 flex-grow">
+                  <div className="flex items-center justify-between mb-8">
+                    <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400">
+                      {plan.tag}
+                    </span>
+                    {plan.popular && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-white text-black text-[9px] font-black uppercase tracking-wider shadow-xl">
+                        <Crown className="w-3 h-3 text-[#d97706]" />
+                        Prioritized
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="flex items-baseline mb-3">
+                    <span className="text-4xl md:text-5xl font-light text-white flex items-baseline">
+                      $
+                      <NumberFlow
+                        format={{
+                          minimumFractionDigits: isLifetime ? 0 : 2,
+                          maximumFractionDigits: isLifetime ? 0 : 2,
+                        }}
+                        value={displayPrice}
+                        className="text-4xl md:text-5xl font-light tracking-tight text-white inline-block"
+                      />
+                    </span>
+                    <span className="text-neutral-400 font-light text-xs ml-2">
+                      {isLifetime ? "one-time payment" : (isYearly ? "/month, billed yearly" : "/month")}
+                    </span>
+                  </div>
+
+                  {plan.id === "subscription" && isYearly && (
+                    <p className="text-[10px] text-neutral-450 font-semibold mb-6">
+                      Billed as $199 annually (40% discount applied)
+                    </p>
+                  )}
+
+                  <h3 className="text-xl font-medium mb-3">{plan.name}</h3>
+                  <p className="text-xs text-neutral-400 font-light leading-relaxed mb-8">
+                    {plan.description}
+                  </p>
+
+                  <div className="border-t border-white/[0.06] pt-6 space-y-4">
+                    <h4 className="font-semibold text-[10px] uppercase tracking-wider text-neutral-300">
+                      What's Included:
+                    </h4>
+                    <ul className="space-y-3">
+                      {plan.features.map((feature, featureIndex) => (
+                        <li key={featureIndex} className="flex items-start gap-3">
+                          <span className={cn(
+                            "w-5 h-5 rounded-full border grid place-content-center mt-0.5 shrink-0 transition-colors",
+                            plan.popular 
+                              ? "bg-amber-500/10 border-amber-500/20 text-amber-400" 
+                              : "bg-white/5 border-white/10 text-white"
+                          )}>
+                            <Check className="w-3.5 h-3.5" />
+                          </span>
+                          <span className="text-xs text-neutral-300 font-light leading-normal">
+                            {feature}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </CardContent>
+
+                <CardFooter className="pt-8 relative z-10 shrink-0">
+                  <button
+                    onClick={() => {
+                      if (isLifetime) {
+                        handleSelectPlan("lifetime");
+                      } else {
+                        handleSelectPlan(isYearly ? "annual" : "monthly");
+                      }
+                    }}
+                    disabled={isLoading || isCurrentPlanActive}
+                    className={cn(
+                      "w-full py-4 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1.5 border",
+                      isCurrentPlanActive
+                        ? "bg-white/5 border-white/10 text-neutral-500 cursor-not-allowed"
+                        : plan.popular
+                          ? "bg-white text-black hover:bg-white/95 border-white/20 shadow-[0_0_30px_rgba(255,255,255,0.08)] hover:scale-[1.01]"
+                          : "bg-white/[0.02] border-white/[0.08] text-white hover:bg-white/[0.06] hover:scale-[1.01]"
+                    )}
+                  >
+                    {isLoading ? (
+                      "Processing..."
+                    ) : isCurrentPlanActive ? (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        Current Active Plan
+                      </>
+                    ) : (
+                      <>
+                        {plan.buttonText}
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    )}
+                  </button>
+                </CardFooter>
+              </Card>
+            </TimelineContent>
+          );
+        })}
+      </TimelineContent>
+    </div>
+  );
+}
