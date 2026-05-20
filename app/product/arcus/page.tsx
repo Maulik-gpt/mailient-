@@ -5,7 +5,8 @@ import { Navbar } from "@/components/Navbar";
 import { motion, AnimatePresence, useMotionValue, useMotionTemplate } from "framer-motion";
 import { 
   Cpu, Check, Terminal, Sparkles, ArrowRight, ShieldCheck, Zap, 
-  Layers, MessageSquare, Play, Lock, Eye, Monitor, Settings, Code, ChevronRight
+  Layers, MessageSquare, Play, Lock, Eye, Monitor, Settings, Code, ChevronRight,
+  Mail, Calendar, RefreshCw, Plus, Minus, Inbox, User, Clock, ArrowDown
 } from "lucide-react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
@@ -17,11 +18,11 @@ const Dithering = lazy(() =>
 );
 
 export default function ArcusProductPage() {
-  // Demo states for Live Conversation Demo
-  const [demoStep, setDemoStep] = useState(0);
-  const [messages, setMessages] = useState<any[]>([]);
+  // Simulator sequence states
+  const [activeStep, setActiveStep] = useState(0);
+  const [selectedThread, setSelectedThread] = useState("q3-proposal");
 
-  // Mouse position tracker for cursor-reactive lighting on card
+  // Mouse position tracker for spotlight glowing effects
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -32,62 +33,12 @@ export default function ArcusProductPage() {
 
   useEffect(() => {
     document.title = "Arcus Flagship / Mailient";
-    runDemoSequence();
+    // Loop steps to show active execution simulation in the middle console
+    const interval = setInterval(() => {
+      setActiveStep((prev) => (prev + 1) % 4);
+    }, 4500);
+    return () => clearInterval(interval);
   }, []);
-
-  // Live Chat Simulator sequence
-  const runDemoSequence = async () => {
-    setMessages([]);
-    setDemoStep(0);
-
-    const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-    // 1. User First Request
-    await sleep(1000);
-    setMessages(prev => [...prev, { sender: "user", text: "Draft a reply to Priya about the Q3 proposal. Set up a call too." }]);
-    setDemoStep(1);
-
-    // 2. Action Logs
-    await sleep(1500);
-    setMessages(prev => [...prev, { sender: "system", text: "— Reading Priya's thread... —" }]);
-    await sleep(1000);
-    setMessages(prev => [...prev, { sender: "system", text: "— Checking your calendar... —" }]);
-    await sleep(1000);
-    setMessages(prev => [...prev, { sender: "system", text: "— Creating Google Meet link... —" }]);
-    await sleep(1000);
-    setMessages(prev => [...prev, { sender: "system", text: "— Drafting in your voice... —" }]);
-    setDemoStep(2);
-
-    // 3. Arcus Response
-    await sleep(1500);
-    setMessages(prev => [...prev, { 
-      sender: "arcus", 
-      text: "Done. Tuesday 3pm works — I've booked it and added the Meet link. Here's the draft:",
-      isDraft: true,
-      draftContent: `Hi Priya,
-Thanks for the kind words — really glad the proposal landed well.
-
-Tuesday at 3pm works great on my end. I've sent a calendar invite with a Google Meet link attached — feel free to ping me if you need to reschedule.
-
-Looking forward to it.
-Maulik`,
-      statusText: "Draft saved · Meeting created · Waiting for your approval"
-    }]);
-    setDemoStep(3);
-
-    // 4. User Second Request
-    await sleep(3500);
-    setMessages(prev => [...prev, { sender: "user", text: "Also remind me to follow up with James if he hasn't replied by Friday." }]);
-    setDemoStep(4);
-
-    // 5. Arcus Second Response
-    await sleep(2000);
-    setMessages(prev => [...prev, { 
-      sender: "arcus", 
-      text: "Got it. I've set a reminder agent — if James hasn't replied by Friday 5pm, I'll draft a follow-up and flag it for you." 
-    }]);
-    setDemoStep(5);
-  };
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi relative selection:bg-white selection:text-black">
@@ -95,25 +46,28 @@ Maulik`,
       {/* Sticky Translucent Header */}
       <Navbar theme="dark" />
 
-      {/* Atmospheric lighting */}
+      {/* Atmospheric blue-purple mesh gradients to match Codex styling */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
-        <div className="absolute top-[4%] left-1/2 -translate-x-1/2 w-[1000px] h-[500px] rounded-full bg-neutral-900/10 blur-[180px]" />
-        <div className="absolute top-[25%] left-[5%] w-[500px] h-[500px] rounded-full bg-white/[0.005] blur-[150px]" />
-        <div className="absolute bottom-[20%] right-[5%] w-[800px] h-[800px] rounded-full bg-neutral-950/20 blur-[200px]" />
+        {/* Massive top glowing backdrop blur */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1400px] h-[700px] rounded-full bg-[radial-gradient(ellipse_at_center,rgba(99,102,241,0.12),rgba(59,130,246,0.06),transparent_70%)] blur-[120px]" />
+        
+        {/* Subtle dynamic warm mesh spotlights */}
+        <div className="absolute top-[15%] left-[10%] w-[600px] h-[600px] rounded-full bg-indigo-900/5 blur-[160px]" />
+        <div className="absolute top-[35%] right-[5%] w-[800px] h-[800px] rounded-full bg-blue-950/8 blur-[200px]" />
       </div>
 
       {/* 1. HERO SECTION */}
-      <section className="relative w-full pt-40 pb-20 md:pt-48 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10">
+      <section className="relative w-full pt-44 pb-20 md:pt-52 px-6 flex flex-col items-center text-center max-w-7xl mx-auto z-10">
         
         {/* WebGL Backing Shader */}
         <Suspense fallback={<div className="absolute inset-0 bg-[#000000] pointer-events-none" />}>
-          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.06] blur-[90px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
+          <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.05] blur-[100px] scale-[1.05] mix-blend-screen [mask-image:radial-gradient(ellipse_at_center,black_45%,transparent_85%)]">
             <Dithering
               colorBack="#000000" 
               colorFront="#ffffff"
               shape="warp"
               type="4x4"
-              speed={0.15}
+              speed={0.12}
               className="size-full"
               minPixelRatio={1}
             />
@@ -122,315 +76,416 @@ Maulik`,
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
-          {/* Eyebrow Platform Badge */}
+          {/* Top Premium Glossy App Icon */}
           <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
-            <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
-              </span>
-              <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-                ARCUS — AI AGENT FOR YOUR INBOX
-              </span>
+            <div className="relative w-20 h-20 rounded-[24px] bg-[#0d0e12] border border-white/[0.08] flex items-center justify-center shadow-[0_15px_45px_rgba(99,102,241,0.2)] mb-8 overflow-hidden group">
+              {/* Inner glowing core */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 via-blue-600/10 to-transparent opacity-100 group-hover:opacity-80 transition-opacity" />
+              <div className="absolute -top-10 -right-10 w-24 h-24 bg-indigo-500/30 rounded-full blur-2xl pointer-events-none" />
+              
+              {/* Glossy Diagonal Reflection */}
+              <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.02] to-white/[0.05] pointer-events-none" />
+              
+              {/* Neural Node Logo Emblem */}
+              <svg className="w-9 h-9 text-indigo-400 relative z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 21l8.982-11.761h-6.803L12 3 3.018 14.761h6.795L9.813 15.904z" />
+              </svg>
             </div>
           </BlurFade>
 
-          {/* Headline & Subtitle */}
+          {/* Bold White Clean Title */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
-              The inbox agent <br />
-              <span className="font-extralight italic text-neutral-400">that works while you don't.</span>
+            <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] text-white leading-[1.05] font-sans">
+              Arcus
             </h1>
           </BlurFade>
 
-          <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
-            <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
-              Arcus reads every email, drafts replies in your exact voice, books meetings, and runs silently in the background — delivering results before you ask for them.
+          {/* Sleek Subtitle */}
+          <BlurFade delay={0.25} duration={0.8} yOffset={12} inView>
+            <p className="text-base md:text-[20px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans tracking-tight">
+              An inbox agent that helps you build and ship with AI—powered by Mailient.
             </p>
           </BlurFade>
 
-          {/* Premium CTAs */}
-          <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-            <button
-              onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
-            >
-              Try Arcus free
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+          {/* Thick Solid Black Clean Pill Button */}
+          <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
+            <div className="flex flex-col items-center gap-12 mt-10">
+              <button
+                onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
+                className="px-9 py-4 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center gap-2.5 cursor-pointer shadow-lg"
+              >
+                Connect Gmail for Arcus
+                <ArrowRight className="w-4 h-4" />
+              </button>
 
-            <a
-              href="#live-demo-section"
-              className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
-            >
-              <Play className="w-3 h-3 fill-white" />
-              Watch it work
-            </a>
-          </div>
-
-          {/* Core Definition Description Box */}
-          <div className="w-full max-w-4xl border border-white/[0.06] rounded-[32px] bg-[#050505] p-8 md:p-12 text-left mt-20 relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-neutral-900/10 to-transparent pointer-events-none" />
-            <div className="relative z-10 space-y-4">
-              <span className="text-[9px] font-mono tracking-widest text-[#8a8f98] uppercase block">
-                CORE DEFINITION
-              </span>
-              <p className="text-sm text-neutral-300 leading-relaxed font-light font-sans">
-                <strong>Arcus is not an email assistant.</strong> It does not suggest. It does not summarise. <strong>It acts.</strong> When an email arrives, Arcus reads the full thread, understands the context, checks your calendar, drafts a reply that sounds exactly like you, and — if you want — sends it. When you are not around, it runs on schedule, sweeps your inbox, handles the routine, and drops a clean briefing in your Gmail or Slack before you open your laptop. You do not configure it. You do not prompt it. You describe what you want once, in plain English, and Arcus does it — every day, without being asked again.
-              </p>
+              {/* Trusted Logos Strip matching image layout */}
+              <div className="space-y-6">
+                <span className="text-[10px] font-mono tracking-[0.2em] text-[#555861] uppercase font-bold">
+                  Trusted by top teams
+                </span>
+                <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-4 opacity-[0.35] grayscale hover:opacity-50 transition-opacity">
+                  <span className="font-extrabold text-[14px] tracking-tight font-sans text-white">instacart</span>
+                  <span className="font-extrabold text-[14px] tracking-tight font-sans text-white">duolingo</span>
+                  <span className="font-semibold text-[14px] tracking-tight font-sans text-white">Vanta</span>
+                  <span className="font-normal text-[14px] tracking-tight font-sans text-white">virgin atlantic</span>
+                  <span className="font-bold text-[14px] tracking-tight font-sans text-white">miro</span>
+                </div>
+              </div>
             </div>
-          </div>
+          </BlurFade>
 
         </div>
       </section>
 
-      {/* 3. CAPABILITIES GRID */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        
-        <div className="text-left mb-20 max-w-2xl">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">
-            PLATFORM CAPABILITIES
+      {/* 2. CORE WORKSPACE APPLICATION MOCKUP (Codex-Inspired Triple Pane Interface) */}
+      <section className="py-24 px-6 w-full max-w-7xl mx-auto z-10 relative">
+        <div className="text-center mb-16">
+          <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
+            ARCUS FLAGSPACE // CONTROL PANEL
           </span>
-          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
-            Designed to execute, <br />not suggest.
+          <h2 className="text-3xl md:text-[42px] font-medium tracking-[-0.025em] text-white leading-tight font-sans">
+            A real-time command center for your outbox.
           </h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          
-          {/* Block 1: Neural Voice */}
-          <div className="h-full rounded-3xl border border-white/[0.06] bg-[#050505] p-8 flex flex-col justify-between hover:border-white/[0.1] transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.005] rounded-full blur-[40px] pointer-events-none" />
-            <div>
-              <div className="w-9 h-9 rounded-lg bg-neutral-900 border border-white/[0.04] flex items-center justify-center text-white mb-6">
-                <MessageSquare className="w-4 h-4 text-neutral-300" />
-              </div>
-              <h3 className="text-base font-bold text-white mb-4">
-                Replies that sound like you.
-              </h3>
-              <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                Arcus reads your last 90 days of sent email. It learns how you open messages, how you close them, how formal you are with clients versus collaborators, how long your sentences run, which words you never use.
-              </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-white/[0.04] flex items-center gap-1.5 text-[9px] uppercase font-bold text-neutral-500 font-mono">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span>90-day semantic analysis</span>
-            </div>
-          </div>
+        {/* Triple Pane Obsidian Mockup Box */}
+        <div className="w-full bg-[#050608] border border-white/[0.08] rounded-[24px] shadow-[0_50px_120px_rgba(0,0,0,0.95)] overflow-hidden font-mono text-[11px] text-neutral-300 relative flex flex-col md:flex-row h-[580px]">
+          <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/[0.005] to-white/[0.02] pointer-events-none" />
 
-          {/* Block 2: Autonomous Tool Use */}
-          <div className="h-full rounded-3xl border border-white/[0.06] bg-[#050505] p-8 flex flex-col justify-between hover:border-white/[0.1] transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.005] rounded-full blur-[40px] pointer-events-none" />
-            <div>
-              <div className="w-9 h-9 rounded-lg bg-neutral-900 border border-white/[0.04] flex items-center justify-center text-white mb-6">
-                <Settings className="w-4 h-4 text-neutral-300" />
-              </div>
-              <h3 className="text-base font-bold text-white mb-4">
-                One instruction. A dozen actions.
-              </h3>
-              <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                Tell Arcus to reply to Priya about tomorrow's meeting. Arcus reads the thread, checks your Google Calendar, finds an open slot, creates the event, generates a Meet link, drafts the reply with the link embedded.
-              </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-white/[0.04] flex items-center gap-1.5 text-[9px] uppercase font-bold text-neutral-500 font-mono">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Full Tool Layer active</span>
-            </div>
-          </div>
-
-          {/* Block 3: Scheduling Agents */}
-          <div className="h-full rounded-3xl border border-white/[0.06] bg-[#050505] p-8 flex flex-col justify-between hover:border-white/[0.1] transition-all duration-300 relative group overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white/[0.005] rounded-full blur-[40px] pointer-events-none" />
-            <div>
-              <div className="w-9 h-9 rounded-lg bg-neutral-900 border border-white/[0.04] flex items-center justify-center text-white mb-6">
-                <Zap className="w-4 h-4 text-neutral-300" />
-              </div>
-              <h3 className="text-base font-bold text-white mb-4">
-                Set it once. Wake up to results.
-              </h3>
-              <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                Create an agent in plain English — "every morning at 7am, check my inbox for unanswered client emails, draft replies for each one." Arcus runs it on schedule without requiring the browser to be open.
-              </p>
-            </div>
-            <div className="mt-8 pt-4 border-t border-white/[0.04] flex items-center gap-1.5 text-[9px] uppercase font-bold text-neutral-500 font-mono">
-              <Check className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Cron scheduled agency</span>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 4. LIVE CONVERSATION DEMO */}
-      <section id="live-demo-section" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div className="w-full flex flex-col items-center">
-          
-          <div className="text-center mb-16">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">
-              REAL-TIME EXECUTION SIMULATOR
-            </span>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
-              Watch Arcus coordinate, draft, and schedule.
-            </h2>
-          </div>
-
-          {/* Interactive Chat Console */}
-          <div className="w-full bg-[#050505] border border-white/[0.08] rounded-[32px] p-6 md:p-8 font-mono text-xs shadow-2xl relative overflow-hidden flex flex-col justify-between min-h-[480px]">
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
-
-            {/* Header controls */}
-            <div className="flex items-center justify-between pb-4 border-b border-white/[0.04] mb-6 text-[10px] text-neutral-500 relative z-10">
-              <div className="flex items-center gap-2">
+          {/* Pane 1: Left Threads Sidebar */}
+          <div className="w-full md:w-[220px] bg-[#08090d]/90 border-r border-white/[0.06] p-5 flex flex-col justify-between select-none">
+            <div className="space-y-6 text-left">
+              {/* Window controls */}
+              <div className="flex items-center gap-1.5 pb-2">
                 <span className="w-2.5 h-2.5 rounded-full bg-red-500/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-amber-500/80" />
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/80" />
               </div>
-              <span className="font-bold tracking-widest uppercase">arcus-agent-terminal // active_session</span>
-              <button 
-                onClick={runDemoSequence}
-                className="px-2.5 py-1 rounded border border-white/[0.08] bg-[#0c0c0c] text-[9px] hover:border-white/[0.2] text-white font-bold transition-colors cursor-pointer"
-              >
-                Reset Demo
-              </button>
+
+              <div className="space-y-3">
+                <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Active Loops</div>
+                <div className="space-y-1">
+                  <button 
+                    onClick={() => setSelectedThread("q3-proposal")}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-all font-sans font-medium text-[11px]",
+                      selectedThread === "q3-proposal" 
+                        ? "bg-white/[0.05] text-white border border-white/[0.05]" 
+                        : "text-neutral-400 hover:text-white"
+                    )}
+                  >
+                    <Mail className="w-3.5 h-3.5 shrink-0 text-indigo-400" />
+                    <span className="truncate">Q3 Proposal Followup</span>
+                  </button>
+                  <button 
+                    onClick={() => setSelectedThread("james-reminder")}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-all font-sans font-medium text-[11px]",
+                      selectedThread === "james-reminder" 
+                        ? "bg-white/[0.05] text-white border border-white/[0.05]" 
+                        : "text-neutral-400 hover:text-white"
+                    )}
+                  >
+                    <Clock className="w-3.5 h-3.5 shrink-0 text-amber-400" />
+                    <span className="truncate">James Friday Sweep</span>
+                  </button>
+                  <button 
+                    onClick={() => setSelectedThread("pitch-deck")}
+                    className={cn(
+                      "w-full text-left px-3 py-2 rounded-lg flex items-center gap-2 transition-all font-sans font-medium text-[11px]",
+                      selectedThread === "pitch-deck" 
+                        ? "bg-white/[0.05] text-white border border-white/[0.05]" 
+                        : "text-neutral-400 hover:text-white"
+                    )}
+                  >
+                    <Inbox className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    <span className="truncate">Investor Pitch Update</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Integrations</div>
+                <div className="space-y-1 font-sans text-[10.5px] text-neutral-400 pl-3">
+                  <div className="flex items-center gap-2">✓ Google Calendar</div>
+                  <div className="flex items-center gap-2">✓ Gmail outbox</div>
+                  <div className="flex items-center gap-2">✓ Notion Workspace</div>
+                </div>
+              </div>
             </div>
 
-            {/* Message Thread */}
-            <div className="flex-1 space-y-4 mb-6 overflow-y-auto relative z-10 text-left">
-              <AnimatePresence>
-                {messages.map((msg, idx) => {
-                  if (msg.sender === "user") {
-                    return (
-                      <motion.div 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        key={idx}
-                        className="flex items-start gap-2"
-                      >
-                        <span className="text-neutral-500 font-bold">&gt;</span>
-                        <span className="text-white font-semibold font-sans">{msg.text}</span>
-                      </motion.div>
-                    );
-                  }
+            <div className="pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500 font-sans">
+              SYNC STATUS: ACTIVE
+            </div>
+          </div>
 
-                  if (msg.sender === "system") {
-                    return (
-                      <motion.div 
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 0.8 }}
-                        key={idx}
-                        className="text-[10px] text-amber-500 italic pl-4"
-                      >
-                        {msg.text}
-                      </motion.div>
-                    );
-                  }
+          {/* Pane 2: Middle Execution Console (Narrator step-by-step logs) */}
+          <div className="flex-1 bg-[#050608] p-6 flex flex-col justify-between text-left">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
+                <span className="text-[10px] tracking-wider uppercase text-neutral-400 font-bold">Execution Console</span>
+                <span className="text-[9px] px-2 py-0.5 rounded bg-indigo-950/20 text-indigo-400 border border-indigo-900/30">LOOPING</span>
+              </div>
 
-                  // Arcus agent response
-                  return (
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      key={idx}
-                      className="space-y-3 pl-4"
-                    >
-                      <div className="flex items-center gap-2 text-emerald-400 font-bold">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>Arcus:</span>
-                        <span className="text-neutral-300 font-normal font-sans">{msg.text}</span>
+              {/* Dynamic steps inside console */}
+              <div className="space-y-5">
+                <div className="space-y-1.5">
+                  <div className="text-[10px] text-neutral-500 font-bold">&gt; INCOMING EMAIL IDENTIFIED</div>
+                  <div className="bg-[#0b0c10] border border-white/[0.04] p-3 rounded-lg text-neutral-200 font-sans leading-relaxed text-[10px]">
+                    {selectedThread === "q3-proposal" && "Hi Maulik, The Q3 proposal layout looks solid. Can we lock in a brief sync session sometime next Tuesday afternoon? Let me know. - Priya"}
+                    {selectedThread === "james-reminder" && "No recent response from James. Triggering automated check loop."}
+                    {selectedThread === "pitch-deck" && "Draft complete for Austin regarding Aether Labs capital structure changes."}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[10px] text-neutral-500 font-bold">&gt; AGENT EXECUTION LOG</div>
+                  <div className="space-y-2.5 font-mono text-[10.5px]">
+                    <div className="flex items-center gap-2 text-indigo-400">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping" />
+                      <span>Thought 4s: Analyzing thread context...</span>
+                    </div>
+                    
+                    {/* Simulated timeline steps */}
+                    <div className="space-y-1.5 pl-3.5 text-neutral-400">
+                      <div className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Explored sent mail history</span>
                       </div>
-
-                      {msg.isDraft && (
-                        <div className="bg-[#0c0c0c] border border-white/[0.04] p-5 rounded-xl shadow-inner text-neutral-300 space-y-2 mt-2 font-sans font-light leading-relaxed max-w-xl">
-                          <pre className="text-xs text-neutral-200 whitespace-pre-wrap font-sans font-light">
-                            {msg.draftContent}
-                          </pre>
-                          <div className="pt-3 border-t border-white/[0.03] mt-4 flex items-center justify-between text-[9px] uppercase tracking-wider text-neutral-500 font-bold">
-                            <span>Status: {msg.statusText}</span>
-                            <span className="px-2 py-1 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 font-black">
-                              Approve Draft
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Google Calendar: slot located (Tue 3:00 PM)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Check className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Generated secure Google Meet bridge link</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            {/* Command Input Area */}
-            <div className="border-t border-white/[0.04] pt-4 flex items-center justify-between text-neutral-500 text-[10px] relative z-10">
+            <div className="pt-4 border-t border-white/[0.04] flex items-center justify-between text-neutral-500 text-[10px]">
               <span>Console Sync Status: SECURED</span>
-              <span className="animate-pulse">Waiting for Arcus...</span>
+              <span className="animate-pulse">Active loop thread synced</span>
+            </div>
+          </div>
+
+          {/* Pane 3: Right Pane Outbox Diff View (Matching code-diff view from image) */}
+          <div className="w-full md:w-[380px] bg-[#08090d]/90 border-l border-white/[0.06] p-6 flex flex-col justify-between text-left">
+            <div className="space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-white/[0.04]">
+                <span className="text-[10px] tracking-wider uppercase text-neutral-400 font-bold">Gmail Draft Diff</span>
+                <div className="flex items-center gap-2">
+                  <button className="px-2 py-0.5 rounded bg-white text-black font-bold text-[9px] transition-colors hover:bg-neutral-200">
+                    Approve
+                  </button>
+                  <button className="px-2 py-0.5 rounded bg-[#16171b] border border-white/[0.08] text-white font-bold text-[9px] transition-colors hover:border-white/[0.2]">
+                    Discard
+                  </button>
+                </div>
+              </div>
+
+              {/* Diff Code Layout matching the provided Codex concept */}
+              <div className="space-y-4">
+                <div className="text-[9.5px] text-neutral-500 font-bold uppercase tracking-wider">src/draft_reply.eml <span className="text-emerald-400 pl-2">+9 -2</span></div>
+                <div className="bg-[#050608] border border-white/[0.04] rounded-lg p-3 font-mono text-[10px] space-y-1.5 text-neutral-400 overflow-y-auto max-h-[300px]">
+                  
+                  {/* Draft body structured like a code diff card */}
+                  <div>
+                    <span className="text-neutral-500">To:</span> priya@aetherlabs.co
+                  </div>
+                  <div>
+                    <span className="text-neutral-500">Subject:</span> Re: Q3 Proposal Layout
+                  </div>
+                  <hr className="border-white/[0.03] my-2" />
+                  
+                  <div className="text-[#a51d2d] bg-[#ffeef0]/5 px-1 py-0.5 rounded">
+                    - Let me review and follow up with a slot.
+                  </div>
+                  
+                  <div className="text-[#22863a] bg-[#f0fff4]/5 px-1 py-0.5 rounded">
+                    + Tuesday at 3:00 PM works perfect on my end.
+                  </div>
+                  <div className="text-[#22863a] bg-[#f0fff4]/5 px-1 py-0.5 rounded">
+                    + I've locked in the slot and added a calendar
+                  </div>
+                  <div className="text-[#22863a] bg-[#f0fff4]/5 px-1 py-0.5 rounded">
+                    + invite containing the Google Meet link below:
+                  </div>
+                  
+                  <div className="pl-4 text-indigo-400 bg-indigo-950/10 px-1 py-0.5 rounded mt-2 border-l-2 border-indigo-500">
+                    meet.google.com/q3-proposal-bridge
+                  </div>
+
+                  <div className="text-neutral-500 pt-3">
+                    Learn style: 90-day outbound semantic analysis
+                  </div>
+                  <div className="text-neutral-500">
+                    Voice Signature: Formal leadership profile
+                  </div>
+
+                </div>
+              </div>
             </div>
 
+            <div className="pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500 font-sans">
+              Status: waiting_for_manual_approval_or_autocommit
+            </div>
           </div>
 
         </div>
       </section>
 
-      {/* 5. SYSTEM ARCHITECTURE & DIAGRAM */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <div className="text-left mb-20 max-w-2xl">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">
-            SYSTEM ARCHITECTURE
+      {/* 3. ALTERNATING FEATURES GRID (Matching Codex image structured layout with gradient background wrapper cards) */}
+      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center">
+        
+        <div className="mb-24">
+          <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
+            THE BEST WAY TO MANAGE WITH AGENTS
           </span>
-          <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight">
-            How Arcus operates.
+          <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.035em] text-white leading-tight font-sans">
+            Built to drive real leverage.
           </h2>
         </div>
 
-        {/* Architectural Flow Diagram */}
-        <div className="w-full bg-[#050505] border border-white/[0.08] rounded-[32px] p-6 md:p-12 mb-20 overflow-x-auto shadow-sm">
-          <div className="min-w-[800px] flex items-center justify-between font-mono text-[10px] uppercase font-bold text-neutral-400">
-            
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="px-4 py-3 rounded-xl border border-white/[0.04] bg-[#0c0c0c] text-white shadow-md">
-                Your Gmail
+        <div className="space-y-36 max-w-5xl mx-auto">
+          
+          {/* Row 1: Visual Card on the right */}
+          <div className="flex flex-col lg:flex-row items-center gap-16 text-left">
+            <div className="flex-1 space-y-6">
+              <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
+                Built to drive real engineering work.
+              </h3>
+              <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
+                From simple scheduling to complex multi-step updates, Arcus reliably completes outbox sweeps, calendar invites, and draft creation in your exact voice signatures.
+              </p>
+              <div className="pt-2">
+                <Link href="/product/sift" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
+                  Explore triage integration
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
 
-            <span className="text-neutral-600 font-black">&rarr;</span>
-
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="px-4 py-3 rounded-xl border border-white/[0.04] bg-[#0c0c0c] text-white shadow-md text-center">
-                Arcus reads context
+            {/* Gradient Wrapper Mockup Panel */}
+            <div className="flex-1 w-full flex items-center justify-center p-8 rounded-[24px] bg-gradient-to-br from-indigo-500/10 via-blue-600/5 to-transparent border border-white/[0.06] relative overflow-hidden group h-[320px]">
+              {/* Mesh background */}
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.1),transparent_60%)] pointer-events-none" />
+              
+              {/* Floating elegant terminal mockup card */}
+              <div className="w-[340px] bg-[#08090c] border border-white/[0.08] rounded-xl p-4 shadow-2xl space-y-3 font-mono text-[10px] text-neutral-300 relative z-10 transition-transform group-hover:scale-[1.02] duration-300">
+                <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-neutral-500">
+                  <span>Voice Profiler V1</span>
+                  <span className="text-emerald-400 font-bold">ANALYZED</span>
+                </div>
+                <div className="space-y-1.5 font-sans">
+                  <div className="font-semibold text-white font-mono">&gt; Semantic analysis parameters:</div>
+                  <div className="pl-3.5 text-neutral-400 text-[9.5px] leading-relaxed">
+                    • Average length: 34 words per message<br />
+                    • Formality bias: 84% collaboration tone<br />
+                    • Favorite sign-off: "Looking forward to it"
+                  </div>
+                </div>
               </div>
             </div>
-
-            <span className="text-neutral-600 font-black">&rarr;</span>
-
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="px-4 py-3 rounded-xl border border-emerald-900/40 bg-emerald-950/20 text-emerald-400 shadow-md text-center">
-                Neural Voice Profile
-              </div>
-            </div>
-
-            <span className="text-neutral-600 font-black">&rarr;</span>
-
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="px-4 py-3 rounded-xl border border-white/[0.04] bg-[#0c0c0c] text-white shadow-md text-center">
-                Google Calendar adapter
-              </div>
-            </div>
-
-            <span className="text-neutral-600 font-black">&rarr;</span>
-
-            <div className="flex flex-col items-center gap-2.5">
-              <div className="px-4 py-3 rounded-xl border border-white/[0.08] bg-white text-black shadow-md">
-                Gmail Draft Saved
-              </div>
-            </div>
-
           </div>
+
+          {/* Row 2: Visual Card on the left */}
+          <div className="flex flex-col lg:flex-row-reverse items-center gap-16 text-left">
+            <div className="flex-1 space-y-6">
+              <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
+                Designed for multi-agent loops.
+              </h3>
+              <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
+                Arcus doesn't run in a single tab. It runs in secure background loops, sweeping your outbox on schedule, monitoring reminders, and coordinating calendars.
+              </p>
+              <div className="pt-2">
+                <Link href="/product/drafts" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
+                  Learn about Tone Writing
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Gradient Wrapper Mockup Panel */}
+            <div className="flex-1 w-full flex items-center justify-center p-8 rounded-[24px] bg-gradient-to-br from-indigo-500/10 via-blue-600/5 to-transparent border border-white/[0.06] relative overflow-hidden group h-[320px]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.1),transparent_60%)] pointer-events-none" />
+              
+              {/* Floating elegant concurrent loop card */}
+              <div className="w-[340px] bg-[#08090c] border border-white/[0.08] rounded-xl p-4 shadow-2xl space-y-3 font-mono text-[10px] text-neutral-300 relative z-10 transition-transform group-hover:scale-[1.02] duration-300">
+                <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-neutral-500">
+                  <span>Loop Orchestrator</span>
+                  <span className="text-indigo-400 font-bold">RUNNING</span>
+                </div>
+                <div className="space-y-2 text-neutral-400">
+                  <div className="flex items-center justify-between bg-white/[0.02] p-2 rounded border border-white/[0.04]">
+                    <span>Inbox Triage sweep</span>
+                    <span className="text-emerald-400">Every 5m</span>
+                  </div>
+                  <div className="flex items-center justify-between bg-white/[0.02] p-2 rounded border border-white/[0.04]">
+                    <span>Friday James check-in</span>
+                    <span className="text-neutral-500">Starts in 3h</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 3: Visual Card on the right */}
+          <div className="flex flex-col lg:flex-row items-center gap-16 text-left">
+            <div className="flex-1 space-y-6">
+              <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
+                Adapts to how your team builds.
+              </h3>
+              <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
+                Plugs natively into Google Workspace, Cal.com, and Notion, translating unstructured emails into clean calendar links, reminders, and synced database sheets.
+              </p>
+              <div className="pt-2">
+                <Link href="/pricing" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
+                  View plans and limits
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Gradient Wrapper Mockup Panel */}
+            <div className="flex-1 w-full flex items-center justify-center p-8 rounded-[24px] bg-gradient-to-br from-indigo-500/10 via-blue-600/5 to-transparent border border-white/[0.06] relative overflow-hidden group h-[320px]">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(99,102,241,0.1),transparent_60%)] pointer-events-none" />
+              
+              {/* Floating elegant integration card */}
+              <div className="w-[340px] bg-[#08090c] border border-white/[0.08] rounded-xl p-4 shadow-2xl space-y-3 font-mono text-[10px] text-neutral-300 relative z-10 transition-transform group-hover:scale-[1.02] duration-300">
+                <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-neutral-500">
+                  <span>Connector Hub</span>
+                  <span className="text-emerald-400 font-bold">CONNECTED</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-[#0d0e12] border border-white/[0.04] p-2 rounded flex flex-col items-center justify-center text-center">
+                    <Mail className="w-4 h-4 text-indigo-400 mb-1" />
+                    <span className="text-[8px]">Gmail</span>
+                  </div>
+                  <div className="bg-[#0d0e12] border border-white/[0.04] p-2 rounded flex flex-col items-center justify-center text-center">
+                    <Calendar className="w-4 h-4 text-emerald-400 mb-1" />
+                    <span className="text-[8px]">GCal</span>
+                  </div>
+                  <div className="bg-[#0d0e12] border border-white/[0.04] p-2 rounded flex flex-col items-center justify-center text-center">
+                    <RefreshCw className="w-4 h-4 text-amber-400 mb-1 animate-spin-slow" />
+                    <span className="text-[8px]">Cal.com</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {/* 6. SECURITY STRIP */}
+      {/* 4. SECURITY & INTEGRITY STRIP */}
       <section className="py-20 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <div className="w-full py-4 px-6 rounded-2xl bg-white/[0.01] border border-white/[0.04] flex items-center justify-between text-left hover:border-white/[0.08] transition-colors cursor-pointer">
           <div className="flex items-center gap-3">
-            <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <span className="text-[11px] text-neutral-400 font-sans">
               Vault-grade local PII sanitization with AES-256 local cache protection.
             </span>
@@ -442,7 +497,7 @@ Maulik`,
         </div>
       </section>
 
-      {/* 7. FIVE-COLUMN LUXURY FOOTER */}
+      {/* 5. FIVE-COLUMN PREMIUM FOOTER */}
       <footer className="w-full bg-[#000000] border-t border-white/[0.06] py-20 px-6 z-10 relative text-left">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-12 md:gap-8 mb-16">
           
