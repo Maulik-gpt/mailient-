@@ -141,7 +141,8 @@ export function LinearLanding() {
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
 
-  const togglePlay = () => {
+  const togglePlay = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!videoRef.current) return;
     if (isPlaying) {
       videoRef.current.pause();
@@ -153,14 +154,16 @@ export function LinearLanding() {
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!videoRef.current) return;
     const newMuted = !isMuted;
     videoRef.current.muted = newMuted;
     setIsMuted(newMuted);
   };
 
-  const toggleFullscreen = () => {
+  const toggleFullscreen = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if (!videoRef.current) return;
     if (!document.fullscreenElement) {
       videoRef.current.requestFullscreen().catch((err) => {
@@ -300,7 +303,10 @@ export function LinearLanding() {
 
           {/* 16:9 Floating Obsidian Demo Video Window */}
           <BlurFade delay={0.4} duration={1.0} inView>
-            <div className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group">
+            <div 
+              onClick={(e) => togglePlay(e)} 
+              className="w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 shadow-[0_50px_100px_rgba(0,0,0,0.85)] relative overflow-hidden group cursor-pointer"
+            >
               <video 
                 ref={videoRef}
                 src="/cap.mp4" 
@@ -315,22 +321,18 @@ export function LinearLanding() {
               {/* Soft atmospheric overlay */}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none z-20" />
 
-              {/* Subtitles Overlay */}
-              {getSubtitles(currentTime) && (
-                <div className="absolute bottom-20 left-1/2 -translate-x-1/2 bg-black/75 border border-white/[0.08] px-4 py-2 rounded-xl text-xs md:text-sm text-white tracking-wide z-30 pointer-events-none select-none backdrop-blur-md max-w-lg font-sans shadow-lg">
-                  {getSubtitles(currentTime)}
-                </div>
-              )}
-
               {/* Custom Video Controls Overlay */}
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 select-none">
+              <div 
+                onClick={(e) => e.stopPropagation()}
+                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 select-none"
+              >
                 
                 {/* Buttons Row */}
                 <div className="flex items-center justify-between px-2 pb-3 text-white/90">
                   {/* Left: Play/Pause & Time */}
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={togglePlay}
+                      onClick={(e) => togglePlay(e)}
                       className="hover:text-white transition-colors focus:outline-none"
                     >
                       {isPlaying ? (
@@ -344,10 +346,10 @@ export function LinearLanding() {
                     </span>
                   </div>
 
-                  {/* Right: Mute, Fullscreen, More */}
+                  {/* Right: Mute & Fullscreen */}
                   <div className="flex items-center gap-4">
                     <button 
-                      onClick={toggleMute}
+                      onClick={(e) => toggleMute(e)}
                       className="hover:text-white transition-colors focus:outline-none"
                     >
                       {isMuted ? (
@@ -357,13 +359,10 @@ export function LinearLanding() {
                       )}
                     </button>
                     <button 
-                      onClick={toggleFullscreen}
+                      onClick={(e) => toggleFullscreen(e)}
                       className="hover:text-white transition-colors focus:outline-none"
                     >
                       <Maximize className="w-4 h-4" />
-                    </button>
-                    <button className="hover:text-white transition-colors focus:outline-none">
-                      <MoreVertical className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
@@ -371,6 +370,7 @@ export function LinearLanding() {
                 {/* Custom Progress Bar / Scrubber at the very bottom */}
                 <div 
                   onClick={(e) => {
+                    e.stopPropagation();
                     if (!videoRef.current || !duration) return;
                     const rect = e.currentTarget.getBoundingClientRect();
                     const clickX = e.clientX - rect.left;
