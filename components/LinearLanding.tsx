@@ -43,10 +43,7 @@ const Dithering = lazy(() =>
 export function LinearLanding() {
   const [activeStep, setActiveStep] = useState(0);
   
-  // Custom scroll animations for smooth cinematic feel
-  const { scrollY } = useScroll();
-  const heroScale = useTransform(scrollY, [0, 500], [1, 0.96]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  // State for active interactive steps
 
   // Simulated Webhook Stream (interactive state)
   const [webhookLogs, setWebhookLogs] = useState([
@@ -97,8 +94,7 @@ export function LinearLanding() {
           </div>
         </Suspense>
 
-        <motion.div
-          style={{ scale: heroScale, opacity: heroOpacity }}
+        <div
           className="w-full flex flex-col items-center max-w-6xl z-10"
         >
           {/* Handcrafted Status Ring Badge */}
@@ -141,7 +137,7 @@ export function LinearLanding() {
               </a>
             </div>
           </BlurFade>
-        </motion.div>
+        </div>
 
         {/* 3. ISOMETRIC OUTLINE WIREFRAME COLUMNS (Exactly Replicating Screenshot 1 Grid) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 w-full max-w-5xl mt-36 border-t border-white/[0.06] pt-16 z-10 text-left">
