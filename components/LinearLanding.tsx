@@ -39,6 +39,7 @@ import { useRouter } from "next/navigation";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Features8 } from "@/components/ui/features-8";
+import { CTASection } from "@/components/ui/hero-dithering-card";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -158,17 +159,6 @@ export function LinearLanding() {
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10">
           
-          {/* Eyebrow Platform Badge */}
-          <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
-            </span>
-            <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-              Mailient Autonomous Engine
-            </span>
-          </div>
-
           {/* Headline & Subtitle */}
           <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
             Hours of email, <br />handled overnight.
@@ -1204,29 +1194,8 @@ fadeColor="#000000"
       {/* Core Capability Grid */}
       <Features8 />
 
-      {/* 9. FINAL CALL TO ACTION FOLD */}
-      <section className="py-44 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-center space-y-8">
-        
-        <h2 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-tight">
-          Hours of email, <br />handled overnight.
-        </h2>
-
-        <div className="flex items-center justify-center gap-4 mt-4">
-          <button 
-            onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-            className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs transition-transform duration-300 hover:scale-[1.02] cursor-pointer shadow-[0_0_30px_rgba(255,255,255,0.15)]"
-          >
-            Connect Gmail
-          </button>
-          <Link 
-            href="/pricing"
-            className="px-8 py-3 rounded-full bg-neutral-900 border border-white/10 text-white font-semibold text-xs hover:bg-neutral-800 transition-colors"
-          >
-            View pricing
-          </Link>
-        </div>
-
-      </section>
+      {/* Premium Dithered CTA Section */}
+      <CTASection />
 
       {/* 10. FIVE-COLUMN LUXURY FOOTER */}
       <footer className="w-full bg-[#000000] border-t border-white/[0.06] py-20 px-6 z-10 relative text-left">

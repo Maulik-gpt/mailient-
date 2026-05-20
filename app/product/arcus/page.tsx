@@ -17,6 +17,7 @@ import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { ArcusLogo } from "@/components/ui/arcus-logo";
 import { WordBlurStream } from "@/src/WordBlurStream";
 import { Features8 } from "@/components/ui/features-8";
+import { CTASection } from "@/components/ui/hero-dithering-card";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -483,6 +484,9 @@ export default function ArcusProductPage() {
 
       {/* Core Arcus Capability Grid */}
       <Features8 />
+
+      {/* Premium Dithered CTA Section */}
+      <CTASection />
 
       {/* 5. FIVE-COLUMN PREMIUM FOOTER */}
       <footer className="w-full bg-[#000000] border-t border-white/[0.06] py-20 px-6 z-10 relative text-left">
