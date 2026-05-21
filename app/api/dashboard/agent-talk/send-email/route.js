@@ -13,7 +13,7 @@ export async function POST(request) {
 
     const body = await request.json();
     // Accept both `content` and `body` field names
-    const { to, subject, content, body: bodyField, isHtml = false, threadId = null } = body || {};
+    const { to, subject, content, body: bodyField, isHtml = false, threadId = null, gmailDraftId = null } = body || {};
     const emailBody = content || bodyField;
 
     if (!to || !subject || !emailBody) {
@@ -66,6 +66,19 @@ export async function POST(request) {
       isHtml,
       threadId,
     });
+
+    // Clean up the Gmail draft now that the email has been sent
+    if (gmailDraftId) {
+      try {
+        await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${gmailDraftId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${accessToken}` },
+          signal: AbortSignal.timeout(8000),
+        });
+      } catch {
+        // Non-fatal — email is already sent
+      }
+    }
 
     return NextResponse.json({
       success: true,

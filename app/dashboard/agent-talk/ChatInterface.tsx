@@ -2250,6 +2250,7 @@ export default function ChatInterface({
                         senderName: userName,
                         subject: cv.draftMeta.subject || cv.title || '',
                         threadId: cv.draftMeta.threadId,
+                        gmailDraftId: cv.draftMeta.gmailDraftId,
                       }
                     : undefined;
                   if (draftReply) currentDraftReply = draftReply;
@@ -4638,11 +4639,11 @@ export default function ChatInterface({
                                             m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, draftReply: undefined } } : m
                                           ));
                                         }}
-                                        onSendReply={async ({ content, recipientEmail, subject, threadId }) => {
+                                        onSendReply={async ({ content, recipientEmail, subject, threadId, gmailDraftId }) => {
                                           const res = await fetch('/api/dashboard/agent-talk/send-email', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ to: recipientEmail, subject, content, threadId }),
+                                            body: JSON.stringify({ to: recipientEmail, subject, content, threadId, gmailDraftId }),
                                           });
                                           if (!res.ok) {
                                             const errJson = await res.json().catch(() => ({}));

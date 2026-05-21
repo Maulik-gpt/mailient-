@@ -17,12 +17,14 @@ interface DraftReplyBoxProps {
         originalEmailId?: string;
         subject: string;
         threadId?: string;
+        gmailDraftId?: string;
     } | null;
     onSendReply: (draftData: {
         content: string;
         recipientEmail: string;
         subject: string;
         threadId?: string;
+        gmailDraftId?: string;
     }) => Promise<void>;
     onDismiss: () => void;
     isVisible: boolean;
@@ -206,7 +208,8 @@ export function DraftReplyBox({
                 content: editedContent,
                 recipientEmail: draftData.recipientEmail,
                 subject: draftData.subject,
-                threadId: draftData.threadId
+                threadId: draftData.threadId,
+                gmailDraftId: draftData.gmailDraftId,
             });
             setSendSuccess(true);
             toast.success('Email sent successfully!');

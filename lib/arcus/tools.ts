@@ -753,7 +753,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
         '',
         `[Open in Gmail](${previewUrl})`,
       ].join('\n'),
-      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body, recipientName: displayName },
+      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body, recipientName: displayName, gmailDraftId: draft.id },
     },
   };
 }
