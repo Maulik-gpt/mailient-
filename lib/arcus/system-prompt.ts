@@ -61,6 +61,10 @@ const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
 const ALWAYS_AVAILABLE = [
   'Canvas Panel (built-in) — render ANY document longer than 3 paragraphs: summaries, reports, email drafts, meeting preps, schedules, analyses. Always use open_canvas for substantial output — never dump long content into chat. If the user asks to rewrite, revise, shorten, expand, or update a canvas document that is already open, call update_canvas instead — it applies a blur-fade transition and replaces the content smoothly.',
   'Web Search (built-in) — search the internet for current information, company research, contact details.',
+  'Follow-up Radar (built-in) — call check_followups to surface sent emails awaiting reply. Use proactively in morning briefings or when the user asks "what am I waiting on?".',
+  'Recipient Context (built-in) — call get_recipient_context BEFORE every draft_reply. Returns upcoming meetings, Notion notes, and relationship history for the recipient. This is mandatory for contextually-aware drafts.',
+  'Relationship Memory (built-in) — get_contact_context to look up stored notes about a person; remember_about_contact to save facts for future reference. Use this whenever you learn something important about someone.',
+  'Delegation Rules (built-in) — get_delegation_rules to show the user\'s automation rules; create_delegation_rule to add a new one. Rules run during proactive triage and automate recurring responses.',
 ];
 
 export function buildSystemPrompt(opts: SystemPromptOptions): string {
@@ -507,17 +511,40 @@ Never abandon the task. Never ask multiple questions at once.
 ### Reply to an email (with or without meeting)
 1. \`search_gmail\` — find the thread by person name or subject
 2. \`read_email\` — get full body, threadId, sender email, subject, RFC Message-ID
-3. \`get_sent_emails\` — study user's voice: greeting, formality, length, sign-off
-4. If a meeting is needed: \`schedule_meeting\` with recipient as attendee → extract the exact Meet URL from the result
-5. \`draft_reply\` — body written in user's voice, Meet link embedded naturally if applicable; pass \`recipientName\`
-6. STOP. Do not call \`send_email\`. Say: "Draft ready — review below and hit Send."
+3. \`get_recipient_context\` — MANDATORY: fetch calendar events, Notion notes, and relationship memory for the recipient
+4. \`get_sent_emails\` — study user's voice: greeting, formality, length, sign-off
+5. If a meeting is needed: \`schedule_meeting\` with recipient as attendee → extract the exact Meet URL from the result
+6. \`draft_reply\` — body written in user's voice, weaving in context from step 3, Meet link embedded naturally if applicable
+7. STOP. Do not call \`send_email\`. Say: "Draft ready — review below and hit Send."
 
 ### Follow up with someone
 1. \`search_gmail\` with "from:[name]" or "to:[name]" — find last conversation
 2. \`read_email\` — understand what was last discussed and any open items
-3. \`get_sent_emails\` — calibrate voice
-4. \`draft_reply\` — body references the previous conversation naturally ("Following up on our chat about X…"), written in user's voice
-5. STOP. Show draft. Wait for approval.
+3. \`get_recipient_context\` — load relationship context
+4. \`get_sent_emails\` — calibrate voice
+5. \`draft_reply\` — body references the previous conversation naturally; if context reveals upcoming meetings, mention them naturally
+6. STOP. Show draft. Wait for approval.
+
+### What am I waiting on? / Follow-up radar
+1. \`check_followups\` — scan sent mail for threads with no reply
+2. \`open_canvas\` — show the list as a prioritized report with oldest first
+3. Offer to draft follow-up nudges for the top items
+
+### Morning briefing / What happened overnight?
+1. \`search_gmail\` with "is:unread newer_than:12h" — new emails
+2. \`check_followups\` — pending replies
+3. \`get_calendar_events\` — today's schedule
+4. \`open_canvas\` — render a clean morning briefing with sections: 🔴 Urgent · ⏳ Follow-ups · 📅 Today's Calendar · 📬 Other New
+
+### Remember something about a contact
+1. Identify the person's email from context or by asking
+2. \`remember_about_contact\` — save the note immediately
+3. Confirm: "Saved — I'll reference this whenever I draft to [name]."
+
+### Set up a delegation rule
+1. Clarify exactly: what triggers it (keywords, sender), what action (draft reply / notify / label)
+2. \`create_delegation_rule\` — create the rule
+3. Confirm with: "Rule active — Arcus will now automatically [action] whenever [trigger]."
 
 ### Summarize email threads
 1. \`search_gmail\` — find all relevant threads

@@ -259,7 +259,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'draft_reply',
-    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email — e.g. "draft a reply to Priya", "respond to that email". NEVER use this to deliver summaries, reports, or information to the user — use open_canvas for that. NEVER call this just because you searched emails or read threads; those are research steps, not triggers for drafting. MANDATORY sequence before calling: (1) read the thread with read_email, (2) call get_sent_emails to load the user\'s voice profile — NON-NEGOTIABLE, (3) schedule any meeting to get the Meet link if needed. The body MUST be written in the user\'s exact voice. STOP after calling — do NOT call send_email. The user will send from the inline draft preview.',
+    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) get_sent_emails to load the user\'s voice profile — NON-NEGOTIABLE, (4) schedule any meeting if needed. Write the body using the voice profile AND the recipient context gathered in steps 2-3. STOP after calling — do NOT call send_email.',
     input_schema: {
       type: 'object',
       properties: {
@@ -349,6 +349,78 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         },
       },
       required: ['title', 'markdown'],
+    },
+  },
+  // ── Feature: Follow-up Radar ─────────────────────────────────────────────────
+  {
+    name: 'check_followups',
+    description: 'Scan sent emails for threads that have NOT received a reply — surfaces what the user is waiting on. Use proactively when asked "what needs follow-up", "anything I\'m waiting on", or as part of a morning briefing. Returns threads sorted by how long they\'ve been waiting.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days:       { type: 'number', description: 'Days back to scan sent mail (default 7, max 21)' },
+        maxResults: { type: 'number', description: 'Max sent threads to scan (default 15)' },
+      },
+    },
+  },
+  // ── Feature: Recipient Context ────────────────────────────────────────────────
+  {
+    name: 'get_recipient_context',
+    description: 'Fetch rich context about an email recipient before drafting — upcoming meetings with them, Notion notes, and relationship memory. MANDATORY: call this BEFORE draft_reply whenever you have the recipient\'s email address. This ensures every draft is contextually aware of the relationship.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Recipient\'s email address' },
+        name:  { type: 'string', description: 'Recipient\'s name (improves Notion search)' },
+      },
+      required: ['email'],
+    },
+  },
+  // ── Feature: Relationship Memory ─────────────────────────────────────────────
+  {
+    name: 'get_contact_context',
+    description: 'Look up stored relationship memory for a contact — notes, interaction history, tags. Use whenever preparing to reach out to someone or when context about a person is needed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Contact email address' },
+      },
+      required: ['email'],
+    },
+  },
+  {
+    name: 'remember_about_contact',
+    description: 'Save a note or fact about a contact to long-term relationship memory. Use whenever you learn something important — their preferences, company, a promise made, their timezone, communication style. This powers the CRM layer.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Contact email address' },
+        name:  { type: 'string', description: 'Contact display name' },
+        note:  { type: 'string', description: 'What to remember about this person' },
+        tags:  { type: 'array', items: { type: 'string' }, description: 'Optional tags, e.g. ["client", "vip", "partner"]' },
+      },
+      required: ['email', 'note'],
+    },
+  },
+  // ── Feature: Delegation Rules ─────────────────────────────────────────────────
+  {
+    name: 'get_delegation_rules',
+    description: 'List the user\'s active delegation rules — standing instructions like "whenever someone asks for a meeting, propose 3 times". Show these when the user asks to see or manage their rules.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'create_delegation_rule',
+    description: 'Create a delegation rule — a standing instruction Arcus will apply automatically to matching emails. Use when the user says "whenever X happens, do Y". Rules run during proactive triage.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name:             { type: 'string', description: 'Short rule name, e.g. "Auto-propose meeting times"' },
+        trigger_keywords: { type: 'array', items: { type: 'string' }, description: 'Keywords that trigger the rule in email subject/body' },
+        trigger_from:     { type: 'string', description: 'Optional: only trigger for emails from this address/domain' },
+        action_type:      { type: 'string', enum: ['draft_reply', 'notify', 'label'], description: 'What to do when triggered' },
+        action_config:    { type: 'object', description: 'Action details — e.g. { template: "reply draft text" } or { label: "urgent" }' },
+      },
+      required: ['name', 'action_type'],
     },
   },
   {
@@ -499,10 +571,17 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   fetch_notion_schema: 'notion',
   create_notion_page: 'notion',
   open_canvas: null,
+  update_canvas: null,
   web_search: null,
   send_slack_message: 'slack',
   create_scheduled_agent: null,
   ask_user: null,
+  check_followups: 'gmail',
+  get_recipient_context: null,
+  get_contact_context: null,
+  remember_about_contact: null,
+  get_delegation_rules: null,
+  create_delegation_rule: null,
 };
 
 /**
@@ -555,11 +634,17 @@ export async function executeTool(
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input); break;
-      case 'open_canvas':       result = openCanvas(input); break;
-      case 'update_canvas':     result = updateCanvas(input); break;
-      case 'web_search':        result = await webSearch(input); break;
-      case 'send_slack_message': result = await sendSlackMessage(userId, input); break;
+      case 'open_canvas':           result = openCanvas(input); break;
+      case 'update_canvas':         result = updateCanvas(input); break;
+      case 'web_search':            result = await webSearch(input); break;
+      case 'send_slack_message':    result = await sendSlackMessage(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
+      case 'check_followups':       result = await checkFollowups(userId, input); break;
+      case 'get_recipient_context': result = await getRecipientContext(userId, input); break;
+      case 'get_contact_context':   result = await getContactContext(userId, input); break;
+      case 'remember_about_contact': result = await rememberAboutContact(userId, input); break;
+      case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
+      case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
         console.warn(`[Arcus:Tools] ${ts()} Unknown tool requested: "${name}"`);
         return { output: `Unknown tool: ${name}` };
@@ -754,6 +839,8 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   const previewUrl = `https://mail.google.com/mail/u/0/#drafts/${draft.message?.id || ''}`;
 
   const displayName = input.recipientName || input.to.split('@')[0];
+  // Feature 4: Update contact on draft interaction
+  touchContact(userId, input.to, displayName);
 
   return {
     output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.`,
@@ -811,6 +898,10 @@ async function sendEmail(userId: string, input: any): Promise<ToolResult> {
   }
 
   const sent = await res.json();
+  // Feature 3: Voice auto-learning — fire-and-forget, never blocks send
+  if (input.body) learnFromSentEmail(userId, input.body, input.subject || '');
+  // Feature 4: Update contact memory on every send
+  if (input.to) touchContact(userId, input.to, input.recipientName || '');
   return { output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}` };
 }
 
@@ -1329,6 +1420,384 @@ function updateCanvas(input: any): ToolResult {
       isUpdate: true,
     },
   };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 1: Follow-up Radar
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
+  let token = await getGmailToken(userId);
+  if (!token) return { output: 'Gmail is not connected.' };
+
+  const days = Math.min(input.days || 7, 21);
+  const maxCheck = Math.min(input.maxResults || 15, 20);
+  const sentQuery = `in:sent newer_than:${days}d`;
+  const sentUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(sentQuery)}&maxResults=${maxCheck}`;
+
+  let sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (sentRes.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
+  if (!sentRes.ok) return { output: `Could not check sent mail (${sentRes.status}).` };
+
+  const sentData = await sentRes.json();
+  const sentMessages: any[] = sentData.messages || [];
+  if (!sentMessages.length) return { output: `No sent emails in the last ${days} days.` };
+
+  type FollowUp = { subject: string; to: string; sentDate: string; daysWaiting: number; threadId: string };
+  const awaiting: FollowUp[] = [];
+  const seenThreads = new Set<string>();
+
+  for (const { id } of sentMessages.slice(0, maxCheck)) {
+    try {
+      const msgRes = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+      );
+      if (!msgRes.ok) continue;
+      const msg = await msgRes.json();
+      const { threadId } = msg;
+      if (seenThreads.has(threadId)) continue;
+      seenThreads.add(threadId);
+
+      const h = msg.payload?.headers || [];
+      const to = getHeader(h, 'To');
+      const subject = getHeader(h, 'Subject');
+      const dateStr = getHeader(h, 'Date');
+      const sentMs = new Date(dateStr).getTime() || Date.now();
+      const daysWaiting = Math.round((Date.now() - sentMs) / 86400000);
+      if (daysWaiting < 1) continue;
+
+      // Check if thread has any replies from external senders after our send
+      const threadRes = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=metadata&metadataHeaders=From`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+      );
+      if (!threadRes.ok) continue;
+      const thread = await threadRes.json();
+      const msgs: any[] = thread.messages || [];
+
+      const hasReply = msgs.some((m: any) => {
+        if (m.id === id) return false;
+        const from = (getHeader(m.payload?.headers || [], 'From') || '').toLowerCase();
+        const internalDate = parseInt(m.internalDate || '0');
+        return internalDate > sentMs && !from.includes(userId.toLowerCase());
+      });
+
+      if (!hasReply && subject && to) {
+        awaiting.push({ subject, to, sentDate: dateStr, daysWaiting, threadId });
+      }
+    } catch { continue; }
+  }
+
+  if (!awaiting.length) return { output: `All your recent sent emails have received replies. Inbox is clear — no follow-ups needed.` };
+
+  const sorted = awaiting.sort((a, b) => b.daysWaiting - a.daysWaiting);
+  const lines = sorted.map((f, i) =>
+    `${i + 1}. **${f.subject}**\n   To: ${f.to}\n   Sent: ${f.sentDate}\n   Waiting: ${f.daysWaiting} day${f.daysWaiting !== 1 ? 's' : ''} with no reply\n   Thread: ${f.threadId}`
+  );
+  return { output: `${sorted.length} thread${sorted.length !== 1 ? 's' : ''} awaiting reply:\n\n${lines.join('\n\n')}` };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 2: Recipient Context (cross-app intelligence before every draft)
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function getRecipientContext(userId: string, input: any): Promise<ToolResult> {
+  const recipientEmail: string = (input.email || '').trim();
+  const recipientName: string = input.name || recipientEmail.split('@')[0];
+  if (!recipientEmail) return { output: 'Recipient email is required.' };
+
+  const parts: string[] = [];
+
+  // 1. Google Calendar — upcoming events with this person
+  try {
+    const calToken = await getGmailToken(userId); // same Google OAuth token
+    if (calToken) {
+      const now = new Date().toISOString();
+      const future = new Date(Date.now() + 30 * 86400000).toISOString();
+      const calUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(now)}&timeMax=${encodeURIComponent(future)}&q=${encodeURIComponent(recipientEmail)}&maxResults=5&singleEvents=true&orderBy=startTime`;
+      const calRes = await fetch(calUrl, { headers: { Authorization: `Bearer ${calToken}` }, signal: AbortSignal.timeout(8000) });
+      if (calRes.ok) {
+        const calData = await calRes.json();
+        const events: any[] = calData.items || [];
+        if (events.length) {
+          const evLines = events.map((e: any) => {
+            const start = e.start?.dateTime || e.start?.date || '';
+            const d = new Date(start);
+            return `  - "${e.summary}" on ${d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })} at ${d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
+          });
+          parts.push(`**Upcoming meetings with ${recipientName}:**\n${evLines.join('\n')}`);
+        } else {
+          parts.push(`**Calendar:** No upcoming meetings with ${recipientName} in the next 30 days.`);
+        }
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  // 2. Notion — notes/pages about this person
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: notionInteg } = await supabase
+      .from('arcus_integrations')
+      .select('access_token')
+      .eq('user_id', userId)
+      .eq('provider', 'notion')
+      .maybeSingle();
+    if (notionInteg?.access_token) {
+      const notionToken = decrypt(notionInteg.access_token);
+      const searchRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${notionToken}`, 'Notion-Version': '2022-06-28', 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: recipientName, page_size: 3 }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (searchRes.ok) {
+        const notionData = await searchRes.json();
+        const pages: any[] = notionData.results || [];
+        if (pages.length) {
+          const titles = pages.map((p: any) => {
+            const tp = p.properties?.title || p.properties?.Name;
+            const t = tp?.title?.[0]?.plain_text || tp?.rich_text?.[0]?.plain_text || 'Untitled';
+            return `  - ${t}`;
+          });
+          parts.push(`**Notion notes about ${recipientName}:**\n${titles.join('\n')}`);
+        }
+      }
+    }
+  } catch { /* non-fatal */ }
+
+  // 3. Relationship memory
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: contact } = await supabase
+      .from('arcus_contacts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('contact_email', recipientEmail.toLowerCase())
+      .maybeSingle();
+    if (contact) {
+      const memParts = [
+        contact.notes ? `Notes: ${contact.notes}` : null,
+        contact.email_count ? `Emails exchanged: ${contact.email_count}` : null,
+        contact.last_contact_at ? `Last contact: ${new Date(contact.last_contact_at).toLocaleDateString()}` : null,
+        contact.tags?.length ? `Tags: ${contact.tags.join(', ')}` : null,
+      ].filter(Boolean);
+      if (memParts.length) {
+        parts.push(`**Relationship memory:**\n${memParts.map(p => `  - ${p}`).join('\n')}`);
+      }
+    }
+  } catch { /* table may not exist yet */ }
+
+  if (!parts.length) return { output: `No context found for ${recipientEmail}. No upcoming meetings, Notion notes, or relationship memory. Proceed with drafting.` };
+  return { output: `Context for ${recipientName} <${recipientEmail}>:\n\n${parts.join('\n\n')}` };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 3: Voice Profile Auto-Learning (fire-and-forget after every send)
+// ══════════════════════════════════════════════════════════════════════════════
+
+function learnFromSentEmail(userId: string, body: string, subject: string): void {
+  (async () => {
+    try {
+      const lines = body.split('\n').filter((l: string) => l.trim());
+      const greeting = lines[0]?.trim().slice(0, 60) || '';
+      const signoff = [...lines].reverse().find((l: string) =>
+        l.trim().length < 35 && /^(thanks|best|cheers|regards|warm|sincerely|kind|take care|talk soon|looking forward)/i.test(l.trim())
+      ) || '';
+      const sentences = body.split(/[.!?]+/).filter((s: string) => s.trim().split(/\s+/).length > 3);
+      const avgWords = sentences.length
+        ? Math.round(sentences.reduce((acc: number, s: string) => acc + s.trim().split(/\s+/).length, 0) / sentences.length)
+        : 12;
+      const hasCasual = /\b(hey|hi there|thanks!|sounds good|cool|awesome|yep|nope)\b/i.test(body);
+      const hasFormal = /\b(dear|kindly|herewith|please find|enclosed|pursuant)\b/i.test(body);
+      const formality = hasFormal ? 'formal' : hasCasual ? 'casual' : 'semi-formal';
+
+      const supabase = getSupabaseAdmin();
+      const { data: existing } = await supabase
+        .from('user_voice_profiles')
+        .select('voice_profile')
+        .eq('user_id', userId.toLowerCase())
+        .maybeSingle();
+
+      const prev = (existing?.voice_profile as any) || {};
+      const prevCount = prev.email_count || 0;
+
+      // Blend new signals (weighted average — recent emails count more)
+      const blended = {
+        ...prev,
+        greeting_patterns: {
+          ...(prev.greeting_patterns || {}),
+          preferred_greetings: greeting
+            ? [...new Set([greeting, ...(prev.greeting_patterns?.preferred_greetings || [])]).values()].slice(0, 5)
+            : (prev.greeting_patterns?.preferred_greetings || []),
+        },
+        closing_patterns: {
+          ...(prev.closing_patterns || {}),
+          preferred_closings: signoff
+            ? [...new Set([signoff, ...(prev.closing_patterns?.preferred_closings || [])]).values()].slice(0, 5)
+            : (prev.closing_patterns?.preferred_closings || []),
+        },
+        language_patterns: {
+          ...(prev.language_patterns || {}),
+          avg_length: prevCount > 0
+            ? Math.round((((prev.language_patterns?.avg_length || avgWords) * prevCount) + avgWords) / (prevCount + 1))
+            : avgWords,
+          inferred_formality: formality,
+        },
+        email_count: prevCount + 1,
+        learning: { autoImprove: true, lastAnalysis: new Date().toISOString() },
+        status: 'learned',
+      };
+
+      await supabase.from('user_voice_profiles').upsert(
+        { user_id: userId.toLowerCase(), voice_profile: blended, updated_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+    } catch { /* completely non-fatal */ }
+  })();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 4: Relationship Memory
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Silent contact upsert — called automatically on send/draft
+function touchContact(userId: string, email: string, name: string): void {
+  (async () => {
+    try {
+      const supabase = getSupabaseAdmin();
+      const { data: existing } = await supabase
+        .from('arcus_contacts')
+        .select('email_count, contact_name')
+        .eq('user_id', userId)
+        .eq('contact_email', email.toLowerCase())
+        .maybeSingle();
+
+      await supabase.from('arcus_contacts').upsert({
+        user_id: userId,
+        contact_email: email.toLowerCase(),
+        contact_name: existing?.contact_name || name || email.split('@')[0],
+        last_contact_at: new Date().toISOString(),
+        email_count: (existing?.email_count || 0) + 1,
+      }, { onConflict: 'user_id,contact_email' });
+    } catch { /* table may not exist — non-fatal */ }
+  })();
+}
+
+async function getContactContext(userId: string, input: any): Promise<ToolResult> {
+  const email = (input.email || '').toLowerCase();
+  if (!email) return { output: 'Email address required.' };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_contacts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('contact_email', email)
+      .maybeSingle();
+
+    if (!data) return { output: `No relationship memory yet for ${email}.` };
+
+    const lines = [
+      `**Contact:** ${data.contact_name || email}`,
+      `**Email:** ${data.contact_email}`,
+      data.last_contact_at ? `**Last contact:** ${new Date(data.last_contact_at).toLocaleDateString()}` : null,
+      data.email_count     ? `**Emails exchanged:** ${data.email_count}` : null,
+      data.notes           ? `**Notes:** ${data.notes}` : null,
+      data.tags?.length    ? `**Tags:** ${data.tags.join(', ')}` : null,
+    ].filter(Boolean);
+    return { output: lines.join('\n') };
+  } catch {
+    return { output: `No relationship memory for ${email} (run migration: supabase/migrations/arcus_contacts.sql).` };
+  }
+}
+
+async function rememberAboutContact(userId: string, input: any): Promise<ToolResult> {
+  const email = (input.email || '').toLowerCase();
+  if (!email) return { output: 'Email address required.' };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data: existing } = await supabase
+      .from('arcus_contacts')
+      .select('notes, tags')
+      .eq('user_id', userId)
+      .eq('contact_email', email)
+      .maybeSingle();
+
+    // Append note to existing notes
+    const prevNotes = existing?.notes || '';
+    const newNotes = prevNotes
+      ? `${prevNotes}\n[${new Date().toLocaleDateString()}] ${input.note}`
+      : `[${new Date().toLocaleDateString()}] ${input.note}`;
+
+    const prevTags: string[] = existing?.tags || [];
+    const newTags = input.tags ? [...new Set([...prevTags, ...input.tags])] : prevTags;
+
+    const { error } = await supabase.from('arcus_contacts').upsert({
+      user_id: userId,
+      contact_email: email,
+      contact_name: input.name || undefined,
+      notes: newNotes,
+      tags: newTags,
+      last_contact_at: new Date().toISOString(),
+    }, { onConflict: 'user_id,contact_email' });
+
+    if (error) throw error;
+    return { output: `Saved to relationship memory for ${input.name || email}: "${input.note}"` };
+  } catch (err: any) {
+    return { output: `Could not save contact note: ${err.message}` };
+  }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// FEATURE 6: Delegation Rules
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function getDelegationRules(userId: string): Promise<ToolResult> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_delegation_rules')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
+
+    if (!data?.length) return { output: 'No delegation rules set up yet. Use create_delegation_rule to add one.' };
+
+    const lines = data.map((r: any, i: number) =>
+      `${i + 1}. **${r.name}** [${r.action_type}]\n   Triggers: ${r.trigger_keywords?.join(', ') || 'any email'}${r.trigger_from ? ` · From: ${r.trigger_from}` : ''}`
+    );
+    return { output: `${data.length} active delegation rule${data.length !== 1 ? 's' : ''}:\n\n${lines.join('\n\n')}` };
+  } catch {
+    return { output: 'Delegation rules not yet set up (run migration: supabase/migrations/arcus_delegation_rules.sql).' };
+  }
+}
+
+async function createDelegationRule(userId: string, input: any): Promise<ToolResult> {
+  if (!input.name || !input.action_type) return { output: 'Rule name and action_type are required.' };
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase.from('arcus_delegation_rules').insert({
+      user_id: userId,
+      name: input.name,
+      trigger_keywords: input.trigger_keywords || [],
+      trigger_from: input.trigger_from || null,
+      action_type: input.action_type,
+      action_config: input.action_config || {},
+      is_active: true,
+    });
+    if (error) throw error;
+    return { output: `Delegation rule "${input.name}" created. Arcus will now automatically ${input.action_type} when triggered.` };
+  } catch (err: any) {
+    return { output: `Could not create rule: ${err.message}` };
+  }
 }
 
 async function webSearch(input: any): Promise<ToolResult> {
