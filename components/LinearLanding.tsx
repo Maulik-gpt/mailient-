@@ -345,7 +345,7 @@ export function LinearLanding() {
             <div 
               onClick={(e) => togglePlay(e)} 
               className={cn(
-                "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative overflow-hidden group cursor-pointer transition-shadow duration-500",
+                "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative z-20 overflow-hidden group cursor-pointer transition-shadow duration-500",
                 isPlaying ? "shadow-none" : "shadow-[0_50px_100px_rgba(0,0,0,0.85)]"
               )}
             >
@@ -367,7 +367,7 @@ export function LinearLanding() {
               {/* Custom Video Controls Overlay */}
               <div 
                 onClick={(e) => e.stopPropagation()}
-                className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 select-none"
+                className="absolute inset-x-0 bottom-0 p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:bg-gradient-to-t group-hover:from-black/90 group-hover:via-black/40 group-hover:to-transparent select-none"
               >
                 
                 {/* Buttons Row */}
