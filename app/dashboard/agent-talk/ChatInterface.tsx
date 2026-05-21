@@ -4639,10 +4639,10 @@ export default function ChatInterface({
                                           ));
                                         }}
                                         onSendReply={async ({ content, recipientEmail, subject, threadId }) => {
-                                          const res = await fetch('/api/agent-talk/send-email', {
+                                          const res = await fetch('/api/dashboard/agent-talk/send-email', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ to: recipientEmail, subject, body: content, threadId }),
+                                            body: JSON.stringify({ to: recipientEmail, subject, content, threadId }),
                                           });
                                           if (!res.ok) {
                                             const errJson = await res.json().catch(() => ({}));

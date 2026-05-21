@@ -1,6 +1,6 @@
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
-import { DatabaseService } from '@/lib/supabase.js';
+import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 export const maxDuration = 60; // Increase to 60s for large attachments
 
@@ -38,6 +38,24 @@ export async function POST(request) {
       const authHeader = request.headers.get('authorization');
       if (authHeader?.startsWith('Bearer ')) {
         accessToken = authHeader.replace('Bearer ', '');
+      }
+    }
+
+    // Final fallback: check arcus_integrations (Gmail connected via integrations page)
+    if (!accessToken) {
+      try {
+        const supabase = getSupabaseAdmin();
+        const { data: integData } = await supabase
+          .from('arcus_integrations')
+          .select('access_token')
+          .eq('user_id', userEmail.toLowerCase())
+          .eq('provider', 'gmail')
+          .maybeSingle();
+        if (integData?.access_token) {
+          accessToken = decrypt(integData.access_token);
+        }
+      } catch (integError) {
+        console.error('[send] arcus_integrations fallback error:', integError);
       }
     }
 
