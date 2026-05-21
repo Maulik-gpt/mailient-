@@ -836,7 +836,16 @@ function CollapsibleSteps({
   runId?: string;
   totalDurationMs?: number;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(!isActive);
+
+  // Auto-collapse once the run finishes; don't re-open if user manually expanded
+  const prevActiveRef = useRef(isActive);
+  useEffect(() => {
+    if (prevActiveRef.current && !isActive) {
+      setCollapsed(true);
+    }
+    prevActiveRef.current = isActive;
+  }, [isActive]);
 
   if (!steps || steps.length === 0) return null;
 
