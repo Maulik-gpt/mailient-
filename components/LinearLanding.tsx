@@ -48,7 +48,6 @@ import { CTASection } from "@/components/ui/hero-dithering-card";
 import { WordBlurStream } from "@/src/WordBlurStream";
 import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
-import { SpecialText } from "@/components/ui/special-text";
 import { EtheralShadow } from "@/components/ui/etheral-shadow";
 
 const Dithering = lazy(() => 
@@ -237,7 +236,6 @@ export function LinearLanding() {
   }, []);
 
   const currentText = DESCRIPTIONS[descIndex];
-  const dynamicSpeed = Math.max(4, Math.floor(750 / (currentText.length * 4)));
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter strichpunkt-theme relative selection:bg-white selection:text-black">
@@ -310,10 +308,15 @@ export function LinearLanding() {
           </BlurFade>
 
           <BlurFade delay={0.2} duration={0.8} inView>
-            <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-4xl mt-8 font-light min-h-[4rem] flex items-center justify-center">
-              <SpecialText speed={dynamicSpeed} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
-                {currentText}
-              </SpecialText>
+            <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-4xl mt-8 font-light min-h-[4rem] flex items-center justify-center text-center">
+              <WordBlurStream
+                key={descIndex}
+                text={currentText}
+                msPerWord={90}
+                startupMs={200}
+                holdMs={99999}
+                loop={false}
+              />
             </p>
           </BlurFade>
 

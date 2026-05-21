@@ -92,7 +92,7 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
     return () => {
       cancelAnimationFrame(animationFrameId);
     };
-  }, [wordCount, msPerWord, startupMs, holdMs, loop, onComplete]);
+  }, [text, wordCount, msPerWord, startupMs, holdMs, loop, onComplete]);
 
   if (wordCount === 0) {
     return null;
