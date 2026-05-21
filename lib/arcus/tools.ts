@@ -376,15 +376,32 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'fetch_notion_schema',
+    description: 'ALWAYS call this BEFORE create_notion_page when writing to a database. Fetches the exact property names and types from the Notion database schema so you never use wrong field names. Returns the database_id to pass as parentId and the exact property names to pass in the properties object.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        database: { type: 'string', description: 'Database name hint, e.g. "meetings", "tasks", "contacts"' },
+        parentId: { type: 'string', description: 'Optional exact database ID if you already have it' },
+      },
+      required: ['database'],
+    },
+  },
+  {
     name: 'create_notion_page',
-    description: 'Create a new page in the user\'s Notion workspace. Use this to log meetings, conversations, action items, and tasks automatically. When logging a meeting or email, include: contact name, date, what was discussed, and any action items. Pass a database hint (e.g. "meetings", "tasks", "contacts") and Arcus will find the right database automatically.',
+    description: 'Create a new page in the user\'s Notion workspace. IMPORTANT: Always call fetch_notion_schema first to get exact field names — never hardcode them. Pass the database_id returned by fetch_notion_schema as parentId. Pass any additional database properties (date, status, tags, etc.) as a key/value object in the properties field using the EXACT names from the schema.',
     input_schema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'Page title, e.g. "Meeting with Priya — 2024-01-15" or "Task: Send proposal"' },
         content: { type: 'string', description: 'Full page content in plain text or markdown. Include all relevant details: contact, date, discussion points, action items, links.' },
         database: { type: 'string', description: 'Hint for which Notion database to log into, e.g. "meetings", "tasks", "contacts", "calendar". Arcus will search for a matching database.' },
-        parentId: { type: 'string', description: 'Explicit Notion page or database ID to create this page under. Use if you already know the exact parent.' },
+        parentId: { type: 'string', description: 'Exact Notion database ID returned by fetch_notion_schema. Prefer this over the database hint.' },
+        properties: {
+          type: 'object',
+          description: 'Additional database fields to set — use EXACT property names from fetch_notion_schema. Values: string for text/select/date, array of strings for multi_select, number for number, boolean for checkbox.',
+          additionalProperties: true,
+        },
       },
       required: ['title', 'content'],
     },
@@ -462,6 +479,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   schedule_meeting: 'gcal',
   get_calendar_events: 'gcal',
   search_notion: 'notion',
+  fetch_notion_schema: 'notion',
   create_notion_page: 'notion',
   open_canvas: null,
   web_search: null,
@@ -516,7 +534,8 @@ export async function executeTool(
       case 'request_confirmation': result = await requestConfirmation(input); break;
       case 'schedule_meeting':  result = await scheduleMeeting(userId, input); break;
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
-      case 'search_notion':     result = await searchNotion(userId, input); break;
+      case 'search_notion':      result = await searchNotion(userId, input); break;
+      case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input); break;
       case 'open_canvas':       result = openCanvas(input); break;
       case 'web_search':        result = await webSearch(input); break;
@@ -920,6 +939,7 @@ function findNotionProp(schema: NotionPropInfo[], types: string[]): NotionPropIn
 function buildNotionDbProperties(
   schema: NotionPropInfo[],
   title: string,
+  agentProps: Record<string, any> = {},
   skipped: string[],
 ): Record<string, any> {
   const props: Record<string, any> = {};
@@ -928,11 +948,122 @@ function buildNotionDbProperties(
   if (titleProp) {
     props[titleProp.name] = { title: [{ type: 'text', text: { content: title.slice(0, 2000) } }] };
   } else {
-    // No title property found — this DB has no title-type field; still try to create
     skipped.push('title (no title-type property in schema)');
   }
 
+  // Map agent-provided extra props to real schema fields
+  for (const [key, value] of Object.entries(agentProps)) {
+    const schemaProp = schema.find(p => p.name.toLowerCase() === key.toLowerCase());
+    if (!schemaProp) {
+      skipped.push(`"${key}" (not in database schema)`);
+      continue;
+    }
+    try {
+      switch (schemaProp.type) {
+        case 'rich_text':
+          props[schemaProp.name] = { rich_text: [{ type: 'text', text: { content: String(value).slice(0, 2000) } }] };
+          break;
+        case 'select':
+          props[schemaProp.name] = { select: { name: String(value) } };
+          break;
+        case 'multi_select': {
+          const vals = Array.isArray(value) ? value : String(value).split(',').map((v: string) => v.trim());
+          props[schemaProp.name] = { multi_select: vals.map((v: string) => ({ name: v })) };
+          break;
+        }
+        case 'date':
+          props[schemaProp.name] = { date: { start: String(value) } };
+          break;
+        case 'number':
+          props[schemaProp.name] = { number: Number(value) };
+          break;
+        case 'checkbox':
+          props[schemaProp.name] = { checkbox: Boolean(value) };
+          break;
+        case 'url':
+          props[schemaProp.name] = { url: String(value) };
+          break;
+        case 'email':
+          props[schemaProp.name] = { email: String(value) };
+          break;
+        case 'phone_number':
+          props[schemaProp.name] = { phone_number: String(value) };
+          break;
+        case 'status':
+          props[schemaProp.name] = { status: { name: String(value) } };
+          break;
+        default:
+          skipped.push(`"${key}" (type "${schemaProp.type}" mapping not supported — write it in content instead)`);
+      }
+    } catch {
+      skipped.push(`"${key}" (failed to map value)`);
+    }
+  }
+
   return props;
+}
+
+// ── fetch_notion_schema (agent-callable) ───────────────────────────────────────
+
+async function fetchNotionSchemaForAgent(userId: string, input: any): Promise<ToolResult> {
+  const token = await getNotionToken(userId);
+  if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28',
+  };
+
+  let dbId = input.parentId ?? null;
+  let dbTitle = input.database ?? 'unknown';
+
+  if (!dbId) {
+    try {
+      const searchRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: input.database,
+          filter: { value: 'database', property: 'object' },
+          page_size: 8,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (searchRes.ok) {
+        const searchData = await searchRes.json();
+        const results: any[] = searchData.results ?? [];
+        const hint = (input.database as string).toLowerCase();
+        const scored = results.map((r: any) => {
+          const t = (r.title?.[0]?.plain_text ?? '').toLowerCase();
+          return { r, score: t === hint ? 2 : t.includes(hint) ? 1 : 0 };
+        }).sort((a: any, b: any) => b.score - a.score);
+        const best = scored[0]?.r;
+        if (best) {
+          dbId = best.id;
+          dbTitle = best.title?.[0]?.plain_text ?? input.database;
+        }
+      }
+    } catch { /* fallthrough */ }
+  }
+
+  if (!dbId) {
+    return { output: `Could not find a Notion database matching "${input.database}". Try a broader name like "meetings", "tasks", or "contacts". Use search_notion to discover available database names.` };
+  }
+
+  const schema = await fetchNotionDbSchema(headers, dbId);
+  if (!schema) {
+    return { output: `Found database "${dbTitle}" but could not read its schema. Notion may not have granted access to this database.` };
+  }
+
+  const schemaLines = schema.map(p => {
+    const opts = p.options?.length ? ` — options: [${p.options.slice(0, 10).join(', ')}]` : '';
+    return `  • "${p.name}" (${p.type})${opts}`;
+  }).join('\n');
+
+  return {
+    output: `Notion database schema for "${dbTitle}":\ndatabase_id: ${dbId}\n\nProperties:\n${schemaLines}\n\nNow call create_notion_page with parentId: "${dbId}" and properties using these EXACT names.`,
+  };
 }
 
 async function fetchNotionDbSchema(
@@ -1032,7 +1163,7 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
   let properties: Record<string, any>;
 
   if (isDatabase && dbSchema) {
-    properties = buildNotionDbProperties(dbSchema, input.title ?? 'Untitled', skipped);
+    properties = buildNotionDbProperties(dbSchema, input.title ?? 'Untitled', input.properties ?? {}, skipped);
   } else {
     // Free-form page or no schema available — use generic title property
     properties = { title: { title: [{ type: 'text', text: { content: (input.title ?? 'Untitled').slice(0, 2000) } }] } };
@@ -1145,30 +1276,92 @@ function openCanvas(input: any): ToolResult {
 
 async function webSearch(input: any): Promise<ToolResult> {
   const query = input.query;
-  const max = input.maxResults || 5;
+  const max = Math.min(input.maxResults || 6, 10);
 
-  // Try DuckDuckGo Instant Answer API (free, no key needed)
+  const fmt = (items: string[]) =>
+    `Web search results for "${query}":\n\n${items.join('\n\n')}`;
+
+  // Layer 1: Serper.dev — Google-quality results (requires SERPER_API_KEY)
+  if (process.env.SERPER_API_KEY) {
+    try {
+      const res = await fetch('https://google.serper.dev/search', {
+        method: 'POST',
+        headers: { 'X-API-KEY': process.env.SERPER_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query, num: max }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items: string[] = [];
+        if (data.answerBox?.answer) items.push(`**Answer:** ${data.answerBox.answer}`);
+        for (const r of (data.organic || []).slice(0, max)) {
+          items.push(`**${r.title}**\n${r.snippet}\n${r.link}`);
+        }
+        if (items.length) return { output: fmt(items) };
+      }
+    } catch { /* fallthrough */ }
+  }
+
+  // Layer 2: Brave Search API (requires BRAVE_SEARCH_API_KEY)
+  if (process.env.BRAVE_SEARCH_API_KEY) {
+    try {
+      const params = new URLSearchParams({ q: query, count: String(max) });
+      const res = await fetch(`https://api.search.brave.com/res/v1/web/search?${params}`, {
+        headers: { Accept: 'application/json', 'X-Subscription-Token': process.env.BRAVE_SEARCH_API_KEY },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const items: string[] = [];
+        for (const r of (data.web?.results || []).slice(0, max)) {
+          items.push(`**${r.title}**\n${r.description}\n${r.url}`);
+        }
+        if (items.length) return { output: fmt(items) };
+      }
+    } catch { /* fallthrough */ }
+  }
+
+  // Layer 3: DuckDuckGo HTML search — parse real result snippets
+  try {
+    const params = new URLSearchParams({ q: query, kl: 'us-en' });
+    const res = await fetch(`https://html.duckduckgo.com/html/?${params}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Arcus/1.0)', Accept: 'text/html' },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (res.ok) {
+      const html = await res.text();
+      const items: string[] = [];
+      // Extract result titles and snippets via regex
+      const blocks = [...html.matchAll(/class="result__body"[\s\S]*?class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g)];
+      const titles = [...html.matchAll(/class="result__a"[^>]*>([\s\S]*?)<\/a>/g)];
+      const urls = [...html.matchAll(/class="result__url"[^>]*>([\s\S]*?)<\/span>/g)];
+      const strip = (s: string) => s.replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#x27;/g, "'").trim();
+      for (let i = 0; i < Math.min(max, titles.length); i++) {
+        const title = strip(titles[i]?.[1] ?? '');
+        const snippet = strip(blocks[i]?.[1] ?? '');
+        const url = strip(urls[i]?.[1] ?? '');
+        if (title) items.push([title, snippet, url].filter(Boolean).join('\n'));
+      }
+      if (items.length) return { output: fmt(items) };
+    }
+  } catch { /* fallthrough */ }
+
+  // Layer 4: DuckDuckGo Instant Answer (last resort — knowledge base only)
   try {
     const params = new URLSearchParams({ q: query, format: 'json', no_html: '1', skip_disambig: '1' });
     const res = await fetch(`https://api.duckduckgo.com/?${params}`, { signal: AbortSignal.timeout(8000) });
     if (res.ok) {
       const data = await res.json();
-      const results: string[] = [];
-
-      if (data.AbstractText) results.push(`Summary: ${data.AbstractText.slice(0, 500)}`);
-      if (data.RelatedTopics?.length) {
-        for (const t of (data.RelatedTopics as any[]).slice(0, max)) {
-          if (t.Text) results.push(`• ${t.Text.slice(0, 300)}`);
-        }
+      const items: string[] = [];
+      if (data.AbstractText) items.push(`**Summary:** ${data.AbstractText.slice(0, 600)}`);
+      for (const t of (data.RelatedTopics as any[] || []).slice(0, max)) {
+        if (t.Text) items.push(`• ${t.Text.slice(0, 300)}`);
       }
-
-      if (results.length) {
-        return { output: `Web search results for "${query}":\n\n${results.join('\n\n')}` };
-      }
+      if (items.length) return { output: fmt(items) };
     }
   } catch { /* fallthrough */ }
 
-  return { output: `Web search for "${query}": Could not retrieve live results. Please note this search was attempted.` };
+  return { output: `Web search for "${query}": All search providers are temporarily unavailable. Try rephrasing the query or breaking it into a more specific term.` };
 }
 
 async function sendSlackMessage(userId: string, input: any): Promise<ToolResult> {

@@ -401,6 +401,22 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         // ── Main agentic loop ───────────────────────────────────────────────
         while (true) {
+          // Inject budget counter so the model always knows its remaining allowance
+          const budgetUsed = totalToolCalls;
+          const budgetLeft = toolCallLimit - budgetUsed;
+          const budgetMsg = budgetLeft <= 3
+            ? `[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. RESERVE these for report delivery. Stop executing new tasks and write your final report NOW.]`
+            : `[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. Planning phase: use 1-2. Execution: use remaining. Reserve 3 for report/Notion log.]`;
+          if (messages.at(-1)?.role !== 'user') {
+            messages.push({ role: 'user', content: budgetMsg } as any);
+          } else {
+            // Append to the last user message so we don't break the alternating pattern
+            const last = messages[messages.length - 1] as any;
+            if (typeof last.content === 'string' && !last.content.startsWith('[TOOL BUDGET')) {
+              last.content = `${last.content}\n\n${budgetMsg}`;
+            }
+          }
+
           const response = await callLLM(messages, availableTools, { forceToolCall: forceNextToolCall });
           forceNextToolCall = false;
           messages.push({ role: 'assistant', content: response.content });
