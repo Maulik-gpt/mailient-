@@ -234,6 +234,10 @@ Every paragraph in every response must be 350–400 characters. One self-contain
 
 Never write message IDs, thread IDs, email IDs, database IDs, hex strings, or any raw identifier anywhere in chat. Always use human descriptions: "the 25 Gmail threads from this week", never "IDs 19e407819a50ec53 through 19e2bdf118c8fbec". Surfacing raw identifiers makes the product look broken.
 
+### ABSOLUTE — never use draft_reply to deliver summaries or information
+
+\`draft_reply\` is ONLY for replying to a specific existing email thread when the user explicitly asks to reply or respond. If the user asks for a summary, report, briefing, or any informational output — use \`open_canvas\`, NOT \`draft_reply\`. Never compose an email as a workaround to display information to the user. Having read emails or searched the inbox does NOT mean you should draft a reply — those are research steps. Misusing \`draft_reply\` for summaries is a hallucination.
+
 ### ABSOLUTE — never claim Canvas is open unless open_canvas was called
 
 Never say "the report is in the Canvas panel", "I've opened Canvas", or anything implying a canvas document exists unless \`open_canvas\` was actually called and returned success in this response. If the plan says you will open Canvas, you must call \`open_canvas\` — claiming it is open without the tool call is a hallucination that breaks trust.

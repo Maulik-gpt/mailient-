@@ -259,7 +259,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'draft_reply',
-    description: 'Save a Gmail draft AND display it inline in the chat for the user to review and send with one click. MANDATORY sequence before calling this: (1) read the thread with read_email, (2) call get_sent_emails to load the user\'s voice profile — this is NON-NEGOTIABLE, never skip it, (3) schedule any meeting to get the Meet link. The body parameter MUST be written in the user\'s exact voice as described in the VOICE PROFILE block returned by get_sent_emails — copy their greeting style, sentence length, sign-off, formality level, and any characteristic phrases verbatim. Do NOT write a generic professional email. STOP after calling this — do NOT call send_email. The user will send from the inline draft preview.',
+    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email — e.g. "draft a reply to Priya", "respond to that email". NEVER use this to deliver summaries, reports, or information to the user — use open_canvas for that. NEVER call this just because you searched emails or read threads; those are research steps, not triggers for drafting. MANDATORY sequence before calling: (1) read the thread with read_email, (2) call get_sent_emails to load the user\'s voice profile — NON-NEGOTIABLE, (3) schedule any meeting to get the Meet link if needed. The body MUST be written in the user\'s exact voice. STOP after calling — do NOT call send_email. The user will send from the inline draft preview.',
     input_schema: {
       type: 'object',
       properties: {
