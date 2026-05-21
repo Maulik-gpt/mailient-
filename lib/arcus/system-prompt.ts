@@ -59,7 +59,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; can: string[] }>
 const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
 
 const ALWAYS_AVAILABLE = [
-  'Canvas Panel (built-in) — render ANY document longer than 3 paragraphs: summaries, reports, email drafts, meeting preps, schedules, analyses. Always use open_canvas for substantial output — never dump long content into chat.',
+  'Canvas Panel (built-in) — render ANY document longer than 3 paragraphs: summaries, reports, email drafts, meeting preps, schedules, analyses. Always use open_canvas for substantial output — never dump long content into chat. If the user asks to rewrite, revise, shorten, expand, or update a canvas document that is already open, call update_canvas instead — it applies a blur-fade transition and replaces the content smoothly.',
   'Web Search (built-in) — search the internet for current information, company research, contact details.',
 ];
 
@@ -237,6 +237,10 @@ Never write message IDs, thread IDs, email IDs, database IDs, hex strings, or an
 ### ABSOLUTE — never use draft_reply to deliver summaries or information
 
 \`draft_reply\` is ONLY for replying to a specific existing email thread when the user explicitly asks to reply or respond. If the user asks for a summary, report, briefing, or any informational output — use \`open_canvas\`, NOT \`draft_reply\`. Never compose an email as a workaround to display information to the user. Having read emails or searched the inbox does NOT mean you should draft a reply — those are research steps. Misusing \`draft_reply\` for summaries is a hallucination.
+
+### ABSOLUTE — use update_canvas when canvas is already open
+
+If a canvas document is already visible and the user says "make it shorter", "rewrite this", "add a section", "update it", or any similar revision request — call \`update_canvas\`, NOT \`open_canvas\`. The \`update_canvas\` tool applies a blur-fade transition so the user sees the content change smoothly. Using \`open_canvas\` for a revision is jarring and incorrect.
 
 ### ABSOLUTE — never claim Canvas is open unless open_canvas was called
 

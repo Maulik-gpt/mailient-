@@ -352,6 +352,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'update_canvas',
+    description: 'Update the content already displayed in the Canvas Panel — use when the user asks to rewrite, revise, shorten, expand, or apply any change to an existing canvas document. The panel will blur-fade from old content to new. Use this instead of open_canvas when a canvas is already open. Provide the complete updated markdown — not just the changed section.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Canvas title (can keep existing or change it)' },
+        type: {
+          type: 'string',
+          enum: ['email_draft', 'report', 'notes', 'analysis', 'action_plan'],
+          description: 'Content type (keep the same unless the type itself is changing)',
+        },
+        markdown: { type: 'string', description: 'Full updated markdown content — complete replacement, not a diff.' },
+      },
+      required: ['title', 'markdown'],
+    },
+  },
+  {
     name: 'web_search',
     description: 'Search the internet for current information, news, company details, or any topic. Returns clean summarized results.',
     input_schema: {
@@ -512,6 +529,7 @@ export interface ToolResult {
     markdown: string;
     draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string };
     pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
+    isUpdate?: boolean;
   };
 }
 
@@ -538,6 +556,7 @@ export async function executeTool(
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input); break;
       case 'open_canvas':       result = openCanvas(input); break;
+      case 'update_canvas':     result = updateCanvas(input); break;
       case 'web_search':        result = await webSearch(input); break;
       case 'send_slack_message': result = await sendSlackMessage(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
@@ -1293,6 +1312,21 @@ function openCanvas(input: any): ToolResult {
       type: input.type || 'notes',
       markdown: input.markdown,
       draftMeta: input.draftMeta,
+    },
+  };
+}
+
+function updateCanvas(input: any): ToolResult {
+  if (!input.markdown?.trim()) {
+    return { output: 'Error: update_canvas requires non-empty markdown content.' };
+  }
+  return {
+    output: `Canvas updated: "${input.title}"`,
+    canvasData: {
+      title: input.title,
+      type: input.type || 'notes',
+      markdown: input.markdown,
+      isUpdate: true,
     },
   };
 }

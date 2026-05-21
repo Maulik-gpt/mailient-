@@ -30,6 +30,7 @@ export interface CanvasData {
   approvalTokens?: Record<string, string>;
   raw?: string;
   error?: string;
+  isUpdate?: boolean;
 }
 
 interface CanvasPanelProps {
@@ -85,17 +86,35 @@ export function CanvasPanel({
   const [width, setWidth]                 = useState(540);
   const [isResizing, setIsResizing]       = useState(false);
   const [isClient, setIsClient]           = useState(false);
+  // Displayed data lags behind prop during update transitions
+  const [displayedData, setDisplayedData] = useState<CanvasData | null>(canvasData);
+  const [isBlurring, setIsBlurring]       = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setIsClient(true); }, []);
 
+  // Blur-fade transition when canvas content is updated by the agent
   useEffect(() => {
-    if (canvasData?.type === 'email_draft' || canvasData?.type === 'reply') {
-      const body = canvasData.content?.body || extractEmailBody(canvasData.raw || '');
+    if (!canvasData) { setDisplayedData(null); return; }
+    if (canvasData.isUpdate && displayedData) {
+      setIsBlurring(true);
+      const t = setTimeout(() => {
+        setDisplayedData(canvasData);
+        setIsBlurring(false);
+      }, 280);
+      return () => clearTimeout(t);
+    } else {
+      setDisplayedData(canvasData);
+    }
+  }, [canvasData]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (displayedData?.type === 'email_draft' || displayedData?.type === 'reply') {
+      const body = displayedData.content?.body || extractEmailBody(displayedData.raw || '');
       setEditedBody(body);
       setEditMode(false);
     }
-  }, [canvasData]);
+  }, [displayedData]);
 
   // ── Resize ───────────────────────────────────────────────────────────────────
   const startResizing = useCallback((e: React.MouseEvent) => { e.preventDefault(); setIsResizing(true); }, []);
@@ -119,11 +138,11 @@ export function CanvasPanel({
 
   // ── Actions ──────────────────────────────────────────────────────────────────
   const getTextContent = () => {
-    if (!canvasData) return '';
-    if (canvasData.raw) return canvasData.raw;
-    if (typeof canvasData.content === 'string') return canvasData.content;
-    if (canvasData.content?.body) return canvasData.content.body;
-    return JSON.stringify(canvasData.content, null, 2);
+    if (!displayedData) return '';
+    if (displayedData.raw) return displayedData.raw;
+    if (typeof displayedData.content === 'string') return displayedData.content;
+    if (displayedData.content?.body) return displayedData.content.body;
+    return JSON.stringify(displayedData.content, null, 2);
   };
 
   const handleCopy = () => {
@@ -136,8 +155,8 @@ export function CanvasPanel({
     if (downloadingDocx) return;
     const text = getTextContent();
     if (!text) return;
-    const isEmail = canvasData?.type === 'email_draft' || canvasData?.type === 'reply';
-    const safeName = (canvasData?.title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
+    const isEmail = displayedData?.type === 'email_draft' || displayedData?.type === 'reply';
+    const safeName = (displayedData?.title || 'document').toLowerCase().replace(/[^a-z0-9]+/g, '_');
 
     if (isEmail) {
       const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
@@ -176,7 +195,7 @@ export function CanvasPanel({
   const handleExportPdf = () => {
     const text = getTextContent();
     if (!text) return;
-    const title = canvasData?.title || 'Document';
+    const title = displayedData?.title || 'Document';
     const win = window.open('', '_blank', 'width=820,height=1000');
     if (!win) return;
     const esc = (s: string) =>
@@ -200,16 +219,16 @@ export function CanvasPanel({
   };
 
   const handleSend = () => {
-    const payload = canvasData?.content?.threadId
-      ? { ...canvasData.content, body: editMode ? editedBody : canvasData.content.body }
-      : { ...(canvasData?.content || {}), body: editMode ? editedBody : (canvasData?.content?.body || '') };
+    const payload = displayedData?.content?.threadId
+      ? { ...displayedData.content, body: editMode ? editedBody : displayedData.content.body }
+      : { ...(displayedData?.content || {}), body: editMode ? editedBody : (displayedData?.content?.body || '') };
     onExecute('send_email', payload);
   };
 
-  if (!isOpen || !canvasData) return null;
+  if (!isOpen || !displayedData) return null;
 
-  const cfg = getConfig(canvasData.type);
-  const isEmail = canvasData.type === 'email_draft' || canvasData.type === 'reply';
+  const cfg = getConfig(displayedData.type);
+  const isEmail = displayedData.type === 'email_draft' || displayedData.type === 'reply';
   const panelWidth = isClient && window.innerWidth < 768 ? 'calc(100vw - 24px)' : `${width}px`;
 
   return (
@@ -246,7 +265,7 @@ export function CanvasPanel({
             {cfg.label}
           </span>
           <h2 className="text-[13px] font-semibold text-arcus-fg-secondary truncate leading-tight">
-            {canvasData.title || 'Document'}
+            {displayedData.title || 'Document'}
           </h2>
         </div>
 
@@ -300,18 +319,24 @@ export function CanvasPanel({
       {/* ── Email metadata strip ────────────────────────────────────────────── */}
       {isEmail && (
         <div className="shrink-0 border-b border-white/[0.03] bg-arcus-elevated/60">
-          <EmailField label="To"      value={canvasData.content?.to      || ''} />
-          <EmailField label="Subject" value={canvasData.content?.subject || ''} last />
+          <EmailField label="To"      value={displayedData.content?.to      || ''} />
+          <EmailField label="Subject" value={displayedData.content?.subject || ''} last />
         </div>
       )}
 
-      {/* ── Content ──────────────────────────────────────────────────────────── */}
+      {/* ── Content — wrapped in blur/fade transition for canvas updates ─────── */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto canvas-scroll">
-        <div className="px-7 py-6">
+        <div
+          className="px-7 py-6 transition-all duration-[280ms] ease-in-out"
+          style={{
+            opacity: isBlurring ? 0 : 1,
+            filter: isBlurring ? 'blur(6px)' : 'blur(0px)',
+          }}
+        >
           <AnimatePresence mode="wait">
             {isEmail ? (
               <motion.div key="email" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <MetaInsights type={canvasData.type} content={getTextContent()} />
+                <MetaInsights type={displayedData.type} content={getTextContent()} />
                 {editMode ? (
                   <textarea
                     value={editedBody}
@@ -322,14 +347,14 @@ export function CanvasPanel({
                   />
                 ) : (
                   <div className="prose-canvas text-[14px] text-arcus-fg-secondary leading-relaxed whitespace-pre-wrap font-sans">
-                    {canvasData.content?.body || extractEmailBody(canvasData.raw || '')}
+                    {displayedData.content?.body || extractEmailBody(displayedData.raw || '')}
                   </div>
                 )}
               </motion.div>
             ) : (
               <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <MetaInsights type={canvasData.type} content={getTextContent()} />
-                <MarkdownView content={canvasData.raw || (typeof canvasData.content === 'string' ? canvasData.content : '')} />
+                <MetaInsights type={displayedData.type} content={getTextContent()} />
+                <MarkdownView content={displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '')} />
               </motion.div>
             )}
           </AnimatePresence>
@@ -346,7 +371,7 @@ export function CanvasPanel({
             <>
               <span className="w-px h-3 bg-arcus-border" />
               <span className="text-[11px] text-arcus-fg-muted tabular-nums">
-                {(editMode ? editedBody : (canvasData.content?.body || extractEmailBody(canvasData.raw || ''))).length} characters
+                {(editMode ? editedBody : (displayedData.content?.body || extractEmailBody(displayedData.raw || ''))).length} characters
               </span>
             </>
           )}

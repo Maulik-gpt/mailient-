@@ -2245,7 +2245,7 @@ export default function ChatInterface({
                   : cv.markdown;
 
                 if (cv.type !== 'email_draft' && cv.type !== 'reply') {
-                  setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown });
+                  setCanvasData({ type: cv.type || 'notes', title: cv.title, content: canvasContent, raw: cv.markdown, isUpdate: cv.isUpdate === true });
                   setIsCanvasOpen(true);
                 }
 
