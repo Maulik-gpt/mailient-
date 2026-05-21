@@ -263,22 +263,25 @@ export function ConnectorsModal({
     }
   };
 
-  // Fetch integration statuses
-  useEffect(() => {
-    if (isOpen) {
-      const fetchStatus = async () => {
-        try {
-          const res = await fetch('/api/integrations/status');
-          if (res.ok) {
-            const data = await res.json();
-            setStatuses(Array.isArray(data.integrations) ? data.integrations : []);
-          }
-        } catch (err) {
-          console.error('Failed to fetch status:', err);
-        }
-      };
-      fetchStatus();
+  // Fetch integration statuses — on mount and whenever modal opens
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/integrations/status');
+      if (res.ok) {
+        const data = await res.json();
+        setStatuses(Array.isArray(data.integrations) ? data.integrations : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch status:', err);
     }
+  };
+
+  useEffect(() => {
+    fetchStatus();
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) fetchStatus();
   }, [isOpen]);
 
   // V3 providers redirect directly; legacy providers return { url } from /auth
@@ -450,9 +453,15 @@ export function ConnectorsModal({
                           )}
                         </div>
                         {isConnected && (
-                          <div className="w-4 h-4 rounded-full bg-transparent flex items-center justify-center">
-                            <Check className={cn("w-3 h-3 font-bold", isDark ? "text-emerald-500/80" : "text-emerald-600")} />
-                          </div>
+                          <span className={cn(
+                            "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium border",
+                            isDark
+                              ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                              : "bg-emerald-50 border-emerald-200 text-emerald-600"
+                          )}>
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            Connected
+                          </span>
                         )}
                       </div>
                       <p className={cn("text-[14px] leading-relaxed line-clamp-2 mt-1", isDark ? "text-white/40" : "text-neutral-500")}>
@@ -512,22 +521,22 @@ export function ConnectorsModal({
                 <selectedApp.icon className="w-full h-full" />
               </div>
 
-              {/* Success Message */}
-              {successMessage && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }}
+              {/* Connected badge — shows on successful redirect or when already connected */}
+              {(isAppConnected(selectedApp.id) || successMessage) && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   className={cn(
-                    "mb-4 py-1.5 px-4 rounded-full flex items-center gap-2",
-                    isDark 
-                      ? "bg-emerald-500/10 border border-emerald-500/20" 
-                      : "bg-emerald-500/10 border border-emerald-500/20"
+                    "mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full border",
+                    isDark
+                      ? "bg-emerald-500/10 border-emerald-500/20"
+                      : "bg-emerald-50 border-emerald-200"
                   )}
                 >
-                  <div className="w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
-                    <Check className={cn("w-2.5 h-2.5 font-bold", isDark ? "text-black" : "text-white")} />
-                  </div>
-                  <span className={cn("text-[13px] font-bold uppercase tracking-widest", isDark ? "text-emerald-500" : "text-emerald-600")}>{successMessage}</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                  <span className={cn("text-[12px] font-medium", isDark ? "text-emerald-400" : "text-emerald-600")}>
+                    Connected
+                  </span>
                 </motion.div>
               )}
 
