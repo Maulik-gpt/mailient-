@@ -4653,7 +4653,10 @@ export default function ChatInterface({
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ to: recipientEmail, subject, body: content, threadId }),
                                           });
-                                          if (!res.ok) throw new Error('Failed to send email');
+                                          if (!res.ok) {
+                                            const errJson = await res.json().catch(() => ({}));
+                                            throw new Error(errJson.error || `Failed to send email (${res.status})`);
+                                          }
 
                                           // Dismiss the draft box
                                           setMessages(prev => prev.map(m =>

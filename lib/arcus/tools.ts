@@ -898,24 +898,82 @@ async function searchNotion(userId: string, input: any): Promise<ToolResult> {
   return { output: `Found ${pages.length} Notion page(s):\n\n${lines.join('\n\n')}` };
 }
 
+// ── Notion schema introspection helpers ────────────────────────────────────────
+
+interface NotionPropInfo { name: string; type: string; options?: string[] }
+
+function parseNotionDbSchema(db: any): NotionPropInfo[] {
+  const props = db.properties || {};
+  return Object.entries(props).map(([name, val]: [string, any]) => ({
+    name,
+    type: val.type as string,
+    options: val.select?.options?.map((o: any) => o.name)
+      ?? val.status?.options?.map((o: any) => o.name)
+      ?? [],
+  }));
+}
+
+function findNotionProp(schema: NotionPropInfo[], types: string[]): NotionPropInfo | undefined {
+  return schema.find(p => types.includes(p.type));
+}
+
+function buildNotionDbProperties(
+  schema: NotionPropInfo[],
+  title: string,
+  skipped: string[],
+): Record<string, any> {
+  const props: Record<string, any> = {};
+
+  const titleProp = findNotionProp(schema, ['title']);
+  if (titleProp) {
+    props[titleProp.name] = { title: [{ type: 'text', text: { content: title.slice(0, 2000) } }] };
+  } else {
+    // No title property found — this DB has no title-type field; still try to create
+    skipped.push('title (no title-type property in schema)');
+  }
+
+  return props;
+}
+
+async function fetchNotionDbSchema(
+  headers: Record<string, string>,
+  dbId: string,
+): Promise<NotionPropInfo[] | null> {
+  try {
+    const res = await fetch(`https://api.notion.com/v1/databases/${dbId}`, {
+      headers,
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const db = await res.json();
+    return parseNotionDbSchema(db);
+  } catch {
+    return null;
+  }
+}
+
+// ── createNotionPage ────────────────────────────────────────────────────────────
+
 async function createNotionPage(userId: string, input: any): Promise<ToolResult> {
   const token = await getNotionToken(userId);
   if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
 
-  const headers = {
+  const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
     'Content-Type': 'application/json',
     'Notion-Version': '2022-06-28',
   };
 
-  // Resolve parent: explicit ID → database search → first available page
+  const skipped: string[] = [];
+
+  // ── Step 1: Resolve parent (explicit ID → database search → free-form page) ──
   let parentBlock: Record<string, any> | null = null;
+  let dbSchema: NotionPropInfo[] | null = null;
 
   if (input.parentId) {
-    // Caller provided an explicit ID — detect page vs database by trying database first
     parentBlock = { type: 'database_id', database_id: input.parentId };
+    dbSchema = await fetchNotionDbSchema(headers, input.parentId);
   } else if (input.database) {
-    // Search for a matching database by hint keyword
     try {
       const searchRes = await fetch('https://api.notion.com/v1/search', {
         method: 'POST',
@@ -923,19 +981,29 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
         body: JSON.stringify({
           query: input.database,
           filter: { value: 'database', property: 'object' },
-          page_size: 5,
+          page_size: 8,
         }),
         signal: AbortSignal.timeout(10000),
       });
       if (searchRes.ok) {
         const searchData = await searchRes.json();
-        const db = searchData.results?.[0];
-        if (db) parentBlock = { type: 'database_id', database_id: db.id };
+        // Score results: prefer exact title match, then partial
+        const results: any[] = searchData.results ?? [];
+        const hint = (input.database as string).toLowerCase();
+        const scored = results.map((r: any) => {
+          const t = (r.title?.[0]?.plain_text ?? '').toLowerCase();
+          return { r, score: t === hint ? 2 : t.includes(hint) ? 1 : 0 };
+        }).sort((a: any, b: any) => b.score - a.score);
+        const best = scored[0]?.r;
+        if (best) {
+          parentBlock = { type: 'database_id', database_id: best.id };
+          dbSchema = await fetchNotionDbSchema(headers, best.id);
+        }
       }
     } catch { /* fallthrough */ }
   }
 
-  // Fallback: find any page in the workspace to parent under
+  // Fallback: free-form page anywhere in the workspace
   if (!parentBlock) {
     try {
       const fallbackRes = await fetch('https://api.notion.com/v1/search', {
@@ -947,97 +1015,108 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
       if (fallbackRes.ok) {
         const fb = await fallbackRes.json();
         const pg = fb.results?.[0];
-        if (pg) parentBlock = { type: 'page_id', page_id: pg.id };
+        if (pg) {
+          parentBlock = { type: 'page_id', page_id: pg.id };
+          skipped.push(`database hint "${input.database}" (not found — created as free-form page)`);
+        }
       }
     } catch { /* fallthrough */ }
   }
 
   if (!parentBlock) {
-    return { output: 'Could not determine a Notion parent page or database. Please pass a parentId or connect Notion with workspace access.' };
+    return { output: `Failed to create Notion page: could not locate a database matching "${input.database ?? 'unknown'}" and no fallback page found. Ensure Notion is connected with workspace access.` };
   }
 
-  // Convert content text into Notion paragraph blocks (split on double newline for sections)
-  const paragraphs = input.content
+  // ── Step 2: Build properties from real schema ─────────────────────────────
+  const isDatabase = parentBlock.type === 'database_id';
+  let properties: Record<string, any>;
+
+  if (isDatabase && dbSchema) {
+    properties = buildNotionDbProperties(dbSchema, input.title ?? 'Untitled', skipped);
+  } else {
+    // Free-form page or no schema available — use generic title property
+    properties = { title: { title: [{ type: 'text', text: { content: (input.title ?? 'Untitled').slice(0, 2000) } }] } };
+  }
+
+  // ── Step 3: Build children blocks from content ────────────────────────────
+  const rawContent: string = input.content ?? '';
+  const children = rawContent
     .split(/\n{2,}/)
     .map((chunk: string) => chunk.trim())
     .filter(Boolean)
-    .slice(0, 80) // Notion max 100 blocks per request
+    .slice(0, 90)
     .map((text: string) => ({
       object: 'block',
       type: 'paragraph',
-      paragraph: {
-        rich_text: [{ type: 'text', text: { content: text.slice(0, 2000) } }],
-      },
+      paragraph: { rich_text: [{ type: 'text', text: { content: text.slice(0, 2000) } }] },
     }));
 
-  // Build the page body — title goes in properties for databases, children for pages
-  const isDatabase = parentBlock.type === 'database_id';
-  const pageBody: Record<string, any> = {
-    parent: parentBlock,
-    properties: isDatabase
-      ? { title: { title: [{ type: 'text', text: { content: input.title } }] } }
-      : { title: { title: [{ type: 'text', text: { content: input.title } }] } },
-    children: paragraphs,
-  };
+  // ── Step 4: Create the page ───────────────────────────────────────────────
+  const pageBody: Record<string, any> = { parent: parentBlock, properties, children };
 
-  const createRes = await fetch('https://api.notion.com/v1/pages', {
+  let createRes = await fetch('https://api.notion.com/v1/pages', {
     method: 'POST',
     headers,
     body: JSON.stringify(pageBody),
     signal: AbortSignal.timeout(15000),
   });
 
+  // On schema rejection, fall back to free-form page under any workspace page
+  if (!createRes.ok && isDatabase && (createRes.status === 400 || createRes.status === 422)) {
+    const errDetail = await createRes.text().catch(() => '');
+    skipped.push(`database parent rejected (${createRes.status}: ${errDetail.slice(0, 120)}) — fell back to free-form page`);
+    try {
+      const fpRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ filter: { value: 'page', property: 'object' }, page_size: 1 }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (fpRes.ok) {
+        const fb = await fpRes.json();
+        const pg = fb.results?.[0];
+        if (pg) {
+          const retryBody = {
+            parent: { type: 'page_id', page_id: pg.id },
+            properties: { title: { title: [{ type: 'text', text: { content: (input.title ?? 'Untitled').slice(0, 2000) } }] } },
+            children,
+          };
+          createRes = await fetch('https://api.notion.com/v1/pages', {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(retryBody),
+            signal: AbortSignal.timeout(12000),
+          });
+        }
+      }
+    } catch { /* fallthrough */ }
+  }
+
   if (!createRes.ok) {
     const err = await createRes.text().catch(() => '');
-    // If database parent rejected (schema mismatch), fall back to a free-form page
-    if (isDatabase && (createRes.status === 400 || createRes.status === 422)) {
-      try {
-        const fallbackPageRes = await fetch('https://api.notion.com/v1/search', {
-          method: 'POST',
-          headers,
-          body: JSON.stringify({ filter: { value: 'page', property: 'object' }, page_size: 1 }),
-          signal: AbortSignal.timeout(8000),
-        });
-        if (fallbackPageRes.ok) {
-          const fb = await fallbackPageRes.json();
-          const pg = fb.results?.[0];
-          if (pg) {
-            const retryBody = { ...pageBody, parent: { type: 'page_id', page_id: pg.id } };
-            const retryRes = await fetch('https://api.notion.com/v1/pages', {
-              method: 'POST',
-              headers,
-              body: JSON.stringify(retryBody),
-              signal: AbortSignal.timeout(12000),
-            });
-            if (retryRes.ok) {
-              const created = await retryRes.json();
-              return { output: `Notion page created: "${input.title}"\nURL: ${created.url}` };
-            }
-          }
-        }
-      } catch { /* fallthrough */ }
-    }
-    return { output: `Failed to create Notion page (${createRes.status}): ${err.slice(0, 200)}` };
+    const skipNote = skipped.length ? ` Fields skipped: ${skipped.join('; ')}.` : '';
+    return { output: `Failed to create Notion page "${input.title}" (${createRes.status}): ${err.slice(0, 200)}.${skipNote}` };
   }
 
   const created = await createRes.json();
-  const contentPreview = (input.content || '')
+  const contentPreview = rawContent
     .replace(/^#{1,6}\s+/gm, '')
     .replace(/[*_`~]/g, '')
     .replace(/\n+/g, ' ')
     .trim()
     .slice(0, 160);
+
+  const skipNote = skipped.length
+    ? ` Note: ${skipped.join('; ')}.`
+    : '';
+
   return {
-    output: `Notion page created: "${input.title}"\nURL: ${created.url}\nNow summarize what you created and tell the user to open it.`,
+    output: `Notion page created: "${input.title}"\nURL: ${created.url}${skipNote}`,
     canvasData: {
       title: input.title,
       type: 'notion_page',
-      markdown: input.content || '',
-      pageMeta: {
-        url: created.url,
-        pageId: created.id,
-        contentPreview,
-      },
+      markdown: rawContent,
+      pageMeta: { url: created.url, pageId: created.id, contentPreview },
     },
   };
 }

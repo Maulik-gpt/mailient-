@@ -555,6 +555,16 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   } as any);
                 }
 
+                // FIX 7: Calendar merging — whenever GCal is fetched, also pull
+                // Notion calendar data so scheduling decisions use both sources.
+                if (tc.name === 'get_calendar_events' && connectedIntegrations.includes('notion')) {
+                  toolResults.push({
+                    type: 'tool_result',
+                    tool_use_id: `bridge_cal_${tc.id}`,
+                    content: '[AUTO-BRIDGE: CALENDAR MERGE] Google Calendar fetched. Notion is connected — you MUST also call search_notion with query "calendar schedule meetings" to get Notion calendar blocks. Merge both sources into one chronological timeline before making any scheduling decision or reporting availability. Never book based on GCal data alone.',
+                  } as any);
+                }
+
               } catch (err: any) {
                 const errorMsg = err?.message ?? 'Unknown error';
                 const friendly = humanizeError(tc.name, errorMsg);

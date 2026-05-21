@@ -249,6 +249,63 @@ export const ARCUS_TOOLS = [
     },
   },
 
+  // ─── Scheduled background agents ──────────────────────────────────────────
+  {
+    name: 'create_scheduled_agent',
+    description:
+      'Create a real, persistent background agent that runs on a recurring cron schedule. This is NOT a draft — calling this tool inserts an agent row in the database and the cron runner picks it up automatically. After creation, render a confirmation card by including the returned card data; do not call open_canvas. Use this when the user describes a recurring task ("every morning at 7am search my inbox for X", "every Friday afternoon summarize Y", "twice a week ping me about Z"). NEVER call without first calling request_approval and getting an affirmative reply, except when the user gave a clearly self-describing schedule instruction (then a one-line confirmation in your chat is enough; you still call request_approval first if any ambiguity remains about timezone, channel, or skip-confirmations).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: {
+          type: 'string',
+          description: 'Short, human-readable agent name (e.g. "Morning Client Reply Sweep", "Friday Pipeline Recap")',
+        },
+        task_description: {
+          type: 'string',
+          description: "The full instruction the agent executes every time it fires. Write it as a self-contained, direct command — include WHAT to search/read, HOW to filter, what to draft or send, and what to deliver in the report. The runner will only see this string; it will not see this chat. So include all context: 'Search Gmail for unanswered emails from existing clients in the last 7 days, study my last 30 sent emails to match my tone, draft a personalized reply for each thread, then email me a summary with a link to each draft.'",
+        },
+        cron_schedule: {
+          type: 'string',
+          description: '5-field cron expression "m h dom mon dow" in the user\'s LOCAL time (the cron runner handles TZ conversion). Examples: "0 7 * * *" daily at 07:00, "0 17 * * 5" Friday at 17:00, "30 9 * * 1-5" weekdays at 09:30, "*/30 * * * *" every 30 minutes.',
+        },
+        output_channel: {
+          type: 'string',
+          enum: ['gmail', 'slack', 'both'],
+          description: 'Where the agent\'s report is delivered each run. Default "gmail".',
+        },
+        slack_channel: {
+          type: 'string',
+          description: 'Slack channel name (e.g. "#daily-recap") or user ID — required only when output_channel is "slack" or "both".',
+        },
+        skip_confirmations: {
+          type: 'boolean',
+          description: 'If true, the agent EXECUTES write actions (send, post, create) without asking for approval — there is no user present to confirm at run time. If false (default), the agent only drafts/reads and reports what it would have done.',
+        },
+        expires_at: {
+          type: 'string',
+          description: 'Optional ISO date (YYYY-MM-DD). Past this date the agent auto-pauses. Omit for no expiry.',
+        },
+      },
+      required: ['name', 'task_description', 'cron_schedule'],
+    },
+  },
+
+  // ─── Web Search ───────────────────────────────────────────────────────────
+  {
+    name: 'web_search',
+    description:
+      'Search the internet for current information, news, company details, people, or any topic not in the user\'s connected apps. Use this when the user asks about something external (e.g. "what\'s the latest on X", "who is Y", "find info about Z"). Returns summarized results.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Search query' },
+        maxResults: { type: 'number', description: 'Max results to return (default 5)' },
+      },
+      required: ['query'],
+    },
+  },
+
   // ─── Canvas / Approval ────────────────────────────────────────────────────
   {
     name: 'open_canvas',

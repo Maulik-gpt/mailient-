@@ -362,8 +362,7 @@ export function LinearLanding() {
                 onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
                 className="w-full h-full object-cover relative z-10" 
               />
-              {/* Soft atmospheric overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent pointer-events-none z-20" />
+
 
               {/* Custom Video Controls Overlay */}
               <div 

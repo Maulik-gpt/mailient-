@@ -9,25 +9,66 @@
 
 import { runAgentLoop } from './loop';
 import { buildSystemPrompt, getConnectedIntegrations } from './system-prompt';
-import { searchMemories } from './memory';
+import { searchMemories, saveMemory } from './memory';
+
+/**
+ * Fetch the user's stored voice profile as a system-prompt block, so background
+ * agents draft email in the user's actual voice. Mirrors getVoiceContext() from
+ * app/api/arcus/chat/route.ts but trimmed for the background case: we don't
+ * bootstrap-from-sent-mail here (the chat path does that on first interactive
+ * use; if it has never been built, we fall back to the legacy persona prompt
+ * rules instead of stalling a cron run on a 22-second Gmail analysis).
+ */
+async function getVoiceProfilePromptBlock(userId: string): Promise<string> {
+  try {
+    // @ts-ignore — JS module, no .d.ts
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+    const profile: any = await voiceProfileService.getVoiceProfile(userId);
+    if (!profile || profile.status === 'default') return '';
+    const prompt = voiceProfileService.generateVoicePrompt(profile);
+    return typeof prompt === 'string' ? prompt.trim() : '';
+  } catch {
+    return '';
+  }
+}
 
 export const REPORT_FORMAT_SUFFIX = `
 
 ---
-📋 **Report Formatting Instructions**
-When writing your final report, follow this structure EXACTLY:
-- Use emojis liberally throughout — make it fun and engaging! 🎉
-- Start with a brief # H1 title with an emoji
-- Use ## H2 for major sections, ### H3 for subsections, #### H4 for sub-details
-- Use ##### H5 and ###### H6 sparingly for the deepest detail levels
-- Use **bold** for key numbers, names, and important highlights
-- Use tables (with | pipes) for any comparative data, stats, or lists with multiple attributes
-- Use bullet points (- ) for actionable items and unordered facts
-- Use numbered lists (1. ) for ranked items or sequential steps
-- Include a 📊 **Summary** section near the top with the key stats in a table
-- End with a 🎯 **Next Steps** or **Key Takeaways** section
-- Keep the tone playful, warm, and helpful — like a brilliant assistant who loves their job
-- Do NOT wrap the response in a code block`;
+📋 REPORT REQUIREMENTS — MANDATORY STRUCTURE
+
+**FIRST LINE** (required, no heading): One-line outcome summary. Example: "Processed 12 emails, drafted 6 replies, booked 2 meetings." The user reads this in one second and knows what happened.
+
+**FULL STRUCTURE** — use exactly this order:
+
+# [emoji] [Agent Name] — Run Report
+
+## 📊 Summary
+A table of key metrics. At minimum: actions taken, emails processed, items skipped, items needing attention.
+| Metric | Value |
+|--------|-------|
+
+## ✅ What I Did
+Table or structured list of every action taken. For each: what it was, who it involved, what the outcome was, and a direct link where applicable. If skip_confirmations was FALSE, write "would have" — describe every proposed action in full detail so the user can immediately decide whether to approve.
+
+## ⚠️ Needs Your Attention
+Every failure, every skipped item, every ambiguous email the agent could not resolve. If a tool failed, name the exact error. If nothing failed, write: "None — everything completed successfully."
+
+## 🔗 Links
+Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack message from this run.
+- Gmail drafts: full Gmail URL per draft
+- Calendar events: Google Calendar link per event
+- Notion pages: Notion URL per page created
+- If skip_confirmations was FALSE: "No links — this was a proposal run. Enable skip_confirmations to take these actions."
+
+---
+*Run by Arcus · mailient.xyz · [insert current UTC timestamp]*
+
+**TONE RULES:**
+- skip_confirmations FALSE → Write as a DETAILED PROPOSAL. Every sentence uses "would have". Preview every email draft in full. List every meeting that would have been booked with proposed time and attendees. The user must be able to read this report and immediately decide to flip skip_confirmations on.
+- skip_confirmations TRUE → Write as a CONFIRMED WORK LOG. Every sentence uses past tense. Every action confirmed. Every link included. No hedging.
+
+**FORMAT RULES:** Rich markdown always. Tables for 3+ items. **Bold** for names, email subjects, key numbers. One emoji per section header. Never deliver a plain paragraph as a report. Never wrap in a code block.`;
 
 export interface AgentRunBudget {
   /** Hard cap on tool calls (default: loop default of 20). */
@@ -42,22 +83,38 @@ export interface AgentRunBudget {
  * identical agent behaviour.
  */
 export async function buildAgentLoopArgs(
-  agent: { user_id: string; task_description: string; skip_confirmations?: boolean },
+  agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string },
   budget: AgentRunBudget = {},
 ) {
   const userId = agent.user_id;
   const taskDescription = agent.task_description;
+  const agentName = agent.name || '';
 
-  const [connectedIntegrations, memories] = await Promise.all([
+  // FIX 2: Two parallel memory searches —
+  //   1. Self-history: what this agent did in previous runs
+  //   2. Topic context: relationship/preference context relevant to this task
+  const [connectedIntegrations, [selfHistory, topicContext], voicePrompt] = await Promise.all([
     getConnectedIntegrations(userId),
-    searchMemories(userId, taskDescription, 3),
+    Promise.all([
+      searchMemories(userId, `[AGENT_RUN] ${agentName || taskDescription.slice(0, 80)}`, 3),
+      searchMemories(userId, taskDescription, 4),
+    ]),
+    getVoiceProfilePromptBlock(userId),
   ]);
+
+  // Merge both memory sets, deduplicating identical lines
+  const memoryLines = new Set([
+    ...selfHistory.split('\n').filter(Boolean),
+    ...topicContext.split('\n').filter(Boolean),
+  ]);
+  const memories = [...memoryLines].join('\n');
 
   const systemPrompt = buildSystemPrompt({
     userName: 'User',
     userId,
     connectedIntegrations,
     memories,
+    personality: voicePrompt || undefined,
     isBackgroundAgent: true,
     skipConfirmations: agent.skip_confirmations ?? false,
     agentTaskDescription: taskDescription,
@@ -75,7 +132,7 @@ export async function buildAgentLoopArgs(
 }
 
 export async function runAgentTask(
-  agent: { user_id: string; task_description: string },
+  agent: { user_id: string; task_description: string; name?: string },
   budget: AgentRunBudget = {},
 ): Promise<string> {
   const args = await buildAgentLoopArgs(agent, budget);
@@ -120,7 +177,19 @@ export async function runAgentTask(
     }
   }
 
-  // Canvas markdown is the full report; message event text is typically just
-  // a brief "The report is in the Canvas panel." fallback sentence.
-  return canvasMarkdown || finalText || 'Agent completed but produced no report.';
+  const report = canvasMarkdown || finalText || 'Agent completed but produced no report.';
+
+  // FIX 2: Save structured end-of-run memory so future runs can query history
+  const agentName = agent.name || agent.task_description.slice(0, 60);
+  const runRecord = [
+    `[AGENT_RUN] Agent: "${agentName}"`,
+    `Ran: ${new Date().toISOString()}`,
+    `Task: ${agent.task_description.slice(0, 200)}`,
+    `Report summary: ${report.replace(/\s+/g, ' ').slice(0, 350)}`,
+  ].join(' | ');
+
+  // Fire-and-forget — never block the cron run on memory write
+  saveMemory(agent.user_id, runRecord, ['agent_run', 'background']).catch(() => {});
+
+  return report;
 }

@@ -1052,6 +1052,234 @@ export async function addMemory(
   return `Memory saved: "${input.content.slice(0, 120)}"`;
 }
 
+// ── Scheduled background agents ────────────────────────────────────────────────
+//
+// The executor here writes a real row to the arcus_agents table that the cron
+// runner at /api/cron/run-agents picks up. The canvas payload it returns is
+// the same shape the legacy ChatInterface card consumer in
+// app/dashboard/agent-talk/ChatInterface.tsx (~line 2149) expects so the
+// inline ScheduledAgentCard renders with real data — not mocks.
+
+const CRON_DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+function cronToHumanLabel(cron: string): string {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return `Schedule: ${cron}`;
+  const [min, hour, , , dow] = p;
+  if (hour.startsWith('*/')) return `Every ${hour.slice(2)} hour(s)`;
+  if (min.startsWith('*/')) return `Every ${min.slice(2)} minute(s)`;
+  const hh = /^\d+$/.test(hour) ? hour.padStart(2, '0') : hour;
+  const mm = /^\d+$/.test(min) ? min.padStart(2, '0') : min;
+  const at = `${hh}:${mm}`;
+  if (dow === '*') return `Daily at ${at}`;
+  if (/^\d$/.test(dow)) return `Weekly on ${CRON_DOW_NAMES[Number(dow)]} at ${at}`;
+  if (/^\d-\d$/.test(dow)) return `${dow === '1-5' ? 'Weekdays' : `Days ${dow}`} at ${at}`;
+  return `At ${at} (${cron})`;
+}
+
+function getUtcOffsetMinutes(tz: string, date: Date): number {
+  try {
+    const fmt = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+    const get = (t: string) => parseInt(fmt.formatToParts(date).find((p: any) => p.type === t)?.value ?? '0');
+    const localAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
+    return (localAsUtc - date.getTime()) / 60000;
+  } catch { return 0; }
+}
+
+function computeNextRunIso(cron: string, tz = 'UTC'): string | null {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return null;
+  const [minS, hourS, , , dowS] = p;
+  const now = new Date();
+  const next = new Date(now);
+
+  if (hourS.startsWith('*/')) {
+    const step = parseInt(hourS.slice(2)) || 1;
+    next.setMinutes(/^\d+$/.test(minS) ? parseInt(minS) : 0, 0, 0);
+    while (next <= now || next.getUTCHours() % step !== 0) next.setHours(next.getHours() + 1);
+    return next.toISOString();
+  }
+  if (minS.startsWith('*/')) {
+    const step = parseInt(minS.slice(2)) || 15;
+    next.setSeconds(0, 0);
+    do { next.setMinutes(next.getMinutes() + 1); } while (next <= now || next.getMinutes() % step !== 0);
+    return next.toISOString();
+  }
+
+  const h = parseInt(hourS), m = parseInt(minS);
+  if (isNaN(h) || isNaN(m)) return null;
+
+  const offsetMin = getUtcOffsetMinutes(tz, now);
+  const nowLocal = new Date(now.getTime() + offsetMin * 60000);
+  const y = nowLocal.getUTCFullYear(), mo = nowLocal.getUTCMonth(), d = nowLocal.getUTCDate();
+  let targetLocal = new Date(Date.UTC(y, mo, d, h, m, 0, 0));
+
+  if (/^\d$/.test(dowS)) {
+    const targetDow = Number(dowS);
+    while (targetLocal <= nowLocal || targetLocal.getUTCDay() !== targetDow) {
+      targetLocal = new Date(targetLocal.getTime() + 86_400_000);
+    }
+  } else if (targetLocal <= nowLocal) {
+    targetLocal = new Date(targetLocal.getTime() + 86_400_000);
+  }
+
+  return new Date(targetLocal.getTime() - offsetMin * 60000).toISOString();
+}
+
+async function getUserTimezone(userId: string): Promise<string> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    return (data?.preferences as Record<string, unknown>)?.timezone as string || 'UTC';
+  } catch { return 'UTC'; }
+}
+
+export async function createScheduledAgent(
+  userId: string,
+  input: {
+    name: string;
+    task_description: string;
+    cron_schedule: string;
+    output_channel?: 'gmail' | 'slack' | 'both';
+    slack_channel?: string;
+    skip_confirmations?: boolean;
+    expires_at?: string;
+  }
+): Promise<ToolResult> {
+  if (!input?.name?.trim() || !input?.task_description?.trim()) {
+    return { output: 'Cannot create the agent — both a name and a task description are required. Ask the user what to name the agent and what it should do each run.' };
+  }
+
+  const cron = (input.cron_schedule || '0 7 * * *').trim();
+  if (cron.split(/\s+/).length !== 5) {
+    return { output: `Invalid cron schedule "${cron}". Must be 5 space-separated fields (m h dom mon dow). Ask the user to clarify when the agent should run.` };
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('arcus_agents')
+    .insert({
+      user_id: userId.toLowerCase(),
+      name: input.name.trim(),
+      task_description: input.task_description.trim(),
+      cron_schedule: cron,
+      output_channel: input.output_channel || 'gmail',
+      slack_channel: input.slack_channel || null,
+      skip_confirmations: input.skip_confirmations ?? false,
+      expires_at: input.expires_at || null,
+      status: 'active',
+    })
+    .select()
+    .single();
+
+  if (error?.code === '42P01') {
+    return { output: 'The arcus_agents table is not set up. Tell the user the scheduling-agent feature needs the database migration applied first.' };
+  }
+  if (error) {
+    return { output: `Failed to create scheduled agent: ${error.message}` };
+  }
+
+  const scheduleLabel = cronToHumanLabel(cron);
+  const userTz = await getUserTimezone(userId);
+  const nextRun = computeNextRunIso(cron, userTz);
+  const nextRunLabel = nextRun
+    ? new Date(nextRun).toLocaleString('en-US', {
+        timeZone: userTz,
+        weekday: 'long', month: 'long', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      })
+    : null;
+
+  return {
+    output: [
+      `Scheduled agent "${data.name}" is LIVE (id ${data.id}).`,
+      `Schedule: ${scheduleLabel} (cron: ${cron}, timezone: ${userTz})`,
+      nextRunLabel ? `Next run: ${nextRunLabel}` : '',
+      `Delivery: ${data.output_channel}${data.slack_channel ? ` (Slack: ${data.slack_channel})` : ''}`,
+      `Skip confirmations: ${data.skip_confirmations ? 'YES — agent will send/post directly' : 'NO — agent will only draft and report'}`,
+      '',
+      `Now write a short confirmation in chat telling the user the agent is live, when it next runs, and how the report arrives. The card with full details is already rendered. Do NOT call any more tools.`,
+    ].filter(Boolean).join('\n'),
+    canvasData: {
+      title: data.name,
+      // The dashboard's ChatInterface card consumer keys on this exact type
+      // and reads pageMeta.attendees as a tuple of [scheduleLabel, cron,
+      // channel, skipConfirmations, status]. Don't change this shape without
+      // also updating ChatInterface.tsx around line 2149.
+      type: 'scheduled_agent',
+      markdown: '',
+      meta: {
+        pageId: data.id,
+        contentPreview: data.task_description,
+        startTime: nextRun || undefined,
+        attendees: [
+          scheduleLabel,
+          cron,
+          data.output_channel,
+          String(!!data.skip_confirmations),
+          data.status,
+        ],
+      },
+    },
+  };
+}
+
+// ── Web Search ────────────────────────────────────────────────────────────────
+
+async function webSearch(input: { query: string; maxResults?: number }): Promise<string> {
+  const query = input.query;
+  const max = input.maxResults || 5;
+
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      format: 'json',
+      no_html: '1',
+      skip_disambig: '1',
+    });
+    const res = await fetch(`https://api.duckduckgo.com/?${params}`, {
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      const data: any = await res.json();
+      const results: string[] = [];
+
+      if (data.AbstractText) {
+        results.push(`**Summary:** ${data.AbstractText.slice(0, 600)}`);
+        if (data.AbstractURL) results.push(`Source: ${data.AbstractURL}`);
+      }
+
+      if (data.Answer) {
+        results.push(`**Answer:** ${data.Answer}`);
+      }
+
+      if (data.RelatedTopics?.length) {
+        const topics = (data.RelatedTopics as any[])
+          .filter((t: any) => t.Text)
+          .slice(0, max);
+        for (const t of topics) {
+          results.push(`• ${t.Text.slice(0, 300)}${t.FirstURL ? `\n  ${t.FirstURL}` : ''}`);
+        }
+      }
+
+      if (results.length) {
+        return `Web search results for "${query}":\n\n${results.join('\n\n')}`;
+      }
+    }
+  } catch {
+    // fallthrough to error message
+  }
+
+  return `Web search for "${query}": Could not retrieve live results at this time.`;
+}
+
 // ── Canvas + Approval (no API calls — they signal the stream) ─────────────────
 
 export function openCanvas(input: { title: string; type?: string; markdown: string }) {
@@ -1145,6 +1373,12 @@ export async function executeTool(
 
     case 'add_memory':
       return { output: await addMemory(userId, toolInput as any) };
+
+    case 'create_scheduled_agent':
+      return await createScheduledAgent(userId, toolInput as any);
+
+    case 'web_search':
+      return { output: await webSearch(toolInput as any) };
 
     case 'open_canvas': {
       const canvas = openCanvas(toolInput as any);

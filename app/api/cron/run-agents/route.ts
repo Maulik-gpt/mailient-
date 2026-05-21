@@ -5,15 +5,20 @@
  * Runs every 15 minutes (configure in vercel.json).
  *
  * For each active agent whose next run time has passed:
- * 1. Runs the agent task using the Arcus agentic loop
- * 2. Sends the report to Gmail (from mailient.xyz@gmail.com) and/or Slack
+ * 1. Runs the agent task via the Arcus agentic loop
+ * 2. Delivers the report via Resend (email) and/or Slack
  * 3. Updates lastRunAt and lastReportSummary
  *
- * Required env vars for Gmail sender account (mailient.xyz@gmail.com):
- *   ARCUS_SENDER_GMAIL_CLIENT_ID
- *   ARCUS_SENDER_GMAIL_CLIENT_SECRET
- *   ARCUS_SENDER_GMAIL_REFRESH_TOKEN
- *   ARCUS_SENDER_EMAIL  (defaults to mailient.xyz@gmail.com)
+ * Required env vars:
+ *   RESEND_API_KEY          — Resend API key (send email reports)
+ *   RESEND_FROM_EMAIL       — Verified Resend sender, e.g. "Arcus <arcus@mailient.xyz>"
+ *                             Defaults to "Arcus AI <arcus@mailient.xyz>"
+ *
+ * Optional env vars:
+ *   ARCUS_SLACK_BOT_TOKEN   — Slack bot token for the Mailient workspace.
+ *                             If set, used for all Slack delivery instead of
+ *                             the user's personal Slack OAuth token.
+ *   CRON_SECRET             — Bearer secret for non-Vercel invocations (default: arcus-cron-secret)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -21,7 +26,7 @@ import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { runAgentTask } from '../../../../lib/arcus/run-agent';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
-const SENDER_EMAIL = process.env.ARCUS_SENDER_EMAIL || 'mailient.xyz@gmail.com';
+const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
 
 // A 'running' row older than this is treated as a crashed/timed-out run
 // (stuck lock) and is allowed to run again, instead of being excluded forever.
@@ -136,12 +141,13 @@ export async function GET(request: NextRequest) {
         deadlineMs: remaining,
       });
 
-      if (agent.output_channel === 'gmail' || agent.output_channel === 'both') {
-        await sendGmailReport(agent.user_id, agent.name, report);
-      }
-      if ((agent.output_channel === 'slack' || agent.output_channel === 'both') && agent.slack_channel) {
-        await sendSlackReport(agent.user_id, agent.slack_channel, agent.name, report);
-      }
+      // Always deliver email via Resend — regardless of output_channel setting.
+      // Resend is cheap (3k/month free) and email is the universal fallback.
+      await sendEmailReport(agent.user_id, agent.name, report);
+
+      // Always attempt Slack if the user has Slack connected or a bot token exists.
+      // Use the configured slack_channel if set; otherwise DM the user directly.
+      await sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report);
 
       await supabase
         .from('arcus_agents')
@@ -224,90 +230,38 @@ function matchCronField(field: string, value: number, _min: number, _max: number
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gmail — send from mailient.xyz@gmail.com
+// Email — Resend API
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function getSenderAccessToken(): Promise<string | null> {
-  const clientId = process.env.ARCUS_SENDER_GMAIL_CLIENT_ID;
-  const clientSecret = process.env.ARCUS_SENDER_GMAIL_CLIENT_SECRET;
-  const refreshToken = process.env.ARCUS_SENDER_GMAIL_REFRESH_TOKEN;
-
-  if (!clientId || !clientSecret || !refreshToken) {
-    console.warn('[Cron] Sender Gmail env vars not set — falling back to user token.');
-    return null;
+async function sendEmailReport(toEmail: string, agentName: string, report: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn('[Cron] RESEND_API_KEY not set — skipping email delivery.');
+    return;
   }
 
   try {
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.access_token || null;
-  } catch {
-    return null;
-  }
-}
-
-async function sendGmailReport(userId: string, agentName: string, report: string): Promise<void> {
-  try {
-    const { decrypt } = await import('../../../../lib/crypto.js');
-
-    // Try the dedicated sender account first; fall back to user's own token
-    let token = await getSenderAccessToken();
-    let fromAddress = SENDER_EMAIL;
-
-    if (!token) {
-      const supabase = getSupabaseAdmin();
-      const { data } = await supabase
-        .from('arcus_integrations')
-        .select('access_token')
-        .eq('user_id', userId)
-        .eq('provider', 'gmail')
-        .maybeSingle();
-      if (!data?.access_token) return;
-      token = decrypt(data.access_token);
-      fromAddress = userId; // sending from user's own account
-    }
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
 
     const date = new Date().toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
-    const htmlBody = buildReportHtml(agentName, date, report);
     const subject = `✨ ${agentName} — Your Arcus Report for ${date}`;
+    const html = buildReportHtml(agentName, date, report);
 
-    const emailLines = [
-      `From: Arcus AI <${fromAddress}>`,
-      `To: ${userId}`,
-      `Subject: ${subject}`,
-      'Content-Type: text/html; charset=UTF-8',
-      'MIME-Version: 1.0',
-      '',
-      htmlBody,
-    ];
-    const raw = Buffer.from(emailLines.join('\r\n')).toString('base64url');
-
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ raw }),
-      signal: AbortSignal.timeout(15000),
+    const { error } = await resend.emails.send({
+      from: RESEND_FROM,
+      to: toEmail,
+      subject,
+      html,
     });
 
-    if (!res.ok) {
-      const err = await res.text();
-      console.error('[Cron] Gmail send error:', err);
+    if (error) {
+      console.error('[Cron] Resend error:', error);
     }
   } catch (e: any) {
-    console.error('[Cron] sendGmailReport failed:', e.message);
+    console.error('[Cron] sendEmailReport failed:', e.message);
   }
 }
 
@@ -549,20 +503,57 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
 // Slack — rich Block Kit report
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function sendSlackReport(userId: string, channel: string, agentName: string, report: string): Promise<void> {
+async function sendSlackReport(userId: string, channel: string | null, agentName: string, report: string): Promise<void> {
   try {
-    const { decrypt } = await import('../../../../lib/crypto.js');
-    const supabase = getSupabaseAdmin();
+    // Platform-level bot token takes priority — no user token needed if configured.
+    // Fall back to the user's own Slack OAuth token from arcus_integrations.
+    let token: string | null = process.env.ARCUS_SLACK_BOT_TOKEN || null;
 
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('provider', 'slack')
-      .maybeSingle();
+    if (!token) {
+      const { decrypt } = await import('../../../../lib/crypto.js');
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase
+        .from('arcus_integrations')
+        .select('access_token')
+        .eq('user_id', userId)
+        .eq('provider', 'slack')
+        .maybeSingle();
+      if (!data?.access_token) {
+        console.warn(`[Cron] No Slack token for user ${userId} and ARCUS_SLACK_BOT_TOKEN not set — skipping Slack delivery.`);
+        return;
+      }
+      token = decrypt(data.access_token);
+    }
 
-    if (!data?.access_token) return;
-    const token = decrypt(data.access_token);
+    // Resolve the target channel: use configured channel, or DM the user directly.
+    let targetChannel = channel;
+    if (!targetChannel) {
+      // Look up the user's Slack member ID by email, then open a DM.
+      const lookupRes = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(userId)}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+      const lookupJson = await lookupRes.json() as any;
+      if (!lookupJson.ok || !lookupJson.user?.id) {
+        console.warn(`[Cron] Slack users.lookupByEmail failed for ${userId}: ${lookupJson.error ?? 'unknown'} — skipping Slack delivery.`);
+        return;
+      }
+      const slackUserId = lookupJson.user.id;
+
+      // Open (or reuse) the DM channel with this user.
+      const dmRes = await fetch('https://slack.com/api/conversations.open', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: slackUserId }),
+        signal: AbortSignal.timeout(8000),
+      });
+      const dmJson = await dmRes.json() as any;
+      if (!dmJson.ok || !dmJson.channel?.id) {
+        console.warn(`[Cron] Slack conversations.open failed: ${dmJson.error ?? 'unknown'} — skipping Slack delivery.`);
+        return;
+      }
+      targetChannel = dmJson.channel.id;
+    }
 
     const date = new Date().toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -574,7 +565,7 @@ async function sendSlackReport(userId: string, channel: string, agentName: strin
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        channel,
+        channel: targetChannel,
         blocks,
         text: `✨ ${agentName} — Arcus Report for ${date}`,
       }),
@@ -646,12 +637,8 @@ async function sendErrorNotification(agent: any, errorMessage: string): Promise<
   });
   const report = `# ⚠️ Agent Run Failed — ${agent.name}\n\nYour agent **${agent.name}** encountered an issue during its scheduled run at ${ts}.\n\n**Error:** ${errorMessage}\n\nThe agent has been kept active and will attempt to run again at its next scheduled time. If this error repeats, check your connected integrations or update the agent's task description.\n\n_If you need help, reply to this message or visit [mailient.xyz](https://mailient.xyz)._`;
 
-  if (agent.output_channel === 'gmail' || agent.output_channel === 'both') {
-    await sendGmailReport(agent.user_id, `⚠️ ${agent.name} — Run Failed`, report);
-  }
-  if ((agent.output_channel === 'slack' || agent.output_channel === 'both') && agent.slack_channel) {
-    await sendSlackReport(agent.user_id, agent.slack_channel, `⚠️ ${agent.name} — Run Failed`, report);
-  }
+  await sendEmailReport(agent.user_id, `⚠️ ${agent.name} — Run Failed`, report);
+  await sendSlackReport(agent.user_id, agent.slack_channel || null, `⚠️ ${agent.name} — Run Failed`, report);
 }
 
 function markdownToSlackMrkdwn(markdown: string): string {

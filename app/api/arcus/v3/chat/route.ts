@@ -11,6 +11,7 @@
  *   tool_call            → { tool, params, iteration }
  *   tool_result          → { tool, success, summary, iteration }
  *   approval_requested   → { summary, actions, iteration }   ← gate before any write
+ *   canvas               → { title, type, markdown, pageMeta?, iteration } ← inline card / report (one per tool that produced canvasData)
  *   message              → { content, canvasContent? }
  *   error                → { message }
  *   done                 → { runId, durationMs, totalSteps }
@@ -84,7 +85,27 @@ async function callLLM(
   throw new Error('All API keys exhausted or timed out.');
 }
 
-// ── User context helper ────────────────────────────────────────────────────────
+// ── User context helpers ───────────────────────────────────────────────────────
+
+/**
+ * Fetch the user's stored voice profile as a prompt block. Mirrors the legacy
+ * chat path so v3 drafts sound like the user from the first turn. Empty string
+ * if there's no saved profile yet — v3 doesn't bootstrap from sent mail here,
+ * to keep the streaming budget tight; the bootstrap happens in the legacy
+ * /api/arcus/chat path the user already hits in normal flow.
+ */
+async function getVoiceProfileBlock(userId: string): Promise<string> {
+  try {
+    // @ts-ignore — JS module, no .d.ts
+    const { voiceProfileService } = await import('../../../../../lib/voice-profile-service.js');
+    const profile: any = await voiceProfileService.getVoiceProfile(userId);
+    if (!profile || profile.status === 'default') return '';
+    const prompt = voiceProfileService.generateVoicePrompt(profile);
+    return typeof prompt === 'string' ? prompt.trim() : '';
+  } catch {
+    return '';
+  }
+}
 
 async function getUserIntegrations(userId: string): Promise<string> {
   try {
@@ -152,15 +173,23 @@ function getToolUseBlocks(content: any): any[] {
 
 // ── System prompt ──────────────────────────────────────────────────────────────
 
-function buildSystemPrompt(integrationInfo: string, emailSummary: string, userName: string): string {
+function buildSystemPrompt(
+  integrationInfo: string,
+  emailSummary: string,
+  userName: string,
+  voicePromptBlock: string,
+): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const voiceSection = voicePromptBlock
+    ? `\n\n────────────────────────────────────────────────────────────────────────\nVOICE PROFILE — HIGHEST PRIORITY FOR EVERY EMAIL BODY\n────────────────────────────────────────────────────────────────────────\nThis profile was learned from the user's own sent emails. Every email body you draft via draft_reply or send via send_email must apply this profile — tone, formality, greeting style, sentence length, sign-off. No exceptions, no "default" tone. Cross-reference it with the tone used in any prior thread you read for the specific recipient.\n\n${voicePromptBlock}\n`
+    : '';
   return `You are Arcus, an AI executive agent built for founders. You live inside the user's Mailient workspace with real access to Gmail, Google Calendar, Notion, Notion Calendar (Notion databases with a date property), and Slack. You execute — you don't just advise.
 
 Today is ${today}. The user's name is ${userName || 'there'}.
 
 ${integrationInfo}
 ${emailSummary}
-
+${voiceSection}
 ────────────────────────────────────────────────────────────────────────
 HOW YOU THINK BEFORE EVERY ACTION (silent — never narrated)
 ────────────────────────────────────────────────────────────────────────
@@ -185,6 +214,8 @@ Examples of intent mapping:
   - "Catch up with my clients" → search_memory for client list, search_gmail for recent threads with each, draft check-in replies.
   - "Wrap up my conversation with Rohan" → read_thread, log to Notion (Contacts/Notes DB), check for follow-up promises, schedule them on both calendars if so, draft a closing email, optionally Slack-ping Rohan.
   - "Prepare for my meeting with Priya tomorrow" → search_gmail from:priya, read_notion for Priya, read_combined_calendar for tomorrow, synthesize one meeting prep doc, open_canvas.
+  - "What's the latest on [company/topic]?" → web_search, then synthesize and present in chat or canvas.
+  - "Research [person] before I email them" → web_search + search_gmail + search_memory, open_canvas with findings.
 
 Concrete instructions ("draft a reply to John saying yes") still get a one-sentence plan + approval gate before any write action — but no need to interpret intent.
 
@@ -200,7 +231,7 @@ You NEVER send, post, create, or modify anything across any app without explicit
   Turn N+1: User replies "yes" / "go ahead" / equivalent affirmative.
             NOW you execute the write tools and narrate each step.
 
-Read-only tools never need approval: search_gmail, read_email, read_thread, read_notion, read_combined_calendar, find_slack_user, search_memory.
+Read-only tools never need approval: search_gmail, read_email, read_thread, read_notion, read_combined_calendar, find_slack_user, search_memory, web_search.
 
 Write tools that ALWAYS need request_approval first: send_email, send_slack_message, create_notion_page, create_notion_task, schedule_meeting, add_memory (when saving user-stated facts).
 
@@ -224,6 +255,26 @@ When a background-agent run completes, send the report to BOTH Gmail and Slack i
 When the user asks to share content with a Slack channel, generate the content, open_canvas for review, request_approval, then send_slack_message.
 
 If during an agent run the inbox contains anything urgent (revenue, existing client, time-sensitive client reply), send an immediate Slack ping — don't wait for the scheduled report.
+
+────────────────────────────────────────────────────────────────────────
+SCHEDULED BACKGROUND AGENTS (the backbone of this product)
+────────────────────────────────────────────────────────────────────────
+When the user describes a RECURRING task — anything containing "every morning", "daily at", "every Friday", "twice a week", "every 30 minutes", "on weekdays", "on the 1st", etc. — interpret it as a scheduled-agent creation, not a one-off execution.
+
+The flow:
+  1. Parse the user's words into a 5-field cron expression in their LOCAL time. Examples:
+       - "every morning at 7am" → "0 7 * * *"
+       - "every Friday at 5pm" → "0 17 * * 5"
+       - "weekdays at 9:30am" → "30 9 * * 1-5"
+       - "every 30 minutes" → "*/30 * * * *"
+  2. Write a self-contained task_description the future runner will execute. It must include WHAT to search/read, HOW to filter (date ranges, sender filters, label filters), what to draft/send, and what to report. The runner doesn't see this chat — embed all context.
+  3. Choose output_channel: gmail (default), slack (if user said "ping me on Slack"), or both.
+  4. Choose skip_confirmations: false by default (drafts only — safer). Set true ONLY if the user explicitly said something like "do it for me", "send them", "act automatically".
+  5. If anything is ambiguous (timezone, channel, skip-confirmations), call request_approval first with the inferred plan in one sentence and let the user confirm.
+  6. Call create_scheduled_agent with the parsed fields. The tool inserts a real row, returns an inline card, and the Vercel cron runner will execute it on schedule. This is NOT a draft — the agent is live the instant the tool returns success.
+  7. After the tool returns, write a chat message of the form: "<Name> is live — its first run will be <nextRunLabel>, and the <delivery> will land in your <channel>. You can pause or edit it from the Agents dashboard." Don't repeat the cron string in chat.
+
+When the user describes a ONE-OFF task ("send an email to Priya now", "summarize my inbox this morning") — do NOT create an agent. Execute it directly in this conversation.
 
 ────────────────────────────────────────────────────────────────────────
 CONFLICT RESOLUTION (decide, note, continue — never crash, never spam questions)
@@ -335,12 +386,13 @@ export async function POST(request: NextRequest) {
         // ── 1. Load context ──────────────────────────────────────────────────
         emit('thinking', { status: 'Loading your workspace context…' });
 
-        const [integrationInfo, emailSummary, dbHistory] = await Promise.all([
+        const [integrationInfo, emailSummary, dbHistory, voicePromptBlock] = await Promise.all([
           getUserIntegrations(userId),
           getRecentEmailSummary(userId),
           conversationId
             ? getConversationHistory(userId, conversationId, 20)
             : Promise.resolve([]),
+          getVoiceProfileBlock(userId),
         ]);
 
         // Merge: DB history (cross-session) + client history (in-session), deduplicate by position
@@ -351,7 +403,7 @@ export async function POST(request: NextRequest) {
             : dbHistory.slice(-20);
 
         // ── 2. Build messages for LLM ────────────────────────────────────────
-        const systemPrompt = buildSystemPrompt(integrationInfo, emailSummary, userName);
+        const systemPrompt = buildSystemPrompt(integrationInfo, emailSummary, userName, voicePromptBlock);
 
         const llmMessages: Array<{ role: string; content: any }> = [
           ...baseHistory.map(h => ({ role: h.role, content: h.content })),
@@ -408,9 +460,21 @@ export async function POST(request: NextRequest) {
             try {
               const result = await executeTool(toolName, toolInput, userId);
 
-              // Capture canvas data if tool returned it
+              // Capture canvas data if tool returned it, and stream it now so
+              // inline cards (scheduled_agent, email_draft, etc.) render the
+              // moment the tool succeeds instead of waiting for the final
+              // message. The legacy ChatInterface card consumer expects the
+              // canvas-event payload to carry title/type/markdown plus the
+              // pageMeta/meta block — keep this shape stable.
               if (result.canvasData) {
                 canvasContent = result.canvasData;
+                emit('canvas', {
+                  title: result.canvasData.title,
+                  type: result.canvasData.type,
+                  markdown: result.canvasData.markdown || '',
+                  pageMeta: result.canvasData.meta || undefined,
+                  iteration,
+                });
               }
 
               // Surface approval gate to the UI as a distinct event so a
