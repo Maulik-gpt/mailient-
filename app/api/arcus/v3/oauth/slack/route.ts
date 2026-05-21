@@ -17,15 +17,14 @@ import { auth } from '../../../../../../lib/auth.js';
 // Bot scopes — minimal set needed for Arcus:
 // channels:history, channels:read — read channel messages
 // chat:write — send messages
-// users.profile:write — set status
 // groups:history, groups:read — private channels the bot is in
+// Note: users.profile:write is a user scope, not a bot scope — excluded here
 const BOT_SCOPES = [
   'channels:history',
   'channels:read',
   'chat:write',
   'groups:history',
   'groups:read',
-  'users.profile:write',
 ].join(',');
 
 /**
