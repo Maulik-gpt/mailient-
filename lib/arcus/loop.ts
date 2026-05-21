@@ -321,6 +321,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         let totalToolCalls = 0;
         let nudgeCount = 0;
+        let stepListingRetried = false; // separate from nudgeCount so intent nudges don't block it
         let finalText = '';
         let canvasContent: any = null;
         let iteration = 0;
@@ -662,7 +663,28 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   }
                 } catch { /* non-fatal */ }
               }
-              finalText = sanitizeModelText(getText(finalResponse.content));
+              let forcedText = sanitizeModelText(getText(finalResponse.content));
+              // If the forced final response is ALSO a step-listing, retry once more
+              if (isStepListingResponse(forcedText, true) && !stepListingRetried) {
+                stepListingRetried = true;
+                const retryRes = await callLLM(
+                  [
+                    ...messages,
+                    {
+                      role: 'user',
+                      content:
+                        'STOP. You listed steps instead of answering. Read the tool results in this conversation and answer the user\'s question directly. ' +
+                        'What did the emails say? What specific information did you find? Write the actual answer — not what you searched for.',
+                    },
+                  ],
+                  finalTools,
+                );
+                const retryText = sanitizeModelText(getText(retryRes.content));
+                if (retryText && !isStepListingResponse(retryText, true)) {
+                  forcedText = retryText;
+                }
+              }
+              finalText = forcedText;
               break;
             }
 
@@ -826,17 +848,18 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // ── Case 2e: Step-listing response — demand actual answer ─────────
           // LLM listed what tools it ran ("Done — completed Searched inbox for...")
           // instead of answering the user's question with the content it found.
-          if (isStepListingResponse(textContent, totalToolCalls > 0) && nudgeCount < MAX_NUDGES) {
-            nudgeCount++;
-            emit('thinking', { status: 'Fetching details…' });
+          // Uses its own flag so intent-text nudges don't exhaust this retry.
+          if (isStepListingResponse(textContent, totalToolCalls > 0) && !stepListingRetried) {
+            stepListingRetried = true;
+            emit('thinking', { status: 'Preparing answer…' });
             messages.push({
               role: 'user',
               content:
-                'Your response only listed what steps you took, not what you actually found. ' +
-                'The user asked a question — answer it using the specific content from the tool results already in this conversation. ' +
-                'What did the emails say? What was the actual information? ' +
-                'Write a direct, substantive answer. Do NOT mention steps, tool names, or what you searched for. ' +
-                'Just answer the question.',
+                'STOP. Your response listed what steps you ran, not what you found. That is not acceptable. ' +
+                'The tool results are already in this conversation — read them and answer the user\'s question now. ' +
+                'What do the emails say? What specific information did you find? ' +
+                'Write a substantive answer using the actual content from the tool results. ' +
+                'Do NOT mention steps, tool names, searches, or what you did. Just answer the question with specifics.',
             });
             continue;
           }
