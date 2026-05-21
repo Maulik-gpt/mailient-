@@ -28,22 +28,33 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields: to, subject, body' }, { status: 400 });
     }
 
-    // Fetch Gmail access token
+    // Fetch Gmail access token — try arcus_integrations first, then user_tokens fallback
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('arcus_integrations')
       .select('access_token')
       .eq('user_id', userId)
       .eq('provider', 'gmail')
       .maybeSingle();
 
-    if (error || !data?.access_token) {
-      return NextResponse.json({ error: 'Gmail not connected' }, { status: 404 });
+    let accessToken: string | null = null;
+
+    if (data?.access_token) {
+      accessToken = decrypt(data.access_token);
+    } else {
+      // Fallback: tokens stored by Google sign-in flow live in user_tokens
+      const { data: tokenRow } = await supabase
+        .from('user_tokens')
+        .select('encrypted_access_token')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (tokenRow?.encrypted_access_token) {
+        accessToken = decrypt(tokenRow.encrypted_access_token);
+      }
     }
 
-    const accessToken = decrypt(data.access_token);
     if (!accessToken) {
-      return NextResponse.json({ error: 'Token decryption failed' }, { status: 500 });
+      return NextResponse.json({ error: 'Gmail not connected. Please connect Gmail in your integrations.' }, { status: 404 });
     }
 
     const raw = encodeRfc822(to, subject, body, threadId);

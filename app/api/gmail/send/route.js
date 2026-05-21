@@ -1,12 +1,38 @@
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
+import { DatabaseService } from '@/lib/supabase.js';
+import { decrypt } from '@/lib/crypto.js';
 export const maxDuration = 60; // Increase to 60s for large attachments
 
 export async function POST(request) {
   try {
     const session = await auth();
-    let accessToken = session?.accessToken;
-    let refreshToken = session?.refreshToken;
+
+    if (!session?.user?.email) {
+      return Response.json({ error: 'No valid session found' }, { status: 401 });
+    }
+
+    const userEmail = session.user.email;
+    let accessToken = session.accessToken;
+    let refreshToken = session.refreshToken;
+
+    // Fallback: fetch tokens from DB (handles One Tap logins and expired JWTs)
+    if (!accessToken || !refreshToken) {
+      try {
+        const db = new DatabaseService();
+        const userTokens = await db.getUserTokens(userEmail);
+        if (userTokens) {
+          if (userTokens.encrypted_access_token) {
+            accessToken = decrypt(userTokens.encrypted_access_token);
+          }
+          if (userTokens.encrypted_refresh_token) {
+            refreshToken = decrypt(userTokens.encrypted_refresh_token);
+          }
+        }
+      } catch (dbError) {
+        console.error('[send] DB token fallback error:', dbError);
+      }
+    }
 
     if (!accessToken) {
       const authHeader = request.headers.get('authorization');
@@ -27,19 +53,15 @@ export async function POST(request) {
     }
 
     const gmailService = new GmailService(accessToken, refreshToken);
-    if (session?.user?.email) {
-      gmailService.setUserEmail(session.user.email); // Enable token refresh persistence
-    }
+    gmailService.setUserEmail(userEmail);
     const result = await gmailService.sendEmail({ to, subject, body, isHtml, threadId, attachments });
 
     // INCREMENTAL VOICE PROFILING: Learn from this new sent email
-    if (session?.user?.email && result && !result.error) {
+    if (result && !result.error) {
       try {
         const { voiceProfileService } = await import('@/lib/voice-profile-service');
-        // Clean body if HTML
         const cleanBody = isHtml ? body.replace(/<[^>]*>?/gm, '').trim() : body;
-        // Don't await - let it run in background to keep send fast
-        voiceProfileService.addToProfile(session.user.email, cleanBody);
+        voiceProfileService.addToProfile(userEmail, cleanBody);
       } catch (profileError) {
         console.warn('⚠️ Failed to incrementally update voice profile:', profileError.message);
       }
