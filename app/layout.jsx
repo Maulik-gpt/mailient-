@@ -15,8 +15,8 @@ export const metadata = {
     apple: "/apple-touch-icon.png?v=10",
   },
   openGraph: {
-    title: "Mailient",
-    description: "Never Miss Revenue Again. AI assistant for founders.",
+    title: "Mailient — AI that thinks like you. Inbox that works for you.",
+    description: "Auto-organize, surface opportunities, and reply 10x faster. Smart Prioritization, Automate AI agents, 10x Faster Replies.",
     url: "https://mailient.xyz",
     siteName: "Mailient",
     images: [
@@ -24,7 +24,7 @@ export const metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Mailient - Email That Thinks Like You Do",
+        alt: "Mailient — AI that thinks like you. Inbox that works for you.",
       },
     ],
     locale: "en_US",
@@ -32,8 +32,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mailient",
-    description: "Never Miss Revenue Again. AI assistant for founders.",
+    title: "Mailient — AI that thinks like you. Inbox that works for you.",
+    description: "Auto-organize, surface opportunities, and reply 10x faster.",
     images: ["/og-image.png"],
   },
 };
