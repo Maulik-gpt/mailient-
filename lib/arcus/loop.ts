@@ -88,6 +88,27 @@ function hasPlaceholders(text: string): boolean {
   return PLACEHOLDER_PATTERN.test(text) || ACTION_PLACEHOLDER_PATTERN.test(text);
 }
 
+// Detects step-listing responses: LLM lists what tools it ran instead of answering the question.
+// Patterns: "Done — completed Searched inbox for...", "Done — I handled search gmail...",
+// or any response whose first sentence is just a tool recap with no substantive content.
+const STEP_LIST_PATTERN = /^(done\s*[—–-]\s*(completed|i handled|i ran|executed|performed)\s+(?:searched|search|read|fetch|check|look|scan|get)|done\s*[—–-]\s*(?:searched\s+inbox|read\s+email|fetch|checked\s+calendar)|i\s+(?:searched|read|fetched|checked|scanned)\s+(?:the\s+)?(?:inbox|gmail|calendar|notion|slack)\s+(?:for|and)\b)/i;
+
+// A step-listing response has short length with no real info, or starts with a step recap
+// and the whole body is just a comma-separated list of tool actions.
+function isStepListingResponse(text: string, toolsWereCalled: boolean): boolean {
+  if (!toolsWereCalled) return false;
+  const t = text.trim();
+  if (!t || t.length > 1200) return false; // Long responses likely have real content
+  if (STEP_LIST_PATTERN.test(t)) return true;
+  // Catch the pattern: "Done — I handled X, Y and Z for you." with only tool names
+  if (/^done\s*[—–-]/i.test(t) && /\bfor you\b/i.test(t) && t.length < 300) {
+    // Check if the text is primarily a list of actions/tool names
+    const hasRealContent = /\b(found|says|email|subject|from|body|content|result|message|reply|thread|schedule|event|meeting|note|page|slack|notion)\b/i.test(t);
+    if (!hasRealContent) return true;
+  }
+  return false;
+}
+
 // ── Error humanizer ────────────────────────────────────────────────────────────
 //
 // Raw tool errors (stack traces, "403", "fetch failed", AbortError) must never
@@ -620,6 +641,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     role: 'user',
                     content:
                       'All data has been gathered. Now write your final response. ' +
+                      'CRITICAL: Do NOT list the steps you took or the tools you ran. Do NOT say "Done — completed Searched inbox for..." or list tool names. ' +
+                      'Answer the user\'s actual question using the specific content from the tool results. What did you find? What does the email say? What is the answer? ' +
                       'If this task requires a report, summary, or document (anything longer than 3 paragraphs), ' +
                       'call open_canvas with the full content NOW before writing your chat response. ' +
                       'CRITICAL: Do NOT say "the report is in the Canvas panel" unless you actually call open_canvas in this response.',
@@ -698,10 +721,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             messages.push({
               role: 'user',
               content:
-                'You produced no visible text in your response. Write your final reply now: ' +
-                '(1) one sentence confirming what you accomplished, ' +
-                '(2) the key result with specific details (subject line, opening sentences of any draft, etc.), ' +
-                '(3) one sentence telling the user what to do next. ' +
+                'You produced no visible text in your response. Write your final reply now. ' +
+                'Answer the user\'s question directly using the content from the tool results — what did the emails/data say? ' +
+                'Do NOT list the steps you took or the tools you ran. Do NOT say "Done — completed Searched inbox...". ' +
+                'Write the actual answer: (1) the key information found, (2) specific details from the content, (3) what the user should do next if relevant. ' +
                 'Do NOT use <thinking> tags — write the reply directly.',
             });
             continue;
@@ -777,7 +800,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   {
                     role: 'user',
                     content:
-                      'Write your final response now. Confirm what you completed and provide the key details. ' +
+                      'Write your final response now. Answer the user\'s question using the specific content from the tool results — what did you find? What did the emails say? ' +
+                      'Do NOT list steps or tool names ("Done — completed Searched..."). Give the actual information. ' +
                       'If you need to create a document or report, call open_canvas. Be specific about results.',
                   },
                 ],
@@ -797,6 +821,24 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               finalText = sanitizeModelText(getText(summaryRes.content));
               break;
             }
+          }
+
+          // ── Case 2e: Step-listing response — demand actual answer ─────────
+          // LLM listed what tools it ran ("Done — completed Searched inbox for...")
+          // instead of answering the user's question with the content it found.
+          if (isStepListingResponse(textContent, totalToolCalls > 0) && nudgeCount < MAX_NUDGES) {
+            nudgeCount++;
+            emit('thinking', { status: 'Fetching details…' });
+            messages.push({
+              role: 'user',
+              content:
+                'Your response only listed what steps you took, not what you actually found. ' +
+                'The user asked a question — answer it using the specific content from the tool results already in this conversation. ' +
+                'What did the emails say? What was the actual information? ' +
+                'Write a direct, substantive answer. Do NOT mention steps, tool names, or what you searched for. ' +
+                'Just answer the question.',
+            });
+            continue;
           }
 
           finalText = textContent;
