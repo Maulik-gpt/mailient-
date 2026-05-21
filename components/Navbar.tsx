@@ -36,6 +36,15 @@ export function Navbar({ theme = "light" }: NavbarProps) {
   };
 
   return (
+    <>
+      {/* SVG liquid-glass distortion — same filter used by FloatingNavbar */}
+      <svg className="hidden pointer-events-none absolute h-0 w-0" aria-hidden="true">
+        <filter id="navbar-liquid-distortion">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="1" seed="5" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+
     <motion.header
       initial={{ y: -40, opacity: 0, filter: "blur(8px)" }}
       animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
@@ -43,23 +52,44 @@ export function Navbar({ theme = "light" }: NavbarProps) {
       className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 md:px-6 pointer-events-none"
     >
       <div
-        style={{
-          backdropFilter: "blur(24px) saturate(180%)",
-          WebkitBackdropFilter: "blur(24px) saturate(180%)",
-        }}
         className={cn(
-          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full border px-6 py-2.5 transition-all duration-500 ease-out shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative",
+          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full px-6 py-2.5 transition-all duration-500 ease-out relative overflow-hidden",
           scrolled
-            ? isDark
-              ? "border-white/[0.08] bg-gradient-to-r from-neutral-900/85 via-neutral-950/90 to-neutral-900/85 shadow-[0_25px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.06)]"
-              : "border-neutral-200/50 bg-gradient-to-r from-white/90 via-neutral-50/95 to-white/90 shadow-[0_20px_40px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)]"
-            : isDark
-              ? "border-white/[0.05] bg-gradient-to-r from-neutral-950/65 via-neutral-900/70 to-neutral-950/65 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)]"
-              : "border-neutral-200/40 bg-gradient-to-r from-white/60 via-neutral-50/70 to-white/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.8)]"
+            ? "shadow-[0_25px_60px_rgba(0,0,0,0.55)]"
+            : "shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
         )}
       >
-        {/* Fine Glass Reflection Line Overlay */}
-        <div className="absolute inset-0 z-0 bg-gradient-to-tr from-transparent via-white/[0.01] to-white/[0.03] pointer-events-none rounded-full" />
+        {/* Layer 1 — backdrop + liquid distortion */}
+        <div
+          className="absolute inset-0 z-0"
+          style={{
+            backdropFilter: "blur(20px) saturate(160%)",
+            WebkitBackdropFilter: "blur(20px) saturate(160%)",
+            filter: "url(#navbar-liquid-distortion)",
+            isolation: "isolate",
+          }}
+        />
+
+        {/* Layer 2 — tinted fill */}
+        <div className={cn(
+          "absolute inset-0 z-[1] transition-all duration-500",
+          scrolled
+            ? isDark ? "bg-[#1a1a1a]/70" : "bg-white/75"
+            : isDark ? "bg-[#0e0e0e]/50" : "bg-white/45"
+        )} />
+
+        {/* Layer 3 — border + inset glass rim highlight */}
+        <div
+          className={cn(
+            "absolute inset-0 z-[2] rounded-full border",
+            isDark ? "border-white/[0.10]" : "border-white/60"
+          )}
+          style={{
+            boxShadow: isDark
+              ? "inset 2px 2px 1px 0 rgba(255,255,255,0.10), inset -1px -1px 1px 1px rgba(255,255,255,0.04)"
+              : "inset 2px 2px 1px 0 rgba(255,255,255,0.70), inset -1px -1px 1px 1px rgba(255,255,255,0.25)",
+          }}
+        />
 
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group relative z-10">
@@ -300,5 +330,6 @@ export function Navbar({ theme = "light" }: NavbarProps) {
         </div>
       </div>
     </motion.header>
+    </>
   );
 }
