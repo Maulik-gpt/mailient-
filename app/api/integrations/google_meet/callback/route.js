@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
 import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
-import { supabase } from '@/lib/supabase';
+import { getSupabaseAdmin } from '@/lib/supabase';
 
 const db = {
   async storeIntegrationCredentials(userEmail, provider, credentials) {
+    const supabase = getSupabaseAdmin();
     await supabase.from('integration_credentials').upsert({
       user_email: userEmail,
       provider,
@@ -17,6 +18,7 @@ const db = {
   },
 
   async logIntegrationEvent(userEmail, provider, event, metadata = {}) {
+    const supabase = getSupabaseAdmin();
     await supabase.from('integration_events').insert({
       user_email: userEmail,
       provider,
