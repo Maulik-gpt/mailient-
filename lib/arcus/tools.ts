@@ -259,7 +259,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'draft_reply',
-    description: 'Save a Gmail draft AND display it inline in the chat for the user to review and send with one click. Call this AFTER: (1) reading the thread, (2) analyzing sent emails for tone, (3) scheduling any meeting to get the Meet link. Write the body in the user\'s voice profile — match their tone, formality, greeting, and sign-off exactly. Include the Google Meet link in the body if a meeting was scheduled. STOP after calling this — do NOT call send_email. The user will send from the inline draft preview.',
+    description: 'Save a Gmail draft AND display it inline in the chat for the user to review and send with one click. MANDATORY sequence before calling this: (1) read the thread with read_email, (2) call get_sent_emails to load the user\'s voice profile — this is NON-NEGOTIABLE, never skip it, (3) schedule any meeting to get the Meet link. The body parameter MUST be written in the user\'s exact voice as described in the VOICE PROFILE block returned by get_sent_emails — copy their greeting style, sentence length, sign-off, formality level, and any characteristic phrases verbatim. Do NOT write a generic professional email. STOP after calling this — do NOT call send_email. The user will send from the inline draft preview.',
     input_schema: {
       type: 'object',
       properties: {
@@ -673,7 +673,30 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
 
   const valid = details.filter(Boolean);
   const lines = valid.map((m: any) => `To: ${m.to}\nSubject: ${m.subject}\n${m.body}`);
-  return { output: `${valid.length} recent sent emails for style analysis:\n\n${lines.join('\n\n---\n\n')}` };
+
+  // Append the user's saved voice profile so the LLM has it right before writing the draft body.
+  let voiceGuide = '';
+  try {
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+    const profile = await voiceProfileService.getVoiceProfile(userId);
+    if (profile && profile.status !== 'default') {
+      const prompt = voiceProfileService.generateVoicePrompt(profile);
+      if (prompt && typeof prompt === 'string' && prompt.trim()) {
+        voiceGuide = `
+
+════════════════════════════════════════
+VOICE PROFILE — APPLY THIS EXACTLY WHEN WRITING THE DRAFT BODY:
+${prompt.trim()}
+
+You have just read the user's real sent emails above. Cross-reference the samples with the profile. The draft body MUST match both — do not default to a generic professional tone.
+════════════════════════════════════════`;
+      }
+    }
+  } catch {
+    // non-fatal — proceed without voice guide
+  }
+
+  return { output: `${valid.length} recent sent emails for style analysis:\n\n${lines.join('\n\n---\n\n')}${voiceGuide}` };
 }
 
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
