@@ -2053,6 +2053,8 @@ export default function ChatInterface({
       let rawOutput = '';
       let stepIndex = 0;
       let streamFinishedNormally = false;
+      let hadQuestionEvent = false;
+      let hadPlanEvent = false;
       let currentAgentSteps: AgentStep[] = [];       // populated only by tool_call events
       let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
       let currentTaskList: TaskList | null = null;    // populated by task_list event
@@ -2460,6 +2462,7 @@ export default function ChatInterface({
             case 'question': {
               // AI needs user input — stream stops intentionally here
               streamFinishedNormally = true;
+              hadQuestionEvent = true;
               setPendingQuestion({
                 questions: data.questions || [],
                 runId: data.runId || '',
@@ -2490,6 +2493,7 @@ export default function ChatInterface({
 
             case 'plan': {
               // Plan mode — store the plan card on the message meta
+              hadPlanEvent = true;
               const planCard: PlanCardData = {
                 title: data.title || 'Plan',
                 markdown: data.markdown || '',
@@ -2524,17 +2528,16 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
-              // Always ensure a final response text is shown to the user after execution
-              if (!finalProcessedText && (stepIndex > 0 || currentAgentSteps.length > 0)) {
+              // If a question or plan card was already shown, no chat message needed
+              if (hadQuestionEvent || hadPlanEvent) {
+                finalProcessedText = '';
+              } else if (!finalProcessedText && (stepIndex > 0 || currentAgentSteps.length > 0)) {
+                // Show a concise summary of what was done
                 const completedSteps = currentAgentSteps.filter(s => s.status === 'completed' || s.status === 'active');
-                const toolNames = completedSteps.map(s => s.label || (s as any).tool || '').filter(Boolean).join(', ');
+                const toolNames = [...new Set(completedSteps.map(s => (s.label || (s as any).tool || '').replace(/_/g, ' ')).filter(Boolean))].join(', ');
                 finalProcessedText = completedSteps.length > 0
-                  ? `Done — I completed the following: ${toolNames}. Let me know if you need any changes or have follow-up questions.`
-                  : "I've completed the requested actions. Let me know if you need anything else.";
-              }
-              // Final safety net: never leave the user with an empty response
-              if (!finalProcessedText) {
-                finalProcessedText = "I've finished processing your request. Let me know if you need anything else.";
+                  ? `Done — completed ${toolNames}. Let me know if you need any changes.`
+                  : '';
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
@@ -2580,20 +2583,14 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
-        // Generate a fallback response text so the user always sees a final confirmation
-        let fallbackText = finalContent.trim();
-        if (!fallbackText && autoCompletedSteps.length > 0) {
-          const completedLabels = autoCompletedSteps
+        // Generate a fallback only if no structured event (question/plan) already handled the response
+        let fallbackText = hadQuestionEvent || hadPlanEvent ? '' : finalContent.trim();
+        if (!fallbackText && !hadQuestionEvent && !hadPlanEvent && autoCompletedSteps.length > 0) {
+          const completedLabels = [...new Set(autoCompletedSteps
             .filter(s => s.status === 'completed')
-            .map(s => s.label || (s as any).tool || '')
-            .filter(Boolean)
-            .join(', ');
-          fallbackText = completedLabels
-            ? `Done — I completed the following: ${completedLabels}. Let me know if you need any changes or have follow-up questions.`
-            : "I've completed the requested actions. Let me know if you need anything else.";
-        }
-        if (!fallbackText) {
-          fallbackText = "I've finished processing your request. Let me know if you need anything else.";
+            .map(s => (s.label || (s as any).tool || '').replace(/_/g, ' '))
+            .filter(Boolean))].join(', ');
+          fallbackText = completedLabels ? `Done — completed ${completedLabels}.` : '';
         }
 
         setMessages(msgs => msgs.map(m => {
@@ -2628,20 +2625,14 @@ export default function ChatInterface({
           allMsgs = [...allMsgs, userMsg];
         }
 
-        // Use synthesized content if available, fallback to finalContent, then generate a fallback
-        let finalPersistedText = finalProcessedText || finalContent;
-        if (!finalPersistedText.trim() && currentAgentSteps.length > 0) {
-          const completedLabels = currentAgentSteps
+        // Use synthesized content — skip fallback entirely if a question or plan card was shown
+        let finalPersistedText = hadQuestionEvent || hadPlanEvent ? '' : (finalProcessedText || finalContent);
+        if (!finalPersistedText.trim() && !hadQuestionEvent && !hadPlanEvent && currentAgentSteps.length > 0) {
+          const completedLabels = [...new Set(currentAgentSteps
             .filter(s => s.status === 'completed')
-            .map(s => s.label || (s as any).tool || '')
-            .filter(Boolean)
-            .join(', ');
-          finalPersistedText = completedLabels
-            ? `Done — I completed the following: ${completedLabels}. Let me know if you need any changes or have follow-up questions.`
-            : "I've completed the requested actions. Let me know if you need anything else.";
-        }
-        if (!finalPersistedText.trim()) {
-          finalPersistedText = "I've finished processing your request. Let me know if you need anything else.";
+            .map(s => (s.label || (s as any).tool || '').replace(/_/g, ' '))
+            .filter(Boolean))].join(', ');
+          finalPersistedText = completedLabels ? `Done — completed ${completedLabels}.` : '';
         }
         const agentMsg: AgentMessage = { 
           id: assistantMsgId, 

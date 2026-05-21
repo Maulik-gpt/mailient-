@@ -205,41 +205,49 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         emit('run_start', { runId, message: userMessage });
 
         // ── Pre-plan clarification pass ─────────────────────────────────────
-        // Before generating a plan, give the AI a chance to ask the user
-        // clarifying questions. Only skipped when answers are already in history.
+        // Ask clarifying questions ONLY when truly needed. Skip entirely if:
+        // - The user already provided answers (Q:/A: pattern in history), OR
+        // - The request already contains enough context to write a complete plan.
+        // Never ask about things derivable from connected integrations.
         if (isPlanMode) {
-          emit('thinking', { status: 'Checking if I need more details…' });
-
+          // Detect if the user has already answered questions (any user message with Q:/A: pairs)
           const alreadyAnswered = history.some(h =>
-            h.role === 'user' && /^Q:[\s\S]*\nA:/.test(h.content)
-          );
+            h.role === 'user' && /Q:.*\nA:/s.test(h.content)
+          ) || /Q:.*\nA:/s.test(userMessage);
 
           if (!alreadyAnswered) {
+            emit('thinking', { status: 'Analysing your request…' });
+
+            const connectedInfo = connectedIntegrations.length > 0
+              ? `Connected integrations (already available — NEVER ask about these): ${connectedIntegrations.join(', ')}.`
+              : 'No integrations connected.';
+
             const clarifyRes = await callLLM(
               [
                 {
                   role: 'system',
                   content:
-                    'You are about to create a detailed plan for the user. ' +
-                    'Before you do, decide: is the request clear enough to plan immediately, ' +
-                    'or are there 1-3 key unknowns that would significantly change the plan? ' +
-                    'If genuinely ambiguous, call the ask_user tool with concise questions (each with 2-3 short options where applicable). ' +
-                    'If the request is clear enough, respond with ONLY the word "proceed" — no other text.',
+                    `You are about to create a detailed execution plan for the user.\n\n` +
+                    `${connectedInfo}\n\n` +
+                    `Rule: Only ask a clarifying question if (a) the answer is genuinely unknown from the request and context, AND (b) the answer would significantly change the structure of the plan. ` +
+                    `Do NOT ask about: which apps to use (you can see what is connected), the user's name, timezone, or anything inferable from the request. ` +
+                    `Do NOT ask more than 2 questions. ` +
+                    `If the request is specific enough to plan immediately, respond with ONLY the word "proceed" — nothing else.`,
                 },
                 ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
                 { role: 'user', content: userMessage },
               ],
               [ASK_USER_SCHEMA],
-              { maxTokens: 400, temperature: 0.2 },
+              { maxTokens: 300, temperature: 0.1 },
             );
 
             const clarifyToolCalls = getToolCalls(clarifyRes.content);
             const askCall = clarifyToolCalls.find(tc => tc.name === 'ask_user');
             if (askCall) {
-              const questions = askCall.input?.questions ?? [];
+              const questions = (askCall.input?.questions ?? []).filter((q: any) => q?.text?.trim());
               if (questions.length > 0) {
                 emit('question', { questions, runId });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
+                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0, hadQuestion: true });
                 controller.close();
                 return;
               }
@@ -280,8 +288,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         }
 
         // ── Pre-loop: generate task list ────────────────────────────────────
+        const planModeInstruction = isPlanMode
+          ? `\n\n[PLAN MODE — STRICT]\nYou are in plan creation mode. Your only output must be a well-structured markdown plan document.\nRules:\n- Do NOT execute any actions or call any tools\n- Do NOT use agent-style language ("I'll now...", "Let me...", "I've completed...")\n- Write the plan entirely in future tense ("Step 1: Search...", "Step 2: Analyse...")\n- Structure the plan with: ## Objective, ## Steps (numbered), ## Expected Output, ## Time estimate\n- Be specific: name the exact tools/APIs/searches that would be used\n- The user should be able to hand this plan to someone else and have it executed exactly`
+          : '';
+
         const messages: LLMMessage[] = [
-          { role: 'system', content: systemPrompt },
+          { role: 'system', content: systemPrompt + planModeInstruction },
           ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
           { role: 'user', content: userMessage },
         ];
