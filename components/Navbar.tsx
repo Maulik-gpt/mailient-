@@ -53,35 +53,38 @@ export function Navbar({ theme = "light" }: NavbarProps) {
     >
       <div
         className={cn(
-          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full px-6 py-2.5 transition-all duration-500 ease-out relative overflow-hidden",
+          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full px-6 py-2.5 transition-all duration-500 ease-out relative",
           scrolled
             ? "shadow-[0_25px_60px_rgba(0,0,0,0.55)]"
             : "shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
         )}
       >
-        {/* Layer 1 — backdrop + liquid distortion */}
-        <div
-          className="absolute inset-0 z-0"
-          style={{
-            backdropFilter: "blur(20px) saturate(160%)",
-            WebkitBackdropFilter: "blur(20px) saturate(160%)",
-            filter: "url(#navbar-liquid-distortion)",
-            isolation: "isolate",
-          }}
-        />
+        {/* Glass layers clipped inside their own overflow-hidden wrapper so the
+            dropdown megamenu can escape the pill without being cut off */}
+        <div className="absolute inset-0 z-0 rounded-full overflow-hidden pointer-events-none">
+          {/* Layer 1 — backdrop + liquid distortion */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: "blur(20px) saturate(160%)",
+              WebkitBackdropFilter: "blur(20px) saturate(160%)",
+              filter: "url(#navbar-liquid-distortion)",
+              isolation: "isolate",
+            }}
+          />
+          {/* Layer 2 — tinted fill */}
+          <div className={cn(
+            "absolute inset-0 transition-all duration-500",
+            scrolled
+              ? isDark ? "bg-[#1a1a1a]/70" : "bg-white/75"
+              : isDark ? "bg-[#0e0e0e]/50" : "bg-white/45"
+          )} />
+        </div>
 
-        {/* Layer 2 — tinted fill */}
-        <div className={cn(
-          "absolute inset-0 z-[1] transition-all duration-500",
-          scrolled
-            ? isDark ? "bg-[#1a1a1a]/70" : "bg-white/75"
-            : isDark ? "bg-[#0e0e0e]/50" : "bg-white/45"
-        )} />
-
-        {/* Layer 3 — border + inset glass rim highlight */}
+        {/* Layer 3 — border + inset glass rim (outside clip so border renders cleanly) */}
         <div
           className={cn(
-            "absolute inset-0 z-[2] rounded-full border",
+            "absolute inset-0 z-[1] rounded-full border pointer-events-none",
             isDark ? "border-white/[0.10]" : "border-white/60"
           )}
           style={{

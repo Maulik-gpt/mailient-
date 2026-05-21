@@ -117,7 +117,7 @@ export default function ChangelogPage() {
       </section>
 
       {/* Footer */}
-      <Footer theme="dark" />
+      <Footer />
     </div>
   );
 }

@@ -134,7 +134,7 @@ export default function SecurityPage() {
       </section>
 
       {/* Footer */}
-      <Footer theme="dark" />
+      <Footer />
     </div>
   );
 }

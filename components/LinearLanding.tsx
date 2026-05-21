@@ -45,6 +45,7 @@ import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Features8 } from "@/components/ui/features-8";
 import { CTASection } from "@/components/ui/hero-dithering-card";
+import { Footer } from "@/components/Footer";
 import { WordBlurStream } from "@/src/WordBlurStream";
 import { SpecialText } from "@/components/ui/special-text";
 import { BlurFade } from "@/components/ui/blur-fade";
@@ -1342,83 +1343,7 @@ export function LinearLanding() {
       {/* Premium Dithered CTA Section */}
       <CTASection />
 
-      {/* 10. FIVE-COLUMN LUXURY FOOTER */}
-      <footer className="w-full bg-[#000000] border-t border-white/[0.06] py-20 px-6 z-10 relative text-left">
-        <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-5 gap-12 md:gap-8 mb-16">
-          
-          {/* Column 1: Product */}
-          <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Product</h4>
-            <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li><Link href="/product/sift" className="hover:text-white transition-colors">Intake Triage</Link></li>
-              <li><Link href="/product/drafts" className="hover:text-white transition-colors">Tone Writer</Link></li>
-              <li><Link href="/product/arcus" className="hover:text-white transition-colors">Arcus Flagship</Link></li>
-              <li className="hover:text-white cursor-pointer transition-colors">Vault Security</li>
-              <li><Link href="/pricing" className="hover:text-white transition-colors">Pricing Limits</Link></li>
-              <li><Link href="/security" className="hover:text-white transition-colors">Security Strip</Link></li>
-            </ul>
-          </div>
-
-          {/* Column 2: Features */}
-          <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Features</h4>
-            <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">Triage Sift</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Voice Profiler</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Cal.com Booking</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Slack Notifications</li>
-              <li><Link href="/changelog" className="hover:text-white transition-colors">Platform Changelog</Link></li>
-            </ul>
-          </div>
-
-          {/* Column 3: Company */}
-          <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Company</h4>
-            <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">About Us</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Customers</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Careers</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Press</li>
-            </ul>
-          </div>
-
-          {/* Column 4: Resources */}
-          <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Resources</h4>
-            <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">API Docs</li>
-              <li className="hover:text-white cursor-pointer transition-colors">System Status</li>
-              <li className="hover:text-white cursor-pointer transition-colors">PII Vault Specs</li>
-            </ul>
-          </div>
-
-          {/* Column 5: Legal */}
-          <div className="flex flex-col space-y-4">
-            <h4 className="text-xs font-semibold text-white">Legal</h4>
-            <ul className="space-y-3 text-[11px] text-[#8a8f98] font-light">
-              <li className="hover:text-white cursor-pointer transition-colors">Terms of Service</li>
-              <li className="hover:text-white cursor-pointer transition-colors">Privacy Policy</li>
-              <li className="hover:text-white cursor-pointer transition-colors">GDPR Compliance</li>
-            </ul>
-          </div>
-
-        </div>
-
-        {/* Bottom footer copyright */}
-        <div className="max-w-6xl mx-auto border-t border-white/[0.06] pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="text-[11px] text-neutral-500 font-light font-mono">
-              &copy; {new Date().getFullYear()} Mailient, Inc. All rights reserved.
-            </span>
-          </div>
-
-          <div className="flex items-center gap-6 text-[11px] text-[#8a8f98] font-light font-sans">
-            <span className="hover:text-white cursor-pointer transition-colors">Privacy</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Terms</span>
-            <span className="hover:text-white cursor-pointer transition-colors">DPA</span>
-          </div>
-        </div>
-      </footer>
+      <Footer />
 
       {/* Premium Progressive Blurs for Top/Bottom edges */}
       <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />

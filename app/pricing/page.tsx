@@ -214,7 +214,7 @@ export default function PricingPage() {
       </section>
 
       {/* Footer */}
-      <Footer theme="dark" />
+      <Footer />
     </div>
   );
 }

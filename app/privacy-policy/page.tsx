@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { Footer } from "@/components/Footer";
 
 interface Section {
   id: number;
@@ -352,12 +353,8 @@ export default function PrivacyPolicy() {
           ))}
         </div>
 
-        <footer className="mt-40 pt-16 border-t border-neutral-100 dark:border-neutral-900">
-          <p className="mt-8 text-neutral-400 dark:text-neutral-500 text-xs text-center opacity-60">
-            &copy; 2026 Mailient Intelligence. All rights reserved.
-          </p>
-        </footer>
       </main>
+      <Footer />
 
       <FloatingNavbar />
 
