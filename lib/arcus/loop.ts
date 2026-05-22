@@ -132,6 +132,28 @@ function isStepListingResponse(text: string, toolsWereCalled: boolean): boolean 
   return false;
 }
 
+// Extracts the last N tool results from the message history and returns them
+// as a readable string so we can inject actual data into step-listing retries.
+function extractLastToolResults(messages: any[], maxResults = 3): string {
+  const snippets: string[] = [];
+  for (let i = messages.length - 1; i >= 0 && snippets.length < maxResults; i--) {
+    const msg = messages[i];
+    if (msg.role !== 'user') continue;
+    const content = Array.isArray(msg.content) ? msg.content : [];
+    for (const block of content) {
+      if (block.type === 'tool_result' && typeof block.content === 'string' && block.content.length > 30) {
+        // Skip bridge/auto-bridge injections
+        if (block.content.startsWith('[AUTO-BRIDGE') || block.content.startsWith('[WRITING STYLE') || block.content.startsWith('[UNIFIED')) continue;
+        snippets.push(block.content.slice(0, 1200));
+        if (snippets.length >= maxResults) break;
+      }
+    }
+  }
+  return snippets.length > 0
+    ? snippets.map((s, i) => `--- Result ${i + 1} ---\n${s}`).join('\n\n')
+    : '(no tool results available)';
+}
+
 // ── Error humanizer ────────────────────────────────────────────────────────────
 //
 // Raw tool errors (stack traces, "403", "fetch failed", AbortError) must never
@@ -344,7 +366,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         let totalToolCalls = 0;
         let nudgeCount = 0;
-        let stepListingRetried = false; // separate from nudgeCount so intent nudges don't block it
+        let stepListingRetryCount = 0; // counter: allows up to 2 forced retries before giving up
         let finalText = '';
         let canvasContent: any = null;
         let iteration = 0;
@@ -697,25 +719,24 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 } catch { /* non-fatal */ }
               }
               let forcedText = sanitizeModelText(getText(finalResponse.content));
-              // If the forced final response is ALSO a step-listing, retry once more
-              if (isStepListingResponse(forcedText, true) && !stepListingRetried) {
-                stepListingRetried = true;
+              // Allow up to 2 forced retries when the model keeps listing steps instead of answering
+              while (isStepListingResponse(forcedText, true) && stepListingRetryCount < 2) {
+                stepListingRetryCount++;
+                const toolDataSnippet = extractLastToolResults(messages);
                 const retryRes = await callLLM(
                   [
                     ...messages,
                     {
                       role: 'user',
-                      content:
-                        'STOP. You listed steps instead of answering. Read the tool results in this conversation and answer the user\'s question directly. ' +
-                        'What did the emails say? What specific information did you find? Write the actual answer — not what you searched for.',
+                      content: stepListingRetryCount === 1
+                        ? 'STOP. You listed what steps you ran, not what you FOUND. Read the tool results above and answer the user\'s question now. What specific information did the emails contain? Write the actual analysis, not a summary of your actions.'
+                        : `FINAL ATTEMPT. You must answer using this data:\n\n${toolDataSnippet}\n\nAnswer the user\'s original question using these results. Call open_canvas if this is a report/analysis. Do NOT say "Done" or list steps.`,
                     },
                   ],
                   finalTools,
                 );
                 const retryText = sanitizeModelText(getText(retryRes.content));
-                if (retryText && !isStepListingResponse(retryText, true)) {
-                  forcedText = retryText;
-                }
+                if (retryText) forcedText = retryText;
               }
               finalText = forcedText;
               break;
@@ -882,17 +903,23 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // LLM listed what tools it ran ("Done — completed Searched inbox for...")
           // instead of answering the user's question with the content it found.
           // Uses its own flag so intent-text nudges don't exhaust this retry.
-          if (isStepListingResponse(textContent, totalToolCalls > 0) && !stepListingRetried) {
-            stepListingRetried = true;
+          if (isStepListingResponse(textContent, totalToolCalls > 0) && stepListingRetryCount < 2) {
+            stepListingRetryCount++;
             emit('thinking', { status: 'Preparing answer…' });
+            const toolDataSnippet = extractLastToolResults(messages);
             messages.push({
               role: 'user',
-              content:
-                'STOP. Your response listed what steps you ran, not what you found. That is not acceptable. ' +
-                'The tool results are already in this conversation — read them and answer the user\'s question now. ' +
-                'What do the emails say? What specific information did you find? ' +
-                'Write a substantive answer using the actual content from the tool results. ' +
-                'Do NOT mention steps, tool names, searches, or what you did. Just answer the question with specifics.',
+              content: stepListingRetryCount === 1
+                ? 'STOP. You listed what steps you ran, not what you FOUND. That is not acceptable. ' +
+                  'The tool results are already in this conversation — read them and answer the user\'s question now. ' +
+                  'What do the emails say? What specific information did you find? ' +
+                  'Write a substantive answer using the actual content from the tool results. ' +
+                  'If this is a report or analysis, call open_canvas NOW with the full content. ' +
+                  'Do NOT mention steps, tool names, searches, or what you did.'
+                : `FINAL ATTEMPT. Here is the actual data from your tool results:\n\n${toolDataSnippet}\n\n` +
+                  'Use this data to answer the user\'s original question RIGHT NOW. ' +
+                  'If the task requires a report, summary, or analysis, call open_canvas with the full content. ' +
+                  'Do NOT say "Done", do NOT list steps. Write the actual answer.',
             });
             continue;
           }
