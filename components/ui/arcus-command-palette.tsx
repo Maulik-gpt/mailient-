@@ -1,106 +1,146 @@
 'use client';
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, ArrowUp, Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { useDashboardSettings } from '@/lib/DashboardSettingsContext';
 import { useSession } from 'next-auth/react';
 
-// Simple markdown renderer
-const renderMarkdown = (text: string): string => {
-    if (!text) return text;
-    const paragraphs = text.split(/\n\n+/);
-    const renderedParagraphs = paragraphs.map(para => {
-        let processed = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-white">$1</strong>');
-        if (processed.includes('\n- ') || processed.startsWith('- ') || processed.includes('\n* ') || processed.startsWith('* ')) {
-            const lines = processed.split('\n');
-            const listItems = lines.map(line => {
-                const match = line.match(/^[\s]*[-*]\s*(.*)$/);
-                if (match) return `<li class="ml-4 py-0.5">${match[1]}</li>`;
-                return line;
-            });
-            let joined = listItems.join('\n');
-            joined = joined.replace(/(<li[\s\S]*?<\/li>(?:\n<li[\s\S]*?<\/li>)*)/g, '<ul class="space-y-1 my-2 list-disc list-inside text-white/60">$1</ul>');
-            return joined;
-        }
-        processed = processed.replace(/\n/g, '<br/>');
-        return `<p class="mb-2 last:mb-0 text-white/70 text-[14px] leading-relaxed">${processed}</p>`;
-    });
-    return renderedParagraphs.join('');
-};
+interface Suggestion {
+    label: string;
+    prompt: string;
+}
 
-interface ArcusMessage {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    timestamp: string;
+/**
+ * Build default prompts from the user's REAL connected integrations and name.
+ * No mock data — each suggestion maps to something Arcus can actually do for
+ * this specific user given what they have connected.
+ */
+function buildSuggestions(connected: Record<string, boolean>, firstName: string): Suggestion[] {
+    const has = (k: string) => !!connected[k];
+    const out: Suggestion[] = [];
+
+    if (has('gmail')) {
+        out.push({ label: 'Summarize my unread emails', prompt: 'Summarize my unread emails and tell me what needs my attention.' });
+        out.push({ label: "Draft replies to everyone I'm holding up", prompt: "Find emails where people are waiting on a reply from me and draft responses in my voice." });
+    }
+    if (has('google_calendar')) {
+        out.push({ label: 'What does my day look like?', prompt: "Give me a rundown of today's calendar and flag any conflicts." });
+    }
+    if (has('cal_com')) {
+        out.push({ label: 'Find time for a 30-min call this week', prompt: 'Find open 30-minute slots in my schedule this week I can offer for a call.' });
+    }
+    if (has('notion')) {
+        out.push({ label: "Log today's action items to Notion", prompt: "Pull the action items from today's emails and log them to my Notion workspace." });
+    }
+    if (has('slack')) {
+        out.push({ label: 'Catch me up on Slack', prompt: 'Summarize my unread Slack mentions and threads I was tagged in.' });
+    }
+
+    // Always offer a scheduling agent — core Arcus capability, profile-agnostic.
+    out.push({ label: 'Set up a daily inbox digest at 9am', prompt: 'Create a scheduled agent that sends me a digest of important emails every morning at 9am.' });
+
+    // Fallback for users with nothing connected yet: keep prompts genuinely useful.
+    if (out.length <= 1) {
+        return [
+            { label: 'What can you do for me?', prompt: 'What can you do for me, and what should I connect to get the most out of you?' },
+            { label: 'Help me get to inbox zero', prompt: 'Walk me through getting to inbox zero — triage what matters and handle the rest.' },
+            { label: 'Set up a daily inbox digest at 9am', prompt: 'Create a scheduled agent that sends me a digest of important emails every morning at 9am.' },
+        ];
+    }
+
+    // Personalize the lead suggestion if we know the name.
+    if (firstName) {
+        out.unshift({ label: `What needs ${firstName}'s attention right now?`, prompt: 'Scan my inbox and calendar and tell me the most important things that need my attention right now.' });
+    }
+
+    return out.slice(0, 6);
 }
 
 export function ArcusCommandPalette() {
-    const { isArcusOpen, setIsArcusOpen, settings, playSystemSound } = useDashboardSettings();
+    const { isArcusOpen, setIsArcusOpen, playSystemSound } = useDashboardSettings();
     const { data: session } = useSession();
 
     const [query, setQuery] = useState('');
-    const [messages, setMessages] = useState<ArcusMessage[]>([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [conversationId, setConversationId] = useState<string | null>(null);
+    // Gmail is the app's core auth — every signed-in user granted Gmail scopes,
+    // so it's always available. Optional integrations are layered on from the API.
+    const [integrationStatuses, setIntegrationStatuses] = useState<Record<string, boolean>>({ gmail: true });
+    const [activeIndex, setActiveIndex] = useState(0);
 
     const inputRef = useRef<HTMLInputElement>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
-    const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-    // Auto-focus input when opened
+    const firstName = useMemo(() => (session?.user?.name || '').trim().split(' ')[0] || '', [session?.user?.name]);
+    const suggestions = useMemo(() => buildSuggestions(integrationStatuses, firstName), [integrationStatuses, firstName]);
+
+    // Fetch the user's real connected integrations to tailor the suggestions.
+    useEffect(() => {
+        if (!isArcusOpen) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const res = await fetch('/api/integrations/status');
+                if (!res.ok) return;
+                const data = await res.json();
+                if (cancelled || !Array.isArray(data?.integrations)) return;
+                const statuses: Record<string, boolean> = { gmail: true };
+                data.integrations.forEach((item: { provider?: string; connected?: boolean }) => {
+                    if (item?.provider) statuses[item.provider] = !!item.connected;
+                });
+                statuses.gmail = true; // core auth — never downgrade
+                setIntegrationStatuses(statuses);
+            } catch {
+                /* keep fallback suggestions */
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isArcusOpen]);
+
+    // Focus input on open, reset on close.
     useEffect(() => {
         if (isArcusOpen) {
-            setTimeout(() => inputRef.current?.focus(), 100);
+            setActiveIndex(0);
+            setTimeout(() => inputRef.current?.focus(), 80);
         } else {
-            // Reset state when closed
             setQuery('');
-            setMessages([]);
-            setConversationId(null);
         }
     }, [isArcusOpen]);
 
-    // Scroll to bottom on new messages
-    useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-        }
-    }, [messages]);
-
-    // Close on Escape
-    useEffect(() => {
-        if (!isArcusOpen) return;
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape') {
-                setIsArcusOpen(false);
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [isArcusOpen, setIsArcusOpen]);
-
-    const handleSend = useCallback(async () => {
-        const trimmed = query.trim();
+    const submit = useCallback((text: string) => {
+        const trimmed = text.trim();
         if (!trimmed) return;
 
-        // Unified Redirection Logic for v2 Agentic Pipeline
-        // We save the pending message to localStorage and redirect to the dashboard
-        // to leverage the high-performance agentic loop.
+        // Route through the full agentic pipeline (same as before) so the
+        // palette can do everything Arcus can — it just hands off the prompt.
         localStorage.setItem('pending_arcus_message', trimmed);
-        
-        // Clear any previous options to ensure a fresh session
         localStorage.removeItem('pending_arcus_options');
 
         setIsArcusOpen(false);
         setQuery('');
-
-        // Provide immediate visual feedback before redirection
         playSystemSound('success');
-        
-        // Push to the centralized agent interface
         window.location.href = '/dashboard/agent-talk';
-    }, [query, setIsArcusOpen, playSystemSound]);
+    }, [setIsArcusOpen, playSystemSound]);
+
+    // Keyboard: Esc closes, arrows move through suggestions, Enter submits.
+    useEffect(() => {
+        if (!isArcusOpen) return;
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                setIsArcusOpen(false);
+            } else if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                setActiveIndex(i => Math.min(i + 1, suggestions.length - 1));
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                setActiveIndex(i => Math.max(i - 1, 0));
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                if (query.trim()) submit(query);
+                else if (suggestions[activeIndex]) submit(suggestions[activeIndex].prompt);
+            }
+        };
+        window.addEventListener('keydown', onKey);
+        return () => window.removeEventListener('keydown', onKey);
+    }, [isArcusOpen, suggestions, activeIndex, query, submit, setIsArcusOpen]);
 
     if (!isArcusOpen) return null;
 
@@ -111,113 +151,57 @@ export function ArcusCommandPalette() {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[9999] flex items-start justify-center pt-[12vh]"
+                    transition={{ duration: 0.12 }}
+                    className="fixed inset-0 z-[9999] flex items-start justify-center pt-[14vh]"
                     onClick={() => setIsArcusOpen(false)}
                 >
-                    {/* Backdrop with premium glassmorphism */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="absolute inset-0 bg-black/40 backdrop-blur-[12px]"
-                    />
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[6px]" />
 
-                    {/* Command Launcher - Redesigned for v2 Redirection */}
                     <motion.div
-                        initial={{ opacity: 0, y: -20, scale: 0.96 }}
+                        initial={{ opacity: 0, y: -12, scale: 0.98 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -20, scale: 0.96 }}
-                        transition={{ type: 'spring', damping: 28, stiffness: 380 }}
+                        exit={{ opacity: 0, y: -12, scale: 0.98 }}
+                        transition={{ type: 'spring', damping: 30, stiffness: 400 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="relative w-full max-w-[680px] mx-4 bg-arcus-elevated rounded-[24px] border border-arcus-border shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col ring-1 ring-white/5"
+                        className="relative w-full max-w-[640px] mx-4 bg-arcus-elevated rounded-[20px] border border-arcus-border shadow-[0_30px_80px_-20px_rgba(0,0,0,0.45)] overflow-hidden"
                     >
-                        {/* Dynamic glow effect */}
-                        <div className="absolute -top-32 left-1/2 -translate-x-1/2 w-96 h-96 bg-blue-500/[0.05] rounded-full blur-[100px] pointer-events-none" />
-
-                        {/* Header - Unified Arcus Branding */}
-                        <div className="flex items-center gap-3 px-6 pt-5 pb-3">
-                            <div className="flex items-center gap-3 flex-1">
-                                <div className="w-8 h-8 rounded-xl bg-white/[0.03] flex items-center justify-center border border-white/[0.1] overflow-hidden shadow-2xl">
-                                    <img src="/arcus-ai-icon.jpg" alt="Arcus" className="w-full h-full object-cover grayscale brightness-125" />
-                                </div>
-                                <div className="flex flex-col">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[10px] font-black text-white tracking-[0.2em] uppercase opacity-40">Agentic Command</span>
-                                        <div className="w-1 h-1 rounded-full bg-blue-500 animate-pulse" />
-                                    </div>
-                                    <span className="text-[14px] font-medium text-white/90">Initialize Agent Intelligence</span>
-                                </div>
-                            </div>
+                        {/* Header / input row */}
+                        <div className="flex items-center gap-3 px-5 py-4">
+                            <Sparkles className="w-5 h-5 text-arcus-fg-tertiary shrink-0" strokeWidth={1.75} />
+                            <input
+                                ref={inputRef}
+                                type="text"
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                placeholder="Tell Arcus what to do…"
+                                className="flex-1 bg-transparent border-0 outline-none text-[18px] text-arcus-fg placeholder:text-arcus-fg-muted font-normal tracking-tight"
+                            />
                             <button
                                 onClick={() => setIsArcusOpen(false)}
-                                className="p-2 hover:bg-white/5 rounded-full transition-all text-white/20 hover:text-white/60 hover:rotate-90"
+                                className="shrink-0 text-[12px] font-medium text-arcus-fg-tertiary bg-arcus-surface border border-arcus-border rounded-md px-2.5 py-1 hover:bg-arcus-surface-hover transition-colors"
                             >
-                                <X className="w-4 h-4" />
+                                Esc
                             </button>
                         </div>
 
-                        {/* Input area - Primary Action */}
-                        <div className="px-6 pb-6 pt-2">
-                            <div className="relative flex items-center group">
-                                <input
-                                    ref={inputRef}
-                                    type="text"
-                                    value={query}
-                                    onChange={(e) => setQuery(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === 'Enter' && !e.shiftKey) {
-                                            e.preventDefault();
-                                            handleSend();
-                                        }
-                                    }}
-                                    className="w-full bg-white/[0.03] border border-arcus-border rounded-2xl px-6 py-5 pr-16 text-[17px] text-white placeholder:text-white/20 focus:outline-none focus:border-white/20 focus:bg-white/[0.05] focus:ring-4 focus:ring-white/[0.02] transition-all duration-300 font-light tracking-tight"
-                                    placeholder="What do you want the agent to do?"
-                                />
-                                
-                                <div className="absolute right-3 flex items-center gap-2">
-                                    <button
-                                        onClick={handleSend}
-                                        disabled={!query.trim()}
-                                        className={`p-2.5 rounded-xl transition-all duration-300 transform ${
-                                            query.trim()
-                                                ? 'bg-white text-black hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.2)]'
-                                                : 'bg-white/5 text-white/10 cursor-not-allowed opacity-20'
-                                        }`}
-                                    >
-                                        <Zap className={`w-4 h-4 ${query.trim() ? 'fill-black' : ''}`} />
-                                    </button>
-                                </div>
-                            </div>
+                        <div className="h-px w-full bg-arcus-divider" />
 
-                            {/* Shortcut Visualizer */}
-                            <div className="flex items-center justify-between mt-5 px-1">
-                                <div className="flex items-center gap-4">
-                                    <div className="flex items-center gap-2 text-[10px] text-white/20 font-bold uppercase tracking-widest">
-                                        <Sparkles className="w-3 h-3" />
-                                        Context Aware
-                                    </div>
-                                    <div className="h-3 w-[1px] bg-white/10" />
-                                    <div className="text-[10px] text-white/20 font-bold uppercase tracking-widest">
-                                        Global Redirection
-                                    </div>
-                                </div>
-                                
-                                <div className="flex items-center gap-3">
-                                    <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                                        <kbd className="text-[9px] text-white/60 bg-white/[0.05] px-1.5 py-0.5 rounded-md border border-white/10 font-mono">ENTER</kbd>
-                                        <span className="text-[9px] text-white/30 font-bold uppercase tracking-tighter">to execute</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5 opacity-40 group-hover:opacity-100 transition-opacity">
-                                        <kbd className="text-[9px] text-white/60 bg-white/[0.05] px-1.5 py-0.5 rounded-md border border-white/10 font-mono">ESC</kbd>
-                                        <span className="text-[9px] text-white/30 font-bold uppercase tracking-tighter">to close</span>
-                                    </div>
-                                </div>
-                            </div>
+                        {/* Default suggestions — derived from the user's real profile */}
+                        <div className="py-2">
+                            {suggestions.map((s, i) => (
+                                <button
+                                    key={s.label}
+                                    onClick={() => submit(s.prompt)}
+                                    onMouseEnter={() => setActiveIndex(i)}
+                                    className={`w-full flex items-center gap-4 px-5 py-3.5 text-left transition-colors ${
+                                        activeIndex === i ? 'bg-arcus-surface-hover' : 'bg-transparent'
+                                    }`}
+                                >
+                                    <Sparkles className="w-[18px] h-[18px] text-arcus-fg-tertiary shrink-0" strokeWidth={1.75} />
+                                    <span className="text-[15px] text-arcus-fg font-normal tracking-tight">{s.label}</span>
+                                </button>
+                            ))}
                         </div>
-
-                        {/* Subtle bottom accent */}
-                        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-30" />
                     </motion.div>
                 </motion.div>
             )}
