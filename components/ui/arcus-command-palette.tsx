@@ -103,6 +103,7 @@ export function ArcusCommandPalette() {
     const inputRef = useRef<HTMLInputElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const abortRef = useRef<AbortController | null>(null);
+    const conversationIdRef = useRef<string | null>(null);
 
     const firstName = useMemo(() => (session?.user?.name || '').trim().split(' ')[0] || '', [session?.user?.name]);
     const suggestions = useMemo(() => buildSuggestions(integrationStatuses, firstName), [integrationStatuses, firstName]);
@@ -140,6 +141,7 @@ export function ArcusCommandPalette() {
             setStreaming(false);
             setStatus('');
             setLiveAnswer('');
+            conversationIdRef.current = null; // next open starts a fresh thread
         }
     }, [isArcusOpen]);
 
@@ -148,7 +150,33 @@ export function ArcusCommandPalette() {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [messages, liveAnswer, status]);
 
-    const streamReply = useCallback(async (text: string, history: ChatMessage[]) => {
+    // Persist the popup exchange into the SAME store the full agent-talk app uses,
+    // so it shows up in chat history and "Open full Arcus" continues this thread.
+    const persistConversation = useCallback((msgs: ChatMessage[]) => {
+        if (!msgs.length) return;
+        if (!conversationIdRef.current) {
+            conversationIdRef.current = `conv_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+        }
+        const id = conversationIdRef.current;
+        const time = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const formatted = msgs.map((m, i) => m.role === 'user'
+            ? { id: Date.now() + i, type: 'user', role: 'user', content: m.content, time }
+            : { id: Date.now() + i, type: 'agent', role: 'assistant', content: { text: m.content, list: [], footer: '' }, time });
+        const title = (msgs.find(m => m.role === 'user')?.content || 'Arcus chat').slice(0, 60);
+        try {
+            localStorage.setItem(`conversation_${id}`, JSON.stringify({
+                id, messages: formatted, title, lastUpdated: new Date().toISOString(), messageCount: formatted.length,
+            }));
+            localStorage.setItem(`conv_${id}_title`, title);
+        } catch { /* storage full — server copy below still persists */ }
+        fetch('/api/arcus/conversation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ conversationId: id, messages: formatted, title }),
+        }).catch(() => { /* non-critical */ });
+    }, []);
+
+    const streamReply = useCallback(async (text: string, history: ChatMessage[], baseMessages: ChatMessage[]) => {
         setStreaming(true);
         setStatus('Thinking…');
         setLiveAnswer('');
@@ -157,6 +185,7 @@ export function ArcusCommandPalette() {
 
         let answer = '';
         let canvasMd = '';
+        let gotFinal = false;
         try {
             const res = await fetch('/api/arcus/chat', {
                 method: 'POST',
@@ -194,11 +223,12 @@ export function ArcusCommandPalette() {
                         answer = stripThinking(data.content || '');
                         setLiveAnswer(answer);
                         if (data.canvasContent?.markdown) canvasMd = data.canvasContent.markdown;
+                        gotFinal = true;
                     } else if (eventType === 'canvas') {
-                        if (data?.markdown) canvasMd = data.markdown;
+                        if (data?.markdown) { canvasMd = data.markdown; gotFinal = true; }
                     } else if (eventType === 'question') {
                         const qs = (data.questions || []).map((q: any) => q.text || q).filter(Boolean);
-                        if (qs.length) { answer = qs.join('\n\n'); setLiveAnswer(answer); }
+                        if (qs.length) { answer = qs.join('\n\n'); setLiveAnswer(answer); gotFinal = true; }
                     } else if (eventType === 'error') {
                         throw new Error(data.message || data.error || 'Something went wrong.');
                     }
@@ -207,11 +237,23 @@ export function ArcusCommandPalette() {
 
             // Prefer the substantive canvas output (digest/report) when the chat
             // text is just a short hand-off line.
-            const finalText = canvasMd && canvasMd.length > answer.length ? canvasMd : (answer || 'Done.');
-            setMessages(prev => [...prev, { role: 'assistant', content: finalText }]);
+            let finalText = canvasMd && canvasMd.length > answer.length ? canvasMd : answer;
+            if (!gotFinal) {
+                // Stream ended (often the serverless 60s cap) before a final answer —
+                // keep whatever streamed and point the user to the full run.
+                finalText = (finalText ? finalText + '\n\n' : '') +
+                    "_Arcus didn't finish here — it's still working or the free model is busy. Open full Arcus to see the complete run._";
+            } else if (!finalText) {
+                finalText = 'Done.';
+            }
+            const finalMessages: ChatMessage[] = [...baseMessages, { role: 'assistant', content: finalText }];
+            setMessages(finalMessages);
+            persistConversation(finalMessages);
         } catch (err: any) {
             if (err?.name !== 'AbortError') {
-                setMessages(prev => [...prev, { role: 'assistant', content: `⚠️ ${err?.message || 'Arcus could not reply. Try again.'}` }]);
+                const finalMessages: ChatMessage[] = [...baseMessages, { role: 'assistant', content: `⚠️ ${err?.message || 'Arcus could not reply. Try again.'}` }];
+                setMessages(finalMessages);
+                persistConversation(finalMessages);
             }
         } finally {
             setStreaming(false);
@@ -227,22 +269,20 @@ export function ArcusCommandPalette() {
         if (!trimmed || streaming) return;
         playSystemSound('click');
         const history = messages.slice(-10);
-        setMessages(prev => [...prev, { role: 'user', content: trimmed }]);
+        const next: ChatMessage[] = [...messages, { role: 'user', content: trimmed }];
+        setMessages(next);
         setQuery('');
-        streamReply(trimmed, history);
+        streamReply(trimmed, history, next);
     }, [streaming, messages, streamReply, playSystemSound]);
 
     const openFullArcus = useCallback(() => {
-        const last = [...messages].reverse().find(m => m.role === 'user');
-        if (last) {
-            try {
-                localStorage.setItem('pending_arcus_message', last.content);
-                localStorage.removeItem('pending_arcus_options');
-            } catch { /* ignore */ }
-        }
         setIsArcusOpen(false);
-        window.location.href = '/dashboard/agent-talk';
-    }, [messages, setIsArcusOpen]);
+        // Deep-link to the saved thread so the full app continues this exact
+        // conversation (it loads from localStorage / the conversation API).
+        window.location.href = conversationIdRef.current
+            ? `/dashboard/agent-talk/${conversationIdRef.current}`
+            : '/dashboard/agent-talk';
+    }, [setIsArcusOpen]);
 
     // Keyboard: Esc closes; arrows/Enter drive suggestions only before a conversation starts.
     useEffect(() => {
