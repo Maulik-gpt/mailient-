@@ -67,7 +67,6 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { ProactiveNudge } from './components/ProactiveNudge';
 import { AuditPanel } from './components/AuditPanel';
-import { OnboardingFlow } from './components/OnboardingFlow';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
@@ -4195,13 +4194,6 @@ export default function ChatInterface({
 
                       {isInitialMode && arcusView === 'feed' ? (
                         <div className="flex flex-col items-center justify-center min-h-[50vh] py-8 animate-fade-in relative">
-
-                          <OnboardingFlow
-                            visible={messages.length === 0}
-                            connectedIntegrations={connectedIntegrationIds}
-                            userName={userName}
-                            onPrompt={(prompt) => setSuggestionInput({ text: prompt, id: Date.now() })}
-                          />
 
                           <ArcusDashboard
                             userName={userName}
