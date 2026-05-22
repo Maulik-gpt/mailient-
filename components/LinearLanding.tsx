@@ -237,6 +237,49 @@ export function LinearLanding() {
     document.title = "Mailient";
   }, []);
 
+  // Google One Tap — shows the native prompt to unauthenticated visitors.
+  // Authenticated users are redirected away from "/" by middleware, so this
+  // only ever fires for logged-out visitors. The credential is verified by the
+  // `google-one-tap` NextAuth Credentials provider in lib/auth.js.
+  useEffect(() => {
+    const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
+    if (!CLIENT_ID) return;
+
+    const handleCredential = async (response: { credential?: string }) => {
+      if (!response?.credential) return;
+      await signIn("google-one-tap", {
+        credential: response.credential,
+        callbackUrl: "/home-feed",
+      });
+    };
+
+    const init = () => {
+      const g = (window as any).google;
+      if (!g?.accounts?.id) return;
+      g.accounts.id.initialize({
+        client_id: CLIENT_ID,
+        callback: handleCredential,
+        auto_select: false,
+        cancel_on_tap_outside: false,
+        context: "signin",
+        use_fedcm_for_prompt: true,
+      });
+      g.accounts.id.prompt();
+    };
+
+    if (document.getElementById("google-one-tap-script")) {
+      init();
+      return;
+    }
+    const script = document.createElement("script");
+    script.id = "google-one-tap-script";
+    script.src = "https://accounts.google.com/gsi/client";
+    script.async = true;
+    script.defer = true;
+    script.onload = init;
+    document.body.appendChild(script);
+  }, []);
+
   const currentText = DESCRIPTIONS[descIndex];
   const dynamicSpeed = Math.max(4, Math.floor(750 / (currentText.length * 4)));
 

@@ -36,12 +36,32 @@ function isModelCooling(model: string): boolean {
   return true;
 }
 
-function markModelRateLimited(model: string, retryAfterSec: number) {
-  const cooldownMs = Math.min(retryAfterSec, 90) * 1000;
+function markModelRateLimited(model: string, retryAfterSec: number, opts?: { dailyResetMs?: number }) {
+  // Daily-quota exhaustion ("free-models-per-day") doesn't recover for hours —
+  // cool the model until its real reset timestamp so we stop retrying it on every
+  // call. A short cooldown here is what made a quota-dead account waste ~5s per
+  // request grinding through 10 models that will 429 again instantly.
+  let cooldownMs: number;
+  if (opts?.dailyResetMs && opts.dailyResetMs > Date.now()) {
+    cooldownMs = opts.dailyResetMs - Date.now();
+  } else {
+    cooldownMs = Math.min(retryAfterSec, 90) * 1000;
+  }
   const prev = modelCooldownUntil.get(model) ?? 0;
   // Don't shorten an existing cooldown
   modelCooldownUntil.set(model, Math.max(prev, Date.now() + cooldownMs));
-  log('warn', 'Engine', `Model rate-limited — cooling ${Math.min(retryAfterSec, 90)}s`, { model });
+  const mins = Math.round(cooldownMs / 60000);
+  log('warn', 'Engine', `Model rate-limited — cooling ${mins >= 1 ? mins + 'm' : Math.round(cooldownMs / 1000) + 's'}`, { model, daily: !!opts?.dailyResetMs });
+}
+
+// Parse OpenRouter's 429 body to distinguish a per-day quota wall (recovers at
+// midnight UTC) from a transient per-minute rate limit (recovers in seconds).
+function parseRateLimit(body: any): { daily: boolean; resetMs?: number; retryAfterSec: number } {
+  const msg = String(body?.error?.message ?? '').toLowerCase();
+  const daily = msg.includes('per-day') || msg.includes('per day') || msg.includes('free-models-per-day');
+  const resetRaw = body?.error?.metadata?.headers?.['X-RateLimit-Reset'];
+  const resetMs = resetRaw != null ? Number(resetRaw) : undefined;
+  return { daily, resetMs: Number.isFinite(resetMs) ? resetMs : undefined, retryAfterSec: 30 };
 }
 
 // ── Model lists ────────────────────────────────────────────────────────────────
@@ -284,9 +304,11 @@ export async function callLLM(
         // 429 — respect Retry-After and mark model as cooling down.
         // This prevents hammering a rate-limited model across parallel calls.
         if (res.status === 429) {
+          const errBody = await res.json().catch(() => null);
+          const { daily, resetMs } = parseRateLimit(errBody);
           const retryAfterRaw = res.headers.get('retry-after') ?? res.headers.get('x-ratelimit-reset-requests');
           const retryAfterSec = retryAfterRaw ? parseFloat(retryAfterRaw) : 30;
-          markModelRateLimited(model, isNaN(retryAfterSec) ? 30 : retryAfterSec);
+          markModelRateLimited(model, isNaN(retryAfterSec) ? 30 : retryAfterSec, daily && resetMs ? { dailyResetMs: resetMs } : undefined);
           return null;
         }
         const txt = await res.text().catch(() => '');
@@ -304,7 +326,8 @@ export async function callLLM(
         // OpenRouter sometimes embeds 429 errors in a 200 body
         const errCode = data.error?.code ?? data.error?.status;
         if (errCode === 429 || String(data.error?.message ?? '').toLowerCase().includes('rate limit')) {
-          markModelRateLimited(model, 30);
+          const { daily, resetMs } = parseRateLimit(data);
+          markModelRateLimited(model, 30, daily && resetMs ? { dailyResetMs: resetMs } : undefined);
           return null;
         }
         log('warn', 'Engine', `OR error`, {
@@ -356,11 +379,17 @@ export async function callLLM(
   // Pass 1: sequential free models, all keys race each.
   // Small fixed jitter between models to avoid thundering-herd without adding
   // meaningful latency (100ms flat vs. old 400-1200ms ramp).
+  // Timeout must exceed the slowest healthy free model's real response time.
+  // gpt-oss-120b (our most reliable free model) reasons for ~12s on simple
+  // prompts and longer for tool calls — an 11s cap was killing the ONE model
+  // that still works once the daily free quota is exhausted. Quota-dead models
+  // 429 in ~0.5s regardless, so a longer cap only helps the working model.
+  const MODEL_TIMEOUT = 32000;
   const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
   log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await sleep(100);
-    const result = await tryModel(list[i], baseBody, 11000);
+    const result = await tryModel(list[i], baseBody, MODEL_TIMEOUT);
     if (result) return result;
   }
 
@@ -368,7 +397,7 @@ export async function callLLM(
   log('warn', 'Engine', 'Pass 1 failed — 800ms pause then retrying top models');
   await sleep(800);
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 6)) {
-    const result = await tryModel(model, baseBody, 11000);
+    const result = await tryModel(model, baseBody, MODEL_TIMEOUT);
     if (result) return result;
     await sleep(200);
   }
@@ -380,7 +409,7 @@ export async function callLLM(
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
-    const r = await tryModel(model, noToolsBody, 11000);
+    const r = await tryModel(model, noToolsBody, MODEL_TIMEOUT);
     if (r) return r;
     await sleep(200);
   }
