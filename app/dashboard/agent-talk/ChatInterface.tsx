@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot, Globe, MessageSquare } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot, Globe, MessageSquare, Shield } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -63,6 +63,11 @@ import { SpiralLoader } from '@/components/ui/spiral-loader';
 import { useArcusAgentStream } from './hooks/useArcusAgentStream';
 import { useArcusV3Feed } from './hooks/useArcusV3Feed';
 import { usePlanModeBrief } from './hooks/usePlanModeBrief';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { ShortcutsModal } from './components/ShortcutsModal';
+import { ProactiveNudge } from './components/ProactiveNudge';
+import { AuditPanel } from './components/AuditPanel';
+import { OnboardingFlow } from './components/OnboardingFlow';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
@@ -1471,6 +1476,8 @@ export default function ChatInterface({
   const [liveActivityLine, setLiveActivityLine] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showShortcutsModal, setShowShortcutsModal] = useState(false);
+  const [showAuditPanel, setShowAuditPanel] = useState(false);
 
   const [userName, setUserName] = useState<string>('User');
   const [emailStats, setEmailStats] = useState({
@@ -1825,6 +1832,50 @@ export default function ChatInterface({
     gmail: false,
     'google-calendar': false,
     'google-meet': false
+  });
+
+  // Derived list of connected integration IDs for components that need it
+  const connectedIntegrationIds = [
+    integrations.gmail && 'gmail',
+    integrations['google-calendar'] && 'gcal',
+    integrations['google-meet'] && 'gcal',
+  ].filter(Boolean) as string[];
+
+  // ── Keyboard shortcuts ────────────────────────────────────────────────────────
+  const shortcuts = useKeyboardShortcuts({
+    enabled: true,
+    onFocusInput: () => {
+      const textarea = document.querySelector<HTMLTextAreaElement>('textarea[placeholder*="Arcus"]') ||
+        document.querySelector<HTMLTextAreaElement>('textarea');
+      textarea?.focus();
+    },
+    onSend: () => {
+      const sendBtn = document.querySelector<HTMLButtonElement>('[aria-label="Send"], button[type="submit"]');
+      sendBtn?.click();
+    },
+    onCloseCanvas: () => { setIsCanvasOpen(false); setShowShortcutsModal(false); setShowAuditPanel(false); },
+    onNewChat: () => startNewChat(),
+    onShowShortcuts: () => setShowShortcutsModal(prev => !prev),
+    onAuditPanel: () => setShowAuditPanel(prev => !prev),
+    onMorningBrief: () => {
+      setSuggestionInput({ text: 'Give me a morning briefing — summarize my inbox, flag urgent emails, and list follow-ups.', id: Date.now() });
+    },
+    onFollowUps: () => {
+      setSuggestionInput({ text: 'Check my sent emails from the last week and find any that haven\'t gotten a reply.', id: Date.now() });
+    },
+    onCopyLastResponse: () => {
+      const lastAgentMsg = [...messages].reverse().find(m => m.role === 'assistant');
+      if (lastAgentMsg) {
+        const text = typeof lastAgentMsg.content === 'string' ? lastAgentMsg.content : (lastAgentMsg.content as any)?.text ?? '';
+        if (text) { navigator.clipboard.writeText(text); toast.success('Last response copied'); }
+      }
+    },
+    onToggleSidebar: () => setIsSidebarCollapsed(prev => !prev),
+    onEscapeAction: () => {
+      if (showShortcutsModal) { setShowShortcutsModal(false); return; }
+      if (showAuditPanel) { setShowAuditPanel(false); return; }
+      if (isCanvasOpen) { setIsCanvasOpen(false); return; }
+    },
   });
 
   // --- Helper Functions (Hoisted up for usage in useEffect) ---
@@ -3679,6 +3730,17 @@ export default function ChatInterface({
           currentPlan={usageLimitModalData?.currentPlan || 'starter'}
         />
 
+        <ShortcutsModal
+          open={showShortcutsModal}
+          onClose={() => setShowShortcutsModal(false)}
+          shortcuts={shortcuts}
+        />
+
+        <AuditPanel
+          open={showAuditPanel}
+          onClose={() => setShowAuditPanel(false)}
+        />
+
         <div className="flex h-full w-full text-arcus-fg bg-arcus-bg selection:bg-arcus-surface selection:text-arcus-fg dark:selection:bg-arcus-surface dark:selection:text-arcus-fg overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
@@ -3759,7 +3821,16 @@ export default function ChatInterface({
               >
                 {/* Header - Glassmorphic fixed height */}
                 <div className="shrink-0 z-40 bg-arcus-bg/40 backdrop-blur-md border-none" style={{ flexShrink: 0 }}>
-                  <div className="relative px-8 py-4">
+                  <div className="relative px-4 sm:px-8 py-4">
+                    {/* Mobile menu button — only shown on small screens */}
+                    <div className="md:hidden absolute left-4 top-1/2 -translate-y-1/2 z-50">
+                      <button
+                        onClick={() => setIsMobileMenuOpen(prev => !prev)}
+                        className="p-2 rounded-lg text-white/60 hover:text-white hover:bg-white/[0.08] transition-all"
+                      >
+                        <Menu className="w-5 h-5" />
+                      </button>
+                    </div>
                     {/* Centered Agent/Home Toggle */}
                     {isInitialMode && arcusView === 'feed' && (
                       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 pointer-events-auto">
@@ -3955,6 +4026,20 @@ export default function ChatInterface({
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
                               <button
+                                onClick={() => setShowAuditPanel(prev => !prev)}
+                                className={cn('p-2 rounded-lg transition-all focus:outline-none focus:ring-0', showAuditPanel ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white/60')}
+                              >
+                                <Shield className="w-[18px] h-[18px]" />
+                              </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom">
+                              <span className="text-[10px]">Audit Trail <kbd className="ml-1 opacity-50">⌘⇧A</kbd></span>
+                            </TooltipContent>
+                          </Tooltip>
+
+                          <Tooltip delayDuration={100}>
+                            <TooltipTrigger asChild>
+                              <button
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   startNewChat();
@@ -3965,7 +4050,7 @@ export default function ChatInterface({
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="bottom">
-                              <span className="text-[10px]">New Chat</span>
+                              <span className="text-[10px]">New Chat <kbd className="ml-1 opacity-50">⌘⇧N</kbd></span>
                             </TooltipContent>
                           </Tooltip>
 
@@ -4043,7 +4128,7 @@ export default function ChatInterface({
                 >
                   <div
                     ref={scrollContainerRef}
-                    className="absolute inset-0 overflow-y-auto px-6 py-4 scroll-smooth arcus-scrollbar"
+                    className="absolute inset-0 overflow-y-auto px-3 sm:px-6 py-4 scroll-smooth arcus-scrollbar"
                     style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
                   >
                     <div className="max-w-3xl mx-auto w-full">
@@ -4099,8 +4184,25 @@ export default function ChatInterface({
                       )}
                         </>
                       )}
+                      {!isInitialMode && integrations.gmail && (
+                        <ProactiveNudge
+                          enabled={!isLoading}
+                          onPrompt={(prompt) => {
+                            setSuggestionInput({ text: prompt, id: Date.now() });
+                          }}
+                        />
+                      )}
+
                       {isInitialMode && arcusView === 'feed' ? (
                         <div className="flex flex-col items-center justify-center min-h-[50vh] py-8 animate-fade-in relative">
+
+                          <OnboardingFlow
+                            visible={messages.length === 0}
+                            connectedIntegrations={connectedIntegrationIds}
+                            userName={userName}
+                            onPrompt={(prompt) => setSuggestionInput({ text: prompt, id: Date.now() })}
+                          />
+
                           <ArcusDashboard
                             userName={userName}
                             onSendMessage={(msg) => handleSend(msg)}

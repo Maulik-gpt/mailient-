@@ -229,20 +229,24 @@ export function CanvasPanel({
 
   const cfg = getConfig(displayedData.type);
   const isEmail = displayedData.type === 'email_draft' || displayedData.type === 'reply';
-  const panelWidth = isClient && window.innerWidth < 768 ? 'calc(100vw - 24px)' : `${width}px`;
+  const isMobile = isClient && window.innerWidth < 768;
+  const panelWidth = isMobile ? 'calc(100vw - 16px)' : `${width}px`;
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: 40, scale: 0.985 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
+      initial={isMobile ? { opacity: 0, y: 40 } : { opacity: 0, x: 40, scale: 0.985 }}
+      animate={isMobile ? { opacity: 1, y: 0 } : { opacity: 1, x: 0, scale: 1 }}
       transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        'h-[calc(100vh-32px)] flex flex-col flex-shrink-0 relative',
-        'bg-arcus-elevated border border-arcus-border rounded-[24px] shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
-        'overflow-hidden select-text m-3',
+        'flex flex-col flex-shrink-0 relative',
+        'bg-arcus-elevated border border-arcus-border shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
+        'overflow-hidden select-text',
+        isMobile
+          ? 'fixed inset-x-2 bottom-2 top-auto rounded-[24px] z-[200]'
+          : 'h-[calc(100vh-32px)] rounded-[24px] m-3',
         isResizing ? 'cursor-ew-resize' : '',
       )}
-      style={{ width: panelWidth }}
+      style={{ width: isMobile ? 'calc(100vw - 16px)' : panelWidth, maxHeight: isMobile ? '80vh' : undefined }}
     >
       {/* Accent glow at top */}
       <div
