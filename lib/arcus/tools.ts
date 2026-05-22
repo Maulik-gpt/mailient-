@@ -249,7 +249,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'get_sent_emails',
-    description: 'Get the user\'s recent sent emails to analyze their writing style, tone, and voice. Use this before drafting any reply to match their style perfectly.',
+    description: 'Get the user\'s recent sent emails to analyze their writing style, tone, and voice. Only call this if get_voice_profile returns no stored profile. Do NOT call this just because the user asked about their voice profile — call get_voice_profile first.',
     input_schema: {
       type: 'object',
       properties: {
@@ -258,8 +258,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'get_voice_profile',
+    description: 'Read the user\'s saved voice/writing style profile from the database. Call this FIRST when: (1) the user asks about their voice profile, writing style, or tone, (2) before drafting any email reply to check for a stored profile. Returns the full voice profile including tone, greeting patterns, closing patterns, vocabulary, and sample phrases. If no profile has been saved yet, it will say so — only then should you fall back to get_sent_emails to build one. NEVER call get_sent_emails just to answer "do you have access to my voice profile?" — use this tool instead.',
+    input_schema: {
+      type: 'object',
+      properties: {},
+    },
+  },
+  {
     name: 'draft_reply',
-    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) get_sent_emails to load the user\'s voice profile — NON-NEGOTIABLE, (4) schedule any meeting if needed. Write the body using the voice profile AND the recipient context gathered in steps 2-3. STOP after calling — do NOT call send_email.',
+    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) get_voice_profile to load the stored voice/writing style profile — if it returns no profile, THEN call get_sent_emails to build one, (4) schedule any meeting if needed. Write the body using the voice profile AND the recipient context gathered in steps 2-3. STOP after calling — do NOT call send_email.',
     input_schema: {
       type: 'object',
       properties: {
@@ -563,6 +571,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   search_gmail: 'gmail',
   read_email: 'gmail',
   get_sent_emails: 'gmail',
+  get_voice_profile: null,
   draft_reply: 'gmail',
   send_email: 'gmail',
   schedule_meeting: 'gcal',
@@ -626,6 +635,7 @@ export async function executeTool(
       case 'search_gmail':      result = await searchGmail(userId, input); break;
       case 'read_email':        result = await readEmail(userId, input); break;
       case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
+      case 'get_voice_profile': result = await getVoiceProfileTool(userId); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
       case 'send_email':        result = await sendEmail(userId, input); break;
       case 'request_confirmation': result = await requestConfirmation(input); break;
@@ -782,7 +792,7 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
   let voiceGuide = '';
   try {
     const { voiceProfileService } = await import('../voice-profile-service.js');
-    const profile = await voiceProfileService.getVoiceProfile(userId);
+    const profile = await voiceProfileService.getVoiceProfile(userId) as any;
     if (profile && profile.status !== 'default') {
       const prompt = voiceProfileService.generateVoicePrompt(profile);
       if (prompt && typeof prompt === 'string' && prompt.trim()) {
@@ -801,6 +811,36 @@ You have just read the user's real sent emails above. Cross-reference the sample
   }
 
   return { output: `${valid.length} recent sent emails for style analysis:\n\n${lines.join('\n\n---\n\n')}${voiceGuide}` };
+}
+
+async function getVoiceProfileTool(userId: string): Promise<ToolResult> {
+  try {
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+    const profile = await voiceProfileService.getVoiceProfile(userId) as any;
+
+    if (!profile || profile.status === 'default') {
+      return {
+        output: `No saved voice profile found for this user yet. To build one, call get_sent_emails — it will analyze the user's recent sent mail and generate a voice profile automatically. Once built, subsequent calls to get_voice_profile will return the stored profile.`,
+      };
+    }
+
+    const prompt = voiceProfileService.generateVoicePrompt(profile) as string | undefined;
+    const lines: string[] = [
+      `Voice profile found (last updated: ${profile.updated_at ?? profile.created_at ?? 'unknown'})`,
+      '',
+      prompt?.trim() ?? '(profile exists but no formatted prompt generated)',
+    ];
+
+    // Include high-level metadata when available
+    if (profile.tone) lines.push(`\nTone: ${profile.tone}`);
+    if (profile.greeting_patterns?.length) lines.push(`Typical greetings: ${profile.greeting_patterns.join(', ')}`);
+    if (profile.closing_patterns?.length) lines.push(`Typical closings: ${profile.closing_patterns.join(', ')}`);
+    if (profile.vocabulary?.length) lines.push(`Signature vocabulary: ${profile.vocabulary.join(', ')}`);
+
+    return { output: lines.join('\n') };
+  } catch (err: any) {
+    return { output: `Failed to read voice profile: ${err.message}` };
+  }
 }
 
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
