@@ -23,6 +23,27 @@ function log(level: 'info' | 'warn' | 'error', module: string, msg: string, extr
   else console.log(line);
 }
 
+// ── Per-model rate limit cooldown tracker (module-level, survives requests) ────
+// When a model returns 429, we mark it as cooling for Retry-After seconds
+// (capped at 90s) so subsequent calls skip it until it's available again.
+// This prevents hammering a rate-limited model across parallel tool results.
+const modelCooldownUntil = new Map<string, number>();
+
+function isModelCooling(model: string): boolean {
+  const until = modelCooldownUntil.get(model);
+  if (!until) return false;
+  if (Date.now() >= until) { modelCooldownUntil.delete(model); return false; }
+  return true;
+}
+
+function markModelRateLimited(model: string, retryAfterSec: number) {
+  const cooldownMs = Math.min(retryAfterSec, 90) * 1000;
+  const prev = modelCooldownUntil.get(model) ?? 0;
+  // Don't shorten an existing cooldown
+  modelCooldownUntil.set(model, Math.max(prev, Date.now() + cooldownMs));
+  log('warn', 'Engine', `Model rate-limited — cooling ${Math.min(retryAfterSec, 90)}s`, { model });
+}
+
 // ── Model lists ────────────────────────────────────────────────────────────────
 
 /**
@@ -241,6 +262,9 @@ export async function callLLM(
 
   const deadKeys = new Set<string>();
 
+  function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
+  function jitter(maxMs: number) { return Math.floor(Math.random() * maxMs); }
+
   async function tryOne(key: string, model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
     if (deadKeys.has(key)) return null;
     try {
@@ -257,6 +281,14 @@ export async function callLLM(
       });
 
       if (!res.ok) {
+        // 429 — respect Retry-After and mark model as cooling down.
+        // This prevents hammering a rate-limited model across parallel calls.
+        if (res.status === 429) {
+          const retryAfterRaw = res.headers.get('retry-after') ?? res.headers.get('x-ratelimit-reset-requests');
+          const retryAfterSec = retryAfterRaw ? parseFloat(retryAfterRaw) : 30;
+          markModelRateLimited(model, isNaN(retryAfterSec) ? 30 : retryAfterSec);
+          return null;
+        }
         const txt = await res.text().catch(() => '');
         if (res.status === 401 || res.status === 403) {
           deadKeys.add(key);
@@ -269,9 +301,15 @@ export async function callLLM(
 
       const data = await res.json();
       if (data.error) {
+        // OpenRouter sometimes embeds 429 errors in a 200 body
+        const errCode = data.error?.code ?? data.error?.status;
+        if (errCode === 429 || String(data.error?.message ?? '').toLowerCase().includes('rate limit')) {
+          markModelRateLimited(model, 30);
+          return null;
+        }
         log('warn', 'Engine', `OR error`, {
           model, key: `…${key.slice(-4)}`,
-          code: data.error?.code,
+          code: errCode,
           msg: String(data.error?.message ?? data.error ?? '').slice(0, 200),
         });
         return null;
@@ -295,48 +333,56 @@ export async function callLLM(
     }
   }
 
-  // Race all active keys for a single model — max N_keys concurrent requests.
+  // Race all active keys for a single model.
+  // Keys fire with a small random jitter (0-150ms) so concurrent callers from
+  // parallel tool results don't all hit the same endpoint at the exact same ms.
   async function tryModel(model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
+    if (isModelCooling(model)) {
+      log('info', 'Engine', `Skip cooling model`, { model });
+      return null;
+    }
     const active = keys.filter(k => !deadKeys.has(k));
     if (!active.length) return null;
     log('info', 'Engine', `Trying`, { model, keys: active.length });
     return Promise.any(
-      active.map(k => tryOne(k, model, body, timeoutMs).then(r => r ?? Promise.reject(null)))
+      active.map((k, i) =>
+        sleep(i === 0 ? 0 : jitter(150))
+          .then(() => tryOne(k, model, body, timeoutMs))
+          .then(r => r ?? Promise.reject(null))
+      )
     ).catch(() => null);
   }
 
-  function sleep(ms: number) { return new Promise<void>(r => setTimeout(r, ms)); }
-
-  // Pass 1: sequential free models, all keys race each. 429s are common on
-  // the shared free pool, so we just move to the next model immediately.
+  // Pass 1: sequential free models, all keys race each.
+  // Uses exponential backoff between models (200ms → 400ms → 600ms …) to
+  // reduce thundering-herd pressure on the free pool under heavy parallelism.
   const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
   log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
   for (let i = 0; i < list.length; i++) {
-    if (i > 0) await sleep(400);
+    if (i > 0) await sleep(200 + Math.min(i * 200, 1000)); // 400ms, 600ms, 800ms … capped at 1.2s
     const result = await tryModel(list[i], baseBody, 18000);
     if (result) return result;
   }
 
-  // Pass 2: brief pause then retry the confirmed-good models (rate limits
-  // often clear within a couple seconds on the free pool).
-  log('warn', 'Engine', 'Pass 1 failed — 3 s pause then retrying top models');
-  await sleep(3000);
+  // Pass 2: brief pause then retry any models whose cooldowns may have expired.
+  log('warn', 'Engine', 'Pass 1 failed — 4 s pause then retrying top models');
+  await sleep(4000);
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 6)) {
     const result = await tryModel(model, baseBody, 18000);
     if (result) return result;
-    await sleep(400);
+    await sleep(600);
   }
 
   // Pass 3: emergency — strip tool schemas, try top models for a text answer.
   log('warn', 'Engine', 'Pass 2 failed — emergency text-only round');
-  await sleep(1000);
+  await sleep(1500);
   const noToolsBody: Record<string, any> = { ...baseBody };
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
     const r = await tryModel(model, noToolsBody, 18000);
     if (r) return r;
-    await sleep(400);
+    await sleep(600);
   }
 
   log('error', 'Engine', 'All passes exhausted', {

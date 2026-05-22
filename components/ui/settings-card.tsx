@@ -466,6 +466,45 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
 
 
                                     <div className="space-y-4">
+                                        <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">Keyboard Shortcuts</h2>
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-6 border border-neutral-200 dark:border-white/5">
+                                            <div className="flex items-center gap-2 mb-5">
+                                                <Keyboard className="w-4 h-4 text-blue-500" />
+                                                <span className="text-[14px] font-semibold text-black dark:text-white">Arcus Shortcuts</span>
+                                                <span className="ml-auto text-[10px] font-bold uppercase tracking-widest text-neutral-400 dark:text-neutral-500 bg-neutral-100 dark:bg-white/5 px-2 py-0.5 rounded-full border border-neutral-200 dark:border-white/10">macOS / Windows</span>
+                                            </div>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-0.5">
+                                                {[
+                                                    { label: 'Focus chat input', keys: ['⌘', 'K'] },
+                                                    { label: 'Send message', keys: ['⌘', '↵'] },
+                                                    { label: 'New chat', keys: ['⌘', '⇧', 'N'] },
+                                                    { label: 'Morning briefing', keys: ['⌘', '⇧', 'B'] },
+                                                    { label: 'Check follow-ups', keys: ['⌘', '⇧', 'F'] },
+                                                    { label: 'Open audit trail', keys: ['⌘', '⇧', 'A'] },
+                                                    { label: 'Copy last response', keys: ['⌘', '⇧', 'C'] },
+                                                    { label: 'Toggle sidebar', keys: ['⌘', '\\'] },
+                                                    { label: 'Close canvas / panels', keys: ['Esc'] },
+                                                    { label: 'Show shortcuts', keys: ['⌘', '/'] },
+                                                ].map(({ label, keys }) => (
+                                                    <div key={label} className="flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-neutral-100 dark:hover:bg-white/[0.04] transition-colors">
+                                                        <span className="text-[13px] text-neutral-600 dark:text-neutral-400">{label}</span>
+                                                        <div className="flex items-center gap-1">
+                                                            {keys.map((k, i) => (
+                                                                <kbd key={i} className="inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 text-[11px] font-semibold font-mono text-neutral-700 dark:text-white/70 bg-white dark:bg-white/[0.08] border border-neutral-200 dark:border-white/10 rounded-md shadow-sm">
+                                                                    {k}
+                                                                </kbd>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <p className="mt-4 text-[11px] text-neutral-400 dark:text-neutral-500 text-center">
+                                                Press <kbd className="inline text-[10px] px-1 py-0.5 bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded">⌘ /</kbd> anytime in the chat to see this list.
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">App Maintenance</h2>
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[24px] p-6 border border-neutral-200 dark:border-white/5 flex items-center justify-center gap-4">
                                             <Button
