@@ -4,6 +4,22 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const ref = request.nextUrl.searchParams.get('ref');
 
+  // Redirect authenticated users away from the landing page to the app
+  if (pathname === '/') {
+    const sessionToken =
+      request.cookies.get('next-auth.session-token')?.value ||
+      request.cookies.get('__Secure-next-auth.session-token')?.value;
+
+    if (sessionToken) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/home-feed';
+      const response = NextResponse.redirect(url);
+      if (ref) response.cookies.set('mailient_referral', ref, { maxAge: 60 * 60 * 24 * 30, path: '/' });
+      addSecurityHeaders(response);
+      return response;
+    }
+  }
+
   // Skip middleware for auth routes, API routes, static files, and onboarding
   // Authentication and onboarding checks are handled at the page level
   // to avoid Edge runtime limitations with Node.js modules like crypto
