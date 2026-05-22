@@ -31,8 +31,6 @@ import {
     Volume2,
     Sparkles,
     HelpCircle,
-    ChevronLeft,
-    Download,
     Edit3,
     Camera,
     CheckCircle2,
@@ -51,7 +49,6 @@ import {
     ExternalLink, 
     History
 } from 'lucide-react';
-import { VerificationCard } from './verification-card';
 import { CancellationFlow } from './cancellation-flow';
 import { ThemeToggle } from './theme-toggle';
 
@@ -60,7 +57,7 @@ interface SettingsCardProps {
     onOpenHelp?: () => void;
 }
 
-type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'usage' | 'privacy';
+type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'privacy';
 
 export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const { data: session, update: updateSession } = useSession();
@@ -68,7 +65,6 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const { settings, updateSetting, resetCache, relaunchApp, subscriptionData, setSubscriptionData } = useDashboardSettings();
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
-    const [subView, setSubView] = useState<'summary' | 'manage'>('summary');
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
 
     const isPro = subscriptionData?.planType?.toLowerCase() === 'pro';
@@ -77,7 +73,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
 
     useEffect(() => {
         const fetchSubscription = async () => {
-            if (activeSection === 'subscription' || activeSection === 'usage') {
+            if (activeSection === 'subscription') {
                 // Only show loading if we don't have data yet
                 if (!subscriptionData) {
                     setIsLoadingSubscription(true);
@@ -281,7 +277,6 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                         <MenuButton id="account" icon={User} label="Account" />
                         <MenuButton id="team" icon={Users} label="Team" />
                         <MenuButton id="subscription" icon={CreditCard} label="Subscription" />
-                        <MenuButton id="usage" icon={Zap} label="Usage" />
                         <MenuButton id="privacy" icon={Shield} label="Privacy" />
 
                         <div className="hidden md:block my-2 h-px bg-neutral-200 dark:bg-white/5" />
@@ -317,7 +312,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                             animate={{ opacity: 1, x: 0 }}
                             className="text-2xl md:text-4xl font-serif text-black dark:text-white capitalize tracking-tight"
                         >
-                            {activeSection === 'subscription' ? 'Subscription' : activeSection === 'usage' ? 'Usage' : activeSection === 'privacy' ? 'Privacy' : activeSection.replace('-', ' ')}
+                            {activeSection === 'subscription' ? 'Subscription' : activeSection === 'privacy' ? 'Privacy' : activeSection.replace('-', ' ')}
                         </motion.h1>
 
                         <button
@@ -633,231 +628,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                 </motion.div>
                             )}
 
-                            {activeSection === 'subscription' && (
-                                <motion.div
-                                    key="subscription"
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="space-y-8"
-                                >
-                                    {isLoadingSubscription ? (
-                                        <div className="flex items-center justify-center py-20">
-                                            <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
-                                        </div>
-                                    ) : subView === 'summary' ? (
-                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-10">
-                                            <div className="flex items-start justify-between">
-                                                <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Current Plan</p>
-                                                    <h3 className="text-4xl font-serif text-black dark:text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
-                                                </div>
-                                                <Button 
-                                                    onClick={() => setSubView('manage')}
-                                                    className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-200 px-8 h-12 rounded-2xl font-bold transition-all"
-                                                >
-                                                    Manage Subscription
-                                                </Button>
-                                            </div>
-
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-
-                                            <div className="grid grid-cols-2 gap-10">
-                                                <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Status</p>
-                                                    <div className="flex items-center gap-2">
-                                                        <div className={`w-2 h-2 rounded-full ${
-                                                            subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' 
-                                                                ? 'bg-emerald-500' 
-                                                                : subscriptionData?.planType !== 'free' && subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date()
-                                                                    ? 'bg-red-500'
-                                                                    : 'bg-neutral-500'
-                                                        }`} />
-                                                        <p className="text-[15px] font-medium text-black dark:text-white">
-                                                            {subscriptionData?.hasActiveSubscription || subscriptionData?.planType === 'free' 
-                                                                ? 'Active' 
-                                                                : subscriptionData?.planType !== 'free' && subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date()
-                                                                    ? 'Expired'
-                                                                    : 'Inactive'}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                                <div className="space-y-1">
-                                                    <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">
-                                                        {subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date() ? 'Expiraton date' : 'Billing cycle'}
-                                                    </p>
-                                                    <p className="text-[15px] font-medium text-black dark:text-white">
-                                                        {subscriptionData?.subscriptionEndsAt 
-                                                            ? `${new Date(subscriptionData.subscriptionEndsAt) < new Date() ? 'Expired on' : 'Renews on'} ${new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}`
-                                                            : subscriptionData?.planType === 'free' ? 'Lifetime access' : 'No active billing cycle'}
-                                                    </p>
-                                                </div>
-                                            </div>
-
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-
-                                            <div className="space-y-6">
-                                                <p className="text-[11px] text-neutral-600 dark:text-neutral-500 font-bold tracking-wider uppercase">Active Payment Method</p>
-                                                <div className="flex justify-center">
-                                                    <VerificationCard 
-                                                        idNumber={(() => {
-                                                            if (isFree) {
-                                                                const stableId = subscriptionData?.subscriptionId || session?.user?.email || "GUEST";
-                                                                // Generate a cleaner 4-char suffix from the hash of the ID to avoid ".COM" issues
-                                                                const hash = (stableId || "").split('').reduce((acc: number, char: string) => acc + char.charCodeAt(0), 0);
-                                                                const suffix = (hash % 10000).toString().padStart(4, '0');
-                                                                return `ML-${suffix}`;
-                                                            }
-                                                            // Priority 1: Direct last4 from subscription record (set by Polar webhook)
-                                                            if (subscriptionData?.paymentMethodLast4) {
-                                                                return `**** **** **** ${subscriptionData.paymentMethodLast4}`;
-                                                            }
-                                                            // Priority 2: Parse from payment method string in payments array
-                                                            const latestPayment = subscriptionData?.payments?.[0];
-                                                            if (latestPayment?.last4) {
-                                                                return `**** **** **** ${latestPayment.last4}`;
-                                                            }
-                                                            if (latestPayment?.method) {
-                                                                const parts = latestPayment.method.split(' ');
-                                                                const lastPart = parts[parts.length - 1];
-                                                                if (lastPart.match(/^\d{4}$/)) {
-                                                                    return `**** **** **** ${lastPart}`;
-                                                                }
-                                                                return latestPayment.method;
-                                                            }
-                                                            return "CARD PENDING";
-                                                        })()}
-                                                        name={(session?.user?.name || "").toUpperCase()}
-                                                        validThru={subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: '2-digit', year: '2-digit' }) : "—"}
-                                                        label={isFree ? "MEMBER CARD" : `${subscriptionData?.planType?.toUpperCase()} MEMBER`}
-                                                    />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                            <div className="space-y-8">
-                                                <div className="flex items-center justify-between">
-                                                    <Button 
-                                                        variant="ghost" 
-                                                        onClick={() => setSubView('summary')}
-                                                        className="text-neutral-600 hover:text-black dark:text-white flex items-center gap-2 group"
-                                                    >
-                                                        <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-1" />
-                                                        Back to overview
-                                                    </Button>
-                                                    <Button 
-                                                        variant="outline"
-                                                        onClick={() => window.open('https://polar.sh/mailient/portal', '_blank')}
-                                                        className="border-neutral-200 dark:border-white/10 text-black dark:text-white hover:bg-neutral-50 dark:bg-white/5 rounded-xl h-10 px-4 flex items-center gap-2"
-                                                    >
-                                                        <ExternalLink className="w-4 h-4" />
-                                                        Polar Portal
-                                                    </Button>
-                                                </div>
-
-                                                <div className="space-y-2">
-                                                    <h3 className="text-2xl font-serif text-black dark:text-white">Billing Management</h3>
-                                                    <p className="text-sm text-neutral-500 dark:text-neutral-400">View your payment history and manage your active plan.</p>
-                                                </div>
-
-                                                <div className="space-y-6 pt-4">
-                                                    <h4 className="text-xl font-serif text-black dark:text-white">Payment History</h4>
-                                                    <div className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/5 rounded-3xl overflow-hidden">
-                                                        <table className="w-full text-left">
-                                                            <thead className="bg-black/[0.02] dark:bg-white/[0.02] border-b border-neutral-200 dark:border-white/5">
-                                                                <tr>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Invoice</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Date</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider">Amount</th>
-                                                                    <th className="px-6 py-4 text-xs font-bold text-neutral-600 dark:text-neutral-500 uppercase tracking-wider"></th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody className="divide-y divide-white/5">
-                                                                {(subscriptionData?.invoices || []).map((invoice: any) => (
-                                                                    <tr key={invoice.id} className="hover:bg-black/[0.02] dark:bg-white/[0.02] transition-colors">
-                                                                        <td className="px-6 py-4 font-mono text-[13px] text-black dark:text-white">{invoice.number}</td>
-                                                                        <td className="px-6 py-4 text-[13px] text-neutral-500 dark:text-neutral-400">{new Date(invoice.date).toLocaleDateString()}</td>
-                                                                        <td className="px-6 py-4 text-[13px] text-black dark:text-white">${invoice.amount}</td>
-                                                                        <td className="px-6 py-4 text-right">
-                                                                            <button 
-                                                                                onClick={() => {
-                                                                                    // Generate a simple text blob as a placeholder "PDF"
-                                                                                    const content = `Mailient Invoice ${invoice.number}\nDate: ${new Date(invoice.date).toLocaleDateString()}\nAmount: $${invoice.amount}\nStatus: PAID\n\nThank you for choosing Mailient.`;
-                                                                                    const blob = new Blob([content], { type: 'text/plain' });
-                                                                                    const url = window.URL.createObjectURL(blob);
-                                                                                    const link = document.createElement('a');
-                                                                                    link.href = url;
-                                                                                    link.download = `invoice-${invoice.number}.txt`;
-                                                                                    document.body.appendChild(link);
-                                                                                    link.click();
-                                                                                    document.body.removeChild(link);
-                                                                                    window.URL.revokeObjectURL(url);
-                                                                                    toast.success('Invoice downloaded successfully');
-                                                                                }}
-                                                                                className="p-2 hover:bg-neutral-50 dark:bg-white/5 rounded-lg text-neutral-600 hover:text-black dark:text-white"
-                                                                            >
-                                                                                <Download className="w-4 h-4" />
-                                                                            </button>
-                                                                        </td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-
-                                                {/* Cancellation Section - Moved below payment history per request */}
-                                                {!isFree && (
-                                                    <div className="pt-8 border-t border-neutral-200 dark:border-white/5">
-                                                        {!isConfirmingCancel ? (
-                                                            <div className="bg-red-500/5 border border-red-500/10 rounded-3xl p-8 space-y-4">
-                                                                <div className="flex items-center gap-3 text-red-500">
-                                                                    <AlertCircle className="w-5 h-5" />
-                                                                    <h4 className="text-lg font-serif">Cancel Subscription</h4>
-                                                                </div>
-                                                                <p className="text-sm text-neutral-500 dark:text-neutral-400 max-w-lg leading-relaxed">
-                                                                    We're sorry to see you go. If you cancel, you will maintain your {isPro ? 'Pro' : 'Starter'} features until the end of your current billing period on <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'the end of the month'}</strong>.
-                                                                </p>
-                                                                <Button 
-                                                                    onClick={() => setIsConfirmingCancel(true)}
-                                                                    variant="ghost" 
-                                                                    className="bg-red-500/10 text-red-500 hover:text-red-400 hover:bg-red-500/20 px-6 h-11 rounded-2xl font-medium flex items-center gap-2 transition-all mt-2"
-                                                                >
-                                                                    Yes, I want to cancel my plan
-                                                                    <ArrowRight className="w-4 h-4" />
-                                                                </Button>
-                                                            </div>
-                                                        ) : (
-                                                            <CancellationFlow
-                                                                isOpen={isConfirmingCancel}
-                                                                onClose={() => setIsConfirmingCancel(false)}
-                                                                subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
-                                                                onConfirm={async (reasons, feedback) => {
-                                                                    const response = await fetch('/api/subscription/cancel', { 
-                                                                        method: 'POST',
-                                                                        headers: { 'Content-Type': 'application/json' },
-                                                                        body: JSON.stringify({ reasons, feedback })
-                                                                    });
-                                                                    
-                                                                    if (response.ok) {
-                                                                        toast.success('Subscription revoked. Access remains valid until period end.');
-                                                                        setIsConfirmingCancel(false);
-                                                                        // Refresh subscription data
-                                                                        const refresh = await fetch('/api/subscription/usage');
-                                                                        if (refresh.ok) setSubscriptionData(await refresh.json());
-                                                                    } else {
-                                                                        toast.error('Failed to revoke subscription. Please contact support.');
-                                                                    }
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )}
-                                            </div>
-                                    )}
-                                </motion.div>
-                            )}
-
-                            {activeSection === 'usage' && (() => {
+                            {activeSection === 'subscription' && (() => {
                                 const arcus = subscriptionData?.features?.arcus_ai;
                                 const sift = subscriptionData?.features?.sift_analysis;
                                 const summary = subscriptionData?.features?.email_summary;
@@ -877,9 +648,22 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                 const fmtStat = (used: number, limit: number, unlimited: boolean) =>
                                     unlimited ? `${fmt(used)} used` : `${fmt(used)} / ${fmt(limit)}`;
 
+                                const isExpired = !isFree && subscriptionData?.subscriptionEndsAt && new Date(subscriptionData.subscriptionEndsAt) < new Date();
+                                const isActive = subscriptionData?.hasActiveSubscription || isFree;
+                                const planLabel = (() => {
+                                    if (isFree) return 'Free';
+                                    const type = (subscriptionData?.planType || 'Pro');
+                                    return type.charAt(0).toUpperCase() + type.slice(1);
+                                })();
+
+                                const STARTER_URL = 'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej';
+                                const PRO_URL = 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61';
+                                const PORTAL_URL = 'https://polar.sh/mailient/portal';
+                                const userEmail = session?.user?.email || '';
+
                                 return (
                                 <motion.div
-                                    key="usage"
+                                    key="subscription"
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     className="space-y-6"
@@ -889,126 +673,208 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                             <RefreshCw className="w-8 h-8 text-neutral-600 dark:text-neutral-500 animate-spin" />
                                         </div>
                                     ) : (
-                                        <div className="bg-neutral-50 dark:bg-[#070707] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
-                                            {/* Header */}
-                                            <div className="flex items-center justify-between mb-8">
-                                                <div className="space-y-1">
-                                                    <p className="text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
-                                                    <h3 className="text-2xl font-serif text-black dark:text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
-                                                </div>
-                                                <div className="flex items-center gap-3">
-                                                    {isUnlimited && (
-                                                        <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">Unlimited</span>
-                                                    )}
-                                                    <Button
-                                                        className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-200 px-6 h-9 rounded-full text-[13px] font-bold shadow-sm"
-                                                        onClick={() => setActiveSection('subscription')}
-                                                    >
-                                                        {isFree ? 'Upgrade' : 'Manage'}
-                                                    </Button>
-                                                </div>
-                                            </div>
-
-                                            <div className="border-t border-dashed border-neutral-200 dark:border-white/10 mb-8" />
-
-                                            <div className="space-y-8">
-                                                {/* Arcus AI usage */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <Sparkles className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                                                            <span className="text-[15px] font-medium text-black dark:text-white">Arcus AI</span>
-                                                        </div>
-                                                        <span className="text-[15px] font-medium text-black dark:text-white font-mono">
-                                                            {isUnlimited ? (
-                                                                <span className="flex items-center gap-1.5">
-                                                                    <span className="text-emerald-500">∞</span>
-                                                                    <span className="text-neutral-500 text-[13px]">({fmt(arcusUsed)} used today)</span>
-                                                                </span>
-                                                            ) : (
-                                                                <span>{fmt(arcusRemaining ?? 0)} <span className="text-neutral-400 text-[13px]">/ {fmt(arcusLimit)} remaining</span></span>
+                                        <>
+                                        {/* Plan card */}
+                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="space-y-1.5">
+                                                    <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest">Current Plan</p>
+                                                    <h3 className="text-3xl font-serif text-black dark:text-white">{planLabel}</h3>
+                                                    <div className="flex items-center gap-2 pt-1">
+                                                        <div className={`w-1.5 h-1.5 rounded-full ${isActive && !isExpired ? 'bg-emerald-500' : isExpired ? 'bg-red-500' : 'bg-neutral-400'}`} />
+                                                        <span className="text-[13px] text-neutral-500 dark:text-neutral-400">
+                                                            {isExpired ? 'Expired' : isActive ? 'Active' : 'Inactive'}
+                                                            {!isFree && subscriptionData?.subscriptionEndsAt && !isExpired && (
+                                                                <> · Renews {new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
                                                             )}
                                                         </span>
                                                     </div>
-                                                    {!isUnlimited && (
-                                                        <>
-                                                            <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${Math.min(100, (arcusUsed / arcusLimit) * 100)}%` }}
-                                                                    className="h-full bg-black dark:bg-white rounded-full"
-                                                                />
-                                                            </div>
-                                                            <p className="text-[11px] text-neutral-500 pl-7">Resets to {fmt(arcusLimit)} at 00:00 every day</p>
-                                                        </>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-2">
+                                                    {isFree && (
+                                                        <Button
+                                                            onClick={() => window.open(`${PRO_URL}?customer_email=${encodeURIComponent(userEmail)}`, '_blank')}
+                                                            className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 px-6 h-10 rounded-2xl font-bold text-[13px] transition-all"
+                                                        >
+                                                            Upgrade to Pro
+                                                        </Button>
                                                     )}
-                                                </div>
-
-                                                {/* Secondary stats grid */}
-                                                <div className="pt-6 border-t border-neutral-200 dark:border-white/5 grid grid-cols-2 gap-6">
-                                                    <div className="space-y-2">
-                                                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Sift AI</p>
-                                                        <p className="text-black dark:text-white text-[15px] font-medium">
-                                                            {fmtStat(sift?.usage ?? 0, sift?.limit ?? 10, sift?.isUnlimited || isUnlimited)}
-                                                        </p>
-                                                        {!sift?.isUnlimited && !isUnlimited && (
-                                                            <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((sift?.usage ?? 0) / (sift?.limit ?? 10)) * 100)}%` }} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                    <div className="space-y-2">
-                                                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Summaries</p>
-                                                        <p className="text-black dark:text-white text-[15px] font-medium">
-                                                            {fmtStat(summary?.usage ?? 0, summary?.limit ?? 20, summary?.isUnlimited || isUnlimited)}
-                                                        </p>
-                                                        {!summary?.isUnlimited && !isUnlimited && (
-                                                            <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((summary?.usage ?? 0) / (summary?.limit ?? 20)) * 100)}%` }} />
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {/* Token usage */}
-                                                <div className="pt-6 border-t border-neutral-200 dark:border-white/5 space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <Cpu className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                                                            <span className="text-[15px] font-medium text-black dark:text-white">Tokens Consumed</span>
-                                                        </div>
-                                                        <div className="text-right">
-                                                            <span className="text-[17px] font-serif text-black dark:text-white">{fmt(tokenUsed)}</span>
-                                                            <span className="text-[11px] text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
-                                                        </div>
-                                                    </div>
-                                                    {tokenIsUnlimited ? (
-                                                        <div className="flex items-center gap-2 text-[11px] text-emerald-500 font-bold uppercase tracking-widest">
-                                                            <span>∞</span>
-                                                            <span>Unlimited cluster access · OpenRouter</span>
-                                                        </div>
-                                                    ) : (
-                                                        <>
-                                                            <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
-                                                                <motion.div
-                                                                    initial={{ width: 0 }}
-                                                                    animate={{ width: `${tokenPct}%` }}
-                                                                    className="h-full bg-black dark:bg-white rounded-full"
-                                                                />
-                                                            </div>
-                                                            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
-                                                                <span>OpenRouter Cluster</span>
-                                                                <span>{Math.round(tokenPct)}% of {fmt(tokenLimit)} quota</span>
-                                                            </div>
-                                                        </>
+                                                    {isStarter && (
+                                                        <Button
+                                                            onClick={() => window.open(`${PRO_URL}?customer_email=${encodeURIComponent(userEmail)}`, '_blank')}
+                                                            className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 px-6 h-10 rounded-2xl font-bold text-[13px] transition-all"
+                                                        >
+                                                            Upgrade to Pro
+                                                        </Button>
+                                                    )}
+                                                    {!isFree && (
+                                                        <Button
+                                                            variant="outline"
+                                                            onClick={() => window.open(PORTAL_URL, '_blank')}
+                                                            className="border-neutral-200 dark:border-white/10 text-black dark:text-white hover:bg-neutral-100 dark:hover:bg-white/10 px-5 h-10 rounded-2xl text-[13px] font-medium flex items-center gap-2"
+                                                        >
+                                                            <ExternalLink className="w-3.5 h-3.5" />
+                                                            Manage on Polar
+                                                        </Button>
                                                     )}
                                                 </div>
                                             </div>
                                         </div>
+
+                                        {/* Usage stats */}
+                                        <div className="bg-neutral-50 dark:bg-[#070707] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5 space-y-8">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest">Usage</p>
+                                                {isUnlimited && (
+                                                    <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">Unlimited</span>
+                                                )}
+                                            </div>
+
+                                            {/* Arcus AI */}
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <Sparkles className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
+                                                        <span className="text-[15px] font-medium text-black dark:text-white">Arcus AI</span>
+                                                    </div>
+                                                    <span className="text-[15px] font-medium text-black dark:text-white font-mono">
+                                                        {isUnlimited ? (
+                                                            <span className="flex items-center gap-1.5">
+                                                                <span className="text-emerald-500">∞</span>
+                                                                <span className="text-neutral-500 text-[13px]">({fmt(arcusUsed)} used today)</span>
+                                                            </span>
+                                                        ) : (
+                                                            <span>{fmt(arcusRemaining ?? 0)} <span className="text-neutral-400 text-[13px]">/ {fmt(arcusLimit)} remaining</span></span>
+                                                        )}
+                                                    </span>
+                                                </div>
+                                                {!isUnlimited && (
+                                                    <>
+                                                        <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${Math.min(100, (arcusUsed / arcusLimit) * 100)}%` }}
+                                                                className="h-full bg-black dark:bg-white rounded-full"
+                                                            />
+                                                        </div>
+                                                        <p className="text-[11px] text-neutral-500 pl-7">Resets to {fmt(arcusLimit)} at 00:00 every day</p>
+                                                    </>
+                                                )}
+                                            </div>
+
+                                            {/* Secondary stats */}
+                                            <div className="pt-6 border-t border-neutral-200 dark:border-white/5 grid grid-cols-2 gap-6">
+                                                <div className="space-y-2">
+                                                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Sift AI</p>
+                                                    <p className="text-black dark:text-white text-[15px] font-medium">
+                                                        {fmtStat(sift?.usage ?? 0, sift?.limit ?? 10, sift?.isUnlimited || isUnlimited)}
+                                                    </p>
+                                                    {!sift?.isUnlimited && !isUnlimited && (
+                                                        <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((sift?.usage ?? 0) / (sift?.limit ?? 10)) * 100)}%` }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                                <div className="space-y-2">
+                                                    <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Summaries</p>
+                                                    <p className="text-black dark:text-white text-[15px] font-medium">
+                                                        {fmtStat(summary?.usage ?? 0, summary?.limit ?? 20, summary?.isUnlimited || isUnlimited)}
+                                                    </p>
+                                                    {!summary?.isUnlimited && !isUnlimited && (
+                                                        <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((summary?.usage ?? 0) / (summary?.limit ?? 20)) * 100)}%` }} />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Tokens */}
+                                            <div className="pt-6 border-t border-neutral-200 dark:border-white/5 space-y-4">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-3">
+                                                        <Cpu className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
+                                                        <span className="text-[15px] font-medium text-black dark:text-white">Tokens Consumed</span>
+                                                    </div>
+                                                    <div className="text-right">
+                                                        <span className="text-[17px] font-serif text-black dark:text-white">{fmt(tokenUsed)}</span>
+                                                        <span className="text-[11px] text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
+                                                    </div>
+                                                </div>
+                                                {tokenIsUnlimited ? (
+                                                    <div className="flex items-center gap-2 text-[11px] text-emerald-500 font-bold uppercase tracking-widest">
+                                                        <span>∞</span>
+                                                        <span>Unlimited cluster access · OpenRouter</span>
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                            <motion.div
+                                                                initial={{ width: 0 }}
+                                                                animate={{ width: `${tokenPct}%` }}
+                                                                className="h-full bg-black dark:bg-white rounded-full"
+                                                            />
+                                                        </div>
+                                                        <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                                                            <span>OpenRouter Cluster</span>
+                                                            <span>{Math.round(tokenPct)}% of {fmt(tokenLimit)} quota</span>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Cancel section — paid plans only */}
+                                        {!isFree && (
+                                            <div>
+                                                {!isConfirmingCancel ? (
+                                                    <div className="bg-red-500/5 border border-red-500/10 rounded-[16px] p-6 space-y-3">
+                                                        <div className="flex items-center gap-3 text-red-500">
+                                                            <AlertCircle className="w-4 h-4" />
+                                                            <h4 className="text-[15px] font-semibold">Cancel Subscription</h4>
+                                                        </div>
+                                                        <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
+                                                            You'll keep {isPro ? 'Pro' : 'Starter'} access until{' '}
+                                                            <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'end of period'}</strong>.
+                                                        </p>
+                                                        <Button
+                                                            onClick={() => setIsConfirmingCancel(true)}
+                                                            variant="ghost"
+                                                            className="bg-red-500/10 text-red-500 hover:bg-red-500/20 px-5 h-10 rounded-2xl font-medium flex items-center gap-2 text-[13px] transition-all"
+                                                        >
+                                                            Cancel plan
+                                                            <ArrowRight className="w-3.5 h-3.5" />
+                                                        </Button>
+                                                    </div>
+                                                ) : (
+                                                    <CancellationFlow
+                                                        isOpen={isConfirmingCancel}
+                                                        onClose={() => setIsConfirmingCancel(false)}
+                                                        subscriptionEndsAt={subscriptionData?.subscriptionEndsAt}
+                                                        onConfirm={async (reasons, feedback) => {
+                                                            const response = await fetch('/api/subscription/cancel', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json' },
+                                                                body: JSON.stringify({ reasons, feedback }),
+                                                            });
+                                                            if (response.ok) {
+                                                                toast.success('Subscription cancelled. Access remains valid until period end.');
+                                                                setIsConfirmingCancel(false);
+                                                                const refresh = await fetch('/api/subscription/usage');
+                                                                if (refresh.ok) setSubscriptionData(await refresh.json());
+                                                            } else {
+                                                                toast.error('Failed to cancel. Please contact support.');
+                                                            }
+                                                        }}
+                                                    />
+                                                )}
+                                            </div>
+                                        )}
+                                        </>
                                     )}
                                 </motion.div>
                                 );
                             })()}
+
 
                             {activeSection === 'privacy' && (
                                 <motion.div
