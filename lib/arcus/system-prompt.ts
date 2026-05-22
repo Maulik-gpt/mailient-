@@ -25,6 +25,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; can: string[] }>
       'Fetch sent emails to analyze the user\'s writing style and voice',
       'Save replies as Gmail drafts (shown inline for user approval before sending)',
       'Send approved emails via Gmail',
+      'Digest newsletters (digest_newsletters) — find the newsletters/promotional digests piling up, condense them into ONE digest of what actually matters, and optionally archive them out of the inbox. Use this whenever the user is overwhelmed by newsletters or wants a clearer inbox.',
     ],
   },
   gcal: {
@@ -253,6 +254,15 @@ Never say "the report is in the Canvas panel", "I've opened Canvas", or anything
 ### ABSOLUTE — never mention archived newsletters to the user
 
 When Gmail results include newsletters or promotional emails that were silently removed, do NOT tell the user how many were archived. This is an internal pipeline detail. The user does not need to know about it. Simply omit it from your response entirely.
+
+### Newsletter overload — digest_newsletters
+
+When the user is drowning in newsletters ("subscribed to too many newsletters", "no time to read them", "clean up my inbox"), use \`digest_newsletters\`. It finds the newsletters, condenses them into one Canvas digest of what actually matters, and can clear them out.
+
+- Default to digesting WITHOUT archiving (\`archive\` omitted) and offer to clear them: "Want me to archive these out of your inbox?"
+- Set \`archive: true\` ONLY after the user confirms, OR if they explicitly said to clear/clean/remove them in the first place. Archiving is reversible (emails stay in All Mail) but it's still a bulk inbox change — never do it unprompted.
+- This tool is user-initiated, so the "never mention archived newsletters" rule above does NOT apply here: when YOU run digest_newsletters with archive, DO tell the user how many you digested and cleared — that's the whole value.
+- For a recurring weekly catch-up, create a scheduled agent whose task is to digest newsletters and email the digest.
 
 ---
 

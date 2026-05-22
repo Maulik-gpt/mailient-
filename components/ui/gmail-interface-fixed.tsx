@@ -1488,6 +1488,20 @@ export function GmailInterfaceFixed() {
         }
     };
 
+    // Hand the newsletter pile-up to Arcus: it digests them into a Canvas summary
+    // and asks before clearing them out — reusing the tested agentic pipeline.
+    const handleDigestNewsletters = () => {
+        try {
+            localStorage.setItem(
+                'pending_arcus_message',
+                'I am subscribed to too many newsletters and have no time to read them. Digest my newsletters from the last 7 days into one clean summary of what actually matters, then ask me before archiving them out of my inbox.'
+            );
+            localStorage.removeItem('pending_arcus_options');
+        } catch { /* localStorage unavailable — navigation still works */ }
+        toast.success('Opening Arcus to digest your newsletters…');
+        window.location.href = '/dashboard/agent-talk';
+    };
+
     const handleUnsubscribe = async (emailId: string) => {
         const toastId = toast.loading('Unsubscribing from newsletter...');
 
@@ -1688,7 +1702,7 @@ export function GmailInterfaceFixed() {
             case 'at-risk':
                 return ['Repair Reply', 'Escalate'];
             case 'unread-important':
-                return ['Draft Reply', 'Unsubscribe'];
+                return ['Digest newsletters', 'Unsubscribe'];
             case 'missed-followups':
                 return ['Send follow-up', 'Schedule call'];
             default:
@@ -2962,6 +2976,8 @@ export function GmailInterfaceFixed() {
                                                                                                     handleDraftReply(selectedEmailId, 'follow-up');
                                                                                                 } else if (label === 'Unsubscribe' && selectedEmailId) {
                                                                                                     handleUnsubscribe(selectedEmailId);
+                                                                                                } else if (label === 'Digest newsletters') {
+                                                                                                    handleDigestNewsletters();
                                                                                                 } else if (label === 'Coming Soon') {
                                                                                                     // Premium inline message instead of toast
                                                                                                     const comingSoonElement = document.getElementById('coming-soon-message');

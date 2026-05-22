@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
 import { getConnectedIntegrations } from './system-prompt';
+import { callLLM, getText } from './engine';
 import type { ToolSchema } from './engine';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
@@ -563,6 +564,18 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['questions'],
     },
   },
+  {
+    name: 'digest_newsletters',
+    description: "Solve newsletter overload: find the newsletters/promotional digests cluttering the user's inbox, condense them into ONE clean digest of what actually matters (per-source key takeaways + any links worth clicking), and optionally clear them out of the inbox so the user's mind is clear. Use when the user mentions being subscribed to too many newsletters, having no time to read them, or wanting a cleaner inbox. The digest renders in the Canvas panel. IMPORTANT: archiving moves emails out of the inbox — set archive:true ONLY after the user has confirmed (use request_confirmation first when they haven't explicitly said to clear/archive them). For a recurring weekly catch-up, pair this with create_scheduled_agent and set sendEmail:true so the digest is emailed.",
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysBack: { type: 'number', description: 'How many days back to scan for newsletters (default 7, max 30).' },
+        archive: { type: 'boolean', description: 'If true, archive the newsletters out of the inbox and mark them read after digesting. Only set true once the user has confirmed.' },
+        sendEmail: { type: 'boolean', description: 'If true, also email the digest to the user (use for scheduled/weekly runs).' },
+      },
+    },
+  },
 ];
 
 // ── Integration → tool mapping ─────────────────────────────────────────────────
@@ -586,6 +599,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   create_scheduled_agent: null,
   ask_user: null,
   check_followups: 'gmail',
+  digest_newsletters: 'gmail',
   get_recipient_context: null,
   get_contact_context: null,
   remember_about_contact: null,
@@ -650,6 +664,7 @@ export async function executeTool(
       case 'send_slack_message':    result = await sendSlackMessage(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
       case 'check_followups':       result = await checkFollowups(userId, input); break;
+      case 'digest_newsletters':    result = await digestNewsletters(userId, input); break;
       case 'get_recipient_context': result = await getRecipientContext(userId, input); break;
       case 'get_contact_context':   result = await getContactContext(userId, input); break;
       case 'remember_about_contact': result = await rememberAboutContact(userId, input); break;
@@ -2192,5 +2207,207 @@ async function createScheduledAgent(userId: string, input: any): Promise<ToolRes
         attendees: [scheduleLabel, cron, data.output_channel, String(!!data.skip_confirmations), data.status],
       },
     },
+  };
+}
+
+// ── Newsletter digest ────────────────────────────────────────────────────────
+// Solves "subscribed to too many newsletters, no time to read them": find the
+// newsletters cluttering the inbox, distill them into one digest, and optionally
+// archive them out. Shared by the digest_newsletters tool AND the Sift card.
+
+interface NewsletterItem {
+  id: string;
+  from: string;
+  senderName: string;
+  subject: string;
+  snippet: string;
+  body: string;
+  hasUnsub: boolean;
+}
+
+export interface NewsletterDigestResult {
+  count: number;
+  senders: string[];
+  markdown: string;
+  archived: number;
+  emailed: boolean;
+  daysBack: number;
+}
+
+function parseSenderName(from: string): string {
+  if (!from) return 'Unknown';
+  const m = from.match(/^\s*"?([^"<]+?)"?\s*<.+>$/);
+  if (m && m[1].trim()) return m[1].trim();
+  return (from.split('@')[0] || from).replace(/[<>"]/g, '').trim() || from;
+}
+
+async function summarizeNewsletterBatch(newsletters: NewsletterItem[], daysBack: number): Promise<string> {
+  const blocks = newsletters.map((n, i) =>
+    `#${i + 1} FROM: ${n.senderName} | SUBJECT: ${n.subject}\nEXCERPT: ${n.snippet}${n.body ? `\nBODY: ${n.body.slice(0, 800)}` : ''}`
+  ).join('\n\n---\n\n');
+
+  const sys = `You are Arcus, an inbox copilot. The user is subscribed to many newsletters and has no time to read them. Distill the newsletters below into ONE tight digest so they get all the value in under 60 seconds. Output GitHub-flavored markdown only — no preamble.
+
+## 📰 Newsletter digest — last ${daysBack} days
+A 1-2 sentence overview of the themes across these newsletters.
+
+### Worth your time
+- 3-6 bullets, each a genuinely useful takeaway, insight, or opportunity worth knowing. Lead with the substance (numbers, names, what actually happened), not the source. Skip pure promotions.
+
+### By source
+One line per newsletter: **Sender — Subject**: one-sentence takeaway. Merge multiple emails from the same sender into one line.
+
+Rules: Be concrete and specific — never write "this newsletter discusses X". If an item is purely promotional with no real signal, group those under a brief "Mostly promotional" note instead of inventing value. No closing fluff.`;
+
+  const user = `Here are ${newsletters.length} newsletters from the user's inbox:\n\n${blocks}`;
+
+  const res = await callLLM(
+    [{ role: 'system', content: sys }, { role: 'user', content: user }],
+    [],
+    { maxTokens: 1800, temperature: 0.3 }
+  );
+  return getText(res.content).trim() || 'Could not generate a digest right now — please try again.';
+}
+
+async function archiveMessages(userId: string, token: string, ids: string[]): Promise<number> {
+  if (!ids.length) return 0;
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
+  const body = JSON.stringify({ ids, removeLabelIds: ['INBOX', 'UNREAD'] });
+  const headers = (t: string) => ({ Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' });
+  let res = await fetch(url, { method: 'POST', headers: headers(token), body, signal: AbortSignal.timeout(12000) });
+  if (res.status === 401) {
+    const nt = await refreshGoogleToken(userId);
+    if (nt) res = await fetch(url, { method: 'POST', headers: headers(nt), body, signal: AbortSignal.timeout(12000) });
+  }
+  return res.ok ? ids.length : 0;
+}
+
+function digestMarkdownToHtml(md: string): string {
+  const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = (s: string) => esc(s)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#2563eb;">$1</a>');
+  let html = '';
+  let inList = false;
+  for (const raw of md.split('\n')) {
+    const line = raw.trimEnd();
+    if (/^###\s+/.test(line)) { if (inList) { html += '</ul>'; inList = false; } html += `<h3 style="margin:18px 0 6px;font-size:15px;">${inline(line.replace(/^###\s+/, ''))}</h3>`; }
+    else if (/^##\s+/.test(line)) { if (inList) { html += '</ul>'; inList = false; } html += `<h2 style="margin:0 0 8px;font-size:18px;">${inline(line.replace(/^##\s+/, ''))}</h2>`; }
+    else if (/^[-*]\s+/.test(line)) { if (!inList) { html += '<ul style="margin:6px 0 12px;padding-left:20px;">'; inList = true; } html += `<li style="margin:4px 0;line-height:1.5;">${inline(line.replace(/^[-*]\s+/, ''))}</li>`; }
+    else if (line === '') { if (inList) { html += '</ul>'; inList = false; } }
+    else { if (inList) { html += '</ul>'; inList = false; } html += `<p style="margin:8px 0;line-height:1.5;">${inline(line)}</p>`; }
+  }
+  if (inList) html += '</ul>';
+  return `<div style="font-family:-apple-system,Segoe UI,Roboto,sans-serif;max-width:600px;margin:0 auto;color:#1a1a1a;">${html}<hr style="margin-top:24px;border:none;border-top:1px solid #eee;"/><p style="color:#999;font-size:12px;">Sent by Arcus AI · Mailient</p></div>`;
+}
+
+async function emailNewsletterDigest(userId: string, markdown: string, count: number): Promise<boolean> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return false;
+  try {
+    const { Resend } = await import('resend');
+    const resend = new Resend(apiKey);
+    const { error } = await resend.emails.send({
+      from: process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>',
+      to: userId,
+      subject: `📰 Your newsletter digest — ${count} caught up`,
+      html: digestMarkdownToHtml(markdown),
+    });
+    return !error;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Find → summarize → (optionally) clear newsletters. Reusable by the Arcus tool
+ * and the Sift newsletters card. Throws 'GMAIL_NOT_CONNECTED' if no Gmail token.
+ */
+export async function runNewsletterDigest(
+  userId: string,
+  opts: { daysBack?: number; archive?: boolean; sendEmail?: boolean } = {}
+): Promise<NewsletterDigestResult> {
+  const daysBack = Math.min(Math.max(Math.round(opts.daysBack || 7), 1), 30);
+  let token = await getGmailToken(userId);
+  if (!token) throw new Error('GMAIL_NOT_CONNECTED');
+
+  // Gmail's own category tabs are a reliable newsletter signal; List-Unsubscribe
+  // (RFC 2369) confirms a message is a bulk mailing.
+  const q = `in:inbox newer_than:${daysBack}d (category:promotions OR category:updates OR category:forums)`;
+  const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${new URLSearchParams({ q, maxResults: '40' })}`;
+  let listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (listRes.status === 401) {
+    const nt = await refreshGoogleToken(userId);
+    if (nt) { token = nt; listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
+  if (!listRes.ok) throw new Error(`Gmail search failed (${listRes.status})`);
+
+  const ids: string[] = ((await listRes.json()).messages || []).map((m: any) => m.id);
+  if (!ids.length) return { count: 0, senders: [], markdown: '', archived: 0, emailed: false, daysBack };
+
+  const detail = await Promise.all(ids.slice(0, 25).map(async (id): Promise<NewsletterItem | null> => {
+    try {
+      const r = await fetch(
+        `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
+        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+      );
+      if (!r.ok) return null;
+      const m = await r.json();
+      const h = m.payload?.headers || [];
+      const from = getHeader(h, 'From');
+      return {
+        id: m.id,
+        from,
+        senderName: parseSenderName(from),
+        subject: getHeader(h, 'Subject') || '(no subject)',
+        snippet: (m.snippet || '').slice(0, 200),
+        body: extractBody(m.payload, 1200),
+        hasUnsub: !!getHeader(h, 'List-Unsubscribe'),
+      };
+    } catch { return null; }
+  }));
+
+  const newsletters = detail.filter((n): n is NewsletterItem => n !== null);
+  if (!newsletters.length) return { count: 0, senders: [], markdown: '', archived: 0, emailed: false, daysBack };
+
+  const senders = Array.from(new Set(newsletters.map(n => n.senderName)));
+  const markdown = await summarizeNewsletterBatch(newsletters, daysBack);
+
+  const archived = opts.archive ? await archiveMessages(userId, token, newsletters.map(n => n.id)) : 0;
+  const emailed = opts.sendEmail ? await emailNewsletterDigest(userId, markdown, newsletters.length) : false;
+
+  return { count: newsletters.length, senders, markdown, archived, emailed, daysBack };
+}
+
+async function digestNewsletters(userId: string, input: any): Promise<ToolResult> {
+  const token = await getGmailToken(userId);
+  if (!token) return { output: 'Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.' };
+
+  let r: NewsletterDigestResult;
+  try {
+    r = await runNewsletterDigest(userId, {
+      daysBack: input?.daysBack,
+      archive: !!input?.archive,
+      sendEmail: !!input?.sendEmail,
+    });
+  } catch (e: any) {
+    if (e.message === 'GMAIL_NOT_CONNECTED') return { output: 'Gmail is not connected.' };
+    return { output: `Could not build the newsletter digest: ${e.message}` };
+  }
+
+  if (r.count === 0) {
+    return { output: `No newsletters found in the last ${r.daysBack} days — the inbox is already clear of them. Tell the user there was nothing to digest.` };
+  }
+
+  const lines = [
+    `Digested ${r.count} newsletter${r.count === 1 ? '' : 's'} from ${r.senders.length} source${r.senders.length === 1 ? '' : 's'} (last ${r.daysBack} days).`,
+    r.archived > 0 ? `Archived ${r.archived} out of the inbox and marked them read.` : 'Left them in the inbox (not archived).',
+    r.emailed ? 'Emailed the digest to the user.' : '',
+    'The full digest is shown in the Canvas panel. Write a 1-2 sentence summary to the user — how many you condensed and whether you cleared them. Do NOT call more tools.',
+  ].filter(Boolean);
+
+  return {
+    output: lines.join('\n'),
+    canvasData: { title: 'Newsletter digest', type: 'report', markdown: r.markdown },
   };
 }
