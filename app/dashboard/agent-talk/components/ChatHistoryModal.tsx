@@ -1,23 +1,15 @@
 "use client";
 
-import { X, Search, Plus, ListFilter, History, FileText, BarChart3, Calendar, PenTool, Sparkles, Pin, Trash2, Edit3, MoreHorizontal, ArrowLeft } from 'lucide-react';
+import { X, Search, Plus, ListFilter, History, FileText, BarChart3, Calendar, PenTool, Sparkles, Trash2, Edit3, ArrowLeft } from 'lucide-react';
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
 
-interface ChatHistoryItem {
+interface Session {
   id: string;
-  user_id: string;
-  conversation_id: string;
-  user_message: string;
-  agent_response: string;
-  message_order: number;
-  is_initial_message: boolean;
-  created_at: string;
-  initialMessagePreview?: string;
-  lastMessageDate?: string;
-  source?: string;
-  isPinned?: boolean;
+  title: string;
+  updated_at: string;
+  source?: 'remote' | 'local';
 }
 
 interface ChatHistoryModalProps {
@@ -29,112 +21,116 @@ interface ChatHistoryModalProps {
 }
 
 export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConversationDelete, onNewMission }: ChatHistoryModalProps) {
-  const [history, setHistory] = useState<ChatHistoryItem[]>([]);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [localEditValue, setLocalEditValue] = useState("");
-  
-  // Feedback state
+  const [editValue, setEditValue] = useState('');
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
-  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackText, setFeedbackText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [isSent, setIsSent] = useState(false);
 
   useEffect(() => {
-    if (isOpen) {
-      fetchHistory();
-      loadConversationsFromStorage();
-    }
+    if (isOpen) fetchSessions();
   }, [isOpen]);
 
-  const fetchHistory = async () => {
+  const fetchSessions = async () => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/agent-talk/history?limit=50&offset=0');
-      if (response.ok) {
-        const data = await response.json();
-        setHistory(data.history || []);
-      }
-    } catch (err) { console.error(err); } 
-    finally { setIsLoading(false); }
-  };
+      // Primary: Supabase via our API
+      const res = await fetch('/api/arcus/conversation');
+      const remoteSessions: Session[] = [];
+      const remoteIds = new Set<string>();
 
-  const loadConversationsFromStorage = () => {
-    const list: ChatHistoryItem[] = [];
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith('conversation_')) {
+      if (res.ok) {
+        const data = await res.json();
+        const raw: any[] = data.sessions || [];
+        raw.forEach(s => {
+          remoteSessions.push({ id: s.id, title: s.title || 'Untitled', updated_at: s.updated_at, source: 'remote' });
+          remoteIds.add(s.id);
+        });
+      }
+
+      // Fallback: any localStorage sessions not yet synced
+      const local: Session[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key?.startsWith('conversation_')) continue;
         try {
-          const data = JSON.parse(localStorage.getItem(key) || '{}');
-          if (data.id && data.messages && data.messages.length > 0) {
-            const firstUserMsg = data.messages.find((m: any) => m.role === 'user' || m.type === 'user');
-            const preview = firstUserMsg ? (typeof firstUserMsg.content === 'string' ? firstUserMsg.content : firstUserMsg.content.text) : '';
-            
-            list.push({
-              id: data.id,
-              conversation_id: data.id,
-              user_id: '',
-              user_message: data.title || (preview ? preview.split(' ').slice(0, 5).join(' ') : 'New Mission'),
-              agent_response: '',
-              message_order: 0,
-              is_initial_message: true,
-              created_at: data.lastUpdated || new Date().toISOString(),
-              initialMessagePreview: preview,
-              lastMessageDate: data.lastUpdated,
-              source: 'local',
-              isPinned: data.isPinned || false
-            });
-          }
-        } catch (e) { console.error(e); }
+          const d = JSON.parse(localStorage.getItem(key) || '{}');
+          if (!d.id || !d.messages?.length) continue;
+          if (remoteIds.has(d.id)) continue; // already in Supabase
+
+          const firstUser = d.messages.find((m: any) => m.role === 'user' || m.type === 'user');
+          const preview = typeof firstUser?.content === 'string'
+            ? firstUser.content
+            : firstUser?.content?.text || '';
+          local.push({
+            id: d.id,
+            title: d.title || preview.split(' ').slice(0, 6).join(' ') || 'Untitled',
+            updated_at: d.lastUpdated || new Date().toISOString(),
+            source: 'local',
+          });
+        } catch { /* ignore corrupt entries */ }
       }
-    }
-    
-    setHistory(prev => {
-      const map = new Map(prev.map(i => [i.id, i]));
-      list.forEach(li => { if (!map.get(li.id)) map.set(li.id, li); });
-      return Array.from(map.values()).sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+
+      const merged = [...remoteSessions, ...local].sort(
+        (a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
       );
-    });
+      setSessions(merged);
+    } catch (err) {
+      console.error('[ChatHistoryModal] fetch error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const filteredHistory = useMemo(() => {
-    if (!searchQuery) return history;
-    return history.filter(item => 
-      item.user_message.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-  }, [history, searchQuery]);
+  const filteredSessions = useMemo(() => {
+    if (!searchQuery.trim()) return sessions;
+    const q = searchQuery.toLowerCase();
+    return sessions.filter(s => s.title.toLowerCase().includes(q));
+  }, [sessions, searchQuery]);
 
-  const handleRename = (id: string, newTitle: string) => {
-    if (!newTitle.trim()) return setEditingId(null);
-    setHistory(prev => prev.map(item => {
-      if (item.id === id) {
-        const raw = localStorage.getItem(`conversation_${id}`);
-        if (raw) {
-          const data = JSON.parse(raw);
-          data.title = newTitle;
-          localStorage.setItem(`conversation_${id}`, JSON.stringify(data));
-        }
-        return { ...item, user_message: newTitle };
-      }
-      return item;
-    }));
+  const handleRename = async (id: string, newTitle: string) => {
+    const trimmed = newTitle.trim();
     setEditingId(null);
+    if (!trimmed) return;
+
+    // Optimistic update
+    setSessions(prev => prev.map(s => s.id === id ? { ...s, title: trimmed } : s));
+
+    // Update Supabase
+    fetch(`/api/arcus/conversation/${id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: trimmed }),
+    }).catch(console.error);
+
+    // Update localStorage
+    const raw = localStorage.getItem(`conversation_${id}`);
+    if (raw) {
+      try {
+        const d = JSON.parse(raw);
+        d.title = trimmed;
+        localStorage.setItem(`conversation_${id}`, JSON.stringify(d));
+      } catch { /* ignore */ }
+    }
+    localStorage.setItem(`conv_${id}_title`, trimmed);
   };
 
   const handleDelete = async (id: string) => {
-    try {
-      await fetch('/api/agent-talk/history', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ conversationId: id })
-      });
-      localStorage.removeItem(`conversation_${id}`);
-      onConversationDelete?.(id);
-      setHistory(prev => prev.filter(i => i.id !== id));
-    } catch (e) { console.error(e); }
+    setSessions(prev => prev.filter(s => s.id !== id));
+
+    // Delete from Supabase
+    fetch(`/api/arcus/conversation/${id}`, { method: 'DELETE' }).catch(console.error);
+
+    // Delete from localStorage
+    localStorage.removeItem(`conversation_${id}`);
+    localStorage.removeItem(`conv_${id}_title`);
+
+    onConversationDelete?.(id);
   };
 
   const handleSendFeedback = async () => {
@@ -144,206 +140,209 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
       const res = await fetch('/api/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ feedback: feedbackText })
+        body: JSON.stringify({ feedback: feedbackText }),
       });
       if (res.ok) {
         setIsSent(true);
-        setFeedbackText("");
+        setFeedbackText('');
         setTimeout(() => { setIsSent(false); setIsFeedbackOpen(false); }, 2000);
       }
-    } catch (e) { console.error(e); }
-    finally { setIsSending(false); }
+    } catch { /* ignore */ } finally {
+      setIsSending(false);
+    }
   };
 
+  const formatRelativeDate = (iso: string) => {
+    const d = new Date(iso);
+    const now = new Date();
+    const diffMs = now.getTime() - d.getTime();
+    const diffDays = Math.floor(diffMs / 86400000);
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays}d ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)}w ago`;
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  // Group sessions by date bucket
+  const grouped = useMemo(() => {
+    const today: Session[] = [];
+    const yesterday: Session[] = [];
+    const older: Session[] = [];
+    const now = Date.now();
+    filteredSessions.forEach(s => {
+      const diffDays = Math.floor((now - new Date(s.updated_at).getTime()) / 86400000);
+      if (diffDays === 0) today.push(s);
+      else if (diffDays === 1) yesterday.push(s);
+      else older.push(s);
+    });
+    return { today, yesterday, older };
+  }, [filteredSessions]);
+
   return (
-    <div className="h-full flex flex-col bg-arcus-bg dark:bg-arcus-bg-elevated text-arcus-fg overflow-hidden font-sans selection:bg-black/10 dark:selection:bg-white/10" onClick={e => e.stopPropagation()}>
-      
-      {/* Search Header Transition */}
+    <div className="h-full flex flex-col bg-arcus-bg dark:bg-arcus-bg-elevated text-arcus-fg overflow-hidden font-sans" onClick={e => e.stopPropagation()}>
+
+      {/* Header */}
       <AnimatePresence mode="wait">
         {isSearchVisible ? (
-          <motion.div 
-            key="search-view"
-            initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+          <motion.div key="search" initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
             className="p-4 flex items-center gap-3 border-b border-arcus-border"
           >
-            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(""); }} className="text-arcus-fg-muted hover:text-arcus-fg transition-colors">
+            <button onClick={() => { setIsSearchVisible(false); setSearchQuery(''); }} className="text-arcus-fg-muted hover:text-arcus-fg transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>
-            <input 
-              autoFocus
-              type="text"
-              placeholder="Search missions..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+            <input
+              autoFocus type="text" placeholder="Search chats..."
+              value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
               className="flex-1 bg-transparent border-none outline-none text-[14px] text-arcus-fg placeholder:text-arcus-fg-muted"
             />
           </motion.div>
         ) : (
-          <motion.div 
-            key="default-view"
-            className="p-4 space-y-1"
-          >
-             <button 
-               onClick={onNewMission}
-               className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border transition-all group"
-             >
-               <div className="w-5 h-5 flex items-center justify-center">
-                 <Edit3 className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg transition-colors" />
-               </div>
-               <span className="text-[14px] font-medium text-arcus-fg">New mission</span>
-             </button>
-
-             <div className="pt-1">
-                <button 
-                  onClick={() => setIsSearchVisible(true)}
-                  className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-arcus-surface-hover transition-all group"
-                >
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    <Search className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg-secondary transition-colors" />
-                  </div>
-                  <span className="text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors">Search</span>
-                </button>
-                <button className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-arcus-surface-hover transition-all group">
-                  <div className="w-5 h-5 flex items-center justify-center">
-                    <History className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg-secondary transition-colors" />
-                  </div>
-                  <span className="text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors">Yesterday</span>
-                </button>
-             </div>
+          <motion.div key="header" className="p-4 space-y-1">
+            <button
+              onClick={onNewMission}
+              className="w-full flex items-center gap-3 p-2.5 rounded-xl bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border transition-all group"
+            >
+              <div className="w-5 h-5 flex items-center justify-center">
+                <Edit3 className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg transition-colors" />
+              </div>
+              <span className="text-[14px] font-medium text-arcus-fg">New mission</span>
+            </button>
+            <div className="pt-1">
+              <button onClick={() => setIsSearchVisible(true)}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-arcus-surface-hover transition-all group"
+              >
+                <Search className="w-4 h-4 text-arcus-fg-muted group-hover:text-arcus-fg-secondary transition-colors" />
+                <span className="text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors">Search</span>
+              </button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* Session list */}
       <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
-        {/* All Missions Section */}
-        <div className="mt-6 mb-2 flex items-center justify-between px-2.5">
-          <span className="text-[12px] font-semibold text-arcus-fg-tertiary tracking-tight uppercase">All missions</span>
-          <button className="text-neutral-400 dark:text-neutral-500 hover:text-black dark:hover:text-white transition-colors">
-            <ListFilter className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="space-y-0.5">
-          {isLoading ? (
-            <div className="py-10 flex justify-center opacity-20">
-              <Sparkles className="w-5 h-5 animate-pulse" />
-            </div>
-          ) : filteredHistory.length === 0 ? (
-            <div className="py-10 text-center px-4">
-              <p className="text-[13px] text-neutral-400 dark:text-neutral-500 italic">No missions found</p>
-            </div>
-          ) : (
-            filteredHistory.map((item) => (
-              <div key={item.conversation_id || item.id} className="group relative">
-                <div
-                  onClick={() => onConversationSelect?.(item.conversation_id || item.id)}
-                  className={cn(
-                    "flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer",
-                    "hover:bg-arcus-surface-hover"
-                  )}
-                >
-                  <div className="w-5 h-5 flex items-center justify-center flex-shrink-0">
-                    {getMissionIconMinimal(item.user_message)}
-                  </div>
-                  
-                  {editingId === (item.conversation_id || item.id) ? (
-                    <input 
-                      autoFocus
-                      className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-arcus-fg"
-                      value={localEditValue}
-                      onChange={e => setLocalEditValue(e.target.value)}
-                      onBlur={() => handleRename(item.conversation_id || item.id, localEditValue)}
-                      onKeyDown={e => e.key === 'Enter' && handleRename(item.conversation_id || item.id, localEditValue)}
-                      onClick={e => e.stopPropagation()}
-                    />
-                  ) : (
-                    <span className="flex-1 text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors truncate">
-                      {item.user_message}
-                    </span>
-                  )}
-
-                  {!editingId && (
-                    <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity">
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); setEditingId(item.conversation_id || item.id); setLocalEditValue(item.user_message); }}
-                        className="p-1 hover:text-arcus-fg text-arcus-fg-muted"
+        {isLoading ? (
+          <div className="py-10 flex justify-center opacity-20">
+            <Sparkles className="w-5 h-5 animate-pulse" />
+          </div>
+        ) : filteredSessions.length === 0 ? (
+          <div className="py-10 text-center px-4">
+            <p className="text-[13px] text-neutral-400 dark:text-neutral-500 italic">No chats yet</p>
+          </div>
+        ) : (
+          <>
+            {[
+              { label: 'Today', items: grouped.today },
+              { label: 'Yesterday', items: grouped.yesterday },
+              { label: 'Earlier', items: grouped.older },
+            ].map(group => group.items.length > 0 && (
+              <div key={group.label} className="mb-4">
+                <p className="text-[11px] font-bold tracking-wider uppercase text-arcus-fg-tertiary px-2.5 mb-1.5 mt-4 first:mt-0">
+                  {group.label}
+                </p>
+                <div className="space-y-0.5">
+                  {group.items.map(session => (
+                    <div key={session.id} className="group relative">
+                      <div
+                        onClick={() => { onConversationSelect?.(session.id); onClose(); }}
+                        className="flex items-center gap-3 p-2.5 rounded-xl transition-all cursor-pointer hover:bg-arcus-surface-hover"
                       >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); handleDelete(item.conversation_id || item.id); }}
-                        className="p-1 hover:text-red-400 text-arcus-fg-muted"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                        <div className="w-5 h-5 flex-shrink-0 flex items-center justify-center">
+                          {getSessionIcon(session.title)}
+                        </div>
+
+                        {editingId === session.id ? (
+                          <input
+                            autoFocus
+                            className="flex-1 bg-transparent border-none outline-none text-[14px] font-medium text-arcus-fg"
+                            value={editValue}
+                            onChange={e => setEditValue(e.target.value)}
+                            onBlur={() => handleRename(session.id, editValue)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') handleRename(session.id, editValue);
+                              if (e.key === 'Escape') setEditingId(null);
+                            }}
+                            onClick={e => e.stopPropagation()}
+                          />
+                        ) : (
+                          <span className="flex-1 text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors truncate">
+                            {session.title}
+                          </span>
+                        )}
+
+                        {!editingId && (
+                          <div className="opacity-0 group-hover:opacity-100 flex items-center gap-1 transition-opacity flex-shrink-0">
+                            <button
+                              onClick={e => { e.stopPropagation(); setEditingId(session.id); setEditValue(session.title); }}
+                              className="p-1 hover:text-arcus-fg text-arcus-fg-muted"
+                            >
+                              <Edit3 className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={e => { e.stopPropagation(); handleDelete(session.id); }}
+                              className="p-1 hover:text-red-400 text-arcus-fg-muted"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
+                  ))}
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+          </>
+        )}
       </div>
-      
-      {/* Footer / Feedback Section */}
+
+      {/* Feedback footer */}
       <div className="p-4 border-t border-arcus-border bg-arcus-surface">
         <AnimatePresence mode="wait">
           {!isFeedbackOpen ? (
-            <motion.button
-              key="feedback-prompt"
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }}
+            <motion.button key="fb-prompt" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setIsFeedbackOpen(true)}
               className="w-full py-3 px-4 rounded-xl border border-dashed border-arcus-border hover:border-arcus-fg-muted hover:bg-arcus-surface-hover transition-all text-left group"
             >
-              <span className="text-[12px] font-medium text-arcus-fg-muted group-hover:text-arcus-fg-secondary">Have Feedback? <span className="text-arcus-fg/60">Write here!</span></span>
+              <span className="text-[12px] font-medium text-arcus-fg-muted group-hover:text-arcus-fg-secondary">
+                Have Feedback? <span className="text-arcus-fg/60">Write here!</span>
+              </span>
             </motion.button>
           ) : (
-            <motion.div
-              key="feedback-form"
-              initial={{ opacity: 0, y: 10, scale: 0.95 }} 
-              animate={{ opacity: 1, y: 0, scale: 1 }} 
-              exit={{ opacity: 0, y: 10, scale: 0.95 }}
-              className="w-full bg-arcus-surface border border-arcus-border rounded-2xl p-4 shadow-2xl relative overflow-hidden"
+            <motion.div key="fb-form" initial={{ opacity: 0, y: 10, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.95 }}
+              className="w-full bg-arcus-surface border border-arcus-border rounded-2xl p-4 shadow-2xl"
             >
-               <textarea
-                 autoFocus
-                 placeholder="Share your feedback..."
-                 value={feedbackText}
-                 onChange={e => setFeedbackText(e.target.value)}
-                 onKeyDown={e => {
-                   if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSendFeedback();
-                   if (e.key === 'Escape') setIsFeedbackOpen(false);
-                 }}
-                 className="w-full bg-arcus-bg dark:bg-[#0A0A0A] border border-arcus-border rounded-xl p-3 text-[13px] text-arcus-fg placeholder:text-arcus-fg-muted resize-none min-h-[100px] outline-none focus:border-arcus-fg-tertiary dark:focus:border-white/20 transition-all mb-4"
-               />
-               
-               <div className="flex items-center justify-between">
-                  <button 
-                    onClick={() => window.open('mailto:mailient.xyz@gmail.com')}
-                    className="text-[12px] text-arcus-fg-muted hover:text-arcus-fg transition-colors"
-                  >
-                    Need help? <span className="underline decoration-white/20">Contact us</span>
-                  </button>
-                  
-                  <button 
-                    onClick={handleSendFeedback}
-                    disabled={!feedbackText.trim() || isSending || isSent}
-                    className={cn(
-                      "flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border-none shadow-lg",
-                      isSent ? "bg-emerald-500 text-white" : "bg-arcus-fg dark:bg-white text-arcus-fg-inverse dark:text-black hover:bg-arcus-fg/90 dark:hover:bg-neutral-100"
-                    )}
-                  >
-                    {isSent ? "Sent!" : isSending ? "Sending..." : "Send"}
-                    {!isSending && !isSent && (
-                       <div className="flex items-center gap-0.5 opacity-40 ml-1">
-                          <span className="text-[10px]">⌘</span>
-                          <span className="text-[10px]">↵</span>
-                       </div>
-                    )}
-                  </button>
-               </div>
+              <textarea
+                autoFocus placeholder="Share your feedback..."
+                value={feedbackText} onChange={e => setFeedbackText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSendFeedback();
+                  if (e.key === 'Escape') setIsFeedbackOpen(false);
+                }}
+                className="w-full bg-arcus-bg dark:bg-[#0A0A0A] border border-arcus-border rounded-xl p-3 text-[13px] text-arcus-fg placeholder:text-arcus-fg-muted resize-none min-h-[100px] outline-none focus:border-arcus-fg-tertiary dark:focus:border-white/20 transition-all mb-4"
+              />
+              <div className="flex items-center justify-between">
+                <button onClick={() => window.open('mailto:mailient.xyz@gmail.com')} className="text-[12px] text-arcus-fg-muted hover:text-arcus-fg transition-colors">
+                  Need help? <span className="underline decoration-white/20">Contact us</span>
+                </button>
+                <button
+                  onClick={handleSendFeedback}
+                  disabled={!feedbackText.trim() || isSending || isSent}
+                  className={cn(
+                    'flex items-center gap-2 px-4 py-1.5 rounded-full text-[12px] font-bold transition-all border-none shadow-lg',
+                    isSent ? 'bg-emerald-500 text-white' : 'bg-arcus-fg dark:bg-white text-arcus-fg-inverse dark:text-black hover:bg-arcus-fg/90 dark:hover:bg-neutral-100'
+                  )}
+                >
+                  {isSent ? 'Sent!' : isSending ? 'Sending...' : 'Send'}
+                  {!isSending && !isSent && (
+                    <div className="flex items-center gap-0.5 opacity-40 ml-1">
+                      <span className="text-[10px]">⌘</span>
+                      <span className="text-[10px]">↵</span>
+                    </div>
+                  )}
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -352,31 +351,12 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   );
 }
 
-function getMissionIconMinimal(title: string) {
-  const text = title.toLowerCase();
-  
-  // Specific Icons from User Image
-  if (text.includes('browser') || text.includes('search') || text.includes('web') || text.includes('internet')) {
-    return <History className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-  
-  if (text.includes('gather') || text.includes('list') || text.includes('checklist')) {
-    return <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-
-  // General Mission Mapping
-  if (text.includes('summary') || text.includes('catch up')) {
-    return <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-  if (text.includes('analytics') || text.includes('chart')) {
-    return <BarChart3 className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-  if (text.includes('schedule') || text.includes('calendar')) {
-    return <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-  if (text.includes('write') || text.includes('reply') || text.includes('draft')) {
-    return <PenTool className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
-  }
-  
+function getSessionIcon(title: string) {
+  const t = title.toLowerCase();
+  if (t.includes('summary') || t.includes('catch up') || t.includes('brief')) return <FileText className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  if (t.includes('analytics') || t.includes('chart') || t.includes('report')) return <BarChart3 className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  if (t.includes('schedule') || t.includes('calendar') || t.includes('meeting')) return <Calendar className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  if (t.includes('write') || t.includes('reply') || t.includes('draft') || t.includes('email')) return <PenTool className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
+  if (t.includes('search') || t.includes('find') || t.includes('web')) return <History className="w-4 h-4 text-neutral-400 dark:text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />;
   return <Sparkles className="w-4 h-4 text-neutral-300 dark:text-neutral-600 group-hover:text-neutral-500 dark:group-hover:text-neutral-400 transition-colors" />;
 }

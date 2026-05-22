@@ -18,6 +18,8 @@ const auth: any = nextAuth;
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
+// @ts-ignore
+import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 
 export const maxDuration = 60;
 
@@ -189,6 +191,9 @@ export async function POST(request: NextRequest) {
   }
 
   saveMemoryAsync(userId, message, conversationId);
+
+  // Fire-and-forget usage tracking (non-blocking)
+  subscriptionService.incrementFeatureUsage(userId, FEATURE_TYPES.ARCUS_AI).catch(() => {});
 
   return new Response(stream, {
     headers: {

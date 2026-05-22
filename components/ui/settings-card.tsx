@@ -857,7 +857,27 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                 </motion.div>
                             )}
 
-                            {activeSection === 'usage' && (
+                            {activeSection === 'usage' && (() => {
+                                const arcus = subscriptionData?.features?.arcus_ai;
+                                const sift = subscriptionData?.features?.sift_analysis;
+                                const summary = subscriptionData?.features?.email_summary;
+                                const tokens = subscriptionData?.features?.openai_tokens;
+                                const isUnlimited = arcus?.isUnlimited || isPro;
+
+                                const arcusUsed = arcus?.usage ?? 0;
+                                const arcusLimit = arcus?.limit ?? 50;
+                                const arcusRemaining = isUnlimited ? null : (arcus?.remaining ?? arcusLimit);
+
+                                const tokenUsed = tokens?.usage ?? 0;
+                                const tokenLimit = tokens?.limit ?? 50000;
+                                const tokenIsUnlimited = tokens?.isUnlimited || isUnlimited;
+                                const tokenPct = tokenIsUnlimited ? 0 : Math.min(100, (tokenUsed / tokenLimit) * 100);
+
+                                const fmt = (n: number) => n.toLocaleString();
+                                const fmtStat = (used: number, limit: number, unlimited: boolean) =>
+                                    unlimited ? `${fmt(used)} used` : `${fmt(used)} / ${fmt(limit)}`;
+
+                                return (
                                 <motion.div
                                     key="usage"
                                     initial={{ opacity: 0, y: 20 }}
@@ -870,90 +890,125 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                         </div>
                                     ) : (
                                         <div className="bg-neutral-50 dark:bg-[#070707] rounded-[16px] p-8 border border-neutral-200 dark:border-white/5">
+                                            {/* Header */}
                                             <div className="flex items-center justify-between mb-8">
                                                 <div className="space-y-1">
                                                     <p className="text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest">Active Tier</p>
                                                     <h3 className="text-2xl font-serif text-black dark:text-white capitalize">{subscriptionData?.planType || 'Free'}</h3>
                                                 </div>
-                                                <Button 
-                                                    className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-200 px-6 h-9 rounded-full text-[13px] font-bold shadow-sm"
-                                                    onClick={() => setActiveSection('subscription')}
-                                                >
-                                                    {isFree ? 'Upgrade' : 'Manage'}
-                                                </Button>
+                                                <div className="flex items-center gap-3">
+                                                    {isUnlimited && (
+                                                        <span className="text-[11px] font-bold uppercase tracking-widest text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full">Unlimited</span>
+                                                    )}
+                                                    <Button
+                                                        className="bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-200 px-6 h-9 rounded-full text-[13px] font-bold shadow-sm"
+                                                        onClick={() => setActiveSection('subscription')}
+                                                    >
+                                                        {isFree ? 'Upgrade' : 'Manage'}
+                                                    </Button>
+                                                </div>
                                             </div>
 
                                             <div className="border-t border-dashed border-neutral-200 dark:border-white/10 mb-8" />
 
                                             <div className="space-y-8">
-                                                <div className="space-y-4">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center gap-3">
-                                                            <Sparkles className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                                                            <div className="flex items-center gap-1.5">
-                                                                 <span className="text-[15px] font-medium text-black dark:text-white">Credits</span>
-                                                                 <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
-                                                            </div>
-                                                        </div>
-                                                        <span className="text-[15px] font-medium text-black dark:text-white">{(subscriptionData?.features?.arcus_ai?.remaining || 0) + (subscriptionData?.features?.sift_analysis?.remaining || 0)}</span>
-                                                    </div>
-                                                </div>
-
+                                                {/* Arcus AI usage */}
                                                 <div className="space-y-3">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
-                                                            <RefreshCw className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                                                            <div className="flex items-center gap-1.5">
-                                                                <span className="text-[15px] font-medium text-black dark:text-white">Daily refresh credits</span>
-                                                                <HelpCircle className="w-3.5 h-3.5 text-neutral-600 cursor-help" />
-                                                            </div>
+                                                            <Sparkles className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
+                                                            <span className="text-[15px] font-medium text-black dark:text-white">Arcus AI</span>
                                                         </div>
-                                                        <span className="text-[15px] font-medium text-black dark:text-white">{subscriptionData?.features?.arcus_ai?.remaining || 0}</span>
+                                                        <span className="text-[15px] font-medium text-black dark:text-white font-mono">
+                                                            {isUnlimited ? (
+                                                                <span className="flex items-center gap-1.5">
+                                                                    <span className="text-emerald-500">∞</span>
+                                                                    <span className="text-neutral-500 text-[13px]">({fmt(arcusUsed)} used today)</span>
+                                                                </span>
+                                                            ) : (
+                                                                <span>{fmt(arcusRemaining ?? 0)} <span className="text-neutral-400 text-[13px]">/ {fmt(arcusLimit)} remaining</span></span>
+                                                            )}
+                                                        </span>
                                                     </div>
-                                                    <p className="text-[11px] text-neutral-600 pl-7">
-                                                        Refresh to {subscriptionData?.features?.arcus_ai?.limit || 50} at 00:00 every day
-                                                    </p>
+                                                    {!isUnlimited && (
+                                                        <>
+                                                            <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                                <motion.div
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${Math.min(100, (arcusUsed / arcusLimit) * 100)}%` }}
+                                                                    className="h-full bg-black dark:bg-white rounded-full"
+                                                                />
+                                                            </div>
+                                                            <p className="text-[11px] text-neutral-500 pl-7">Resets to {fmt(arcusLimit)} at 00:00 every day</p>
+                                                        </>
+                                                    )}
                                                 </div>
-                                                
-                                                <div className="pt-6 border-t border-neutral-200 dark:border-white/5 grid grid-cols-2 gap-4">
-                                                    <div className="space-y-1">
-                                                        <span className="text-[11px] text-neutral-600 dark:text-neutral-500 uppercase font-bold tracking-wider">Sift AI</span>
-                                                        <p className="text-black dark:text-white text-[14px]">{subscriptionData?.features?.sift_analysis?.remaining} / {subscriptionData?.features?.sift_analysis?.limit}</p>
+
+                                                {/* Secondary stats grid */}
+                                                <div className="pt-6 border-t border-neutral-200 dark:border-white/5 grid grid-cols-2 gap-6">
+                                                    <div className="space-y-2">
+                                                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Sift AI</p>
+                                                        <p className="text-black dark:text-white text-[15px] font-medium">
+                                                            {fmtStat(sift?.usage ?? 0, sift?.limit ?? 10, sift?.isUnlimited || isUnlimited)}
+                                                        </p>
+                                                        {!sift?.isUnlimited && !isUnlimited && (
+                                                            <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((sift?.usage ?? 0) / (sift?.limit ?? 10)) * 100)}%` }} />
+                                                            </div>
+                                                        )}
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        <span className="text-[11px] text-neutral-600 dark:text-neutral-500 uppercase font-bold tracking-wider">Summaries</span>
-                                                        <p className="text-black dark:text-white text-[14px]">{subscriptionData?.features?.email_summary?.remaining} / {subscriptionData?.features?.email_summary?.limit}</p>
+                                                    <div className="space-y-2">
+                                                        <p className="text-[11px] text-neutral-500 dark:text-neutral-400 uppercase font-bold tracking-wider">Summaries</p>
+                                                        <p className="text-black dark:text-white text-[15px] font-medium">
+                                                            {fmtStat(summary?.usage ?? 0, summary?.limit ?? 20, summary?.isUnlimited || isUnlimited)}
+                                                        </p>
+                                                        {!summary?.isUnlimited && !isUnlimited && (
+                                                            <div className="h-1 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                                <div className="h-full bg-neutral-400 dark:bg-neutral-600 rounded-full" style={{ width: `${Math.min(100, ((summary?.usage ?? 0) / (summary?.limit ?? 20)) * 100)}%` }} />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
 
+                                                {/* Token usage */}
                                                 <div className="pt-6 border-t border-neutral-200 dark:border-white/5 space-y-4">
                                                     <div className="flex items-center justify-between">
                                                         <div className="flex items-center gap-3">
                                                             <Cpu className="w-4 h-4 text-neutral-500 dark:text-neutral-400" strokeWidth={1.5} />
-                                                            <span className="text-[15px] font-medium text-black dark:text-white">Token Credits Consumed</span>
+                                                            <span className="text-[15px] font-medium text-black dark:text-white">Tokens Consumed</span>
                                                         </div>
                                                         <div className="text-right">
-                                                            <span className="text-[17px] font-serif text-black dark:text-white">{(subscriptionData?.features?.openai_tokens?.usage || 0).toLocaleString()}</span>
-                                                            <span className="text-[11px] text-neutral-600 dark:text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
+                                                            <span className="text-[17px] font-serif text-black dark:text-white">{fmt(tokenUsed)}</span>
+                                                            <span className="text-[11px] text-neutral-500 font-sans ml-1.5 uppercase tracking-wider">tokens</span>
                                                         </div>
                                                     </div>
-                                                    <div className="h-1.5 w-full bg-neutral-50 dark:bg-white/5 rounded-full overflow-hidden">
-                                                        <motion.div 
-                                                            initial={{ width: 0 }}
-                                                            animate={{ width: `${Math.min(100, ((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}%` }}
-                                                            className="h-full bg-black dark:bg-white" 
-                                                        />
-                                                    </div>
-                                                    <div className="flex justify-between items-center text-[10px] text-neutral-600 dark:text-neutral-500 font-bold uppercase tracking-widest pl-1">
-                                                        <span>OpenRouter Cluster Usage</span>
-                                                        <span>{isPro ? 'Unlimited' : `${Math.round(((subscriptionData?.features?.openai_tokens?.usage || 0) / (subscriptionData?.features?.openai_tokens?.limit || 50000)) * 100)}% of quota`}</span>
-                                                    </div>
+                                                    {tokenIsUnlimited ? (
+                                                        <div className="flex items-center gap-2 text-[11px] text-emerald-500 font-bold uppercase tracking-widest">
+                                                            <span>∞</span>
+                                                            <span>Unlimited cluster access · OpenRouter</span>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <div className="h-1.5 w-full bg-neutral-200 dark:bg-white/5 rounded-full overflow-hidden">
+                                                                <motion.div
+                                                                    initial={{ width: 0 }}
+                                                                    animate={{ width: `${tokenPct}%` }}
+                                                                    className="h-full bg-black dark:bg-white rounded-full"
+                                                                />
+                                                            </div>
+                                                            <div className="flex justify-between items-center text-[10px] text-neutral-500 font-bold uppercase tracking-widest">
+                                                                <span>OpenRouter Cluster</span>
+                                                                <span>{Math.round(tokenPct)}% of {fmt(tokenLimit)} quota</span>
+                                                            </div>
+                                                        </>
+                                                    )}
                                                 </div>
                                             </div>
                                         </div>
                                     )}
                                 </motion.div>
-                            )}
+                                );
+                            })()}
 
                             {activeSection === 'privacy' && (
                                 <motion.div

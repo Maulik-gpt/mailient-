@@ -2727,6 +2727,15 @@ export default function ChatInterface({
 
         if (isNew) {
           generateChatTitle(messageText).then(title => {
+            // Update the main conversation localStorage object so history shows the AI title
+            const rawConv = localStorage.getItem(`conversation_${conversationIdToUse}`);
+            if (rawConv) {
+              try {
+                const convData = JSON.parse(rawConv);
+                convData.title = title;
+                localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(convData));
+              } catch { /* ignore */ }
+            }
             localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
             setChatTitle(title);
             fetch('/api/arcus/conversation', {
@@ -2800,6 +2809,14 @@ export default function ChatInterface({
 
         if (isNew) {
           generateChatTitle(messageText).then(title => {
+            const rawConv2 = localStorage.getItem(`conversation_${conversationIdToUse}`);
+            if (rawConv2) {
+              try {
+                const cd2 = JSON.parse(rawConv2);
+                cd2.title = title;
+                localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(cd2));
+              } catch { /* ignore */ }
+            }
             localStorage.setItem(`conv_${conversationIdToUse}_title`, title);
             setChatTitle(title);
           }).catch(() => { });
