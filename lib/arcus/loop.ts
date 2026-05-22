@@ -437,29 +437,32 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           }
         }
 
+        // Task list: fire async — does NOT block the main loop from starting.
+        // Both the task list LLM call and the first main-loop LLM call run in
+        // parallel. The task_list SSE event arrives whenever the call resolves,
+        // which is typically before or alongside the first tool_call event.
         if (!isPlanMode && availableTools.length > 0) {
-          try {
-            const tlRes = await callLLM(
-              [
-                {
-                  role: 'system',
-                  content:
-                    'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls.\n' +
-                    'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents.\n' +
-                    'Simple tasks (casual replies, single questions, greetings) are NOT complex.\n\n' +
-                    'For COMPLEX tasks: output a JSON object with two fields:\n' +
-                    '  "plan": a single sentence (max 220 chars) describing concretely what will be done — which tools, what will be found, what will be produced.\n' +
-                    '  "tasks": array of 3-5 short action items (max 10 words each).\n' +
-                    'For SIMPLE tasks: output exactly {}  (empty object).\n' +
-                    'Output ONLY raw JSON. No markdown fences, no extra text.\n' +
-                    'Example complex: {"plan":"I\'ll search your Gmail for the past 7 days, read each thread, and compile a full activity report in Canvas.","tasks":["Search Gmail last 7 days","Read top email threads","Compile key metrics","Open activity report in Canvas"]}\n' +
-                    'Example simple: {}',
-                },
-                { role: 'user', content: userMessage },
-              ],
-              [],
-              { maxTokens: 250 },
-            );
+          callLLM(
+            [
+              {
+                role: 'system',
+                content:
+                  'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls.\n' +
+                  'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents.\n' +
+                  'Simple tasks (casual replies, single questions, greetings) are NOT complex.\n\n' +
+                  'For COMPLEX tasks: output a JSON object with two fields:\n' +
+                  '  "plan": a single sentence (max 220 chars) describing concretely what will be done — which tools, what will be found, what will be produced.\n' +
+                  '  "tasks": array of 3-5 short action items (max 10 words each).\n' +
+                  'For SIMPLE tasks: output exactly {}  (empty object).\n' +
+                  'Output ONLY raw JSON. No markdown fences, no extra text.\n' +
+                  'Example complex: {"plan":"I\'ll search your Gmail for the past 7 days, read each thread, and compile a full activity report in Canvas.","tasks":["Search Gmail last 7 days","Read top email threads","Compile key metrics","Open activity report in Canvas"]}\n' +
+                  'Example simple: {}',
+              },
+              { role: 'user', content: userMessage },
+            ],
+            [],
+            { maxTokens: 250 },
+          ).then(tlRes => {
             const raw = getText(tlRes.content).trim();
             const objMatch = raw.match(/\{[\s\S]*\}/);
             if (objMatch) {
@@ -473,7 +476,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 emit('plan_text', { content: parsed.plan.trim() });
               }
             }
-          } catch { /* task list is optional */ }
+          }).catch(() => { /* task list is optional */ });
         }
 
         emit('thinking', { status: 'Thinking…' });

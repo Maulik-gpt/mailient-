@@ -354,35 +354,35 @@ export async function callLLM(
   }
 
   // Pass 1: sequential free models, all keys race each.
-  // Uses exponential backoff between models (200ms → 400ms → 600ms …) to
-  // reduce thundering-herd pressure on the free pool under heavy parallelism.
+  // Small fixed jitter between models to avoid thundering-herd without adding
+  // meaningful latency (100ms flat vs. old 400-1200ms ramp).
   const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
   log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
   for (let i = 0; i < list.length; i++) {
-    if (i > 0) await sleep(200 + Math.min(i * 200, 1000)); // 400ms, 600ms, 800ms … capped at 1.2s
-    const result = await tryModel(list[i], baseBody, 18000);
+    if (i > 0) await sleep(100);
+    const result = await tryModel(list[i], baseBody, 11000);
     if (result) return result;
   }
 
   // Pass 2: brief pause then retry any models whose cooldowns may have expired.
-  log('warn', 'Engine', 'Pass 1 failed — 4 s pause then retrying top models');
-  await sleep(4000);
+  log('warn', 'Engine', 'Pass 1 failed — 800ms pause then retrying top models');
+  await sleep(800);
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 6)) {
-    const result = await tryModel(model, baseBody, 18000);
+    const result = await tryModel(model, baseBody, 11000);
     if (result) return result;
-    await sleep(600);
+    await sleep(200);
   }
 
   // Pass 3: emergency — strip tool schemas, try top models for a text answer.
   log('warn', 'Engine', 'Pass 2 failed — emergency text-only round');
-  await sleep(1500);
+  await sleep(500);
   const noToolsBody: Record<string, any> = { ...baseBody };
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
-    const r = await tryModel(model, noToolsBody, 18000);
+    const r = await tryModel(model, noToolsBody, 11000);
     if (r) return r;
-    await sleep(600);
+    await sleep(200);
   }
 
   log('error', 'Engine', 'All passes exhausted', {
