@@ -1,49 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { BookOpen, ArrowRight, Clock, Calendar, ShieldCheck, Cpu, Sparkles } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 
-const blogPosts = [
-  {
-    tag: "Architecture",
-    icon: Cpu,
-    title: "The Architecture of Autonomous Outboxes",
-    subtitle: "How we built the Arcus flagship neural orchestrator to delegate calendar slots, thread context, and outbox operations overnight.",
-    content: "Waking up to email is an operational drag. In this deep dive, we explore how Arcus shifts inbox tasks to overnight autopilot, detailing our concurrency controllers, task schedulers, and calendar conflicts handling that yield green zone focus leverage for founders.",
-    date: "May 20, 2026",
-    readTime: "5 min read",
-    glowColor: "rgba(99,102,241,0.15)", // Indigo glow
-  },
-  {
-    tag: "Deep Learning",
-    icon: Sparkles,
-    title: "AI Voice Profiling: The Death of Generic Templates",
-    subtitle: "Why auto-generated email suggestions feel hollow and how we train style models over 90-day outbound histories.",
-    content: "Standard templates alienate recipients. We review our Neural Voice Profile architecture, showing how we analyze sentence lengths, pronoun ratios, semantic tone signatures, and custom vocabulary over your recent email archives to draft authentic replies.",
-    date: "April 15, 2026",
-    readTime: "4 min read",
-    glowColor: "rgba(16,185,129,0.15)", // Emerald glow
-  },
-  {
-    tag: "Security",
-    icon: ShieldCheck,
-    title: "Vault Security: Shielding PII inside Automated Sweeps",
-    subtitle: "A deep dive into local AES-256 cache sanitizers and client-side encryption layers protecting client datasets.",
-    content: "Data security is non-negotiable. Learn how Mailient isolates client datasets, utilizing local-first memory sweeps, AES-256 encryption envelopes, and automated SOC2-grade key rotations to keep your emails private and secure.",
-    date: "March 8, 2026",
-    readTime: "6 min read",
-    glowColor: "rgba(239,68,68,0.15)", // Red glow
-  }
-];
-
 export default function BlogsPage() {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   useEffect(() => {
     document.title = "Platform Insights // Mailient";
   }, []);
@@ -98,79 +63,17 @@ export default function BlogsPage() {
         </BlurFade>
       </section>
 
-      {/* Blog Cards Grid */}
-      <section className="relative z-10 w-full max-w-5xl px-6 pb-40">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {blogPosts.map((post, index) => {
-            const Icon = post.icon;
-            const isHovered = hoveredIndex === index;
-
-            return (
-              <BlurFade key={index} delay={0.4 + index * 0.1} duration={0.8} yOffset={20} inView>
-                <div 
-                  onMouseEnter={() => setHoveredIndex(index)}
-                  onMouseLeave={() => setHoveredIndex(null)}
-                  className="group relative border border-white/[0.04] bg-neutral-950/[0.4] backdrop-blur-2xl rounded-[24px] p-7 shadow-2xl flex flex-col justify-between h-[420px] transition-all duration-500 hover:scale-[1.02] hover:border-white/[0.08]"
-                >
-                  {/* Custom graphite hover spotlight glow */}
-                  <div 
-                    className="absolute inset-0 pointer-events-none rounded-[24px] transition-opacity duration-700 opacity-0 group-hover:opacity-100"
-                    style={{
-                      background: `radial-gradient(400px circle at 50% 50%, ${post.glowColor}, transparent 80%)`,
-                    }}
-                  />
-                  
-                  {/* Post Content */}
-                  <div className="space-y-4 relative z-10 text-left">
-                    {/* Header Tag and Icon */}
-                    <div className="flex items-center justify-between">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] text-[9px] font-mono tracking-wider uppercase text-neutral-400">
-                        {post.tag}
-                      </span>
-                      <Icon className="w-4 h-4 text-neutral-500 group-hover:text-white transition-colors duration-300" />
-                    </div>
-
-                    {/* Titles */}
-                    <div className="space-y-1.5">
-                      <h3 className="text-lg font-bold text-white group-hover:text-neutral-100 transition-colors leading-snug">
-                        {post.title}
-                      </h3>
-                      <p className="text-xs text-neutral-400 font-light leading-relaxed group-hover:text-neutral-300 transition-colors">
-                        {post.subtitle}
-                      </p>
-                    </div>
-
-                    {/* Summary text */}
-                    <p className="text-[11px] text-neutral-500 font-light leading-relaxed font-sans line-clamp-4 pt-2">
-                      {post.content}
-                    </p>
-                  </div>
-
-                  {/* Footer Stats and CTA */}
-                  <div className="flex items-center justify-between border-t border-white/[0.04] pt-4 relative z-10 text-[10px] text-neutral-500 font-mono">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-neutral-500" />
-                        {post.date}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3 text-neutral-500" />
-                        {post.readTime}
-                      </span>
-                    </div>
-                    
-                    {/* Premium kinetic arrow jump */}
-                    <span className="text-white font-bold flex items-center gap-1 cursor-pointer group-hover:text-indigo-400 transition-colors duration-300">
-                      Read
-                      <ArrowRight className="w-3 h-3 transition-transform duration-300 group-hover:translate-x-1" />
-                    </span>
-                  </div>
-
-                </div>
-              </BlurFade>
-            );
-          })}
-        </div>
+      {/* Blog Cards Placeholder */}
+      <section className="relative z-10 w-full max-w-2xl px-6 pb-40">
+        <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
+          <div className="border border-white/[0.04] bg-white/[0.01] backdrop-blur-2xl rounded-3xl p-12 shadow-2xl flex flex-col items-center text-center space-y-4">
+            <BookOpen className="w-8 h-8 text-neutral-500 animate-pulse" />
+            <h3 className="text-xl font-medium text-white tracking-tight">Coming soon</h3>
+            <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans max-w-sm">
+              Our engineering team is compiling deep-dive articles, architectural reviews, and essays. Platform insights will appear here shortly.
+            </p>
+          </div>
+        </BlurFade>
       </section>
 
       {/* Footer */}
