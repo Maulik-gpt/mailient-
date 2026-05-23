@@ -793,6 +793,71 @@ export function LinearLanding() {
       </div>
     </section>
 
+      {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
+      <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <BlurFade delay={0.1} duration={0.9} inView>
+          <div 
+            className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
+            onMouseMove={handleMouseMove}
+          >
+            {/* Card Cursor Lighting Glow spotlight */}
+            <motion.div
+              className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+              style={{
+                background: useMotionTemplate`radial-gradient(800px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.015), transparent 80%)`,
+              }}
+            />
+
+            <div className="flex-1 space-y-6 text-left relative z-10">
+              <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
+                PLATFORM FLAGSHIP AGENT
+              </span>
+              
+              <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+                Meet Arcus.
+              </h2>
+
+              <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
+                Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
+              </p>
+
+              <div className="pt-6">
+                <Link 
+                  href="/product/arcus"
+                  className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
+                >
+                  Review Arcus Flagship
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Glass dashboard preview right side */}
+            <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
+              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
+
+              <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
+                <span>ARCUS MISSION DEPLOYMENT</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              </div>
+
+              <div className="space-y-2.5">
+                <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
+                <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
+                <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
+                <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
+              </div>
+
+              <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
+                <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
+                <span>100% SUCCESS RATE</span>
+              </div>
+            </div>
+
+          </div>
+        </BlurFade>
+      </section>
+
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
       <section id="connectors" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center overflow-hidden">
         
@@ -1040,71 +1105,6 @@ export function LinearLanding() {
           </div>
 
         </div>
-      </section>
-
-      {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
-      <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
-        <BlurFade delay={0.1} duration={0.9} inView>
-          <div 
-            className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
-            onMouseMove={handleMouseMove}
-          >
-            {/* Card Cursor Lighting Glow spotlight */}
-            <motion.div
-              className="absolute inset-0 z-0 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-              style={{
-                background: useMotionTemplate`radial-gradient(800px circle at ${mouseX}px ${mouseY}px, rgba(255,255,255,0.015), transparent 80%)`,
-              }}
-            />
-
-            <div className="flex-1 space-y-6 text-left relative z-10">
-              <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-                PLATFORM FLAGSHIP AGENT
-              </span>
-              
-              <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Meet Arcus.
-              </h2>
-
-              <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
-              </p>
-
-              <div className="pt-6">
-                <Link 
-                  href="/product/arcus"
-                  className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
-                >
-                  Review Arcus Flagship
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            </div>
-
-            {/* Glass dashboard preview right side */}
-            <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
-
-              <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
-                <span>ARCUS MISSION DEPLOYMENT</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              </div>
-
-              <div className="space-y-2.5">
-                <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
-                <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
-                <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
-                <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
-              </div>
-
-              <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-                <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
-                <span>100% SUCCESS RATE</span>
-              </div>
-            </div>
-
-          </div>
-        </BlurFade>
       </section>
 
       {/* 5. THE MORNING SIDE-BY-SIDE: Chaos vs Overnight Clarity */}
