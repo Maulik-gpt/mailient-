@@ -36,6 +36,7 @@ const PRODUCT_LINKS = [
   { label: "Voice Profile", href: "/product/drafts" },
   { label: "Pricing", href: "/pricing" },
   { label: "Changelog", href: "/changelog" },
+  { label: "Blogs", href: "/blogs" },
 ];
 
 const RESOURCES_LINKS = [
@@ -92,6 +93,9 @@ export function Footer() {
           <p className="text-[13px] leading-relaxed text-neutral-500 font-light">
             Handle less. Rest more. Autonomous email intelligence that works overnight so you don&apos;t have to.
           </p>
+          <div className="text-[10px] text-neutral-600 font-light font-mono leading-relaxed mt-0.5">
+            Notion vision × Linear design × Mail.zero infra × Orchids AI
+          </div>
           {/* Socials */}
           <div className="flex items-center gap-4 mt-1">
             {SOCIALS.map((s) => (
@@ -145,6 +149,35 @@ export function Footer() {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Join Us column */}
+          <div className="relative z-10">
+            <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-neutral-600 mb-5">Join Us</p>
+            <ul className="space-y-3">
+              <li>
+                <a
+                  href="https://tally.so/r/b5KpB6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block"
+                >
+                  Apply as Creator
+                </a>
+                <span className="text-[9px] text-neutral-650 font-mono block mt-0.5">Build AI Agents (RevShare)</span>
+              </li>
+              <li>
+                <a
+                  href="https://tally.so/r/b5KpB6"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block"
+                >
+                  Apply as Affiliate
+                </a>
+                <span className="text-[9px] text-neutral-650 font-mono block mt-0.5">Earn recurring commissions</span>
+              </li>
             </ul>
           </div>
         </div>
