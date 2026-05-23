@@ -247,7 +247,7 @@ async function sendEmailReport(toEmail: string, agentName: string, report: strin
     const date = new Date().toLocaleDateString('en-US', {
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
-    const subject = `✨ ${agentName} — Your Arcus Report for ${date}`;
+    const subject = `${agentName} — Your Arcus Report for ${date}`;
     const html = buildReportHtml(agentName, date, report);
 
     const { error } = await resend.emails.send({
@@ -275,7 +275,7 @@ function inlineFormat(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/<(?![a-zA-Z/])/g, '&lt;')
     // Inline code
-    .replace(/`([^`]+)`/g, '<code style="background:#f3f4f6;padding:2px 5px;border-radius:4px;font-family:monospace;font-size:0.9em;color:#374151">$1</code>')
+    .replace(/`([^`]+)`/g, '<code style="background:#333333;padding:2px 5px;border-radius:4px;font-family:monospace;font-size:0.9em;color:#e0e0e0">$1</code>')
     // Bold + italic
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -283,7 +283,7 @@ function inlineFormat(text: string): string {
     .replace(/__(.+?)__/g, '<strong>$1</strong>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
     // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#6366f1;text-decoration:underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#ffffff;text-decoration:underline">$1</a>');
 }
 
 function markdownToHtml(markdown: string): string {
@@ -313,7 +313,7 @@ function markdownToHtml(markdown: string): string {
       const headingStyles: Record<number, string> = {
         1: 'font-size:26px;font-weight:800;color:#111827;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.5px',
         2: 'font-size:20px;font-weight:700;color:#1f2937;margin:28px 0 10px',
-        3: 'font-size:17px;font-weight:700;color:#374151;margin:20px 0 8px',
+        3: 'font-size:17px;font-weight:700;color:#e0e0e0;margin:20px 0 8px',
         4: 'font-size:15px;font-weight:600;color:#4b5563;margin:16px 0 6px',
         5: 'font-size:13px;font-weight:600;color:#6b7280;margin:12px 0 4px;text-transform:uppercase;letter-spacing:0.5px',
         6: 'font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px;text-transform:uppercase;letter-spacing:1px',
@@ -325,7 +325,7 @@ function markdownToHtml(markdown: string): string {
     // ── Horizontal rule ───────────────────────────────────────────────────────
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
       closeList(); closeTable();
-      out.push('<hr style="border:none;border-top:1px solid #e5e7eb;margin:20px 0">');
+      out.push('<hr style="border:none;border-top:1px solid #333333;margin:20px 0">');
       continue;
     }
 
@@ -350,17 +350,17 @@ function markdownToHtml(markdown: string): string {
       if (tableHeader) {
         out.push('<tr>');
         cells.forEach(c => {
-          out.push(`<th style="background:#f9fafb;border:1px solid #e5e7eb;padding:10px 14px;text-align:left;font-weight:700;color:#374151">${inlineFormat(c.trim())}</th>`);
+          out.push(`<th style="background:#f9fafb;border:1px solid #e5e7eb;padding:10px 14px;text-align:left;font-weight:700;color:#e0e0e0">${inlineFormat(c.trim())}</th>`);
         });
         out.push('</tr></thead><tbody>');
         tableHeader = false;
       } else {
         // Zebra stripe
         const rowIdx = out.filter(l => l.startsWith('<tr') && !l.includes('</tr')).length;
-        const bg = rowIdx % 2 === 0 ? '#ffffff' : '#f9fafb';
+        const bg = rowIdx % 2 === 0 ? '#191919' : '#222222';
         out.push(`<tr style="background:${bg}">`);
         cells.forEach(c => {
-          out.push(`<td style="border:1px solid #e5e7eb;padding:9px 14px;color:#374151">${inlineFormat(c.trim())}</td>`);
+          out.push(`<td style="border:1px solid #e5e7eb;padding:9px 14px;color:#e0e0e0">${inlineFormat(c.trim())}</td>`);
         });
         out.push('</tr>');
       }
@@ -374,7 +374,7 @@ function markdownToHtml(markdown: string): string {
     if (ulm) {
       closeTable();
       if (!inUl) { out.push('<ul style="margin:8px 0 8px 0;padding-left:24px">'); inUl = true; }
-      out.push(`<li style="margin:5px 0;color:#374151;line-height:1.6">${inlineFormat(ulm[2])}</li>`);
+      out.push(`<li style="margin:5px 0;color:#e0e0e0;line-height:1.6">${inlineFormat(ulm[2])}</li>`);
       continue;
     }
 
@@ -383,7 +383,7 @@ function markdownToHtml(markdown: string): string {
     if (olm) {
       closeTable();
       if (!inOl) { out.push('<ol style="margin:8px 0 8px 0;padding-left:24px">'); inOl = true; }
-      out.push(`<li style="margin:5px 0;color:#374151;line-height:1.6">${inlineFormat(olm[1])}</li>`);
+      out.push(`<li style="margin:5px 0;color:#e0e0e0;line-height:1.6">${inlineFormat(olm[1])}</li>`);
       continue;
     }
 
@@ -391,7 +391,7 @@ function markdownToHtml(markdown: string): string {
     const bqm = line.match(/^>\s*(.+)/);
     if (bqm) {
       closeList(); closeTable();
-      out.push(`<blockquote style="border-left:4px solid #6366f1;background:#f5f3ff;margin:12px 0;padding:10px 16px;border-radius:0 8px 8px 0;color:#4b5563;font-style:italic">${inlineFormat(bqm[1])}</blockquote>`);
+      out.push(`<blockquote style="border-left:4px solid #888888;background:#252525;margin:12px 0;padding:10px 16px;border-radius:0 8px 8px 0;color:#aaaaaa;font-style:italic">${inlineFormat(bqm[1])}</blockquote>`);
       continue;
     }
 
@@ -404,7 +404,7 @@ function markdownToHtml(markdown: string): string {
 
     // ── Paragraph ─────────────────────────────────────────────────────────────
     closeList(); closeTable();
-    out.push(`<p style="margin:6px 0;color:#374151;line-height:1.7;font-size:15px">${inlineFormat(line)}</p>`);
+    out.push(`<p style="margin:6px 0;color:#e0e0e0;line-height:1.7;font-size:15px">${inlineFormat(line)}</p>`);
   }
 
   closeList();
@@ -426,25 +426,24 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${agentName} — Arcus Report</title>
 </head>
-<body style="margin:0;padding:0;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f3f4f6;padding:32px 16px">
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:40px 16px">
     <tr>
       <td align="center">
-        <table width="620" cellpadding="0" cellspacing="0" style="max-width:620px;width:100%">
-
-          <!-- Header bar -->
+        <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#191919;border:1px solid #292929;border-radius:16px;overflow:hidden">
+          
+          <!-- Header -->
           <tr>
-            <td style="background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 50%,#a78bfa 100%);border-radius:20px 20px 0 0;padding:36px 40px 32px">
+            <td style="padding:40px 48px 32px;border-bottom:1px solid #292929">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="display:inline-flex;align-items:center;gap:10px">
-                      <span style="font-size:28px">🤖</span>
-                      <span style="color:#fff;font-size:22px;font-weight:800;letter-spacing:-0.5px">Arcus AI</span>
-                      <span style="background:rgba(255,255,255,0.2);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;vertical-align:middle">Report</span>
-                    </div>
-                    <div style="color:rgba(255,255,255,0.75);font-size:13px;margin-top:6px">
-                      📅 ${date}
+                    <div style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px">Arcus Report</div>
+                    <div style="color:#888888;font-size:14px;margin-top:6px">${date}</div>
+                  </td>
+                  <td align="right" valign="top">
+                    <div style="display:inline-block;padding:6px 12px;background:#222222;border:1px solid #333333;border-radius:6px;color:#cccccc;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">
+                      Agent: ${agentName}
                     </div>
                   </td>
                 </tr>
@@ -452,39 +451,23 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
             </td>
           </tr>
 
-          <!-- Agent name banner -->
-          <tr>
-            <td style="background:#fff;padding:20px 40px 4px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
-              <div style="display:flex;align-items:center;gap:8px;padding:14px 18px;background:#f5f3ff;border:1px solid #e0d7ff;border-radius:12px">
-                <span style="font-size:18px">⚡</span>
-                <div>
-                  <div style="font-size:11px;font-weight:600;color:#7c3aed;text-transform:uppercase;letter-spacing:0.8px">Agent Report</div>
-                  <div style="font-size:16px;font-weight:700;color:#1f2937;margin-top:1px">${agentName}</div>
-                </div>
-              </div>
-            </td>
-          </tr>
-
           <!-- Report body -->
           <tr>
-            <td style="background:#fff;padding:8px 40px 36px;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
+            <td style="padding:32px 48px 40px;color:#d1d5db;font-size:15px;line-height:1.7">
               ${body}
             </td>
           </tr>
 
           <!-- Footer -->
           <tr>
-            <td style="background:#f9fafb;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 20px 20px;padding:20px 40px">
+            <td style="background:#111111;border-top:1px solid #292929;padding:24px 48px">
               <table width="100%" cellpadding="0" cellspacing="0">
                 <tr>
                   <td>
-                    <div style="color:#9ca3af;font-size:12px;line-height:1.6">
-                      Sent by <strong style="color:#6366f1">Arcus</strong> for <a href="https://mailient.xyz" style="color:#6366f1;text-decoration:none">Mailient</a> — mailient.xyz
+                    <div style="color:#666666;font-size:12px;line-height:1.6">
+                      Sent by <strong style="color:#aaaaaa">Arcus</strong> for <a href="https://mailient.xyz" style="color:#aaaaaa;text-decoration:none">Mailient</a>
                       <br>Generated ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
                     </div>
-                  </td>
-                  <td align="right">
-                    <span style="font-size:22px">✨</span>
                   </td>
                 </tr>
               </table>
@@ -567,7 +550,7 @@ async function sendSlackReport(userId: string, channel: string | null, agentName
       body: JSON.stringify({
         channel: targetChannel,
         blocks,
-        text: `✨ ${agentName} — Arcus Report for ${date}`,
+        text: `${agentName} — Arcus Report for ${date}`,
       }),
       signal: AbortSignal.timeout(10000),
     });
@@ -601,7 +584,7 @@ function buildSlackBlocks(agentName: string, date: string, report: string): any[
     // Header
     {
       type: 'header',
-      text: { type: 'plain_text', text: `✨ ${agentName}`, emoji: true },
+      text: { type: 'plain_text', text: `${agentName}`, emoji: false },
     },
     {
       type: 'context',

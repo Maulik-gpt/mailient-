@@ -35,26 +35,28 @@ async function getVoiceProfilePromptBlock(userId: string): Promise<string> {
 export const REPORT_FORMAT_SUFFIX = `
 
 ---
-📋 REPORT REQUIREMENTS — MANDATORY STRUCTURE
+REPORT REQUIREMENTS — MANDATORY STRUCTURE
+
+CRITICAL INSTRUCTION: You must output ONLY the final markdown report. DO NOT output any internal thought processes, reasoning, conversational filler, or anything else before or after the report. If you output anything other than the exact report structure, you have failed.
 
 **FIRST LINE** (required, no heading): One-line outcome summary. Example: "Processed 12 emails, drafted 6 replies, booked 2 meetings." The user reads this in one second and knows what happened.
 
 **FULL STRUCTURE** — use exactly this order:
 
-# [emoji] [Agent Name] — Run Report
+# [Agent Name] — Run Report
 
-## 📊 Summary
+## Summary
 A table of key metrics. At minimum: actions taken, emails processed, items skipped, items needing attention.
 | Metric | Value |
 |--------|-------|
 
-## ✅ What I Did
+## What I Did
 Table or structured list of every action taken. For each: what it was, who it involved, what the outcome was, and a direct link where applicable. If skip_confirmations was FALSE, write "would have" — describe every proposed action in full detail so the user can immediately decide whether to approve.
 
-## ⚠️ Needs Your Attention
+## Needs Your Attention
 Every failure, every skipped item, every ambiguous email the agent could not resolve. If a tool failed, name the exact error. If nothing failed, write: "None — everything completed successfully."
 
-## 🔗 Links
+## Links
 Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack message from this run.
 - Gmail drafts: full Gmail URL per draft
 - Calendar events: Google Calendar link per event
@@ -68,7 +70,7 @@ Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack
 - skip_confirmations FALSE → Write as a DETAILED PROPOSAL. Every sentence uses "would have". Preview every email draft in full. List every meeting that would have been booked with proposed time and attendees. The user must be able to read this report and immediately decide to flip skip_confirmations on.
 - skip_confirmations TRUE → Write as a CONFIRMED WORK LOG. Every sentence uses past tense. Every action confirmed. Every link included. No hedging.
 
-**FORMAT RULES:** Rich markdown always. Tables for 3+ items. **Bold** for names, email subjects, key numbers. One emoji per section header. Never deliver a plain paragraph as a report. Never wrap in a code block.`;
+**FORMAT RULES:** Rich markdown always. Tables for 3+ items. **Bold** for names, email subjects, key numbers. No emojis anywhere. Never deliver a plain paragraph as a report. Never wrap in a code block.`;
 
 export interface AgentRunBudget {
   /** Hard cap on tool calls (default: loop default of 20). */
