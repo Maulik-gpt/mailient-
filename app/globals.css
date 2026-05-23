@@ -134,7 +134,7 @@ select,
 }
 
 html {
-  scroll-behavior: smooth;
+  scroll-behavior: initial;
   overscroll-behavior: none;
 }
 

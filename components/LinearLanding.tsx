@@ -794,7 +794,7 @@ export function LinearLanding() {
     </section>
 
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
+      <section id="connectors" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
         
         <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl mb-24">
           Integrated directly with <br />your favourite platforms.

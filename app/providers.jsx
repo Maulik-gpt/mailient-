@@ -8,6 +8,7 @@ import { Toaster } from "../components/ui/sonner";
 import { DashboardSettingsProvider } from "../lib/DashboardSettingsContext";
 import { ArcusCommandPalette } from "../components/ui/arcus-command-palette";
 import { SoundSystem } from "../components/ui/sound-system";
+import { LenisProvider } from "../components/providers/LenisProvider";
 
 const queryClient = new QueryClient();
 
@@ -22,7 +23,9 @@ export default function Providers({ children }) {
       >
         <SessionProvider>
           <DashboardSettingsProvider>
-            {children}
+            <LenisProvider>
+              {children}
+            </LenisProvider>
             <SoundSystem />
             <ArcusCommandPalette />
             <OfflineToast />
