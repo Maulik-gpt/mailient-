@@ -77,6 +77,22 @@ const SOCIALS = [
 ];
 
 export function Footer() {
+  const [modalType, setModalType] = React.useState<"creator" | "affiliate" | null>(null);
+  const [email, setEmail] = React.useState("");
+  const [submitted, setSubmitted] = React.useState(false);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim()) return;
+    setSubmitted(true);
+  };
+
+  const handleClose = () => {
+    setModalType(null);
+    setEmail("");
+    setSubmitted(false);
+  };
+
   return (
     <footer className="w-full bg-[#0a0a0a] border-t border-white/[0.06] text-neutral-400 font-sans">
       {/* Main grid */}
@@ -93,9 +109,6 @@ export function Footer() {
           <p className="text-[13px] leading-relaxed text-neutral-500 font-light">
             Handle less. Rest more. Autonomous email intelligence that works overnight so you don&apos;t have to.
           </p>
-          <div className="text-[10px] text-neutral-600 font-light font-mono leading-relaxed mt-0.5">
-            Notion vision × Linear design × Mail.zero infra × Orchids AI
-          </div>
           {/* Socials */}
           <div className="flex items-center gap-4 mt-1">
             {SOCIALS.map((s) => (
@@ -157,25 +170,21 @@ export function Footer() {
             <p className="text-[10px] font-bold tracking-[0.18em] uppercase text-neutral-600 mb-5">Join Us</p>
             <ul className="space-y-3">
               <li>
-                <a
-                  href="https://tally.so/r/b5KpB6"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block"
+                <button
+                  onClick={() => setModalType("creator")}
+                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block text-left bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
                 >
                   Apply as Creator
-                </a>
+                </button>
                 <span className="text-[9px] text-neutral-650 font-mono block mt-0.5">Build AI Agents (RevShare)</span>
               </li>
               <li>
-                <a
-                  href="https://tally.so/r/b5KpB6"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block"
+                <button
+                  onClick={() => setModalType("affiliate")}
+                  className="text-[13px] text-neutral-400 hover:text-white transition-colors duration-200 font-medium block text-left bg-transparent border-0 p-0 cursor-pointer focus:outline-none"
                 >
                   Apply as Affiliate
-                </a>
+                </button>
                 <span className="text-[9px] text-neutral-650 font-mono block mt-0.5">Earn recurring commissions</span>
               </li>
             </ul>
@@ -197,6 +206,74 @@ export function Footer() {
           </Link>
         </div>
       </div>
+
+      {/* Premium Application Modal */}
+      {modalType && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md transition-all duration-500">
+          <div className="absolute inset-0 z-0" onClick={handleClose} />
+          
+          <div className="relative z-10 w-full max-w-[440px] rounded-[2.5rem] bg-[#0A0A0A] border border-[#2A2A2A] p-8 md:p-10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] text-left flex flex-col gap-6">
+            <button 
+              onClick={handleClose}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/20 hover:text-white transition-all shadow-sm focus:outline-none"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+
+            <div className="space-y-2 mt-4">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-[9px] font-mono tracking-wider uppercase text-neutral-400">
+                Partner Loop // {modalType === "creator" ? "Creator" : "Affiliate"}
+              </span>
+              <h3 className="text-xl font-bold text-white tracking-tight">
+                {modalType === "creator" ? "Apply as Creator" : "Apply as Affiliate"}
+              </h3>
+            </div>
+
+            {!submitted ? (
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <p className="text-[13px] leading-relaxed text-neutral-400 font-light font-sans">
+                  {modalType === "creator" 
+                    ? "Join as an early AI engineer. Design and publish autonomous email workflow agents to our upcoming Arcus Marketplace. Earn a lucrative 70% revenue share on every execution or subscription you power."
+                    : "Become a Mailient partner. Promote our autonomous inbox loop and earn a massive 30% recurring lifetime commission on all subscriptions you refer. No upfront payment required."}
+                </p>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold tracking-wider uppercase text-neutral-500 block">Your Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="w-full rounded-2xl bg-white/[0.03] border border-white/5 px-5 py-3.5 text-[14px] text-white placeholder:text-white/25 focus:border-white/10 focus:outline-none transition-all leading-normal"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="w-full py-3.5 rounded-2xl bg-white text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-white/90 shadow-md cursor-pointer mt-2"
+                >
+                  Submit Application
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4 py-4 text-center flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg mb-2">
+                  ✓
+                </div>
+                <h4 className="text-md font-bold text-white">Application Received!</h4>
+                <p className="text-[12px] leading-relaxed text-neutral-400 font-light font-sans max-w-sm">
+                  We have queued your email <span className="text-white font-medium">{email}</span>. A founding partner will reach out within 24 hours with your revenue-share onboarding instructions.
+                </p>
+                <button
+                  onClick={handleClose}
+                  className="px-6 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-white hover:bg-white/5 font-semibold text-xs transition-colors mt-4 cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </footer>
   );
 }

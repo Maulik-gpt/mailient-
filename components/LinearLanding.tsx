@@ -796,7 +796,44 @@ export function LinearLanding() {
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
       <section id="connectors" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center">
         
-        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] text-white leading-tight max-w-2xl mb-24">
+        {/* Local styled keyframes for smooth kinetic concentric orbits centered on Mailient */}
+        <style dangerouslySetInnerHTML={{ __html: `
+          @keyframes orbit-inner {
+            from { transform: rotate(0deg) translateY(-90px) rotate(0deg); }
+            to { transform: rotate(360deg) translateY(-90px) rotate(-360deg); }
+          }
+          @keyframes orbit-middle {
+            from { transform: rotate(120deg) translateY(-160px) rotate(-120deg); }
+            to { transform: rotate(480deg) translateY(-160px) rotate(-480deg); }
+          }
+          @keyframes orbit-outer {
+            from { transform: rotate(240deg) translateY(-230px) rotate(-240deg); }
+            to { transform: rotate(600deg) translateY(-230px) rotate(-600deg); }
+          }
+          .orbit-inner-node-1 {
+            animation: orbit-inner 14s linear infinite;
+          }
+          .orbit-inner-node-2 {
+            animation: orbit-inner 14s linear infinite;
+            animation-delay: -7s;
+          }
+          .orbit-middle-node-1 {
+            animation: orbit-middle 22s linear infinite;
+          }
+          .orbit-middle-node-2 {
+            animation: orbit-middle 22s linear infinite;
+            animation-delay: -11s;
+          }
+          .orbit-outer-node-1 {
+            animation: orbit-outer 30s linear infinite;
+          }
+          .orbit-outer-node-2 {
+            animation: orbit-outer 30s linear infinite;
+            animation-delay: -15s;
+          }
+        ` }} />
+
+        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl mb-24 font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
           Integrated directly with <br />your favourite platforms.
         </h2>
 
@@ -805,75 +842,14 @@ export function LinearLanding() {
           
           {/* Animated SVG Connections Overlay */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 600 400" fill="none" xmlns="http://www.w3.org/2000/svg">
-            {/* Structural connection lines with subtle premium opacity */}
-            <path d="M 90,80 Q 195,140 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-            <path d="M 60,200 L 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-            <path d="M 90,320 Q 195,260 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-            <path d="M 510,80 Q 405,140 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-            <path d="M 540,200 L 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-            <path d="M 510,320 Q 405,260 300,200" stroke="rgba(255,255,255,0.06)" strokeWidth="1.5" fill="none" />
-
-            {/* Glowing animated pulsing data laser beams */}
-            <path 
-              d="M 90,80 Q 195,140 300,200" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 4s linear infinite" }}
-            />
-            <path 
-              d="M 300,200 L 60,200" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 5.2s linear infinite reverse" }}
-            />
-            <path 
-              d="M 90,320 Q 195,260 300,200" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 6.2s linear infinite" }}
-            />
-            <path 
-              d="M 300,200 Q 405,140 510,80" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 4.6s linear infinite" }}
-            />
-            <path 
-              d="M 540,200 L 300,200" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 5.7s linear infinite" }}
-            />
-            <path 
-              d="M 300,200 Q 405,260 510,320" 
-              stroke="url(#laser-gradient)" 
-              strokeWidth="2" 
-              fill="none" 
-              strokeDasharray="25, 140" 
-              style={{ animation: "laser-pulse 4.9s linear infinite reverse" }}
-            />
-
-            <defs>
-              <linearGradient id="laser-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
-                <stop offset="50%" stopColor="#ffffff" stopOpacity="0.8" />
-                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
-              </linearGradient>
-            </defs>
+            {/* Concentric orbit tracks centered at the Mailient Hub bottom center (300, 320) */}
+            <circle cx="300" cy="320" r="90" stroke="rgba(255,255,255,0.05)" strokeWidth="1" fill="none" strokeDasharray="4, 4" />
+            <circle cx="300" cy="320" r="160" stroke="rgba(255,255,255,0.05)" strokeWidth="1" fill="none" />
+            <circle cx="300" cy="320" r="230" stroke="rgba(255,255,255,0.05)" strokeWidth="1" fill="none" strokeDasharray="8, 4" />
           </svg>
 
-          {/* Central Premium Mailient Hub Node */}
-          <div className="absolute left-[300px] top-[200px] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-[25%] overflow-hidden z-30 shadow-[0_0_50px_rgba(255,255,255,0.12)] border border-white/[0.1] bg-neutral-950 flex items-center justify-center group pointer-events-auto cursor-pointer hover:scale-105 transition-transform duration-300">
+          {/* Central Premium Mailient Hub Node (at the bottom center) */}
+          <div className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 w-16 h-16 rounded-[25%] overflow-hidden z-30 shadow-[0_0_50px_rgba(255,255,255,0.12)] border border-white/[0.1] bg-neutral-950 flex items-center justify-center group pointer-events-auto cursor-pointer hover:scale-105 transition-transform duration-300">
             <img 
               src="/mailient-logo-premium.png" 
               alt="Mailient Hub" 
@@ -884,16 +860,18 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Node 1: Gmail */}
+          {/* Node 1: Gmail (Inner Orbit Track) */}
           <div 
-            className="absolute left-[90px] top-[80px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 5.5s ease-in-out infinite", animationDelay: "0.2s" }}
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-inner-node-1"
           >
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#ea4335]/40 hover:shadow-[0_0_20px_rgba(234,67,53,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-[#ea4335]/25" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 4H4C2.9 4 2.01 4.9 2.01 6L2 18C2 19.1 2.9 20 4 20H20C21.1 20 22 19.1 22 18V6C22 4.9 21.1 4 20 4Z" fill="#EA4335" />
-                <path d="M20 6L12 11L4 6V8L12 13L20 8V6Z" fill="#ffffff" opacity="0.85" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path fill="#EA4335" d="M6 12l18 11L42 12V9H6z"/>
+                <path fill="#34A853" d="M42 12v27a3 3 0 01-3 3H9a3 3 0 01-3-3V12l18 11 18-11z"/>
+                <path fill="#4285F4" d="M6 12v27a3 3 0 003 3V12H6z"/>
+                <path fill="#FBBC04" d="M42 12v30h-3V12l3-3v3z"/>
+                <path fill="#EA4335" d="M6 9h36l-3 3H9L6 9z"/>
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Gmail Ingestion (Active)
@@ -901,34 +879,33 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Node 2: Slack */}
+          {/* Node 2: Slack (Inner Orbit Track) */}
           <div 
-            className="absolute left-[60px] top-[200px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 6.2s ease-in-out infinite", animationDelay: "0.8s" }}
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-inner-node-2"
           >
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#36c5f0]/40 hover:shadow-[0_0_20px_rgba(54,197,240,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-[#36c5f0]/25" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M5.042 15.165a2.528 2.528 0 0 1-2.52 2.523 2.528 2.528 0 0 1-2.522-2.523 2.528 2.528 0 0 1 2.522-2.52h2.52v2.52zm1.261 0a2.528 2.528 0 0 1 2.52-2.52h5.043a2.528 2.528 0 0 1 2.522 2.52 2.528 2.528 0 0 1-2.522 2.523H8.823a2.528 2.528 0 0 1-2.52-2.523z" fill="#E01E5A"/>
-                <path d="M8.823 5.043a2.528 2.528 0 0 1 2.52-2.52 2.528 2.528 0 0 1 2.522 2.52v2.52h-2.522a2.528 2.528 0 0 1-2.52-2.52zm0 1.26a2.528 2.528 0 0 1 2.52 2.522v5.043a2.528 2.528 0 0 1-2.52 2.522 2.528 2.528 0 0 1-2.523-2.522V8.825a2.528 2.528 0 0 1 2.523-2.522z" fill="#2EB67D"/>
-                <path d="M18.958 8.825a2.528 2.528 0 0 1 2.52-2.522 2.528 2.528 0 0 1 2.522 2.522 2.528 2.528 0 0 1-2.522 2.52h-2.52v-2.52zm-1.262 0a2.528 2.528 0 0 1-2.52 2.52h-5.043a2.528 2.528 0 0 1-2.522-2.52 2.528 2.528 0 0 1 2.522-2.523h5.043a2.528 2.528 0 0 1 2.52 2.523z" fill="#36C5F0"/>
-                <path d="M15.177 18.957a2.528 2.528 0 0 1-2.522 2.52 2.528 2.528 0 0 1-2.52-2.52v-2.52h2.52a2.528 2.528 0 0 1 2.522 2.52zm0-1.262a2.528 2.528 0 0 1-2.522-2.52v-5.043a2.528 2.528 0 0 1 2.52-2.522 2.528 2.528 0 0 1 2.523 2.522v5.043a2.528 2.528 0 0 1-2.523 2.52z" fill="#ECB22E"/>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/>
+                <path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/>
+                <path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/>
+                <path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/>
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
-                Slack Notifications
+                Slack Notifications (Active)
               </div>
             </div>
           </div>
 
-          {/* Node 3: Notion */}
+          {/* Node 3: Notion (Middle Orbit Track) */}
           <div 
-            className="absolute left-[90px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 5.8s ease-in-out infinite", animationDelay: "1.4s" }}
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-middle-node-1"
           >
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-white/40 hover:shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-white/10" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M3 4.2C3 3.53726 3.53726 3 4.2 3H19.8C20.4627 3 21 3.53726 21 4.2V19.8C21 20.4627 20.4627 21 19.8 21H4.2C3.53726 21 3 20.4627 3 19.8V4.2ZM6.5 6.2V17.8H8.4V9.6L14.1 17.8H16V6.2H14.1V14.4L8.4 6.2H6.5Z" fill="#ffffff" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path fill="#fff" d="M12 12h40v40H12z"/>
+                <path fill="#000" fillRule="evenodd" d="m5.2,47.56s8,10.37,8.48,10.83c1.16,1.11,2.73,1.69,4.33,1.6,8.37-.42,27.54-1.38,35.57-1.78,3.11-.16,5.55-2.72,5.56-5.83l.1-35.5c0-1.99-1.03-3.83-2.72-4.87t0,0c-2.99-1.84-8.91-5.49-10.7-6.68-1.46-.97-3.2-1.43-4.96-1.32-5.96.38-23.45,1.51-30.85,1.98-2.96.19-5.24,2.62-5.24,5.54v34.78c0,.45.15.89.43,1.24h0Zm50.01-28.91v.02l-.1,33.7c0,.97-.77,1.77-1.74,1.82l-35.57,1.78c-.5.03-.99-.16-1.35-.5-.36-.34-.57-.82-.57-1.32V20.71c0-.97.75-1.77,1.72-1.82l35.67-2.06c.5-.03.99.15,1.36.5.36.34.57.82.57,1.32h0Zm-11.98,21.42v-13.72c-.63-.72-1.63-.67-3.07-1.11-.1-.03-.19-.11-.23-.21-.04-.1-.03-.22.03-.31,1.72-2.53,6.63-.95,9.83-1.96.09-.03.2-.02.28.05.08.07.11.17.09.27-.31,1.39-1.4,2.1-2.95,2.4v22.57c0,.75-.45,1.44-1.15,1.72-.64.26-1.31.54-1.31.54-1.54.8-3.43.29-4.37-1.17l-11.46-17.87v16.27c.62.72,1.63.67,3.07,1.11.1.03.19.11.23.21.04.1.03.22-.03.31-1.73,2.53-6.63.95-9.83,1.96-.09.04-.2.02-.28-.05-.08-.06-.11-.17-.09-.27.31-1.39,1.4-2.1,2.95-2.4v-21.31l-3.02-.29s.21-2.45,3.09-2.73c1.42-.14,5.13-.3,6.47-.36.3-.01.59.13.77.38l10.99,15.95h0ZM15.03,14.28c.55.42,1.24.63,1.93.59,5.09-.29,26.82-1.53,32.21-1.84.17-.01.31-.13.35-.29.04-.16-.03-.33-.17-.42-2.39-1.49-4.74-2.95-5.76-3.63-.73-.48-1.6-.71-2.48-.66,0,0-24.7,1.36-29.78,1.91-.64.07-.78.3-.8.39-.09.31.02.54.27.74,1.02.78,3.07,2.33,4.23,3.21h0Z"/>
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Notion Workspace Sync
@@ -936,17 +913,22 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Node 4: Google Calendar */}
+          {/* Node 4: Google Calendar (Middle Orbit Track) */}
           <div 
-            className="absolute right-[90px] top-[80px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 6s ease-in-out infinite", animationDelay: "0.5s" }}
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-middle-node-2"
           >
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#4285f4]/40 hover:shadow-[0_0_20px_rgba(66,133,244,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-[#4285f4]/25" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3 4.9 3 6V20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4Z" fill="#4285F4" />
-                <path d="M5 9H19V20H5V9Z" fill="#ffffff" />
-                <path d="M12 12H7V17H12V12Z" fill="#4285F4" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141.7 141.7" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path fill="#fff" d="M95.8,45.9H45.9V95.8H95.8Z"></path>
+                <path fill="#34a853" d="M95.8,95.8H45.9v22.5H95.8Z"></path>
+                <path fill="#4285f4" d="M95.8,23.4H30.9a7.55462,7.55462,0,0,0-7.5,7.5V95.8H45.9V45.9H95.8Z"></path>
+                <path fill="#188038" d="M23.4,95.8v15a7.55462,7.55462,0,0,0,7.5,7.5h15V95.8Z"></path>
+                <path fill="#fbbc04" d="M118.3,45.9H95.8V95.8h22.5Z"></path>
+                <path fill="#1967d2" d="M118.3,45.9v-15a7.55462,7.55462,0,0,0-7.5-7.5h-15V45.9Z"></path>
+                <path fill="#ea4335" d="M95.8,118.3l22.5-22.5H95.8Z"></path>
+                <polygon fill="#2a83f8" points="77.916 66.381 75.53 63.003 84.021 56.868 87.243 56.868 87.243 85.747 82.626 85.747 82.626 62.772 77.916 66.381"></polygon>
+                <path fill="#2a83f8" d="M67.29834,70.55785A7.88946,7.88946,0,0,0,70.78,64.12535c0-4.49-4-8.12-8.94-8.12a8.77525,8.77525,0,0,0-8.74548,6.45379l3.96252,1.58258a4.41779,4.41779,0,0,1,4.473-3.51635,4.138,4.138,0,1,1,.06256,8.24426v.00513h-.0559l-.00666.00061-.00964-.00061H59.15v3.87677h2.70642L61.88,72.65a4.70514,4.70514,0,1,1,0,9.37,5.35782,5.35782,0,0,1-3.96588-1.69354,4.59717,4.59717,0,0,1-.80408-1.2442l-.69757-1.69946L52.23005,79c.62,4.33,4.69,7.68,9.61,7.68,5.36,0,9.7-3.96,9.7-8.83A8.63346,8.63346,0,0,0,67.29834,70.55785Z"></path>
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Google Calendar Sweeper
@@ -954,16 +936,37 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Node 5: Cal.com */}
+          {/* Node 5: Google Meet (Outer Orbit Track) */}
           <div 
-            className="absolute right-[60px] top-[200px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 5.7s ease-in-out infinite", animationDelay: "1.1s" }}
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-outer-node-1"
+          >
+            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#0f9d58]/40 hover:shadow-[0_0_20px_rgba(15,157,88,0.15)] transition-all duration-300 cursor-pointer relative">
+              <div className="smooth-glow bg-[#0f9d58]/25" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path fill="#00ac47" d="M24,21.45V25a2.0059,2.0059,0,0,1-2,2H9V21h9V16Z"></path>
+                <polygon fill="#31a950" points="24 11 24 21.45 18 16 18 11 24 11"></polygon>
+                <polygon fill="#ea4435" points="9 5 9 11 3 11 9 5"></polygon>
+                <rect width="6" height="11" x="3" y="11" fill="#4285f4"></rect>
+                <path fill="#ffba00" d="M24,7v4h-.5L18,16V11H9V5H22A2.0059,2.0059,0,0,1,24,7Z"></path>
+                <path fill="#0066da" d="M9,21v6H5a2.0059,2.0059,0,0,1-2-2V21Z"></path>
+                <path fill="#00ac47" d="M29,8.26V23.74a.9989.9989,0,0,1-1.67.74L24,21.45,18,16l5.5-5,.5-.45,3.33-3.03A.9989.9989,0,0,1,29,8.26Z"></path>
+                <polygon fill="#188038" points="24 10.55 24 21.45 18 16 23.5 11 24 10.55"></polygon>
+              </svg>
+              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
+                Google Meet Video Loop
+              </div>
+            </div>
+          </div>
+
+          {/* Node 6: Cal.com (Outer Orbit Track) */}
+          <div 
+            className="absolute left-[300px] top-[320px] -translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group orbit-outer-node-2"
           >
             <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-amber-500/40 hover:shadow-[0_0_20px_rgba(245,158,11,0.15)] transition-all duration-300 cursor-pointer relative">
               <div className="smooth-glow bg-amber-500/20" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect width="24" height="24" rx="5" fill="#111111" />
-                <path d="M6 8h12M6 12h12M6 16h8" stroke="#ffffff" strokeWidth="2" strokeLinecap="round" />
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10">
+                <path d="M458 512H56c-30.4 0-55-24.6-55-55V55C1 24.6 25.6 0 56 0h402c30.4 0 55 24.6 55 55v402c0 30.4-24.6 55-55 55" style={{ fill: '#fff' }}/>
+                <path d="M162.8 347.3c-50.4 0-88.4-39.9-88.4-89.3s35.9-89.6 88.4-89.6c27.9 0 47 8.6 62.1 28l-24.3 20.1c-10.1-10.8-22.5-16.2-37.8-16.2-34.1 0-52.8 26.1-52.8 57.6s20.5 57.1 52.8 57.1c15.1 0 28-5.3 38.4-16.2l23.9 21c-14.5 18.9-34.3 27.5-62.3 27.5m166.4-131.2h32.7v128.1h-32.7v-18.7c-6.7 13.2-18.1 22.2-39.7 22.2-34.6 0-62.3-30.1-62.3-66.9 0-37 27.7-66.9 62.3-66.9 21.5 0 33 8.9 39.7 22.2zm1.1 64.5c0-20-13.8-36.6-35.4-36.6-20.8 0-34.4 16.7-34.4 36.6 0 19.4 13.6 36.6 34.4 36.6 21.4 0 35.4-16.7 35.4-36.6M385 164.3h32.7v179.6H385z" style={{ fill: '#242424' }}/>
               </svg>
               <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
                 Cal.com Booking Engine
@@ -971,22 +974,6 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Node 6: Google Meet */}
-          <div 
-            className="absolute right-[90px] top-[320px] translate-x-1/2 -translate-y-1/2 z-20 pointer-events-auto group"
-            style={{ animation: "float-node 6.4s ease-in-out infinite", animationDelay: "1.7s" }}
-          >
-            <div className="bg-[#0c0d12]/95 border border-white/[0.08] shadow-[0_8px_20px_rgba(0,0,0,0.8),inset_0_1px_1px_rgba(255,255,255,0.03)] rounded-[14px] w-12 h-12 flex items-center justify-center hover:scale-110 hover:border-[#0f9d58]/40 hover:shadow-[0_0_20px_rgba(15,157,88,0.15)] transition-all duration-300 cursor-pointer relative">
-              <div className="smooth-glow bg-[#0f9d58]/25" />
-              <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M15 8V12L19 8V16L15 12V16C15 17.1 14.1 18 13 18H5C3.9 18 3 17.1 3 16V8C3 6.9 3.9 6 5 6H13C14.1 6 15 6.9 15 8Z" fill="#0F9D58" />
-                <path d="M6 10H12V14H6V10Z" fill="#ffffff" opacity="0.9" />
-              </svg>
-              <div className="absolute bottom-full mb-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded bg-neutral-950 border border-white/10 text-white font-mono text-[8px] whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none shadow-md z-30">
-                Google Meet Video Loop
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
