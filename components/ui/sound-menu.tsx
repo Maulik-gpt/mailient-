@@ -41,7 +41,7 @@ export function SoundMenu() {
                             initial={{ opacity: 0, scale: 0.95, y: 10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: 10 }}
-                            className="absolute right-0 mt-3 w-72 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 overflow-hidden p-6 space-y-6"
+                            className="absolute right-0 mt-3 w-72 bg-white dark:bg-[#1a1a1a] border border-neutral-200 dark:border-white/10 rounded-[2rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] z-50 flex flex-col p-6 space-y-6"
                         >
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-2">

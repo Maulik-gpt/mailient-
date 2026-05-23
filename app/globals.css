@@ -135,7 +135,12 @@ select,
 
 html {
   scroll-behavior: initial;
-  overscroll-behavior: none;
+}
+
+/* Allow modals and fixed elements to scroll properly */
+[style*="position: fixed"],
+[style*="position: absolute"] {
+  touch-action: auto !important;
 }
 
 /* --- Apple Inspired Premium Aesthetic --- */

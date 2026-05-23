@@ -56,7 +56,7 @@ export function UsageLimitModal({
                         className="fixed inset-0 flex items-center justify-center z-[2000] p-4 md:p-8"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
-                        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md overflow-hidden shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]">
+                        <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md flex flex-col shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]">
                             {/* Header with gradient */}
                             <div className="relative bg-gradient-to-br from-orange-500/20 via-red-500/10 to-transparent p-6 pb-0">
                                 <button

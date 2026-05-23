@@ -227,7 +227,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.92, opacity: 0, y: 30 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="relative w-full max-w-2xl bg-[#0f0f0f] border border-white/[0.08] rounded-[28px] overflow-hidden shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-white"
+          className="relative w-full max-w-2xl bg-[#0f0f0f] border border-white/[0.08] rounded-[28px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-white"
         >
           {/* === HEADER === */}
           <div className="px-8 pt-7 pb-3 flex items-start justify-between">

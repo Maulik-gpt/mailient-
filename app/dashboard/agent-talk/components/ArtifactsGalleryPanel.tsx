@@ -58,13 +58,8 @@ export function ArtifactsGalleryPanel({
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, onClose]);
 
-  // Lock body scroll while open
+  // Don't lock body scroll - allow modal content to scroll properly
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 

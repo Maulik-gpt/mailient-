@@ -345,7 +345,7 @@ export function ConnectorsModal({
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 overflow-hidden isolate">
+      <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 md:p-8 isolate">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -365,7 +365,7 @@ export function ConnectorsModal({
           exit={{ opacity: 0, scale: 0.98, y: 30 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className={cn(
-            "relative w-full max-w-[920px] h-full max-h-[820px] rounded-[2.5rem] flex flex-col overflow-hidden z-10",
+            "relative w-full max-w-[920px] h-full max-h-[820px] rounded-[2.5rem] flex flex-col z-10",
             isDark 
               ? "bg-[#0A0A0A] border border-[#2A2A2A] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]"
               : "bg-gradient-to-br from-[#FAFAFA] to-[#EBEBEB] border border-black/[0.08] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.15)]",
