@@ -105,6 +105,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
         picture: '/arcus-ai-icon.jpg',
         banner: '',
         occupation: 'Founder',
+        bio: '',
         joinedDate: new Date().getFullYear().toString()
     });
 
@@ -123,6 +124,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                         picture: data.avatar_url || data.picture || '/arcus-ai-icon.jpg',
                         banner: data.banner_url || '',
                         occupation: data.work_status || 'Founder',
+                        bio: data.bio || '',
                         joinedDate: data.created_at ? new Date(data.created_at).getFullYear().toString() : new Date().getFullYear().toString()
                     });
                 } else {
@@ -195,7 +197,8 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                     username: accountInfo.username,
                     avatar_url: accountInfo.picture,
                     banner_url: accountInfo.banner,
-                    work_status: accountInfo.occupation
+                    work_status: accountInfo.occupation,
+                    bio: accountInfo.bio
                 }),
             });
 
@@ -541,7 +544,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                     key="account"
                                     initial={{ opacity: 0, scale: 0.98 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="space-y-6 focus:outline-none"
+                                    className="space-y-6 focus:outline-none font-satoshi"
                                 >
                                     <div className="bg-neutral-900 dark:bg-[#151515] rounded-[24px] border border-neutral-200 dark:border-white/[0.04] overflow-hidden shadow-2xl relative">
                                         {/* X-Style Banner Cover */}
@@ -716,19 +719,38 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                             {/* Bio / Occupation area */}
                                             <div>
                                                 {!isEditingProfile ? (
-                                                    <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-xl">
-                                                        {accountInfo.occupation || 'Mailient User'}
-                                                    </p>
+                                                    <div className="space-y-2 mt-1">
+                                                        <p className="text-sm font-bold text-neutral-800 dark:text-neutral-200">
+                                                            {accountInfo.occupation || 'Founder'}
+                                                        </p>
+                                                        {accountInfo.bio && (
+                                                            <p className="text-sm text-neutral-600 dark:text-neutral-400 leading-relaxed max-w-xl whitespace-pre-wrap">
+                                                                {accountInfo.bio}
+                                                            </p>
+                                                        )}
+                                                    </div>
                                                 ) : (
-                                                    <div className="mt-4">
-                                                        <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Occupation</label>
-                                                        <input 
-                                                            type="text"
-                                                            value={accountInfo.occupation}
-                                                            onChange={(e) => setAccountInfo(prev => ({ ...prev, occupation: e.target.value }))}
-                                                            placeholder="E.g., Founder, Engineer, Designer"
-                                                            className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all font-sans"
-                                                        />
+                                                    <div className="mt-4 space-y-4">
+                                                        <div>
+                                                            <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Occupation</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={accountInfo.occupation}
+                                                                onChange={(e) => setAccountInfo(prev => ({ ...prev, occupation: e.target.value }))}
+                                                                placeholder="E.g., Founder, Engineer, Designer"
+                                                                className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all font-satoshi"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Bio</label>
+                                                            <textarea 
+                                                                value={accountInfo.bio}
+                                                                onChange={(e) => setAccountInfo(prev => ({ ...prev, bio: e.target.value }))}
+                                                                placeholder="Write a short bio..."
+                                                                rows={3}
+                                                                className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all resize-none font-satoshi"
+                                                            />
+                                                        </div>
                                                     </div>
                                                 )}
                                             </div>
