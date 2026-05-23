@@ -61,7 +61,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                 initial={{ scale: 0.98, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.98, opacity: 0, y: 10 }}
-                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-[#0A0A0A] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
+                className="w-full max-w-5xl h-[85vh] bg-white dark:bg-[#191919] rounded-[16px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.5)] overflow-hidden flex flex-col md:flex-row border border-neutral-200 dark:border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
@@ -92,7 +92,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                 </div>
 
                 {/* Content Area */}
-                <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#0A0A0A]">
+                <div className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#191919]">
                     <header className="h-20 border-b border-neutral-100 dark:border-white/5 flex items-center justify-between px-10">
                         <h3 className="text-sm font-bold uppercase tracking-widest text-neutral-500 dark:text-neutral-400">
                             {sections.find(s => s.id === activeSection)?.label}

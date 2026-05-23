@@ -272,7 +272,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
             onClick={onClose}
         >
             <div
-                className="w-full md:max-w-[920px] h-full md:h-[640px] bg-white dark:bg-[#0A0A0A] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
+                className="w-full md:max-w-[920px] h-full md:h-[640px] bg-white dark:bg-[#191919] rounded-none md:rounded-[2rem] overflow-hidden flex flex-col md:flex-row shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] md:border border-neutral-200 dark:border-white/5"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
