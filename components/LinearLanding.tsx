@@ -1281,15 +1281,6 @@ export function LinearLanding() {
         </div>
       </section>
 
-      {/* 8.5 MODULAR PRICING SECTION */}
-      <section className="w-full border-t border-white/[0.06] z-10 relative">
-        <PricingSection3 
-          handleSelectPlan={(planId) => {
-            router.push("/pricing");
-          }} 
-        />
-      </section>
-
       {/* WHY MAILIENT MANIFESTO SECTION */}
       <section className="py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
         <div className="w-full space-y-12">
@@ -1378,6 +1369,15 @@ export function LinearLanding() {
           </div>
 
         </div>
+      </section>
+
+      {/* 8.5 MODULAR PRICING SECTION */}
+      <section className="w-full border-t border-white/[0.06] z-10 relative">
+        <PricingSection3 
+          handleSelectPlan={(planId) => {
+            router.push("/pricing");
+          }} 
+        />
       </section>
 
       {/* Core Capability Grid */}
