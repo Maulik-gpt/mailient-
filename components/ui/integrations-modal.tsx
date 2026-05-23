@@ -2,9 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { ToggleSwitch } from './toggle-switch';
-import { signIn, useSession } from 'next-auth/react';
-import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tooltip';
-import { Lock } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { Shield } from 'lucide-react';
 
 interface Integration {
   id: string;
@@ -12,6 +11,7 @@ interface Integration {
   logo: React.ReactNode;
   enabled: boolean;
   disabled?: boolean;
+  description: string;
 }
 
 interface IntegrationsModalProps {
@@ -19,88 +19,156 @@ interface IntegrationsModalProps {
   onClose: () => void;
 }
 
+// Canonical full-color SVGs copied directly from connectors-modal.tsx for brand accuracy
+const BrandIcons = {
+  GoogleCalendar: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141.7 141.7" className="w-5 h-5 shrink-0">
+      <path fill="#fff" d="M95.8,45.9H45.9V95.8H95.8Z"></path>
+      <path fill="#34a853" d="M95.8,95.8H45.9v22.5H95.8Z"></path>
+      <path fill="#4285f4" d="M95.8,23.4H30.9a7.55462,7.55462,0,0,0-7.5,7.5V95.8H45.9V45.9H95.8Z"></path>
+      <path fill="#188038" d="M23.4,95.8v15a7.55462,7.55462,0,0,0,7.5,7.5h15V95.8Z"></path>
+      <path fill="#fbbc04" d="M118.3,45.9H95.8V95.8h22.5Z"></path>
+      <path fill="#1967d2" d="M118.3,45.9v-15a7.55462,7.55462,0,0,0-7.5-7.5h-15V45.9Z"></path>
+      <path fill="#ea4335" d="M95.8,118.3l22.5-22.5H95.8Z"></path>
+      <polygon fill="#2a83f8" points="77.916 66.381 75.53 63.003 84.021 56.868 87.243 56.868 87.243 85.747 82.626 85.747 82.626 62.772 77.916 66.381"></polygon>
+      <path fill="#2a83f8" d="M67.29834,70.55785A7.88946,7.88946,0,0,0,70.78,64.12535c0-4.49-4-8.12-8.94-8.12a8.77525,8.77525,0,0,0-8.74548,6.45379l3.96252,1.58258a4.41779,4.41779,0,0,1,4.473-3.51635,4.138,4.138,0,1,1,.06256,8.24426v.00513h-.0559l-.00666.00061-.00964-.00061H59.15v3.87677h2.70642L61.88,72.65a4.70514,4.70514,0,1,1,0,9.37,5.35782,5.35782,0,0,1-3.96588-1.69354,4.59717,4.59717,0,0,1-.80408-1.2442l-.69757-1.69946L52.23005,79c.62,4.33,4.69,7.68,9.61,7.68,5.36,0,9.7-3.96,9.7-8.83A8.63346,8.63346,0,0,0,67.29834,70.55785Z"></path>
+    </svg>
+  ),
+  Notion: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" className="w-5 h-5 shrink-0">
+      <path fill="#000" fillRule="evenodd" d="m5.2,47.56s8,10.37,8.48,10.83c1.16,1.11,2.73,1.69,4.33,1.6,8.37-.42,27.54-1.38,35.57-1.78,3.11-.16,5.55-2.72,5.56-5.83l.1-35.5c0-1.99-1.03-3.83-2.72-4.87t0,0c-2.99-1.84-8.91-5.49-10.7-6.68-1.46-.97-3.2-1.43-4.96-1.32-5.96.38-23.45,1.51-30.85,1.98-2.96.19-5.24,2.62-5.24,5.54v34.78c0,.45.15.89.43,1.24h0Zm50.01-28.91v.02l-.1,33.7c0,.97-.77,1.77-1.74,1.82l-35.57,1.78c-.5.03-.99-.16-1.35-.5-.36-.34-.57-.82-.57-1.32V20.71c0-.97.75-1.77,1.72-1.82l35.67-2.06c.5-.03.99.15,1.36.5.36.34.57.82.57,1.32h0Zm-11.98,21.42v-13.72c-.63-.72-1.63-.67-3.07-1.11-.1-.03-.19-.11-.23-.21-.04-.1-.03-.22.03-.31,1.72-2.53,6.63-.95,9.83-1.96.09-.03.2-.02.28.05.08.07.11.17.09.27-.31,1.39-1.4,2.1-2.95,2.4v22.57c0,.75-.45,1.44-1.15,1.72-.64.26-1.31.54-1.31.54-1.54.8-3.43.29-4.37-1.17l-11.46-17.87v16.27c.62.72,1.63.67,3.07,1.11.1.03.19.11.23.21.04.1.03.22-.03.31-1.73,2.53-6.63.95-9.83,1.96-.09.04-.2.02-.28-.05-.08-.06-.11-.17-.09-.27.31-1.39,1.4-2.1,2.95-2.4v-21.31l-3.02-.29s.21-2.45,3.09-2.73c1.42-.14,5.13-.3,6.47-.36.3-.01.59.13.77.38l10.99,15.95h0ZM15.03,14.28c.55.42,1.24.63,1.93.59,5.09-.29,26.82-1.53,32.21-1.84.17-.01.31-.13.35-.29.04-.16-.03-.33-.17-.42-2.39-1.49-4.74-2.95-5.76-3.63-.73-.48-1.6-.71-2.48-.66,0,0-24.7,1.36-29.78,1.91-.64.07-.78.3-.8.39-.09.31.02.54.27.74,1.02.78,3.07,2.33,4.23,3.21h0Z"></path>
+    </svg>
+  ),
+  NotionCalendar: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="94.5 88 312.85 325" className="w-5 h-5 shrink-0 bg-black rounded-lg">
+      <path d="M398.579 135.841C404.242 141.152 407.35 148.439 407.35 156.355V372.638C407.35 372.725 407.347 372.812 407.343 372.9C407.329 373.178 407.3 373.455 407.3 373.733L407.325 373.859C407.325 386.91 397.107 398.225 384.27 399.798C383.352 399.948 382.433 400.062 381.489 400.125L169.818 412.937C169.151 412.975 168.497 413 167.842 413C167.767 413 167.695 412.994 167.622 412.987C167.55 412.981 167.477 412.975 167.402 412.975C167.251 412.975 167.103 412.981 166.955 412.987C166.807 412.994 166.659 413 166.508 413C158.97 413 151.91 410.231 146.461 405.109C140.559 399.559 137.275 391.944 137.275 383.688V373.405C137.275 371.316 136.872 370.196 134.443 370.196C134.443 370.196 127.786 370.322 127.094 370.322C118.687 370.322 110.822 367.227 104.744 361.513C98.1621 355.32 94.5378 346.837 94.5378 337.638L94.5 136.495C94.5 117.806 109.677 101.658 128.327 100.501L329.264 88.066C338.438 87.4996 347.134 90.5956 353.716 96.7752C360.297 102.955 363.921 111.425 363.921 120.637V126.993C363.921 126.993 363.795 129.12 366.552 129.032L377.563 128.365C385.453 127.861 392.916 130.53 398.579 135.841Z" fill="white"/>
+      <path d="M128.454 357.071C122.803 357.008 117.782 355.562 113.881 351.924C113.881 351.924 113.868 351.924 113.856 351.899C113.403 351.458 112.975 350.552 112.572 350.552C109.489 347.028 107.815 342.51 107.815 337.627L107.777 136.484C107.777 124.843 117.593 114.397 129.209 113.679L330.12 101.245C330.561 101.22 330.988 101.207 331.429 101.207C336.45 101.207 341.132 103.019 344.706 106.392C345.196 106.858 345.662 107.336 346.09 107.84C346.837 108.692 347.5 109.602 348.08 110.564C347.501 109.609 346.834 108.702 346.09 107.852C349.098 111.351 350.746 115.806 350.746 120.639V125.787C350.746 125.787 350.872 130.003 346.694 130.28L346.719 130.305L161.928 141.884C148.375 142.727 137.364 154.469 137.364 168.049C137.364 168.049 137.288 353.699 137.275 354C137.137 357.071 134.607 357.071 132.518 357.071H128.454Z" fill="black"/>
+      <path d="M394.126 373.546C394.151 373.244 394.176 372.941 394.176 372.639L394.126 155.274C394.05 154.129 393.861 153.009 393.546 151.939C392.817 149.434 391.457 147.182 389.532 145.382C386.776 142.802 383.177 141.405 379.313 141.405C378.974 141.405 378.633 141.417 378.294 141.443L163.854 154.884C163.779 154.889 163.703 154.902 163.628 154.914C163.527 154.93 163.426 154.947 163.326 154.947C156.505 155.652 150.792 161.617 150.326 168.451C150.301 168.753 150.301 169.043 150.301 169.345V382.318C150.301 382.42 150.307 382.519 150.314 382.616C150.32 382.711 150.326 382.804 150.326 382.896C150.464 387.667 152.365 392.021 155.75 395.205C158.77 398.049 162.646 399.66 166.837 399.875H167.504L381.83 386.899C381.893 386.899 381.956 386.889 382.019 386.88C382.065 386.873 382.111 386.866 382.158 386.862C382.174 386.862 382.191 386.861 382.208 386.861C388.538 385.691 393.684 380.002 394.126 373.546ZM183.927 376.339C176.59 376.855 170.096 374.364 170.297 364.748V215.08C170.297 209.946 174.526 206.661 179.194 206.421L365.747 195.233C370.404 194.994 374.216 198.367 374.216 203.036V352.968C374.216 358.455 372.845 365.516 363.406 365.881H363.381L363.368 365.893L183.927 376.339Z" fill="white"/>
+      <path d="M227.066 252.787C218.406 253.322 215.462 259.932 215.474 270.09V271.876C214.441 272.119 213.576 272.349 212.53 272.41C206.291 272.799 201.79 267.733 201.778 258.644C201.766 244.744 214.221 231.658 237.952 230.188C259.081 228.875 272.606 239.082 272.631 257.089C272.643 270.636 261.392 280.247 250.311 283.26C271.098 284.282 279.771 295.873 279.795 310.66C279.819 335.97 261.307 350.319 232.722 352.106L232.029 352.154C210.547 353.491 195.465 345.338 195.453 331.255C195.453 323.236 201.327 316.444 210.159 315.897C210.852 315.849 211.545 315.994 212.238 315.946C213.99 330.283 223.697 335.557 233.391 334.961C242.745 334.378 249.325 328.084 249.313 319.165V318.813C249.301 304.901 237.685 304.209 220.193 303.516L217.408 286.93C233.683 283.954 241.82 278.631 241.808 269.008C241.808 258.668 236.067 252.253 227.066 252.811V252.787Z" fill="white"/>
+      <path d="M305.181 245.959C287.859 250.965 284.041 243.358 285.938 235.388C296.325 232.958 323.341 224.854 333.558 221.196L333.68 327.987L352.57 330.732C352.57 337.683 348.605 342.032 341.501 342.482C335.614 342.846 321.93 343.345 315.349 343.758C305.132 344.39 286.424 345.921 286.424 345.921C285.901 344.524 285.731 343.114 285.731 341.862C285.731 338.472 287.105 334.998 291.606 333.478L305.29 329.056L305.193 245.971L305.181 245.959Z" fill="white"/>
+    </svg>
+  ),
+  CalCom: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" xmlSpace="preserve" viewBox="0 0 512 512" className="w-5 h-5 shrink-0">
+      <path d="M458 512H56c-30.4 0-55-24.6-55-55V55C1 24.6 25.6 0 56 0h402c30.4 0 55 24.6 55 55v402c0 30.4-24.6 55-55 55" style={{ fill: '#fff' }}/>
+      <path d="M162.8 347.3c-50.4 0-88.4-39.9-88.4-89.3s35.9-89.6 88.4-89.6c27.9 0 47 8.6 62.1 28l-24.3 20.1c-10.1-10.8-22.5-16.2-37.8-16.2-34.1 0-52.8 26.1-52.8 57.6s20.5 57.1 52.8 57.1c15.1 0 28-5.3 38.4-16.2l23.9 21c-14.5 18.9-34.3 27.5-62.3 27.5m166.4-131.2h32.7v128.1h-32.7v-18.7c-6.7 13.2-18.1 22.2-39.7 22.2-34.6 0-62.3-30.1-62.3-66.9 0-37 27.7-66.9 62.3-66.9 21.5 0 33 8.9 39.7 22.2zm1.1 64.5c0-20-13.8-36.6-35.4-36.6-20.8 0-34.4 16.7-34.4 36.6 0 19.4 13.6 36.6 34.4 36.6 21.4 0 35.4-16.7 35.4-36.6M385 164.3h32.7v179.6H385z" style={{ fill: '#242424' }}/>
+    </svg>
+  ),
+  GoogleMeet: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" className="w-5 h-5 shrink-0">
+      <path fill="#00ac47" d="M24,21.45V25a2.0059,2.0059,0,0,1-2,2H9V21h9V16Z"></path>
+      <polygon fill="#31a950" points="24 11 24 21.45 18 16 18 11 24 11"></polygon>
+      <polygon fill="#ea4435" points="9 5 9 11 3 11 9 5"></polygon>
+      <rect width="6" height="11" x="3" y="11" fill="#4285f4"></rect>
+      <path fill="#ffba00" d="M24,7v4h-.5L18,16V11H9V5H22A2.0059,2.0059,0,0,1,24,7Z"></path>
+      <path fill="#0066da" d="M9,21v6H5a2.0059,2.0059,0,0,1-2-2V21Z"></path>
+      <path fill="#00ac47" d="M29,8.26V23.74a.9989.9989,0,0,1-1.67.74L24,21.45,18,16l5.5-5,.5-.45,3.33-3.03A.9989.9989,0,0,1,29,8.26Z"></path>
+      <polygon fill="#188038" points="24 10.55 24 21.45 18 16 23.5 11 24 10.55"></polygon>
+    </svg>
+  ),
+  Slack: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" className="w-5 h-5 shrink-0">
+      <path d="M27.255 80.719c0 7.33-5.978 13.317-13.309 13.317C6.616 94.036.63 88.049.63 80.719s5.987-13.317 13.317-13.317h13.309zm6.709 0c0-7.33 5.987-13.317 13.317-13.317s13.317 5.986 13.317 13.317v33.335c0 7.33-5.986 13.317-13.317 13.317-7.33 0-13.317-5.987-13.317-13.317zm0 0" fill="#de1c59"/>
+      <path d="M47.281 27.255c-7.33 0-13.317-5.978-13.317-13.309C33.964 6.616 39.951.63 47.281.63s13.317 5.987 13.317 13.317v13.309zm0 6.709c7.33 0 13.317 5.987 13.317 13.317s-5.986 13.317-13.317 13.317H13.946C6.616 60.598.63 54.612.63 47.281c0-7.33 5.987-13.317 13.317-13.317zm0 0" fill="#35c5f0"/>
+      <path d="M100.745 47.281c0-7.33 5.978-13.317 13.309-13.317 7.33 0 13.317 5.987 13.317 13.317s-5.987 13.317-13.317 13.317h-13.309zm-6.709 0c0 7.33-5.987 13.317-13.317 13.317s-13.317-5.986-13.317-13.317V13.946C67.402 6.616 73.388.63 80.719.63c7.33 0 13.317 5.987 13.317 13.317zm0 0" fill="#2eb57d"/>
+      <path d="M80.719 100.745c7.33 0 13.317 5.978 13.317 13.309 0 7.33-5.987 13.317-13.317 13.317s-13.317-5.987-13.317-13.317v-13.309zm0-6.709c-7.33 0-13.317-5.987-13.317-13.317s5.986-13.317 13.317-13.317h33.335c7.33 0 13.317 5.986 13.317 13.317 0 7.33-5.987 13.317-13.317 13.317zm0 0" fill="#ebb02e"/>
+    </svg>
+  ),
+  Gmail: () => (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="w-5 h-5 shrink-0">
+      <path fill="#EA4335" d="M6 12l18 11L42 12V9H6z"/>
+      <path fill="#34A853" d="M42 12v27a3 3 0 01-3 3H9a3 3 0 01-3-3V12l18 11 18-11z"/>
+      <path fill="#4285F4" d="M6 12v27a3 3 0 003 3V12H6z"/>
+      <path fill="#FBBC04" d="M42 12v30h-3V12l3-3v3z"/>
+      <path fill="#EA4335" d="M6 9h36l-3 3H9L6 9z"/>
+    </svg>
+  ),
+  Mailient: () => (
+    <img src="/mailient-logo-premium.png" alt="mailient.xyz" className="w-5 h-5 object-cover rounded-[25%] shrink-0" />
+  )
+};
+
 export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
   const { data: session } = useSession();
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
+      id: 'mailient',
+      name: 'mailient.xyz',
+      logo: <BrandIcons.Mailient />,
+      enabled: true,
+      disabled: true,
+      description: 'Founding platform workspace core engine.'
+    },
+    {
       id: 'gmail',
       name: 'Gmail',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d='M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636C.732 21.002 0 20.27 0 19.366V5.457c0-.904.732-1.636 1.636-1.636h.273L12 10.728 21.091 3.821h.273c.904 0 1.636.732 1.636 1.636z' />
-        </svg>
-      ),
+      logo: <BrandIcons.Gmail />,
       enabled: true,
-      disabled: true
+      disabled: true,
+      description: 'Read-write mailbox intelligence synced continuously.'
     },
     {
-      id: 'google-calendar',
+      id: 'google_calendar',
       name: 'Google Calendar',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
-        </svg>
-      ),
-      enabled: false
+      logo: <BrandIcons.GoogleCalendar />,
+      enabled: false,
+      description: 'Autonomously check availability and mirror scheduled calls.'
     },
     {
-      id: 'google-meet',
+      id: 'google_meet',
       name: 'Google Meet',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4zM14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2z" />
-        </svg>
-      ),
-      enabled: false
+      logo: <BrandIcons.GoogleMeet />,
+      enabled: false,
+      description: 'Auto-generate video conferencing links and manage collaborative rooms.'
     },
     {
-      id: 'todoist',
-      name: 'Todoist',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-3.5-3.5 1.41-1.41L11 14.17l4.09-4.09 1.41 1.41L12 17z" />
-        </svg>
-      ),
+      id: 'cal_com',
+      name: 'Cal.com',
+      logo: <BrandIcons.CalCom />,
       enabled: false,
-      disabled: true
+      description: 'Share custom booking links and sync calendars straight from Arcus.'
     },
     {
-      id: 'asana',
-      name: 'Asana',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-        </svg>
-      ),
+      id: 'notion',
+      name: 'Notion',
+      logo: <BrandIcons.Notion />,
       enabled: false,
-      disabled: true
+      description: 'Create, search, and update databases and project pages.'
     },
     {
-      id: 'google-drive',
-      name: 'Google Drive',
-      logo: (
-        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M14.97 5.92L12.41 8.48c-.53.53-.53 1.39 0 1.92.53.53 1.39.53 1.92 0l2.56-2.56c1.85-1.85 4.85-1.85 6.7 0s1.85 4.85 0 6.7L20.41 17.7c-.53.53-.53 1.39 0 1.92.53.53 1.39.53 1.92 0l3.18-3.18c1.85-1.85 1.85-4.85 0-6.7s-4.85-1.85-6.7 0z" />
-          <path d="M9.03 18.08L11.59 15.52c.53-.53.53-1.39 0-1.92-.53-.53-1.39-.53-1.92 0L7.11 16.16c-1.85 1.85-1.85 4.85 0 6.7s4.85 1.85 6.7 0l3.18-3.18c.53-.53.53-1.39 0-1.92-.53-.53-1.39-.53-1.92 0L12.41 20.7c-1.85 1.85-4.85 1.85-6.7 0s-1.85-4.85 0-6.7z" />
-          <path d="M7.05 16.87c-.53-.53-1.39-.53-1.92 0L1.95 20.05c-1.85 1.85-1.85 4.85 0 6.7s4.85 1.85 6.7 0l3.18-3.18c.53-.53.53-1.39 0-1.92-.53-.53-1.39-.53-1.92 0L7.05 23.59c-1.85 1.85-4.85 1.85-6.7 0s-1.85-4.85 0-6.7l3.18-3.18c.53-.53 1.39-.53 1.92 0z" />
-        </svg>
-      ),
+      id: 'notion_calendar',
+      name: 'Notion Calendar',
+      logo: <BrandIcons.NotionCalendar />,
       enabled: false,
-      disabled: true
+      description: 'Synchronize timeline databases and calendar views seamlessly.'
+    },
+    {
+      id: 'slack',
+      name: 'Slack',
+      logo: <BrandIcons.Slack />,
+      enabled: false,
+      description: 'Centralize coordinate and deliver instant notifications.'
     }
   ]);
-
 
   const fetchIntegrationStatus = async () => {
     try {
       const response = await fetch('/api/integrations/status');
       if (response.ok) {
         const data = await response.json();
+        const statuses = Array.isArray(data.integrations) ? data.integrations : [];
+        
         setIntegrations(prev =>
-          prev.map(integration => ({
-            ...integration,
-            enabled: data.integrations[integration.id] || integration.enabled
-          }))
+          prev.map(integration => {
+            if (integration.id === 'mailient' || integration.id === 'gmail') {
+              return integration;
+            }
+            const match = statuses.find((s: any) => s.provider === integration.id);
+            return {
+              ...integration,
+              enabled: match ? match.connected : false
+            };
+          })
         );
       }
     } catch (error) {
@@ -114,94 +182,57 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
     }
   }, [isOpen]);
 
-  const handleToggle = async (id: string) => {
-    if (id === 'google-calendar' || id === 'google-meet') {
-      const currentEnabled = integrations.find(i => i.id === id)?.enabled;
-      const integrationName = id === 'google-calendar' ? 'Google Calendar' : 'Google Meet';
-      if (!currentEnabled) {
-        // Toggle on: check if user is authenticated
-        if (session) {
-          // User is authenticated, prompt for additional Calendar consent
-          const confirmed = window.confirm(`Do you want to enable ${integrationName} integration? This will require additional permission from Google.`);
-          if (confirmed) {
-            signIn('google', {
-              scope: 'openid email profile https://www.googleapis.com/auth/gmail.send',
-              prompt: 'consent',
-              redirectTo: window.location.pathname + window.location.search
-            });
-            // Update API
-            fetch('/api/integrations/status', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ integrationId: id, enabled: true })
-            }).catch(error => console.error('Error enabling integration:', error));
-            setIntegrations(prev =>
-              prev.map(integration =>
-                integration.id === id ? { ...integration, enabled: true } : integration
-              )
-            );
-          }
-        } else {
-          // User not authenticated, trigger sign in with all scopes including Calendar
-          signIn('google', {
-            scope: 'openid email profile https://www.googleapis.com/auth/gmail.send',
-            prompt: 'consent',
-            redirectTo: window.location.pathname + window.location.search
-          });
-          // Update API
-          fetch('/api/integrations/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ integrationId: id, enabled: true })
-          }).catch(error => console.error('Error enabling integration:', error));
-          setIntegrations(prev =>
-            prev.map(integration =>
-              integration.id === id ? { ...integration, enabled: true } : integration
-            )
-          );
-        }
-      } else {
-        // Toggle off: update state and API
+  const handleToggle = async (id: string, currentlyEnabled: boolean) => {
+    if (id === 'mailient' || id === 'gmail') return;
+
+    if (currentlyEnabled) {
+      const label = id === 'cal_com' ? 'Cal.com' : id.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const confirmed = window.confirm(`Are you sure you want to disconnect ${label}?`);
+      if (confirmed) {
         try {
-          await fetch('/api/integrations/status', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ integrationId: id, enabled: false })
+          const res = await fetch(`/api/integrations?provider=${id}`, {
+            method: 'DELETE'
           });
-          setIntegrations(prev =>
-            prev.map(integration =>
-              integration.id === id && !integration.disabled
-                ? { ...integration, enabled: !integration.enabled }
-                : integration
-            )
-          );
-        } catch (error) {
-          console.error('Error disabling integration:', error);
+          if (res.ok) {
+            setIntegrations(prev =>
+              prev.map(item => item.id === id ? { ...item, enabled: false } : item)
+            );
+            await fetchIntegrationStatus();
+          } else {
+            alert('Failed to disconnect integration.');
+          }
+        } catch (err) {
+          console.error('Error disconnecting:', err);
+          alert('Failed to disconnect integration.');
         }
       }
     } else {
-      setIntegrations(prev =>
-        prev.map(integration =>
-          integration.id === id && !integration.disabled
-            ? { ...integration, enabled: !integration.enabled }
-            : integration
-        )
-      );
-    }
-  };
+      const V3_DIRECT_ROUTES: Record<string, string> = {
+        google_calendar:  '/api/arcus/v3/oauth/gcal',
+        slack:            '/api/arcus/v3/oauth/slack',
+        notion:           '/api/arcus/v3/oauth/notion',
+        notion_calendar:  '/api/arcus/v3/oauth/notion', // Notion Calendar redirects via Notion OAuth
+      };
 
-  const handleRemove = (id: string) => {
-    const integration = integrations.find(i => i.id === id);
-    if (integration && !integration.disabled) {
-      const confirmed = window.confirm(`Are you sure you want to remove ${integration.name} integration?`);
-      if (confirmed) {
-        setIntegrations(prev => prev.filter(integration => integration.id !== id));
-        // Optionally, update API to disable it
-        fetch('/api/integrations/status', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ integrationId: id, enabled: false })
-        }).catch(error => console.error('Error disabling integration:', error));
+      if (V3_DIRECT_ROUTES[id]) {
+        window.location.assign(V3_DIRECT_ROUTES[id]);
+        return;
+      }
+
+      // Legacy providers (Google Meet, Cal.com)
+      try {
+        const res = await fetch(`/api/integrations/${id}/auth`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.url) {
+            window.location.assign(data.url);
+            return;
+          }
+        }
+        alert('Failed to initiate connection. Please try again.');
+      } catch (err) {
+        console.error('Connection init error:', err);
+        alert('Failed to initiate connection. Please try again.');
       }
     }
   };
@@ -209,76 +240,66 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
   if (!isOpen) return null;
 
   return (
-    <TooltipProvider>
-      <div className="fixed inset-0 z-[90] flex items-center justify-center">
-        {/* Backdrop */}
-        <div
-          className="absolute inset-0 bg-black/30 backdrop-blur-sm"
-          onClick={onClose}
-        />
+    <div className="fixed inset-0 z-[90] flex items-center justify-center">
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      />
 
-        {/* Modal */}
-        <div className="relative p-6 w-80 max-h-[80vh] overflow-y-auto scrollbar-hide shadow-2xl bg-[#3b3b3b] rounded-[2rem]">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-medium text-white">Integrations</h2>
-            <button
-              onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 rounded-full transition-all duration-200"
+      {/* Modal - Elegant premium dark theme layout */}
+      <div className="relative p-6 w-[440px] max-h-[85vh] overflow-y-auto scrollbar-hide shadow-2xl bg-[#0c0c0c] border border-white/[0.08] rounded-[2rem] flex flex-col gap-6 select-none z-10">
+        
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="p-1 rounded bg-white/[0.04] border border-white/[0.08]">
+              <Shield className="w-4 h-4 text-neutral-400" />
+            </span>
+            <h2 className="text-md font-bold text-white tracking-tight">Integrations Control</h2>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/5 rounded-full transition-all duration-200 focus:outline-none"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Description */}
+        <p className="text-[12px] leading-relaxed text-neutral-500 font-sans font-light">
+          Configure security credentials and dynamic loops with external systems straight into your autonomous Arcus core.
+        </p>
+
+        {/* Integration Items */}
+        <div className="space-y-2 relative">
+          {integrations.map((integration) => (
+            <div
+              key={integration.id}
+              className="flex items-center justify-between py-3.5 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.06] transition-all duration-300"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Integration Items */}
-          <div className="space-y-1 relative min-h-[300px]">
-            {integrations.map((integration) => {
-              const comingSoonIntegrations = ['todoist', 'asana', 'google-drive'];
-              const isComingSoon = comingSoonIntegrations.includes(integration.id);
-
-              return (
-                <div
-                  key={integration.id}
-                  className="flex items-center justify-between py-3 px-2 rounded-lg hover:bg-white/5 transition-all duration-200"
-                >
-                  <div className="flex items-center gap-3">
-                    <button
-                      disabled={integration.disabled}
-                      className={`w-6 h-6 flex items-center justify-center text-white/80 ${integration.disabled ? '' : 'cursor-pointer'}`}
-                    >
-                      {integration.logo}
-                    </button>
-                    <span className="text-white text-sm font-medium">{integration.name}</span>
-                  </div>
-                  <ToggleSwitch
-                    checked={integration.enabled}
-                    onChange={() => { }}
-                    disabled={true}
-                  />
+              <div className="flex items-center gap-4.5 max-w-[280px]">
+                <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.06] shadow-sm select-none">
+                  {integration.logo}
                 </div>
-              );
-            })}
-
-            {/* Premium Coming Soon Overlay */}
-            <div className="absolute inset-x-[-1.5rem] bottom-[-1.5rem] top-[-1rem] bg-black/40 backdrop-blur-md z-10 flex flex-col items-center justify-center text-center p-6 border-t border-white/10 overflow-hidden rounded-b-[2rem]">
-              <div className="mb-4 p-3 bg-white/10 rounded-2xl border border-white/20 shadow-2xl animate-bounce">
-                <Lock className="w-6 h-6 text-white" />
+                <div className="flex flex-col gap-0.5 text-left">
+                  <span className="text-white text-xs font-bold font-sans tracking-tight">{integration.name}</span>
+                  <span className="text-neutral-500 text-[10px] leading-tight font-light font-sans">{integration.description}</span>
+                </div>
               </div>
-              <h3 className="text-white font-bold text-xl mb-2 tracking-tight">Hold up!</h3>
-              <p className="text-white/60 text-sm font-medium leading-relaxed">
-                Expanded integrations are<br />
-                <span className="text-blue-400 font-bold uppercase tracking-widest text-[10px]">Coming Soon</span>
-              </p>
-
-              {/* Decorative Elements */}
-              <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-blue-500/20 blur-[50px] rounded-full" />
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-purple-500/20 blur-[50px] rounded-full" />
+              <ToggleSwitch
+                checked={integration.enabled}
+                onChange={() => handleToggle(integration.id, integration.enabled)}
+                disabled={integration.disabled}
+              />
             </div>
-          </div>
+          ))}
         </div>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
+
+export default IntegrationsModal;

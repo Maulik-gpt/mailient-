@@ -80,17 +80,37 @@ export function Footer() {
   const [modalType, setModalType] = React.useState<"creator" | "affiliate" | null>(null);
   const [email, setEmail] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
+  const [submitting, setSubmitting] = React.useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
-    setSubmitted(true);
+    if (!email.trim() || !modalType) return;
+    setSubmitting(true);
+    try {
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, type: modalType }),
+      });
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to submit application. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error submitting application:', err);
+      alert('Failed to submit application. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleClose = () => {
     setModalType(null);
     setEmail("");
     setSubmitted(false);
+    setSubmitting(false);
   };
 
   return (
@@ -249,9 +269,10 @@ export function Footer() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-2xl bg-white text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-white/90 shadow-md cursor-pointer mt-2"
+                  disabled={submitting}
+                  className="w-full py-3.5 rounded-2xl bg-white text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-white/90 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed shadow-md cursor-pointer mt-2"
                 >
-                  Submit Application
+                  {submitting ? "Submitting..." : "Submit Application"}
                 </button>
               </form>
             ) : (
