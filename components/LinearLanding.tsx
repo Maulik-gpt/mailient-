@@ -32,7 +32,8 @@ import {
   ShieldCheck,
   Clock,
   Briefcase,
-  AlertCircle
+  AlertCircle,
+  Send
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { signIn } from "next-auth/react";
