@@ -34,7 +34,8 @@ import {
     Edit3,
     Camera,
     CheckCircle2,
-    AlertCircle
+    AlertCircle,
+    Loader2
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -101,13 +102,17 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
         lastName: '',
         email: '',
         username: '',
-        picture: '/arcus-ai-icon.jpg'
+        picture: '/arcus-ai-icon.jpg',
+        banner: '',
+        occupation: 'Founder',
+        joinedDate: new Date().getFullYear().toString()
     });
 
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const response = await fetch('/api/user/profile');
+                // Fetch full profile data instead of just the basic user info
+                const response = await fetch('/api/profile');
                 if (response.ok) {
                     const data = await response.json();
                     setAccountInfo({
@@ -115,7 +120,10 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                         lastName: data.name?.split(' ').slice(1).join(' ') || '',
                         email: data.email || '',
                         username: data.username || '',
-                        picture: data.picture || '/arcus-ai-icon.jpg'
+                        picture: data.avatar_url || data.picture || '/arcus-ai-icon.jpg',
+                        banner: data.banner_url || '',
+                        occupation: data.work_status || 'Founder',
+                        joinedDate: data.created_at ? new Date(data.created_at).getFullYear().toString() : new Date().getFullYear().toString()
                     });
                 } else {
                     console.error('Failed to fetch profile:', response.status, response.statusText);
@@ -128,25 +136,18 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     }, []);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const bannerInputRef = useRef<HTMLInputElement>(null);
 
-    const handlePhotoClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handlePhotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
         const file = e.target.files?.[0];
         if (!file) return;
 
-        // Visual feedback immediately
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            setAccountInfo(prev => ({ ...prev, picture: event.target?.result as string }));
-        };
-        reader.readAsDataURL(file);
+        if (type === 'avatar') setUploadingAvatar(true);
+        if (type === 'banner') setUploadingBanner(true);
 
-        // Upload to server
         const formData = new FormData();
-        formData.append('avatar', file);
+        formData.append(type, file);
+        formData.append('type', type);
 
         try {
             const response = await fetch('/api/profile/avatar', {
@@ -156,18 +157,28 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
 
             if (response.ok) {
                 const data = await response.json();
-                setAccountInfo(prev => ({ ...prev, picture: data.url }));
-                toast.success('Photo uploaded!');
+                if (type === 'avatar') {
+                    setAccountInfo(prev => ({ ...prev, picture: data.url }));
+                } else {
+                    setAccountInfo(prev => ({ ...prev, banner: data.url }));
+                }
+                toast.success(`${type === 'avatar' ? 'Photo' : 'Banner'} uploaded!`);
             } else {
-                toast.error('Failed to upload photo');
+                toast.error(`Failed to upload ${type}`);
             }
         } catch (error) {
-            console.error('Photo upload error:', error);
-            toast.error('Error uploading photo');
+            console.error('Upload error:', error);
+            toast.error('Error uploading image');
+        } finally {
+            if (type === 'avatar') setUploadingAvatar(false);
+            if (type === 'banner') setUploadingBanner(false);
         }
     };
 
     const [isSaving, setIsSaving] = useState(false);
+    const [isEditingProfile, setIsEditingProfile] = useState(false);
+    const [uploadingBanner, setUploadingBanner] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
     const handleSaveAccount = async () => {
         if (!accountInfo.firstName?.trim()) {
@@ -176,19 +187,21 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
         }
         setIsSaving(true);
         try {
-            const response = await fetch('/api/user/update-profile', {
-                method: 'POST',
+            const response = await fetch('/api/profile', {
+                method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     name: `${accountInfo.firstName} ${accountInfo.lastName}`,
                     username: accountInfo.username,
-                    picture: accountInfo.picture
+                    avatar_url: accountInfo.picture,
+                    banner_url: accountInfo.banner,
+                    work_status: accountInfo.occupation
                 }),
             });
 
             if (response.ok) {
                 toast.success('Profile updated successfully');
-                // Force a session update to refresh components globally
+                setIsEditingProfile(false);
                 await updateSession();
             } else {
                 const errorData = await response.json();
@@ -528,77 +541,246 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                     key="account"
                                     initial={{ opacity: 0, scale: 0.98 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="space-y-10 focus:outline-none"
+                                    className="space-y-6 focus:outline-none"
                                 >
-                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-[16px] p-1 border border-neutral-200 dark:border-white/5 overflow-hidden">
-                                    <div className="p-8 space-y-10">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">First name</span>
-                                                <input
-                                                    type="text"
-                                                    value={accountInfo.firstName}
-                                                    onChange={(e) => setAccountInfo(p => ({ ...p, firstName: e.target.value }))}
-                                                    className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
+                                    <div className="bg-neutral-900 dark:bg-[#151515] rounded-[24px] border border-neutral-200 dark:border-white/[0.04] overflow-hidden shadow-2xl relative">
+                                        {/* X-Style Banner Cover */}
+                                        <div className="relative w-full aspect-[3.2/1] bg-gradient-to-br from-neutral-800 via-neutral-900 to-black border-b border-white/[0.04] overflow-hidden group">
+                                            {accountInfo.banner ? (
+                                                <img 
+                                                    src={accountInfo.banner} 
+                                                    alt="Cover Banner" 
+                                                    className="w-full h-full object-cover"
                                                 />
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Last name</span>
-                                                <input
-                                                    type="text"
-                                                    value={accountInfo.lastName}
-                                                    onChange={(e) => setAccountInfo(p => ({ ...p, lastName: e.target.value }))}
-                                                    className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl px-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
-                                                />
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Email</span>
-                                                <span className="text-[15px] text-neutral-900 dark:text-neutral-300 font-medium">{accountInfo.email}</span>
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Username</span>
-                                                <div className="relative">
-                                                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600 dark:text-neutral-500">@</span>
-                                                    <input
-                                                        type="text"
-                                                        value={accountInfo.username}
-                                                        onChange={(e) => setAccountInfo(p => ({ ...p, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
-                                                        className="bg-neutral-50 dark:bg-white/5 border border-neutral-200 dark:border-white/10 rounded-xl pl-8 pr-4 py-2 text-[15px] text-black dark:text-white w-64 focus:ring-2 focus:ring-white transition-all outline-none"
-                                                        placeholder="username"
-                                                    />
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center opacity-30">
+                                                    <Sparkles className="w-12 h-12 text-neutral-500 animate-pulse" />
                                                 </div>
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                             <div className="flex items-center justify-between">
-                                                <span className="text-[15px] font-medium text-neutral-500 dark:text-neutral-400">Profile picture</span>
-                                                <div 
-                                                    onClick={handlePhotoClick}
-                                                    className="w-14 h-14 rounded-full overflow-hidden border-2 border-neutral-200 dark:border-white/10 group cursor-pointer relative shadow-lg hover:border-white/30 transition-all"
-                                                >
-                                                    <img
-                                                        src={accountInfo.picture}
-                                                        alt="Profile"
-                                                        className="w-full h-full object-cover group-hover:opacity-40 transition-all duration-300"
-                                                    />
-                                                    <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300">
-                                                        <Camera className="w-5 h-5 text-black dark:text-white mb-0.5" />
-                                                        <span className="text-[8px] font-bold text-black dark:text-white uppercase tracking-tighter">Change</span>
-                                                    </div>
+                                            )}
+                                            
+                                            {isEditingProfile && (
+                                                <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center cursor-pointer z-10">
+                                                    {uploadingBanner ? (
+                                                        <Loader2 className="w-8 h-8 text-white animate-spin" />
+                                                    ) : (
+                                                        <>
+                                                            <Camera className="w-8 h-8 text-white mb-2" />
+                                                            <span className="text-white text-xs font-bold uppercase tracking-wider">Change Cover</span>
+                                                        </>
+                                                    )}
                                                     <input 
                                                         type="file" 
-                                                        ref={fileInputRef}
-                                                        onChange={handlePhotoChange}
-                                                        accept="image/*"
+                                                        accept="image/*" 
+                                                        onChange={(e) => handleImageUpload(e, 'banner')} 
                                                         className="hidden" 
                                                     />
+                                                </label>
+                                            )}
+                                        </div>
+
+                                        {/* Profile Header Row */}
+                                        <div className="px-6 flex justify-between items-start relative h-12 sm:h-16">
+                                            <div className="absolute -top-12 sm:-top-16 left-6 w-20 h-20 sm:w-28 sm:h-28 rounded-full border-[4px] border-neutral-50 dark:border-[#151515] bg-[#1a1a1a] shadow-xl overflow-hidden relative group">
+                                                {accountInfo.picture ? (
+                                                    <img 
+                                                        src={accountInfo.picture} 
+                                                        alt="Avatar" 
+                                                        className="w-full h-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-full h-full flex items-center justify-center text-neutral-600 bg-neutral-900">
+                                                        <User className="w-8 h-8 sm:w-10 sm:h-10" />
+                                                    </div>
+                                                )}
+
+                                                {isEditingProfile && (
+                                                    <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer z-10">
+                                                        {uploadingAvatar ? (
+                                                            <Loader2 className="w-6 h-6 text-white animate-spin" />
+                                                        ) : (
+                                                            <Camera className="w-6 h-6 text-white" />
+                                                        )}
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            onChange={(e) => handleImageUpload(e, 'avatar')} 
+                                                            className="hidden" 
+                                                        />
+                                                    </label>
+                                                )}
+                                            </div>
+
+                                            <div className="ml-auto mt-4">
+                                                {!isEditingProfile ? (
+                                                    <button
+                                                        onClick={() => setIsEditingProfile(true)}
+                                                        className="px-5 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:border-neutral-500 hover:bg-black/5 dark:hover:bg-white/5 font-extrabold text-xs text-black dark:text-white transition-all duration-200 shadow-md"
+                                                    >
+                                                        Edit Profile
+                                                    </button>
+                                                ) : (
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => setIsEditingProfile(false)}
+                                                            className="px-4 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-800 hover:bg-black/5 dark:hover:bg-white/5 text-neutral-500 dark:text-neutral-400 font-extrabold text-xs transition-all duration-200"
+                                                        >
+                                                            Cancel
+                                                        </button>
+                                                        <button
+                                                            onClick={handleSaveAccount}
+                                                            disabled={isSaving}
+                                                            className="px-5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-white/40 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all duration-200 shadow-md"
+                                                        >
+                                                            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                                                            Save
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="px-6 pb-6 pt-2 space-y-4">
+                                            <div>
+                                                {!isEditingProfile ? (
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <h2 className="text-2xl font-black text-black dark:text-white tracking-tight leading-none">
+                                                                {accountInfo.firstName} {accountInfo.lastName}
+                                                            </h2>
+                                                            
+                                                            {(subscriptionData?.planType === 'pro' || subscriptionData?.planType === 'annual' || subscriptionData?.planType === 'starter') && (
+                                                                <div className="relative group cursor-pointer shrink-0">
+                                                                    <svg className="w-5 h-5 filter drop-shadow-[0_0_4px_rgba(245,158,11,0.5)] transition-transform hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                                                                        <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.78 2.518 13.483 1.5 12 1.5c-1.483 0-2.78 1.018-3.422 2.28-.408-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.643 1.262 1.939 2.28 3.422 2.28 1.483 0 2.78-1.018 3.422-2.28.408.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.5 4l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="url(#goldGradX)" />
+                                                                        <defs>
+                                                                            <linearGradient id="goldGradX" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                                                <stop offset="0%" stopColor="#FCD34D" />
+                                                                                <stop offset="50%" stopColor="#F59E0B" />
+                                                                                <stop offset="100%" stopColor="#D97706" />
+                                                                            </linearGradient>
+                                                                        </defs>
+                                                                    </svg>
+                                                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50 font-bold border border-white/10">
+                                                                        <span className="text-amber-400 mr-1">✦</span> Gold Founder
+                                                                    </div>
+                                                                </div>
+                                                            )}
+
+                                                            {subscriptionData?.planType === 'lifetime' && (
+                                                                <div className="relative group cursor-pointer shrink-0">
+                                                                    <svg className="w-5 h-5 filter drop-shadow-[0_0_6px_rgba(6,182,212,0.6)] animate-pulse transition-transform hover:scale-110" viewBox="0 0 24 24" fill="currentColor">
+                                                                        <path d="M12 2L2 12l10 10 10-10L12 2zm-1.5 14.5l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="url(#diamondGradX)" />
+                                                                        <defs>
+                                                                            <linearGradient id="diamondGradX" x1="0%" y1="0%" x2="100%" y2="100%">
+                                                                                <stop offset="0%" stopColor="#22D3EE" />
+                                                                                <stop offset="35%" stopColor="#6366F1" />
+                                                                                <stop offset="70%" stopColor="#A855F7" />
+                                                                                <stop offset="100%" stopColor="#EC4899" />
+                                                                            </linearGradient>
+                                                                        </defs>
+                                                                    </svg>
+                                                                    <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-black text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 whitespace-nowrap pointer-events-none transition-opacity z-50 font-bold border border-white/10">
+                                                                        <span className="text-cyan-400 mr-1">💎</span> Diamond Founder
+                                                                    </div>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-neutral-500 font-medium text-xs">
+                                                            @{accountInfo.username || accountInfo.email.split('@')[0]}
+                                                        </p>
+                                                    </div>
+                                                ) : (
+                                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                                                        <div>
+                                                            <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">First Name</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={accountInfo.firstName}
+                                                                onChange={(e) => setAccountInfo(prev => ({ ...prev, firstName: e.target.value }))}
+                                                                className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all font-sans"
+                                                            />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Last Name</label>
+                                                            <input 
+                                                                type="text"
+                                                                value={accountInfo.lastName}
+                                                                onChange={(e) => setAccountInfo(prev => ({ ...prev, lastName: e.target.value }))}
+                                                                className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all font-sans"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Bio / Occupation area */}
+                                            <div>
+                                                {!isEditingProfile ? (
+                                                    <p className="text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed max-w-xl">
+                                                        {accountInfo.occupation || 'Mailient User'}
+                                                    </p>
+                                                ) : (
+                                                    <div className="mt-4">
+                                                        <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Occupation</label>
+                                                        <input 
+                                                            type="text"
+                                                            value={accountInfo.occupation}
+                                                            onChange={(e) => setAccountInfo(prev => ({ ...prev, occupation: e.target.value }))}
+                                                            placeholder="E.g., Founder, Engineer, Designer"
+                                                            className="w-full px-4 py-2.5 bg-neutral-100 dark:bg-[#222] border border-neutral-200 dark:border-white/5 rounded-2xl text-xs text-black dark:text-white focus:border-blue-500 dark:focus:border-white/10 focus:outline-none transition-all font-sans"
+                                                        />
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* Details Row */}
+                                            <div className="flex flex-wrap items-center gap-4 text-xs text-neutral-500 font-medium pt-2">
+                                                <div className="flex items-center gap-1.5">
+                                                    <Users className="w-3.5 h-3.5" />
+                                                    <span>Active Plan: <span className="text-black dark:text-neutral-300 capitalize">{(subscriptionData?.planType && subscriptionData?.planType !== 'none') ? subscriptionData.planType : 'Free'}</span></span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <Lock className="w-3.5 h-3.5" />
+                                                    <span>{accountInfo.email}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1.5">
+                                                    <History className="w-3.5 h-3.5" />
+                                                    <span>Joined {accountInfo.joinedDate}</span>
                                                 </div>
                                             </div>
+
                                         </div>
                                     </div>
 
-                                    <div className="flex items-center justify-between px-2">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                        <button className="flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/40 transition-colors group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                                                    <Sparkles className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="text-sm font-bold text-black dark:text-white">Apply for Creator</div>
+                                                    <div className="text-[11px] text-neutral-600 dark:text-neutral-400">Join the Creator Program</div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                                        </button>
+
+                                        <button className="flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-300 dark:hover:border-emerald-500/40 transition-colors group">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-full bg-emerald-200 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                                                    <Zap className="w-5 h-5" />
+                                                </div>
+                                                <div className="text-left">
+                                                    <div className="text-sm font-bold text-black dark:text-white">Apply for Affiliate</div>
+                                                    <div className="text-[11px] text-neutral-600 dark:text-neutral-400">Earn 30% recurring</div>
+                                                </div>
+                                            </div>
+                                            <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
+                                        </button>
+                                    </div>
+
+                                    <div className="flex items-center justify-between px-2 pt-4">
                                         <div className="flex gap-4">
                                             <Button
                                                 variant="ghost"
@@ -617,18 +799,10 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                 Delete account
                                             </Button>
                                         </div>
-                                        <Button 
-                                            onClick={handleSaveAccount}
-                                            disabled={isSaving}
-                                            className="bg-neutral-800 dark:bg-white text-black px-10 h-12 rounded-2xl font-bold hover:opacity-90 transition-opacity disabled:opacity-50"
-                                        >
-                                            {isSaving ? 'Saving...' : 'Save'}
-                                        </Button>
                                     </div>
                                 </motion.div>
                             )}
-
-                            {activeSection === 'subscription' && (() => {
+{activeSection === 'subscription' && (() => {
                                 const arcus = subscriptionData?.features?.arcus_ai;
                                 const sift = subscriptionData?.features?.sift_analysis;
                                 const summary = subscriptionData?.features?.email_summary;
