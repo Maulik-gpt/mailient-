@@ -147,7 +147,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                   {/* Mega Menu Obsidian Box */}
                   <div 
                     style={{
-                      backgroundColor: isDark ? "#292929" : "rgba(255, 255, 255, 0.95)"
+                      backgroundColor: isDark ? "#161616" : "rgba(255, 255, 255, 0.95)"
                     }}
                     className={cn(
                       "w-[700px] rounded-2xl border p-6 pb-4 shadow-[0_50px_100px_rgba(0,0,0,0.85)] backdrop-blur-3xl relative overflow-hidden text-left flex flex-col justify-between",
