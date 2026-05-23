@@ -47,43 +47,18 @@ export function CircleExpandButton({
         boxShadow: "inset 1px 3px 2px 0px rgba(255, 255, 255, 0.25)",
       }}
     >
-      <motion.span
-        className="relative z-10"
-        animate={{ color: "white" }}
-        whileHover={{ color: "black" }}
-        transition={{ duration: 0.15 }}
-      >
+      <span className="relative z-10">
         {children}
-      </motion.span>
+      </span>
 
-      {/* Circle with arrow */}
+      {/* Arrow icon */}
       <motion.div
         className="relative flex items-center justify-center"
-        style={{ width: 32, height: 32 }}
+        initial={{ rotate: -45 }}
+        whileHover={{ rotate: 0 }}
+        transition={{ duration: 0.15 }}
       >
-        {/* Background circle */}
-        <motion.div
-          className="absolute inset-0 rounded-full bg-white"
-          initial={{ scale: 1 }}
-          whileHover={{ 
-            scale: 60,
-            transition: {
-              type: "spring",
-              damping: 25,
-              stiffness: 200
-            }
-          }}
-        />
-        
-        {/* Arrow icon */}
-        <motion.div
-          className="relative z-10"
-          initial={{ rotate: -45 }}
-          whileHover={{ rotate: 0 }}
-          transition={{ duration: 0.15 }}
-        >
-          <ArrowRight className="w-4 h-4 text-black" />
-        </motion.div>
+        <ArrowRight className="w-4 h-4 text-white" />
       </motion.div>
     </ButtonWrapper>
   );
