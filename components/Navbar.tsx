@@ -224,7 +224,9 @@ export function Navbar({ theme = "light" }: NavbarProps) {
 
                     {/* Divider and Footer */}
                     <div className="border-t border-white/[0.06] pt-4 mt-6 flex items-center justify-between text-xs text-neutral-500 z-10 relative">
-                      <span className="font-semibold text-neutral-200">New: Neural Voice Profile</span>
+                      <Link href="/blogs" className="font-semibold text-neutral-200 hover:text-white transition-colors">
+                        Blogs
+                      </Link>
                       <Link href="/changelog" className="text-[#5f5bf6] hover:text-[#7875f7] transition-colors font-semibold">
                         Changelog
                       </Link>

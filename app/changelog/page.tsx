@@ -80,14 +80,7 @@ export default function ChangelogPage() {
               </div>
 
               <div className="text-xs text-neutral-400 leading-relaxed font-light space-y-4 font-sans">
-                <p>
-                  We have deployed the third iteration of the Arcus flagship neural compiler. Arcus now reasons recursively over your relational calendar connections to proactively highlight multi-party calendar gaps.
-                </p>
-                <ul className="list-disc pl-5 space-y-2">
-                  <li>Upgraded semantic indexing parsing speed by 44%.</li>
-                  <li>Segregated query caches inside isolated in-memory Docker layers.</li>
-                  <li>Fixed Google OAuth refresh token timeout bug in background sync handlers.</li>
-                </ul>
+                <p>Coming soon.</p>
               </div>
             </div>
           </BlurFade>
@@ -106,9 +99,7 @@ export default function ChangelogPage() {
               </div>
 
               <div className="text-xs text-neutral-400 leading-relaxed font-light space-y-4 font-sans">
-                <p>
-                  As part of our commitment to SOC2 audit controls, we have upgraded our key management system. Keys are now isolated utilizing automated hardware security modules (HSM) with rolling monthly rotations.
-                </p>
+                <p>Coming soon.</p>
               </div>
             </div>
           </BlurFade>
