@@ -14,17 +14,18 @@ import { BlurFade } from "@/components/ui/blur-fade";
 
 
 const POLAR_CHECKOUT_URLS = {
-  starter: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
-  pro: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61"
+  monthly: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
+  annual: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
+  lifetime: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61"
 };
 
 const COMPARISON_FEATURES = [
   { category: "Core Capabilities", name: "Relational Sift", monthly: "Standard", annual: "Advanced", lifetime: "Priority Graph" },
-  { category: "Core Capabilities", name: "AI Draft Replies", monthly: "Unlimited", annual: "Unlimited", lifetime: "500 / month" },
-  { category: "Core Capabilities", name: "Arcus AI Queries", monthly: "20 / day", annual: "Priority Access", lifetime: "500 / month" },
+  { category: "Core Capabilities", name: "AI Draft Replies", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "Arcus AI Queries", monthly: "Unlimited", annual: "Priority Access", lifetime: "Unlimited" },
   { category: "Integration", name: "Google Calendar Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
   { category: "Integration", name: "Notion & Cal.com Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
-  { category: "Security & Badges", name: "Founding Badge", monthly: "—", annual: "✓ Gold Badge", lifetime: "✓ Diamond Badge" },
+  { category: "Security & Badges", name: "Founding Badge", monthly: "✓ Gold Badge", annual: "✓ Gold Badge", lifetime: "✓ Diamond Badge" },
   { category: "Support", name: "Customer Service", monthly: "Standard", annual: "Priority", lifetime: "24/7 Premium" }
 ];
 
@@ -76,13 +77,12 @@ export default function PricingPage() {
 
   const handleSelectPlan = async (planId: "monthly" | "annual" | "lifetime") => {
     let checkoutUrl = "";
-    if (planId === "annual") {
-      checkoutUrl = POLAR_CHECKOUT_URLS.starter; // Map Annual to starter checkout
-    } else if (planId === "monthly") {
-      checkoutUrl = POLAR_CHECKOUT_URLS.pro; // Map Monthly to pro checkout
+    if (planId === "monthly") {
+      checkoutUrl = POLAR_CHECKOUT_URLS.monthly;
+    } else if (planId === "annual") {
+      checkoutUrl = POLAR_CHECKOUT_URLS.annual;
     } else {
-      // Lifetime - redirect to custom or pro checkout
-      checkoutUrl = POLAR_CHECKOUT_URLS.pro;
+      checkoutUrl = POLAR_CHECKOUT_URLS.lifetime;
     }
 
     const params = new URLSearchParams();
@@ -135,9 +135,9 @@ export default function PricingPage() {
             <thead>
               <tr className="border-b border-white/[0.06] text-neutral-450 uppercase font-bold tracking-widest text-[9px]">
                 <th className="py-4 px-6">Feature</th>
-                <th className="py-4 px-6">Subscription (Monthly)</th>
-                <th className="py-4 px-6">Subscription (Annual)</th>
-                <th className="py-4 px-6">Lifetime Founder</th>
+                <th className="py-4 px-6">Monthly ($29/mo)</th>
+                <th className="py-4 px-6">Annual ($16.58/mo)</th>
+                <th className="py-4 px-6">Lifetime Founder ($499)</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-white/[0.04]">

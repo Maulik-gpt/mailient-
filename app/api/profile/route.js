@@ -378,7 +378,7 @@ export async function GET(req) {
         // Enhanced data for Mailient
         email_accounts_connected: tokens.length || 0,
         emails_processed: emailCount || 0,
-        plan: profile?.preferences?.plan || 'Free Plan',
+        plan: profile?.preferences?.plan || 'No Active Plan',
         storage_used: `${Math.round(emailCount * 0.1)} MB`,
         last_email_activity: null
       });
@@ -438,7 +438,7 @@ export async function GET(req) {
       ...profile,
       email_accounts_connected: tokens.length || 0,
       emails_processed: 99, // Show 99+ for demo purposes
-      plan: profile?.preferences?.plan || 'Free Plan',
+      plan: profile?.preferences?.plan || 'No Active Plan',
       storage_used: `${Math.round(emailCount * 0.1)} MB`, // Rough estimate
       last_email_activity: lastEmail?.date || null,
       // Ensure defaults for new fields - always set them
@@ -496,7 +496,7 @@ export async function GET(req) {
           updated_at: new Date().toISOString(),
           email_accounts_connected: 0,
           emails_processed: 0,
-          plan: profile?.preferences?.plan || 'Free Plan',
+          plan: profile?.preferences?.plan || 'No Active Plan',
           storage_used: '0 MB',
           last_email_activity: null
         });
@@ -532,7 +532,7 @@ export async function PUT(req) {
     console.log("PUT /api/profile - Request body:", JSON.stringify(body, null, 2));
 
     // Validate required fields
-    const { name, avatar_url, bio, location, website, status, preferences, birthdate, gender, work_status, interests, banner_url } = body;
+    const { name, avatar_url, bio, location, website, status, preferences, birthdate, gender, work_status, interests, banner_url, username } = body;
 
     // URL validation for website field
     if (website && website.trim() && !isValidUrlStrict(website.trim())) {
@@ -575,6 +575,7 @@ export async function PUT(req) {
     if (location !== undefined) profileData.location = location;
     if (website !== undefined) profileData.website = website;
     if (status !== undefined) profileData.status = status || 'online';
+    if (username !== undefined) profileData.username = username;
     if (preferences !== undefined) {
       profileData.preferences = {
         theme: 'dark',
@@ -758,7 +759,8 @@ export async function PATCH(req) {
       birthdate: 'birthdate',
       gender: 'gender',
       work_status: 'work_status',
-      interests: 'interests'
+      interests: 'interests',
+      username: 'username'
     };
 
     // Only include fields that exist in the database schema and are provided

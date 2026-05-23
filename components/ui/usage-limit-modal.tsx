@@ -12,7 +12,7 @@ interface UsageLimitModalProps {
     currentUsage: number;
     limit: number;
     period: 'daily' | 'monthly';
-    currentPlan?: 'free' | 'starter' | 'pro' | 'none';
+    currentPlan?: 'free' | 'starter' | 'pro' | 'annual' | 'lifetime' | 'none';
 }
 
 export function UsageLimitModal({
@@ -114,25 +114,21 @@ export function UsageLimitModal({
                                                 </div>
                                                 <div>
                                                     <h4 className="font-medium text-black dark:text-white">
-                                                        {currentPlan === 'free' ? 'Upgrade to Starter' : 'Upgrade to Pro'}
+                                                        Subscribe Now
                                                     </h4>
                                                     <p className="text-xs text-black dark:text-white/50">
-                                                        {currentPlan === 'free' ? 'Get 10x more AI credits starting at $7.99/mo' : 'Unlimited access to all features'}
+                                                        {currentPlan === 'free' || currentPlan === 'none' ? 'Get unlimited AI credits starting at $29/mo' : 'Unlimited access to all features'}
                                                     </p>
                                                 </div>
                                             </div>
 
                                             <ul className="space-y-2 mb-4">
-                                                {(currentPlan === 'free' ? [
-                                                    '10 AI Drafts per day',
-                                                    '10 Sift Analyses per day',
-                                                    '20 Arcus AI queries per day',
-                                                    '30 Email Summaries per day'
-                                                ] : [
+                                                {[
                                                     'Unlimited Draft Replies',
+                                                    'Unlimited Arcus AI Access',
                                                     'Unlimited Schedule Calls',
-                                                    'Unlimited Arcus AI Access'
-                                                ]).map((feature) => (
+                                                    'Full Sift email triage'
+                                                ].map((feature) => (
                                                     <li key={feature} className="flex items-center gap-2 text-sm text-black dark:text-white/60">
                                                         <Sparkles className="w-3 h-3 text-purple-400" />
                                                         {feature}
@@ -144,7 +140,7 @@ export function UsageLimitModal({
                                                 onClick={handleUpgrade}
                                                 className="w-full py-3 bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-500 hover:to-purple-500 text-black dark:text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all group"
                                             >
-                                                {currentPlan === 'free' ? 'View Plans' : 'Subscribe to Pro'}
+                                                {currentPlan === 'free' || currentPlan === 'none' ? 'View Plans' : 'Subscribe Now'}
                                                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                                             </button>
                                         </div>
@@ -167,7 +163,7 @@ export function useFeatureUsage() {
         currentUsage: number;
         limit: number;
         period: 'daily' | 'monthly';
-        currentPlan: 'free' | 'starter' | 'pro' | 'none';
+        currentPlan: 'free' | 'starter' | 'pro' | 'annual' | 'lifetime' | 'none';
     } | null>(null);
 
     const checkAndUseFeature = async (

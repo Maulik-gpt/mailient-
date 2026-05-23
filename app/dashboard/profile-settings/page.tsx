@@ -24,7 +24,13 @@ import {
   Plug,
   DoorOpen,
   MoreHorizontal,
-  LogOut
+  LogOut,
+  Briefcase,
+  Check,
+  Upload,
+  X as CloseIcon,
+  Crown,
+  Sparkles
 } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationIcon } from "@/components/ui/notification-icon";
@@ -37,6 +43,8 @@ interface UserProfile {
   name: string | null;
   email: string;
   avatar_url: string | null;
+  banner_url: string | null;
+  username: string | null;
   bio: string | null;
   location: string | null;
   website: string | null;
@@ -47,6 +55,7 @@ interface UserProfile {
   plan: string;
   storage_used: string;
   last_email_activity: string | null;
+  work_status: string | null;
   preferences: {
     theme: 'light' | 'dark' | 'system';
     language: string;
@@ -88,20 +97,53 @@ export default function ProfileSettingsPage() {
   const [isIntegrationsOpen, setIsIntegrationsOpen] = useState(false);
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
 
+  // Redesign additions
+  const [planType, setPlanType] = useState<string>('free');
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  
+  // Partner Apply states
+  const [partnerModalType, setPartnerModalType] = useState<'creator' | 'affiliate' | null>(null);
+  const [partnerEmail, setPartnerEmail] = useState('');
+  const [partnerSubmitted, setPartnerSubmitted] = useState(false);
+  const [partnerSubmitting, setPartnerSubmitting] = useState(false);
+
   const handleLogout = async () => {
     setIsMoreOptionsOpen(false);
     await signOut({ redirect: false });
     router.push("/");
   };
+
   const [formData, setFormData] = useState({
     name: '',
+    username: '',
     bio: '',
     location: '',
     website: '',
+    work_status: '',
     preferences: {} as UserProfile['preferences'],
     privacy_settings: {} as UserProfile['privacy_settings'],
     notification_settings: {} as UserProfile['notification_settings']
   });
+
+  // Fetch subscription status directly for the badge verification
+  useEffect(() => {
+    const fetchSubStatus = async () => {
+      try {
+        const res = await fetch('/api/subscription/status');
+        if (res.ok) {
+          const data = await res.json();
+          setPlanType(data.subscription?.planType || 'free');
+        }
+      } catch (e) {
+        console.error("Error fetching subscription status:", e);
+      }
+    };
+    if (status === 'authenticated') {
+      fetchSubStatus();
+    }
+  }, [status]);
 
   // Fetch user profile
   useEffect(() => {
@@ -114,9 +156,11 @@ export default function ProfileSettingsPage() {
           setProfile(data);
           setFormData({
             name: data.name || '',
+            username: data.username || '',
             bio: data.bio || '',
             location: data.location || '',
             website: data.website || '',
+            work_status: data.work_status || '',
             preferences: data.preferences || formData.preferences,
             privacy_settings: data.privacy_settings || formData.privacy_settings,
             notification_settings: data.notification_settings || formData.notification_settings
@@ -144,9 +188,11 @@ export default function ProfileSettingsPage() {
         },
         body: JSON.stringify({
           name: formData.name,
+          username: formData.username,
           bio: formData.bio,
           location: formData.location,
           website: formData.website,
+          work_status: formData.work_status,
           preferences: formData.preferences,
           privacy_settings: formData.privacy_settings,
           notification_settings: formData.notification_settings
@@ -156,9 +202,11 @@ export default function ProfileSettingsPage() {
       if (response.ok) {
         const updatedProfile = await response.json();
         setProfile(updatedProfile);
+        setIsEditingProfile(false);
         alert('Profile updated successfully!');
       } else {
-        alert('Failed to update profile');
+        const err = await response.json();
+        alert(err.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Save error:', error);
@@ -170,6 +218,80 @@ export default function ProfileSettingsPage() {
 
   const handleAvatarChange = (avatarUrl: string) => {
     setProfile(prev => prev ? { ...prev, avatar_url: avatarUrl } : null);
+    setFormData(prev => ({ ...prev, avatar_url: avatarUrl } as any));
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'avatar' | 'banner') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("File is too large. Maximum size is 5MB.");
+      return;
+    }
+
+    if (type === 'avatar') setUploadingAvatar(true);
+    else setUploadingBanner(true);
+
+    try {
+      const form = new FormData();
+      form.append(type, file);
+
+      const response = await fetch('/api/profile/avatar', {
+        method: 'POST',
+        body: form
+      });
+
+      if (response.ok) {
+        const resData = await response.json();
+        setProfile(prev => prev ? { ...prev, [type === 'avatar' ? 'avatar_url' : 'banner_url']: resData.url } : null);
+        if (type === 'avatar') {
+          setFormData(prev => ({ ...prev, avatar_url: resData.url } as any));
+        }
+        alert(`${type === 'avatar' ? 'Avatar' : 'Banner'} uploaded successfully!`);
+      } else {
+        const err = await response.json();
+        alert(err.error || `Failed to upload ${type}`);
+      }
+    } catch (err) {
+      console.error(err);
+      alert(`Failed to upload ${type}`);
+    } finally {
+      if (type === 'avatar') setUploadingAvatar(false);
+      else setUploadingBanner(false);
+    }
+  };
+
+  const handlePartnerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!partnerEmail.trim() || !partnerModalType) return;
+    setPartnerSubmitting(true);
+    try {
+      const response = await fetch('/api/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: partnerEmail, type: partnerModalType }),
+      });
+      if (response.ok) {
+        setPartnerSubmitted(true);
+      } else {
+        const err = await response.json();
+        alert(err.error || 'Failed to submit application. Please try again.');
+      }
+    } catch (err) {
+      console.error('Error submitting application:', err);
+      alert('Failed to submit application. Please try again.');
+    } finally {
+      setPartnerSubmitting(false);
+    }
+  };
+
+  const openPartnerModal = (type: 'creator' | 'affiliate') => {
+    setPartnerEmail(profile?.email || session?.user?.email || '');
+    setPartnerModalType(type);
+    setPartnerSubmitted(false);
+    setPartnerSubmitting(false);
   };
 
   const handleSyncProfile = async () => {
@@ -535,112 +657,394 @@ export default function ProfileSettingsPage() {
                 </div>
               )}
 
-              {/* Account Tab */}
+              {/* Account Tab (Redesigned X-Style Profile Card) */}
               {activeTab === 'account' && (
                 <div className="space-y-6">
-                  <div>
-                    <h2 className="text-lg font-medium mb-4">Account Information</h2>
+                  <div className="bg-[#151515] rounded-[24px] border border-white/[0.04] overflow-hidden shadow-2xl relative">
+                    
+                    {/* Private Account View Indicator */}
+                    <div className="absolute top-4 left-4 z-20 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/[0.08] text-[9px] font-bold uppercase tracking-wider text-neutral-400 flex items-center gap-1.5 pointer-events-none select-none animate-fadeIn">
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                      🔒 Private Account View
+                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Account Overview */}
-                      <div className="bg-[#1A1A1A] rounded-lg p-6">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <User className="w-5 h-5" />
-                          Account Overview
-                        </h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Mail className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Email accounts:</span>
-                            <span className="text-white">{profile?.email_accounts_connected || 0} connected</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <FileText className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Emails processed:</span>
-                            <span className="text-white">99+ total</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <CreditCard className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Plan:</span>
-                            <span className="text-white">{profile?.plan || 'Free Plan'}</span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Activity className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Storage used:</span>
-                            <span className="text-white">{profile?.storage_used || '0 MB'}</span>
-                          </div>
+                    {/* X-Style Banner Cover */}
+                    <div className="relative w-full aspect-[3.2/1] bg-gradient-to-br from-neutral-900 via-[#1b1b1b] to-neutral-950 border-b border-white/[0.04] overflow-hidden group">
+                      {profile?.banner_url ? (
+                        <img 
+                          src={profile.banner_url} 
+                          alt="Cover Banner" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center opacity-30">
+                          <Sparkles className="w-12 h-12 text-neutral-500 animate-pulse" />
                         </div>
+                      )}
+                      
+                      {/* Banner Edit Overlay */}
+                      {isEditingProfile && (
+                        <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center cursor-pointer z-10">
+                          {uploadingBanner ? (
+                            <Loader2 className="w-8 h-8 text-white animate-spin" />
+                          ) : (
+                            <>
+                              <Camera className="w-8 h-8 text-white mb-2" />
+                              <span className="text-white text-xs font-bold uppercase tracking-wider">Change Cover Banner</span>
+                            </>
+                          )}
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            onChange={(e) => handleImageUpload(e, 'banner')} 
+                            className="hidden" 
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    {/* Profile Header Row (Avatar, Edit Buttons) */}
+                    <div className="px-6 flex justify-between items-start relative h-12 sm:h-16">
+                      
+                      {/* Overlapping Avatar */}
+                      <div className="absolute -top-12 sm:-top-16 left-6 w-20 h-20 sm:w-28 sm:h-28 rounded-full border-[4px] border-[#151515] bg-[#1a1a1a] shadow-xl overflow-hidden relative group">
+                        {profile?.avatar_url ? (
+                          <img 
+                            src={profile.avatar_url} 
+                            alt="Logo" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-neutral-600 bg-neutral-900">
+                            <User className="w-8 h-8 sm:w-10 sm:h-10" />
+                          </div>
+                        )}
+
+                        {/* Avatar Edit Overlay */}
+                        {isEditingProfile && (
+                          <label className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex items-center justify-center cursor-pointer z-10">
+                            {uploadingAvatar ? (
+                              <Loader2 className="w-6 h-6 text-white animate-spin" />
+                            ) : (
+                              <Camera className="w-6 h-6 text-white" />
+                            )}
+                            <input 
+                              type="file" 
+                              accept="image/*" 
+                              onChange={(e) => handleImageUpload(e, 'avatar')} 
+                              className="hidden" 
+                            />
+                          </label>
+                        )}
                       </div>
 
-                      {/* Activity Timeline */}
-                      <div className="bg-[#1A1A1A] rounded-lg p-6">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Activity className="w-5 h-5" />
-                          Activity Timeline
-                        </h3>
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Member since:</span>
-                            <span className="text-white">
-                              {profile?.created_at
-                                ? new Date(profile.created_at).toLocaleDateString()
-                                : 'Unknown'}
-                            </span>
+                      {/* Right-aligned actions */}
+                      <div className="ml-auto mt-4">
+                        {!isEditingProfile ? (
+                          <button
+                            onClick={() => setIsEditingProfile(true)}
+                            className="px-5 py-1.5 rounded-full border border-neutral-700 hover:border-neutral-400 hover:bg-white/5 font-extrabold text-xs text-white transition-all duration-200 select-none shadow-md"
+                          >
+                            Edit Profile
+                          </button>
+                        ) : (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => {
+                                setFormData(prev => ({
+                                  ...prev,
+                                  name: profile?.name || '',
+                                  username: profile?.username || '',
+                                  bio: profile?.bio || '',
+                                  location: profile?.location || '',
+                                  website: profile?.website || '',
+                                  work_status: profile?.work_status || '',
+                                }));
+                                setIsEditingProfile(false);
+                              }}
+                              className="px-4 py-1.5 rounded-full border border-neutral-800 hover:bg-white/5 text-neutral-400 font-extrabold text-xs transition-all duration-200 select-none"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={handleSave}
+                              disabled={saving}
+                              className="px-5 py-1.5 rounded-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:text-white/40 text-white font-extrabold text-xs flex items-center gap-1.5 transition-all duration-200 select-none shadow-md"
+                            >
+                              {saving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                              Save Changes
+                            </button>
                           </div>
-                          <div className="flex items-center gap-3">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Last updated:</span>
-                            <span className="text-white">
-                              {profile?.updated_at
-                                ? new Date(profile.updated_at).toLocaleDateString()
-                                : 'Never'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Globe className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Last synced:</span>
-                            <span className="text-white">
-                              {profile?.last_synced_at
-                                ? new Date(profile.last_synced_at).toLocaleDateString()
-                                : 'Never synced'}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-3">
-                            <Mail className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-400">Last email activity:</span>
-                            <span className="text-white">
-                              {profile?.last_email_activity
-                                ? new Date(profile.last_email_activity).toLocaleDateString()
-                                : 'No activity'}
-                            </span>
-                          </div>
-                        </div>
+                        )}
                       </div>
                     </div>
 
-                    {/* Sync Section */}
-                    <div className="bg-[#1A1A1A] rounded-lg p-6">
-                      <h3 className="text-lg font-semibold mb-4">Data Synchronization</h3>
-                      <div className="flex items-center justify-between">
+                    {/* Profile Information Block */}
+                    <div className="px-6 pb-6 pt-2 space-y-4">
+                      
+                      {/* Name / Handle / Founder Badge */}
+                      <div>
+                        {!isEditingProfile ? (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-2xl font-black text-white tracking-tight leading-none">
+                                {profile?.name || 'Mailient User'}
+                              </h2>
+                              
+                              {/* Founder Badge logic */}
+                              {(planType === 'pro' || planType === 'annual' || planType === 'starter') && (
+                                <Tooltip delayDuration={150}>
+                                  <TooltipTrigger asChild>
+                                    <svg className="w-5 h-5 inline-block select-none filter drop-shadow-[0_0_4px_rgba(245,158,11,0.5)] transition-transform hover:scale-110 cursor-pointer shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M22.5 12.5c0-1.58-.875-2.95-2.148-3.6.154-.435.238-.905.238-1.4 0-2.21-1.71-3.99-3.818-3.99-.48 0-.94.1-1.348.27C14.78 2.518 13.483 1.5 12 1.5c-1.483 0-2.78 1.018-3.422 2.28-.408-.17-.867-.27-1.348-.27-2.108 0-3.818 1.78-3.818 3.99 0 .495.084.965.238 1.4-1.273.65-2.148 2.02-2.148 3.6 0 1.58.875 2.95 2.148 3.6-.154.435-.238.905-.238 1.4 0 2.21 1.71 3.99 3.818 3.99.48 0 .94-.1 1.348-.27.643 1.262 1.939 2.28 3.422 2.28 1.483 0 2.78-1.018 3.422-2.28.408.17.867.27 1.348.27 2.108 0 3.818-1.78 3.818-3.99 0-.495-.084-.965-.238-1.4 1.273-.65 2.148-2.02 2.148-3.6zm-12.5 4l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="url(#goldGrad)" />
+                                      <defs>
+                                        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                          <stop offset="0%" stopColor="#FCD34D" />
+                                          <stop offset="50%" stopColor="#F59E0B" />
+                                          <stop offset="100%" stopColor="#D97706" />
+                                        </linearGradient>
+                                      </defs>
+                                    </svg>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-extrabold text-amber-400">✦ Gold Founder Badge</p>
+                                    <p className="text-[10px] text-neutral-400 mt-0.5">Exclusive Pro Member Status</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+
+                              {planType === 'lifetime' && (
+                                <Tooltip delayDuration={150}>
+                                  <TooltipTrigger asChild>
+                                    <svg className="w-5 h-5 inline-block select-none filter drop-shadow-[0_0_6px_rgba(6,182,212,0.6)] animate-pulse transition-transform hover:scale-110 cursor-pointer shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                                      <path d="M12 2L2 12l10 10 10-10L12 2zm-1.5 14.5l-4-4 1.5-1.5 2.5 2.5 6-6 1.5 1.5-7.5 7.5z" fill="url(#diamondGrad)" />
+                                      <defs>
+                                        <linearGradient id="diamondGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                          <stop offset="0%" stopColor="#22D3EE" />
+                                          <stop offset="35%" stopColor="#6366F1" />
+                                          <stop offset="70%" stopColor="#A855F7" />
+                                          <stop offset="100%" stopColor="#EC4899" />
+                                        </linearGradient>
+                                      </defs>
+                                    </svg>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-extrabold text-cyan-400">💎 Diamond Founder Badge</p>
+                                    <p className="text-[10px] text-neutral-400 mt-0.5">Elite Lifetime Founding Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+                            </div>
+                            <p className="text-neutral-500 font-medium text-xs">
+                              @{profile?.username || profile?.email?.split('@')[0]}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Display Name</label>
+                              <input 
+                                type="text"
+                                value={formData.name}
+                                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                                className="w-full px-4 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all font-sans"
+                                placeholder="Enter display name"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Handle</label>
+                              <div className="relative font-sans">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500 text-xs font-semibold">@</span>
+                                <input 
+                                  type="text"
+                                  value={formData.username}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, username: e.target.value.replace(/[^a-zA-Z0-9_]/g, '') }))}
+                                  className="w-full pl-8 pr-3 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all font-sans"
+                                  placeholder="username"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Biography */}
+                      <div>
+                        {!isEditingProfile ? (
+                          <p className="text-sm font-light text-neutral-300 leading-relaxed max-w-xl">
+                            {profile?.bio || "No biography added yet. Click 'Edit Profile' to write a bio and personalize your Mailient workspace."}
+                          </p>
+                        ) : (
+                          <div>
+                            <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Biography</label>
+                            <textarea 
+                              value={formData.bio}
+                              onChange={(e) => setFormData(prev => ({ ...prev, bio: e.target.value }))}
+                              rows={2}
+                              className="w-full px-4 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all resize-none font-sans"
+                              placeholder="Tell us about yourself..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Metadata Grid */}
+                      <div className="border-t border-white/[0.04] pt-4">
+                        {!isEditingProfile ? (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3.5 gap-x-6 text-[11px] font-semibold text-neutral-450">
+                            {/* Occupation */}
+                            <div className="flex items-center gap-2">
+                              <Briefcase className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                              <span>{profile?.work_status || 'Professional'}</span>
+                            </div>
+                            {/* Email (Private) */}
+                            <div className="flex items-center gap-2">
+                              <Mail className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                              <span className="font-mono">{profile?.email}</span>
+                            </div>
+                            {/* Location */}
+                            {profile?.location && (
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                                <span>{profile.location}</span>
+                              </div>
+                            )}
+                            {/* Website */}
+                            {profile?.website && profile?.website !== 'https://example.com' && (
+                              <div className="flex items-center gap-2">
+                                <LinkIcon className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                                <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline">
+                                  {profile.website.replace(/^https?:\/\//, '')}
+                                </a>
+                              </div>
+                            )}
+                            {/* Joined Date */}
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                              <span>Joined {profile?.created_at ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : 'May 2026'}</span>
+                            </div>
+                            {/* Active Plan */}
+                            <div className="flex items-center gap-2">
+                              <Shield className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+                              <span className="capitalize">{planType === 'lifetime' ? 'Diamond Lifetime Founder' : (planType === 'pro' ? 'Golden Pro Plan' : (planType === 'starter' ? 'Starter Plan' : 'Free Plan'))}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Occupation</label>
+                              <div className="relative font-sans">
+                                <Briefcase className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                <input 
+                                  type="text"
+                                  value={formData.work_status}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, work_status: e.target.value }))}
+                                  className="w-full pl-9 pr-3 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all font-sans"
+                                  placeholder="e.g. Creator / AI Engineer"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Location</label>
+                              <div className="relative font-sans">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                <input 
+                                  type="text"
+                                  value={formData.location}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                                  className="w-full pl-9 pr-3 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all font-sans"
+                                  placeholder="City, Country"
+                                />
+                              </div>
+                            </div>
+                            <div>
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-neutral-500 mb-1">Website</label>
+                              <div className="relative font-sans">
+                                <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-500" />
+                                <input 
+                                  type="text"
+                                  value={formData.website}
+                                  onChange={(e) => setFormData(prev => ({ ...prev, website: e.target.value }))}
+                                  className="w-full pl-9 pr-3 py-2.5 bg-[#222] border border-white/5 rounded-2xl text-xs text-white focus:border-white/10 focus:outline-none transition-all font-sans"
+                                  placeholder="yourwebsite.com"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                    </div>
+                  </div>
+
+                  {/* Partner Loop Conversion Section */}
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[9px] font-bold tracking-widest uppercase text-neutral-400 mb-4 shadow-xl select-none">
+                      <Sparkles className="w-3 h-3 text-neutral-400" />
+                      Partner Opportunities
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Creator card */}
+                      <div className="bg-[#111111] rounded-[24px] border border-white/5 p-6 flex flex-col justify-between hover:border-white/10 transition-all duration-300 shadow-lg relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/[0.02] to-transparent pointer-events-none" />
                         <div>
-                          <p className="text-white font-medium">Sync with Google</p>
-                          <p className="text-sm text-gray-400">Keep your profile and email data up to date</p>
+                          <div className="flex items-center justify-between mb-3 font-sans">
+                            <h3 className="text-sm font-black text-white tracking-tight uppercase">✦ Apply as Creator</h3>
+                            <span className="text-[9px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/10">70% RevShare</span>
+                          </div>
+                          <p className="text-[12px] font-light leading-relaxed text-neutral-400 mb-6 font-sans">
+                            Join as an early AI engineer. Design and publish autonomous email workflow agents to our upcoming Arcus Marketplace. Earn a lucrative 70% revenue share on every execution or subscription you power.
+                          </p>
                         </div>
                         <button
-                          onClick={handleSyncProfile}
-                          disabled={syncing}
-                          className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 text-white rounded-md transition-colors"
+                          onClick={() => openPartnerModal('creator')}
+                          className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white text-white hover:text-black font-semibold text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white cursor-pointer shadow-md select-none font-sans"
                         >
-                          {syncing ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <Globe className="w-4 h-4" />
-                          )}
-                          {syncing ? 'Syncing...' : 'Sync Now'}
+                          Apply for Creator Loop
+                        </button>
+                      </div>
+
+                      {/* Affiliate card */}
+                      <div className="bg-[#111111] rounded-[24px] border border-white/5 p-6 flex flex-col justify-between hover:border-white/10 transition-all duration-300 shadow-lg relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/[0.02] to-transparent pointer-events-none" />
+                        <div>
+                          <div className="flex items-center justify-between mb-3 font-sans">
+                            <h3 className="text-sm font-black text-white tracking-tight uppercase">⚡ Apply as Affiliate</h3>
+                            <span className="text-[9px] font-mono text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded border border-indigo-500/10">30% commission</span>
+                          </div>
+                          <p className="text-[12px] font-light leading-relaxed text-neutral-400 mb-6 font-sans">
+                            Become a Mailient partner. Promote our autonomous inbox loop and earn a massive 30% recurring lifetime commission on all subscriptions you refer. No upfront payment required.
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => openPartnerModal('affiliate')}
+                          className="w-full py-2.5 rounded-xl bg-white/5 hover:bg-white text-white hover:text-black font-semibold text-xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 border border-white/5 hover:border-white cursor-pointer shadow-md select-none font-sans"
+                        >
+                          Apply for Affiliate Loop
                         </button>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Sync Settings */}
+                  <div className="bg-[#111] rounded-[24px] border border-white/5 p-6 shadow-lg flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-white uppercase tracking-wider font-sans">Google Synchronization</p>
+                      <p className="text-[11px] text-neutral-400 font-light mt-1 font-sans">Keep your profile and email analytics in sync with your Google account</p>
+                    </div>
+                    <button
+                      onClick={handleSyncProfile}
+                      disabled={syncing}
+                      className="flex items-center gap-2 px-5 py-2.5 bg-neutral-900 border border-white/10 hover:border-white hover:bg-white/5 disabled:bg-neutral-950 text-white rounded-xl font-semibold text-xs transition-colors shrink-0 shadow-md cursor-pointer select-none font-sans"
+                    >
+                      {syncing ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Globe className="w-3.5 h-3.5 text-neutral-400" />
+                      )}
+                      {syncing ? 'Syncing...' : 'Sync Now'}
+                    </button>
                   </div>
                 </div>
               )}
@@ -912,6 +1316,78 @@ export default function ProfileSettingsPage() {
         isOpen={isIntegrationsOpen}
         onClose={() => setIsIntegrationsOpen(false)}
       />
+
+      {/* Partner Application Modal */}
+      {partnerModalType && (
+        <div className="fixed inset-0 z-[10000] flex items-center justify-center p-6 bg-black/80 backdrop-blur-md transition-all duration-500 animate-fadeIn">
+          <div className="absolute inset-0 z-0" onClick={() => setPartnerModalType(null)} />
+          
+          <div className="relative z-10 w-full max-w-[440px] rounded-[2.5rem] bg-[#0A0A0A] border border-[#2A2A2A] p-8 md:p-10 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)] text-left flex flex-col gap-6 font-sans">
+            <button 
+              onClick={() => setPartnerModalType(null)}
+              className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 text-white/20 hover:text-white transition-all shadow-sm focus:outline-none"
+            >
+              <CloseIcon className="w-4 h-4" />
+            </button>
+
+            <div className="space-y-2 mt-4 text-left">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-[9px] font-mono tracking-wider uppercase text-neutral-400">
+                Partner Loop // {partnerModalType === "creator" ? "Creator" : "Affiliate"}
+              </span>
+              <h3 className="text-xl font-bold text-white tracking-tight font-sans">
+                {partnerModalType === "creator" ? "Apply as Creator" : "Apply as Affiliate"}
+              </h3>
+            </div>
+
+            {!partnerSubmitted ? (
+              <form onSubmit={handlePartnerSubmit} className="space-y-4">
+                <p className="text-[13px] leading-relaxed text-neutral-400 font-light font-sans">
+                  {partnerModalType === "creator" 
+                    ? "Join as an early AI engineer. Design and publish autonomous email workflow agents to our upcoming Arcus Marketplace. Earn a lucrative 70% revenue share on every execution or subscription you power."
+                    : "Become a Mailient partner. Promote our autonomous inbox loop and earn a massive 30% recurring lifetime commission on all subscriptions you refer. No upfront payment required."}
+                </p>
+                <div className="space-y-3">
+                  <label className="text-[10px] font-bold tracking-wider uppercase text-neutral-500 block">Your Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={partnerEmail}
+                    onChange={(e) => setPartnerEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className="w-full rounded-2xl bg-white/[0.03] border border-white/5 px-5 py-3.5 text-[14px] text-white placeholder:text-white/25 focus:border-white/10 focus:outline-none transition-all leading-normal"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={partnerSubmitting}
+                  className="w-full py-3.5 rounded-2xl bg-white text-black font-bold text-sm active:scale-95 transition-all flex items-center justify-center gap-2 hover:bg-white/90 disabled:bg-neutral-800 disabled:text-neutral-500 disabled:cursor-not-allowed shadow-md cursor-pointer mt-2"
+                >
+                  {partnerSubmitting ? "Submitting..." : "Submit Application"}
+                </button>
+              </form>
+            ) : (
+              <div className="space-y-4 py-4 text-center flex flex-col items-center">
+                <div className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 text-lg mb-2">
+                  ✓
+                </div>
+                <h4 className="text-md font-bold text-white font-sans">Application Received!</h4>
+                <p className="text-[12px] leading-relaxed text-neutral-400 font-light font-sans max-w-sm">
+                  We have queued your email <span className="text-white font-medium">{partnerEmail}</span>. A founding partner will reach out within 24 hours with your revenue-share onboarding instructions.
+                </p>
+                <button
+                  onClick={() => {
+                    setPartnerModalType(null);
+                    setPartnerSubmitted(false);
+                  }}
+                  className="px-6 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.02] text-white hover:bg-white/5 font-semibold text-xs transition-colors mt-4 cursor-pointer font-sans"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
         </div>
       </div>
     </TooltipProvider>

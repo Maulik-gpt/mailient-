@@ -59,7 +59,7 @@ const arcusFaqs = [
   },
   {
     q: "How many Arcus queries do I get?",
-    a: "Free plan includes three Arcus queries per day. Pro plan — monthly or annual — includes unlimited queries. The Lifetime Founding Member plan includes 500 queries per month with top-up available at $9 per 200 additional queries."
+    a: "All paid plans — Monthly ($29/mo), Annual ($16.58/mo billed $199/year), and Lifetime Founder ($499) — include unlimited Arcus queries. There is no free tier. Subscribe to any plan and get full, unrestricted access to Arcus."
   },
   {
     q: "Can I use Arcus without the rest of Mailient?",

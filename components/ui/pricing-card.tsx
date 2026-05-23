@@ -13,40 +13,49 @@ import { useSession } from "next-auth/react";
 
 const mailientPlans = [
   {
-    id: "free",
-    name: "Free",
-    description: "Personal use",
-    price: 0,
+    id: "monthly",
+    name: "Monthly",
+    description: "Full access, billed monthly",
+    price: 29,
+    priceLabel: "/month",
     features: [
-      "1 AI Draft Reply / day",
-      "50 Arcus AI credits / day",
-      "3 Email Summaries / day",
-    ],
-  },
-  {
-    id: "starter",
-    name: "Starter",
-    description: "Enhanced productivity",
-    price: 7.99,
-    features: [
-      "10 AI Draft Replies / day",
-      "Unlimited Arcus AI",
-      "30 Email Summaries / day",
-      "30 Schedule Calls / month",
-    ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
-  },
-  {
-    id: "pro",
-    name: "Pro",
-    description: "Professional power",
-    price: 29.99,
-    features: [
-      "Unlimited Draft Replies",
+      "Unlimited AI Draft Replies",
       "Unlimited Arcus AI",
       "Unlimited Summaries",
-      "Unlimited Schedule Calls",
+      "Full Sift email triage",
+      "Gold Founding Badge",
+    ],
+    checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
+  },
+  {
+    id: "annual",
+    name: "Annual",
+    description: "Save 40% — billed yearly",
+    price: 16.58,
+    priceLabel: "/month",
+    subLabel: "Billed as $199 annually",
+    features: [
+      "Everything in Monthly",
+      "40% annual savings",
       "Priority AI Processing",
+      "Gold Founding Badge",
+      "Priority Support",
+    ],
+    checkoutUrl: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
+    highlighted: true,
+  },
+  {
+    id: "lifetime",
+    name: "Lifetime Founder",
+    description: "Pay once, own forever",
+    price: 499,
+    priceLabel: "one-time",
+    features: [
+      "Everything in Annual",
+      "Lifetime access — zero recurring fees",
+      "Diamond Founding Badge",
+      "VIP Diamond Slack channel",
+      "Dedicated founder support SLA",
     ],
     checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
   },
@@ -65,49 +74,12 @@ interface PricingCardProps {
 
 export function PricingCard({ onClose }: PricingCardProps) {
   const { data: session } = useSession();
-  const [selectedPlan, setSelectedPlan] = useState("starter");
+  const [selectedPlan, setSelectedPlan] = useState("annual");
   const [isActivating, setIsActivating] = useState(false);
 
-  const handleFreeActivation = async () => {
-    setIsActivating(true);
-    try {
-      const response = await fetch('/api/subscription/activate-free', {
-        method: 'POST'
-      });
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Free activation success:', data);
-        
-        // Set flags so HomeFeed shows activation UI even for free
-        localStorage.setItem('pending_plan', 'free');
-        localStorage.setItem('pending_plan_timestamp', Date.now().toString());
-        
-        // Wait a bit longer for DB satisfying consistency
-        setTimeout(() => {
-          if (onClose) onClose();
-          // Force a reload of the current page to refresh sub status everywhere
-          window.location.reload();
-        }, 1500);
-      } else {
-        const errorData = await response.json().catch(() => ({ error: 'Unknown server error' }));
-        console.error('❌ Free activation failed:', errorData);
-        alert(`Could not activate free plan: ${errorData.error || 'Server error'}`);
-        setIsActivating(false);
-      }
-    } catch (error) {
-      console.error('Error activating free plan:', error);
-      alert('Network error while activating free plan. Please try again.');
-      setIsActivating(false);
-    }
-  };
-
   const handleSubscribe = (planId: string, checkoutUrl?: string) => {
-    if (planId === 'free') {
-      handleFreeActivation();
-      return;
-    }
-    
     if (checkoutUrl) {
+        setIsActivating(true);
         // Set flags so HomeFeed knows we're waiting for payment
         localStorage.setItem('pending_plan', planId);
         localStorage.setItem('pending_plan_timestamp', Date.now().toString());
@@ -205,11 +177,11 @@ export function PricingCard({ onClose }: PricingCardProps) {
                       <div className="text-xl font-medium text-white">
                         <NumberFlow
                           value={price}
-                          format={{ style: "currency", currency: "USD" }}
+                          format={{ style: "currency", currency: "USD", minimumFractionDigits: plan.id === 'lifetime' ? 0 : 2 }}
                         />
                       </div>
                       <div className="text-xs text-neutral-600 dark:text-neutral-500/60 flex items-center justify-end gap-1 ">
-                        per month
+                        {plan.priceLabel}
                       </div>
                     </div>
                   </div>
@@ -227,6 +199,9 @@ export function PricingCard({ onClose }: PricingCardProps) {
                         className="overflow-hidden w-full"
                       >
                         <div className="pt-4 flex flex-col gap-4">
+                          {plan.subLabel && (
+                            <p className="text-[10px] text-neutral-400 font-semibold">{plan.subLabel}</p>
+                          )}
                           <div className="flex flex-col gap-2.5">
                             {plan.features.map((feature, idx) => (
                               <motion.div
@@ -252,14 +227,10 @@ export function PricingCard({ onClose }: PricingCardProps) {
                           <Button 
                             onClick={() => handleSubscribe(plan.id, plan.checkoutUrl)}
                             disabled={isActivating}
-                            className={`w-full h-10 rounded-xl font-bold transition-all ${
-                                plan.id === 'free' 
-                                ? 'bg-white/5 text-white hover:bg-white/10' 
-                                : 'bg-white text-black hover:bg-neutral-200'
-                            }`}
+                            className="w-full h-10 rounded-xl font-bold transition-all bg-white text-black hover:bg-neutral-200"
                           >
-                            {plan.id === 'free' ? 'Continue with Free' : 'Upgrade Now'}
-                            {isActivating && plan.id === 'free' && <span className="ml-2 animate-spin">◌</span>}
+                            {plan.id === 'lifetime' ? 'Own Mailient Forever' : 'Subscribe Now'}
+                            {isActivating && <span className="ml-2 animate-spin">◌</span>}
                           </Button>
                         </div>
                       </motion.div>
@@ -274,5 +245,3 @@ export function PricingCard({ onClose }: PricingCardProps) {
     </div>
   );
 }
-
-

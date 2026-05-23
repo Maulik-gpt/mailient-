@@ -52,7 +52,7 @@ export async function GET(request) {
         privacySettings: "Private",
         notificationPreferences: "Email notifications enabled",
         linkedAccounts: ["Google"],
-        subscriptionStatus: "Free Plan",
+        subscriptionStatus: "No Active Plan",
         activitySummary: "Active user with email processing"
       };
 
@@ -73,7 +73,7 @@ export async function GET(request) {
       privacySettings: "Private",
       notificationPreferences: "Email notifications enabled",
       linkedAccounts: ["Google"],
-      subscriptionStatus: "Free Plan",
+      subscriptionStatus: "No Active Plan",
       activitySummary: "Active user with email processing"
     };
 

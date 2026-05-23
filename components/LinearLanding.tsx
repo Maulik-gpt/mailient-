@@ -32,8 +32,7 @@ import {
   ShieldCheck,
   Clock,
   Briefcase,
-  AlertCircle,
-  Send
+  AlertCircle
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
 import { signIn } from "next-auth/react";
@@ -112,10 +111,7 @@ const landingFaqs = [
     q: "Can I cancel anytime?",
     a: "Monthly plan cancels at the end of your billing period. Annual plan can be cancelled anytime — you keep full access for the year you paid for. No retention calls. No dark patterns. One click in settings."
   },
-  {
-    q: "What happens when I hit my usage limit on the free plan?",
-    a: "AI features pause until your daily limit resets at midnight. Your inbox, traditional email view, and all non-AI features remain fully accessible. Nothing is locked — just throttled until tomorrow."
-  },
+
   {
     q: "How long does setup take?",
     a: "Two minutes. Connect your Google account, grant Gmail and Calendar access, and Mailient starts working immediately. There is nothing to configure. Arcus begins learning your voice in the background from the moment you connect."
@@ -344,100 +340,6 @@ export function LinearLanding() {
             noise={{ opacity: 1, scale: 1.2 }}
             sizing="fill"
           />
-        </div>
-
-        {/* Orbiting Icons Around Logo */}
-        <div className="relative w-32 h-32 md:w-40 md:h-40 mb-8">
-          {/* Central Logo */}
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="relative w-16 h-16 md:w-20 md:h-20 rounded-[25%] overflow-hidden border border-white/10 shadow-lg bg-white">
-              <img 
-                src="/mailient-logo-premium.png" 
-                alt="Mailient Logo" 
-                className="w-full h-full object-cover"
-              />
-            </div>
-          </div>
-
-          {/* Orbiting Icons */}
-          <motion.div
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-0"
-          >
-            {/* Icon 1 - Mail */}
-            <motion.div
-              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-2"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Mail className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
-              </div>
-            </motion.div>
-
-            {/* Icon 2 - Inbox */}
-            <motion.div
-              className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-2"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Inbox className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
-              </div>
-            </motion.div>
-
-            {/* Icon 3 - Calendar */}
-            <motion.div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-2"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Calendar className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
-              </div>
-            </motion.div>
-
-            {/* Icon 4 - Send */}
-            <motion.div
-              className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-2"
-              animate={{ rotate: -360 }}
-              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Send className="w-4 h-4 md:w-5 md:h-5 text-white/70" />
-              </div>
-            </motion.div>
-          </motion.div>
-
-          {/* Inner Orbit - Smaller icons */}
-          <motion.div
-            animate={{ rotate: -360 }}
-            transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            className="absolute inset-4 md:inset-5"
-          >
-            {/* Icon 5 - Zap */}
-            <motion.div
-              className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Zap className="w-3 h-3 md:w-3.5 md:h-3.5 text-white/60" />
-              </div>
-            </motion.div>
-
-            {/* Icon 6 - Sparkles */}
-            <motion.div
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="w-6 h-6 md:w-7 md:h-7 rounded-full bg-white/5 border border-white/10 flex items-center justify-center backdrop-blur-sm">
-                <Sparkles className="w-3 h-3 md:w-3.5 md:h-3.5 text-white/60" />
-              </div>
-            </motion.div>
-          </motion.div>
         </div>
 
         <div className="w-full flex flex-col items-center max-w-5xl z-10 mx-auto px-6">

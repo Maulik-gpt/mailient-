@@ -36,7 +36,7 @@ export default function PrivacyPolicy() {
           <ul className="list-disc pl-5 space-y-2">
             <li>All users of the Mailient website and web application at mailient.xyz</li>
             <li>Users who connect their Google or Google Workspace accounts to Mailient</li>
-            <li>Users on Free, Starter, and Pro subscription tiers</li>
+            <li>Users on Monthly, Annual, and Lifetime Founder subscription tiers</li>
             <li>Visitors who browse mailient.xyz without creating an account</li>
           </ul>
           <p>This policy does not apply to third-party websites, services, or applications that may be linked from our platform.</p>
@@ -66,7 +66,7 @@ export default function PrivacyPolicy() {
           </div>
           <div>
             <h4 className="font-bold text-black dark:text-white mb-2">3.5 Subscription and payment information</h4>
-            <p>If you upgrade to a paid plan (Starter at $7.99/month or Pro at $29.99/month), payment is processed by a third-party payment processor. We do not store your full credit card number, CVV, or raw financial information. We may retain your subscription tier, billing status, and anonymized transaction records.</p>
+            <p>If you upgrade to a paid plan (Monthly at $29/month, Annual at $199/year, or Lifetime Founder at $499 one-time), payment is processed by a third-party payment processor. We do not store your full credit card number, CVV, or raw financial information. We may retain your subscription tier, billing status, and anonymized transaction records.</p>
           </div>
         </div>
       )

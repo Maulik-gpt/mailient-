@@ -83,51 +83,51 @@ const MATTERS_MOST = [
 ];
 
 const POLAR_CHECKOUT_URLS = {
-  starter: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW',
-  pro: 'https://buy.polar.sh/polar_cl_B9DSDJSz1EeVhR8rtLcVgn1vVvjvizMvp0yOs3IQOJW'
+  monthly: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61',
+  annual: 'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej',
+  lifetime: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61'
 };
 
 const plans = [
   {
-    name: "Free",
-    info: "Experience the power of Mailient AI — no credit card required",
-    price: { monthly: 0, yearly: 0 },
+    name: "Monthly",
+    info: "Full AI-powered inbox, billed monthly",
+    price: { monthly: 29, yearly: 29 },
     features: [
-      { text: "1 AI Draft per day" },
-      { text: "1 Sift Analysis per day" },
-      { text: "3 Email Summaries per day" },
+      { text: "Unlimited AI Drafts" },
+      { text: "Unlimited Sift Analysis" },
+      { text: "Unlimited Arcus AI" },
       { text: "Secure Google OAuth" },
-      { text: "Basic Relationship Tracking" }
+      { text: "Gold Founding Badge" }
     ],
-    btn: { text: "Start Free", href: "#" }
+    btn: { text: "Subscribe Monthly", href: "#" }
   },
   {
-    name: "Starter",
-    info: "For solopreneurs ready to automate their inbox at scale",
-    price: { monthly: 7.99, yearly: 7.99 },
+    name: "Annual",
+    info: "Save 40% — billed as $199/year upfront",
+    price: { monthly: 16.58, yearly: 199 },
     features: [
-      { text: "10 AI Drafts per day" },
-      { text: "10 Sift Analyses per day" },
-      { text: "20 Arcus AI queries per day" },
-      { text: "30 Email Summaries per day" },
-      { text: "Standard Relationship Tracking" }
+      { text: "Everything in Monthly" },
+      { text: "40% annual savings" },
+      { text: "Priority AI Processing" },
+      { text: "Gold Founding Badge" },
+      { text: "Priority Support" }
     ],
-    btn: { text: "Select Starter", href: "#" },
+    btn: { text: "Subscribe Annual", href: "#" },
     highlighted: true
   },
   {
-    name: "Pro",
-    info: "Unlimited power for teams and power users who demand the best",
-    price: { monthly: 29.99, yearly: 29.99 },
+    name: "Lifetime Founder",
+    info: "Pay once, own forever — $499 one-time",
+    price: { monthly: 499, yearly: 499 },
     features: [
-      { text: "Everything in Starter" },
-      { text: "Unlimited AI Processing" },
-      { text: "Advanced Relationship Tracking" },
-      { text: "Custom Neural Voice" },
-      { text: "Priority Support" },
-      { text: "Unlimited Draft Replies" }
+      { text: "Everything in Annual" },
+      { text: "Lifetime access — zero recurring fees" },
+      { text: "Diamond Founding Badge" },
+      { text: "VIP Diamond Slack channel" },
+      { text: "Dedicated founder support SLA" }
     ],
-    btn: { text: "Select Pro", href: "#" }
+    btn: { text: "Own Mailient Forever", href: "#" }
   }
 ];
 

@@ -34,8 +34,8 @@ export async function GET(request) {
 
         // Determine subscription status directly
         let isActive = false;
-        let planName = 'Free';
-        let planType = 'free';
+        let planName = 'No Plan';
+        let planType = 'none';
         let daysRemaining = 0;
 
         if (subscription) {
@@ -50,21 +50,24 @@ export async function GET(request) {
             // Direct plan name mapping
             if (isActive && planType) {
                 const normalizedPlanType = planType.toString().trim().toLowerCase();
-                if (normalizedPlanType === 'pro' || normalizedPlanType === 'professional' || normalizedPlanType.includes('pro')) {
-                    planName = 'Pro';
+                if (normalizedPlanType === 'pro' || normalizedPlanType === 'professional' || normalizedPlanType.includes('pro') || normalizedPlanType === 'starter' || normalizedPlanType === 'basic') {
+                    planName = 'Monthly';
                     planType = 'pro';
-                } else if (normalizedPlanType === 'starter' || normalizedPlanType === 'basic' || normalizedPlanType.includes('starter') || normalizedPlanType.includes('basic')) {
-                    planName = 'Starter';
-                    planType = 'starter';
+                } else if (normalizedPlanType === 'annual' || normalizedPlanType === 'yearly') {
+                    planName = 'Annual';
+                    planType = 'annual';
+                } else if (normalizedPlanType === 'lifetime' || normalizedPlanType === 'founder') {
+                    planName = 'Lifetime Founder';
+                    planType = 'lifetime';
                 } else if (normalizedPlanType === 'free' || normalizedPlanType === 'none') {
-                    planName = 'Free';
+                    planName = 'No Plan';
                     planType = 'free';
                 } else {
                     planName = `${normalizedPlanType.charAt(0).toUpperCase() + normalizedPlanType.slice(1)}`;
                 }
             } else if (!isActive) {
                 planType = 'free';
-                planName = 'Free';
+                planName = 'No Plan';
             }
         }
 
@@ -83,7 +86,7 @@ export async function GET(request) {
                 hasActiveSubscription: isActive,
                 planType,
                 planName,
-                planPrice: planType === 'pro' ? 29.99 : planType === 'starter' ? 7.99 : 0,
+                planPrice: planType === 'lifetime' ? 499 : planType === 'annual' ? 16.58 : planType === 'pro' ? 29 : 0,
                 subscriptionStartedAt: subscription?.subscription_started_at || null,
                 subscriptionEndsAt: subscription?.subscription_ends_at || null,
                 daysRemaining,
