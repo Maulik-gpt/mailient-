@@ -65,7 +65,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Sidebar */}
-                <div className="w-full md:w-64 bg-neutral-50 dark:bg-[#070707] border-r border-neutral-100 dark:border-white/5 p-8 flex flex-col">
+                <div className="w-full md:w-64 bg-neutral-50 dark:bg-[#292929] border-r border-neutral-100 dark:border-white/5 p-8 flex flex-col">
                     <div className="flex items-center gap-3 mb-12">
                         <div className="w-8 h-8 bg-black dark:bg-white rounded flex items-center justify-center">
                             <HelpCircle className="w-4 h-4 text-white dark:text-black" />

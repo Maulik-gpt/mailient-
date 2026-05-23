@@ -277,7 +277,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
             >
                 {/* Sidebar */}
                 {/* Sidebar - Horizontal scroll on mobile, vertical on desktop */}
-                <div className="w-full md:w-[250px] bg-neutral-50 dark:bg-[#070707] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
+                <div className="w-full md:w-[250px] bg-neutral-50 dark:bg-[#292929] border-b md:border-b-0 md:border-r border-neutral-200 dark:border-white/5 p-4 flex flex-row md:flex-col overflow-x-auto md:overflow-y-hidden shrink-0">
                     <div className="flex flex-row md:flex-col items-center md:items-stretch gap-1 md:gap-0 md:flex-1 md:overflow-y-auto custom-scrollbar pr-1">
                         <div className="hidden md:block">
                              <MenuButton label="Settings" category />
