@@ -521,8 +521,6 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           background: rgba(255,255,255,0.12);
         }
       ` }} />
-      </motion.div>
     </div>
-    </AnimatePresence>
   );
 }
