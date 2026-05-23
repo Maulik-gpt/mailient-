@@ -63,48 +63,16 @@ export default function ChangelogPage() {
       </section>
 
       {/* Changelog Entry Section */}
-      <section className="relative z-10 w-full max-w-3xl px-6 pb-32">
-        <div className="space-y-12">
-          
-          {/* Entry 1 */}
-          <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
-            <div className="border border-white/[0.04] bg-white/[0.01] backdrop-blur-2xl rounded-3xl p-8 shadow-2xl space-y-6">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Platform Update v1.0.4</span>
-                  <h3 className="text-lg font-semibold text-white mt-1">Arcus-Node-v3 Relational Reasoner</h3>
-                </div>
-                <span className="px-3 py-1 rounded bg-white/[0.02] border border-white/[0.06] text-[9px] font-bold text-neutral-300 font-mono">
-                  {currentDate}
-                </span>
-              </div>
-
-              <div className="text-xs text-neutral-400 leading-relaxed font-light space-y-4 font-sans">
-                <p>Coming soon.</p>
-              </div>
-            </div>
-          </BlurFade>
-
-          {/* Entry 2 */}
-          <BlurFade delay={0.5} duration={0.8} yOffset={20} inView>
-            <div className="border border-white/[0.04] bg-white/[0.01] backdrop-blur-2xl rounded-3xl p-8 shadow-2xl space-y-6 opacity-75">
-              <div className="flex items-center justify-between border-b border-white/[0.06] pb-4">
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400">Security Update v1.0.3</span>
-                  <h3 className="text-lg font-semibold text-white mt-1">AES-256 Memory Encryption</h3>
-                </div>
-                <span className="px-3 py-1 rounded bg-white/[0.02] border border-white/[0.06] text-[9px] font-bold text-neutral-400 font-mono">
-                  April 2026
-                </span>
-              </div>
-
-              <div className="text-xs text-neutral-400 leading-relaxed font-light space-y-4 font-sans">
-                <p>Coming soon.</p>
-              </div>
-            </div>
-          </BlurFade>
-
-        </div>
+      <section className="relative z-10 w-full max-w-2xl px-6 pb-32">
+        <BlurFade delay={0.4} duration={0.8} yOffset={20} inView>
+          <div className="border border-white/[0.04] bg-white/[0.01] backdrop-blur-2xl rounded-3xl p-12 shadow-2xl flex flex-col items-center text-center space-y-4">
+            <LayoutList className="w-8 h-8 text-neutral-500 animate-pulse" />
+            <h3 className="text-xl font-medium text-white tracking-tight">Coming soon</h3>
+            <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans max-w-sm">
+              We are compiling our next major feature release notes. Continuous platform optimization and security ship logs will appear here shortly.
+            </p>
+          </div>
+        </BlurFade>
       </section>
 
       {/* Footer */}
