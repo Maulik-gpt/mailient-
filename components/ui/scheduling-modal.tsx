@@ -254,7 +254,7 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            <div className="fixed inset-0 z-[1120] flex items-center justify-center">
+            <div className="fixed inset-0 z-[1120] flex items-center justify-center overflow-y-auto">
                 {/* Backdrop */}
                 <div
                     className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity animate-in fade-in duration-500"

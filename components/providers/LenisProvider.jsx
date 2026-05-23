@@ -1,8 +1,19 @@
 "use client";
 
 import React, { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { ReactLenis, useLenis } from "lenis/react";
 import "lenis/dist/lenis.css";
+
+// Routes where Lenis smooth scroll should be enabled
+const ENABLED_ROUTES = [
+  "/", // Landing page
+  "/product", // Product pages
+  "/changelog", // Changelog
+  "/contact", // Support
+  "/privacy-policy", // Privacy Policy
+  "/terms-of-service", // Terms of Service
+];
 
 // Smooth Anchor Scroll Handler
 function SmoothScrollAnchorHandler() {
@@ -72,6 +83,21 @@ function SmoothScrollAnchorHandler() {
 }
 
 export function LenisProvider({ children }) {
+  const pathname = usePathname();
+
+  // Check if current route should have smooth scroll enabled
+  const shouldEnableLenis = ENABLED_ROUTES.some(route => {
+    if (route === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(route);
+  });
+
+  // If not on an enabled route, just render children without Lenis
+  if (!shouldEnableLenis) {
+    return <>{children}</>;
+  }
+
   return (
     <ReactLenis
       root

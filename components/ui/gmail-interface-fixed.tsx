@@ -745,13 +745,6 @@ export function GmailInterfaceFixed() {
         }
     }, [isTraditionalModalOpen]);
 
-    // Don't lock body scroll - modal backdrops prevent background interaction
-    // Body scroll lock was preventing modal content from scrolling
-    useEffect(() => {
-        return () => {
-            document.body.style.overflow = '';
-        };
-    }, []);
 
     // Sync draftContent to editor ref (more robust than dangerouslySetInnerHTML for contentEditable)
     useEffect(() => {
@@ -3007,7 +3000,7 @@ export function GmailInterfaceFixed() {
                                                 </div>
 
                                                 {/* Draft Editor UI */}
-                                                <div className={`fixed inset-0 z-[1100] flex items-center justify-center p-4 transition-all duration-500 ${showDraftEditor ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+                                                <div className={`fixed inset-0 z-[1100] flex items-center justify-center p-4 transition-all duration-500 overflow-y-auto ${showDraftEditor ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
                                                     {/* Backdrop */}
                                                     <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowDraftEditor(false)} />
                                                     

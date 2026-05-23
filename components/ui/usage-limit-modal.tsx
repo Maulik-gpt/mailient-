@@ -53,7 +53,7 @@ export function UsageLimitModal({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: 20 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-                        className="fixed inset-0 flex items-center justify-center z-[2000] p-4 md:p-8"
+                        className="fixed inset-0 flex items-center justify-center z-[2000] p-4 md:p-8 overflow-y-auto"
                         onClick={(e: React.MouseEvent) => e.stopPropagation()}
                     >
                         <div className="bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-white/10 rounded-[2.5rem] w-full max-w-md flex flex-col shadow-[0_32px_128px_-16px_rgba(0,0,0,0.8)]">

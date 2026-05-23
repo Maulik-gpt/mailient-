@@ -211,7 +211,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 overflow-y-auto">
         {/* Backdrop */}
         <motion.div
           initial={{ opacity: 0 }}
@@ -227,7 +227,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.92, opacity: 0, y: 30 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="relative w-full max-w-2xl bg-[#0f0f0f] border border-white/[0.08] rounded-[28px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-white"
+          className="relative w-full max-w-2xl max-h-[85vh] bg-[#0f0f0f] border border-white/[0.08] rounded-[28px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-white"
         >
           {/* === HEADER === */}
           <div className="px-8 pt-7 pb-3 flex items-start justify-between">
@@ -271,7 +271,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
           </div>
 
           {/* === SCROLLABLE BODY === */}
-          <div className="px-8 pb-6 space-y-6 max-h-[65vh] overflow-y-auto custom-scrollbar">
+          <div className="flex-1 px-8 pb-6 space-y-6 overflow-y-auto custom-scrollbar min-h-0">
             
             {/* ── TONE SECTION ── */}
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 space-y-5">
@@ -521,6 +521,8 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           background: rgba(255,255,255,0.12);
         }
       ` }} />
+      </motion.div>
     </div>
+    </AnimatePresence>
   );
 }

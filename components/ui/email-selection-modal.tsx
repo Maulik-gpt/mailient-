@@ -110,19 +110,20 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
   console.log('EmailSelectionModal: Modal props:', { isOpen, onClose: !!onClose, onSelectEmails: !!onSelectEmails });
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-        onClick={() => {
-          console.log('EmailSelectionModal: Backdrop clicked, closing modal');
-          onClose();
-        }}
-      />
+    <div className="fixed inset-0 z-[100] p-4 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-full">
+        {/* Backdrop */}
+        <div
+          className="absolute inset-0 bg-black/50 backdrop-blur-sm -z-10"
+          onClick={() => {
+            console.log('EmailSelectionModal: Backdrop clicked, closing modal');
+            onClose();
+          }}
+        />
 
-      {/* Modal */}
-      <div className="relative p-6 w-full max-w-4xl max-h-[80vh] flex flex-col shadow-2xl bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-[#2a2a2a]">
-        {/* Header */}
+        {/* Modal */}
+        <div className="relative p-6 w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl bg-white dark:bg-[#1a1a1a] rounded-[2rem] border border-[#2a2a2a] my-4">
+          {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-semibold text-white">Select Your Email</h2>
           <button
@@ -139,7 +140,7 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto min-h-0">
           {loading ? (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin mb-2"></div>
@@ -250,6 +251,7 @@ export function EmailSelectionModal({ isOpen, onClose, onSelectEmails }: EmailSe
             Select Emails ({selectedEmails.length})
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
