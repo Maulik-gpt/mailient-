@@ -11,6 +11,7 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Footer } from "@/components/Footer";
+import { CircleExpandButton } from "@/components/CircleExpandButton";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -102,21 +103,18 @@ export default function SiftProductPage() {
 
           {/* Premium CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-            <button
+            <CircleExpandButton
               onClick={() => signIn("google", { callbackUrl: "/onboarding" })}
-              className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
             >
               Connect Gmail for Sift
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
+            </CircleExpandButton>
 
-            <a
+            <CircleExpandButton
               href="#sift-showcase"
-              className="px-8 py-3 linear-cta text-white font-medium text-xs flex items-center gap-2 cursor-pointer"
+              className="bg-transparent border border-white/10 hover:bg-white/5"
             >
-              <Play className="w-3 h-3 fill-white" />
               Watch Sift work
-            </a>
+            </CircleExpandButton>
           </div>
 
         </div>

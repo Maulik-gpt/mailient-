@@ -18,6 +18,7 @@ import { ArcusLogo } from "@/components/ui/arcus-logo";
 import { WordBlurStream } from "@/src/WordBlurStream";
 import { CTASection } from "@/components/ui/hero-dithering-card";
 import { Footer } from "@/components/Footer";
+import { CircleExpandButton } from "@/components/CircleExpandButton";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -153,15 +154,13 @@ export default function ArcusProductPage() {
           {/* Thick Solid Black Clean Pill Button */}
           <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
             <div className="flex flex-col items-center gap-12 mt-10">
-              <a
+              <CircleExpandButton
                 href="https://tally.so/r/b5KpB6"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-9 py-4 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center gap-2.5 cursor-pointer shadow-lg"
               >
                 Join waitlist
-                <ArrowRight className="w-4 h-4" />
-              </a>
+              </CircleExpandButton>
             </div>
           </BlurFade>
 

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import NumberFlow from "@number-flow/react";
 import { Check, Crown, Sparkles, Lock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
+import { CircleExpandButton } from "@/components/CircleExpandButton";
 
 interface PricingProps {
   isLoading?: boolean;
@@ -298,7 +299,7 @@ export default function PricingSection3({
                 </CardContent>
 
                 <div className="pt-8 relative z-10 shrink-0">
-                  <button
+                  <CircleExpandButton
                     onClick={() => {
                       if (isLifetime) {
                         handleSelectPlan("lifetime");
@@ -308,28 +309,22 @@ export default function PricingSection3({
                     }}
                     disabled={isLoading || isCurrentPlanActive}
                     className={cn(
-                      "w-full py-4 text-xs font-semibold rounded-2xl transition-all duration-300 flex items-center justify-center gap-1.5 border cursor-pointer",
+                      "w-full",
                       isCurrentPlanActive
-                        ? "bg-white/5 border-white/10 text-neutral-500 cursor-not-allowed"
+                        ? "opacity-50 cursor-not-allowed"
                         : plan.popular
-                          ? "bg-white text-black hover:bg-neutral-100 border-white/10 shadow-[0_0_30px_rgba(255,255,255,0.05)] hover:scale-[1.01]"
-                          : "bg-[#121316] border-white/[0.08] text-white hover:bg-[#1c1d22] hover:border-white/25 hover:scale-[1.01]"
+                          ? ""
+                          : "bg-[#121316] border-white/[0.08] hover:bg-[#1c1d22] hover:border-white/25"
                     )}
                   >
                     {isLoading ? (
                       "Processing..."
                     ) : isCurrentPlanActive ? (
-                      <>
-                        <Lock className="w-3.5 h-3.5" />
-                        Current Active Plan
-                      </>
+                      "Current Active Plan"
                     ) : (
-                      <>
-                        {plan.buttonText}
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </>
+                      plan.buttonText
                     )}
-                  </button>
+                  </CircleExpandButton>
                 </div>
               </Card>
             </TimelineContent>

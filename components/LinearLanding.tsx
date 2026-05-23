@@ -51,6 +51,7 @@ import { SpecialText } from "@/components/ui/special-text";
 import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
 import { EtheralShadow } from "@/components/ui/etheral-shadow";
+import { CircleExpandButton } from "@/components/CircleExpandButton";
 
 const Dithering = lazy(() => 
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
@@ -364,23 +365,20 @@ export function LinearLanding() {
           {/* Premium CTAs */}
           <BlurFade delay={0.3} duration={0.8} inView>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-              <a
+              <CircleExpandButton
                 href="https://tally.so/r/b5KpB6"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-8 py-3 rounded-full bg-white text-black font-semibold text-xs tracking-tight transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(255,255,255,0.25)] flex items-center gap-2 cursor-pointer"
               >
                 Join waitlist
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
+              </CircleExpandButton>
 
-              <a
+              <CircleExpandButton
                 href="#sample-brief"
-                className="px-8 py-3 rounded-full bg-transparent border border-white/10 text-white font-medium text-xs hover:bg-white/5 transition-colors flex items-center gap-2"
+                className="bg-transparent border border-white/10 hover:bg-white/5"
               >
-                <Play className="w-3 h-3 fill-white" />
                 See a sample brief
-              </a>
+              </CircleExpandButton>
             </div>
           </BlurFade>
 
@@ -535,13 +533,12 @@ export function LinearLanding() {
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Automatically filters out notifications and organizes important emails so you can respond faster.
                   </p>
-                  <Link 
-                    href="/product/sift" 
-                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                  <CircleExpandButton 
+                    href="/product/sift"
+                    className="text-xs md:text-sm"
                   >
                     Explore Sift Engine
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </CircleExpandButton>
                 </motion.div>
               )}
             </div>
@@ -575,13 +572,12 @@ export function LinearLanding() {
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Learns your writing style from past messages to draft natural, custom replies automatically.
                   </p>
-                  <Link 
-                    href="/product/drafts" 
-                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                  <CircleExpandButton 
+                    href="/product/drafts"
+                    className="text-xs md:text-sm"
                   >
                     Explore Drafts Engine
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
+                  </CircleExpandButton>
                 </motion.div>
               )}
             </div>
@@ -615,13 +611,12 @@ export function LinearLanding() {
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
                     Coordinates slots, schedules meetings on your calendar, and sets up links overnight.
                   </p>
-                  <a 
-                    href="#pricing" 
-                    className="inline-flex items-center gap-1.5 text-xs md:text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                  <CircleExpandButton 
+                    href="#pricing"
+                    className="text-xs md:text-sm"
                   >
                     Unlock Autonomous Engine
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </a>
+                  </CircleExpandButton>
                 </motion.div>
               )}
             </div>
