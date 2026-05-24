@@ -671,7 +671,7 @@ export async function readCombinedCalendar(
   input: { rangeStart: string; rangeEnd: string }
 ): Promise<string> {
   const gcalTokens = await getTokenPair(userId, 'gcal');
-  const notionToken = await getToken(userId, 'notion');
+  const notionToken = await getToken(userId, 'notion_calendar') || await getToken(userId, 'notion');
 
   if (!gcalTokens && !notionToken) {
     return 'Neither Google Calendar nor Notion is connected. Connect at least one in Integrations.';

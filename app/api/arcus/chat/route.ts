@@ -30,6 +30,7 @@ function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]
     gmail: 'Gmail',
     gcal: 'Google Calendar',
     notion: 'Notion',
+    notion_calendar: 'Notion Calendar',
     slack: 'Slack',
   };
   const ALL_KNOWN = Object.keys(INTEGRATION_LABELS);

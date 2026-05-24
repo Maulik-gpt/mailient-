@@ -46,6 +46,13 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; can: string[] }>
       'Add meeting notes, action items, and conversation logs automatically',
     ],
   },
+  notion_calendar: {
+    label: 'Notion Calendar',
+    can: [
+      'Check upcoming events and schedule items across any date range (synchronized from Notion Calendar databases)',
+      'Read Notion calendar entries to cross-reference with Google Calendar and other schedule tools',
+    ],
+  },
   slack: {
     label: 'Slack',
     can: [

@@ -49,7 +49,7 @@ export async function buildContext(
 
   const gcalIntegration = integrations?.find(i => i.provider === 'gcal');
   const slackIntegration = integrations?.find(i => i.provider === 'slack');
-  const notionIntegration = integrations?.find(i => i.provider === 'notion');
+  const notionIntegration = integrations?.find(i => i.provider === 'notion_calendar') || integrations?.find(i => i.provider === 'notion');
   const gmailIntegration = integrations?.find(i => i.provider === 'gmail');
 
   // 3. Fetch data in parallel
