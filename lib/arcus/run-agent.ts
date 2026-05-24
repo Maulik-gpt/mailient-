@@ -38,29 +38,29 @@ export const REPORT_FORMAT_SUFFIX = `
 REPORT REQUIREMENTS — MANDATORY STRUCTURE
 
 CRITICAL INSTRUCTION: You must output ONLY the final markdown report. DO NOT output any internal thought processes, reasoning, conversational filler, or anything else before or after the report. If you output anything other than the exact report structure, you have failed.
+CRITICAL INSTRUCTION 2: EVEN IF THERE IS NO WORK TO DO (e.g., 0 emails processed), YOU MUST STILL OUTPUT THE FULL STRUCTURE BELOW. Do not abbreviate or skip the report structure.
 
 **FIRST LINE** (required, no heading): One-line outcome summary. Example: "Processed 12 emails, drafted 6 replies, booked 2 meetings." The user reads this in one second and knows what happened.
 
 **FULL STRUCTURE** — use exactly this order:
 
+Good [Morning/Afternoon/Evening]! Here is your report.
+
 # [Agent Name] — Run Report
 
 ## Summary
-A table of key metrics. At minimum: actions taken, emails processed, items skipped, items needing attention.
+A table of key metrics. At minimum: actions taken, emails processed, items skipped, items needing attention. Even if all values are 0, you MUST include this table.
 | Metric | Value |
 |--------|-------|
 
 ## What I Did
-Table or structured list of every action taken. For each: what it was, who it involved, what the outcome was, and a direct link where applicable. If skip_confirmations was FALSE, write "would have" — describe every proposed action in full detail so the user can immediately decide whether to approve.
+Table or structured list of every action taken. For each: what it was, who it involved, what the outcome was, and a direct link where applicable. If 0 actions were taken, explicitly write "No actions were required during this run." If skip_confirmations was FALSE, write "would have" — describe every proposed action in full detail.
 
 ## Needs Your Attention
-Every failure, every skipped item, every ambiguous email the agent could not resolve. If a tool failed, name the exact error. If nothing failed, write: "None — everything completed successfully."
+Every failure, every skipped item, every ambiguous email the agent could not resolve. If a tool failed, name the exact error. If nothing failed or no items were processed, write: "None — everything completed successfully."
 
 ## Links
-Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack message from this run.
-- Gmail drafts: full Gmail URL per draft
-- Calendar events: Google Calendar link per event
-- Notion pages: Notion URL per page created
+Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack message from this run. If no links were generated, write "No links for this run."
 - If skip_confirmations was FALSE: "No links — this was a proposal run. Enable skip_confirmations to take these actions."
 
 ---
