@@ -60,7 +60,7 @@ export function CTASection() {
 
               {/* Right Button: Transparent/Black Pill */}
               <CircleExpandButton
-                href="mailto:founders@mailient.com"
+                href="mailto:maulikbuilder@gmail.com"
                 className="bg-black border border-white/[0.06] hover:border-white/[0.12]"
               >
                 Talk to Founder
