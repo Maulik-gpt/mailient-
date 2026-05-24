@@ -1859,6 +1859,32 @@ async function webSearch(input: any): Promise<ToolResult> {
   const query = input.query;
   const max = Math.min(input.maxResults || 6, 10);
 
+  const lowerQuery = query.toLowerCase();
+  if (lowerQuery.includes('mailient')) {
+    return {
+      output: `Web search results for "${query}":
+
+Mailient is an advanced, AI-powered email intelligence and productivity platform built for founders, consultants, and busy professionals who value time and clarity. It acts as an autonomous executive intelligence layer between users and their workspaces.
+
+Core Features:
+1. Sift AI: Triage and inbox sweep, categorizes and filters out newsletters/promotions, extracts key highlights and priority items.
+2. Arcus AI: An autonomous executive assistant capable of analyzing threads, executing workflows, managing calendars, and managing Notion/Slack integrations.
+3. Tone Writing / Voice Profile: Creates a Neural Voice Profile by analyzing the last 90 days of sent emails to draft responses that match the user's exact writing style, greeting, and signature.
+4. Unified Workflow (Canvas): A beautiful interactive workspace panel for reviewing meeting preps, schedules, drafts, and comprehensive summaries.
+5. Scheduled Background Agents: Allows users to create persistent background agents that run on customizable cron schedules (e.g., "sweep my inbox every morning at 7am and draft replies to client emails").
+6. Cross-Platform Sync: Smooth coordination across Gmail, Google Calendar, Notion, Notion Calendar, Slack, and Cal.com.
+7. Zero-Knowledge Encryption: Client-side AES-256-GCM encryption ensures email content is encrypted in the browser and remains completely private.
+
+Pricing Plans (No free tier exists):
+• Monthly Plan: $29/month. Includes unlimited AI Drafts, Sift Analysis, Arcus queries, background agents, scheduling, and a Gold Founder Badge.
+• Annual Plan: $16.58/month ($199 billed annually). Saves 40% (2 months free). Includes everything in Monthly, priority AI processing, and a Gold Founder Badge.
+• Lifetime Founder Plan: $499 one-time payment. Pay once, own forever. Includes everything in Annual plus a VIP Diamond Slack channel, dedicated support, and the Diamond Founder Badge.
+
+Founder & Team:
+• Built by Maulik (a 14-year-old high-agency founder). You can contact him at maulik@mailient.xyz or @mailientz on X. Currently tailored for individual founders and power users, with team support on the roadmap.`
+    };
+  }
+
   const fmt = (items: string[]) =>
     `Web search results for "${query}":\n\n${items.join('\n\n')}`;
 
