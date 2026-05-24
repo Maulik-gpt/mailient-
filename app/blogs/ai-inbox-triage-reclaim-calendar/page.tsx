@@ -1,8 +1,25 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { BlogLayout } from "@/components/BlogLayout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "The 3-Hour Email Rule // Mailient Blog",
+  description: "Professionals spend 3+ hours per day on email. AI triage doesn't just organize — it gives you back the time you didn't know you were losing.",
+  openGraph: {
+    title: "The 3-Hour Email Rule // Mailient Blog",
+    description: "Professionals spend 3+ hours per day on email. AI triage doesn't just organize — it gives you back the time you didn't know you were losing.",
+    url: "https://mailient.xyz/blogs/ai-inbox-triage-reclaim-calendar",
+    type: "article",
+    publishedTime: "2026-05-20T00:00:00.000Z",
+    authors: ["Maulik"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The 3-Hour Email Rule // Mailient Blog",
+    description: "Professionals spend 3+ hours per day on email. AI triage doesn't just organize — it gives you back the time you didn't know you were losing.",
+  },
+};
 
 const meta = {
   title: "The 3-Hour Email Rule: How AI Inbox Triage Reclaims Your Calendar",

@@ -1,8 +1,25 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { BlogLayout } from "@/components/BlogLayout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Why Founders Lose Deals in Their Inbox // Mailient Blog",
+  description: "The hidden cost of inbox overload isn't just wasted time — it's missed revenue. Here's how high-stakes emails slip through the cracks, and what to do about it.",
+  openGraph: {
+    title: "Why Founders Lose Deals in Their Inbox // Mailient Blog",
+    description: "The hidden cost of inbox overload isn't just wasted time — it's missed revenue. Here's how high-stakes emails slip through the cracks, and what to do about it.",
+    url: "https://mailient.xyz/blogs/founders-lose-deals-inbox",
+    type: "article",
+    publishedTime: "2026-05-24T00:00:00.000Z",
+    authors: ["Maulik"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Why Founders Lose Deals in Their Inbox // Mailient Blog",
+    description: "The hidden cost of inbox overload isn't just wasted time — it's missed revenue.",
+  },
+};
 
 const meta = {
   title: "Why Founders Lose Deals in Their Inbox (And How to Fix It)",

@@ -1,8 +1,25 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { BlogLayout } from "@/components/BlogLayout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "How AI Learns to Write Exactly Like You // Mailient Blog",
+  description: "Generic AI drafts damage relationships. Learn how Mailient's 90-day voice analysis builds a writing profile that mirrors your tone, sign-offs, and sentence patterns.",
+  openGraph: {
+    title: "How AI Learns to Write Exactly Like You // Mailient Blog",
+    description: "Generic AI drafts damage relationships. Learn how Mailient's 90-day voice analysis builds a writing profile that mirrors your tone, sign-offs, and sentence patterns.",
+    url: "https://mailient.xyz/blogs/ai-learns-your-writing-style",
+    type: "article",
+    publishedTime: "2026-05-22T00:00:00.000Z",
+    authors: ["Maulik"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "How AI Learns to Write Exactly Like You // Mailient Blog",
+    description: "Generic AI drafts damage relationships. Learn how Mailient's 90-day voice analysis builds a writing profile that mirrors your tone, sign-offs, and sentence patterns.",
+  },
+};
 
 const meta = {
   title: "How AI Learns to Write Exactly Like You: Inside Mailient's Neural Voice Profile",

@@ -1,8 +1,25 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
 import { BlogLayout } from "@/components/BlogLayout";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "AI Email Agent vs. AI Email Assistant // Mailient Blog",
+  description: "An assistant answers questions. An agent takes action. Understanding this distinction is the key to choosing the right tool for your inbox.",
+  openGraph: {
+    title: "AI Email Agent vs. AI Email Assistant // Mailient Blog",
+    description: "An assistant answers questions. An agent takes action. Understanding this distinction is the key to choosing the right tool for your inbox.",
+    url: "https://mailient.xyz/blogs/ai-email-agent-vs-assistant",
+    type: "article",
+    publishedTime: "2026-05-21T00:00:00.000Z",
+    authors: ["Maulik"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AI Email Agent vs. AI Email Assistant // Mailient Blog",
+    description: "An assistant answers questions. An agent takes action. Understanding this distinction is the key to choosing the right tool for your inbox.",
+  },
+};
 
 const meta = {
   title: "AI Email Agent vs. AI Email Assistant: What Actually Matters in 2026",
