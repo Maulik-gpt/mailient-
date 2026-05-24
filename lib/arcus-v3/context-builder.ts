@@ -10,6 +10,7 @@
 import type { ArcusContext, ArcusEvent, ArcusJob, ArcusUserContext } from './types';
 import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
+import { getV3Integrations } from './integrations';
 import { normalizeGCalEvents } from './normalizers/gcal';
 import { normalizeSlackHistory } from './normalizers/slack';
 import { normalizeGmailMessages } from './normalizers/gmail';
@@ -44,10 +45,7 @@ export async function buildContext(
   };
 
   // 2. Fetch integrations (for API tokens)
-  const { data: integrations } = await supabase
-    .from('arcus_integrations')
-    .select('*')
-    .eq('user_id', userId);
+  const integrations = await getV3Integrations(userId);
 
   const gcalIntegration = integrations?.find(i => i.provider === 'gcal');
   const slackIntegration = integrations?.find(i => i.provider === 'slack');

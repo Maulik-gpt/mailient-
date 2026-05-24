@@ -11,45 +11,8 @@
  */
 
 import { getSupabaseAdmin } from '../../supabase.js';
-import { decrypt } from '../../crypto.js';
 import { SupermemoryClient } from '../../supermemory-client.js';
-
-// ── Token helpers ──────────────────────────────────────────────────────────────
-
-async function getToken(userId: string, provider: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('provider', provider)
-      .maybeSingle();
-    if (!data?.access_token) return null;
-    return decrypt(data.access_token);
-  } catch {
-    return null;
-  }
-}
-
-async function getTokenPair(userId: string, provider: string) {
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('access_token, refresh_token')
-      .eq('user_id', userId)
-      .eq('provider', provider)
-      .maybeSingle();
-    if (!data?.access_token) return null;
-    return {
-      accessToken: decrypt(data.access_token),
-      refreshToken: data.refresh_token ? decrypt(data.refresh_token) : null,
-    };
-  } catch {
-    return null;
-  }
-}
+import { getToken, getTokenPair } from '../integrations';
 
 // ── Gmail helpers ──────────────────────────────────────────────────────────────
 

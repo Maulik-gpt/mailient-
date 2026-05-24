@@ -6,7 +6,7 @@
  */
 
 import { getSupabaseAdmin } from '../supabase.js';
-import { decrypt } from '../crypto.js';
+import { getTokenPair } from './integrations';
 import { gcalHandler } from './handlers/gcal';
 import { slackHandler } from './handlers/slack';
 import { notionHandler } from './handlers/notion';
@@ -54,21 +54,14 @@ async function getDecryptedTokens(
   userId: string,
   provider: string
 ): Promise<{ accessToken: string; refreshToken?: string }> {
-  const supabase = getSupabaseAdmin();
+  const tokens = await getTokenPair(userId, provider);
 
-  const { data, error } = await supabase
-    .from('arcus_integrations')
-    .select('access_token, refresh_token')
-    .eq('user_id', userId)
-    .eq('provider', provider)
-    .maybeSingle();
-
-  if (error || !data) {
+  if (!tokens) {
     throw new Error(`No ${provider} integration found for user. Connect ${provider} first.`);
   }
 
   return {
-    accessToken: decrypt(data.access_token),
-    refreshToken: data.refresh_token ? decrypt(data.refresh_token) : undefined,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken || undefined,
   };
 }
