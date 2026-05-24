@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { useTheme } from "next-themes";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Footer } from "@/components/Footer";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { BlurFade } from "@/components/ui/blur-fade";
@@ -61,6 +63,7 @@ const BLOG_POSTS = [
 const CATEGORIES = ["All", "Productivity", "Security", "Engineering", "Industry"];
 
 export default function BlogsPage() {
+  const { theme } = useTheme();
   const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
@@ -75,8 +78,11 @@ export default function BlogsPage() {
   const regularPosts = filteredPosts.filter((p) => !p.featured || activeCategory !== "All");
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#030303] text-black dark:text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
-      <Navbar theme="dark" />
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
+      <Navbar theme={theme === "dark" ? "dark" : "light"} />
+      <div className="fixed top-8 right-8 z-50">
+        <AnimatedThemeToggler className="bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-neutral-800" />
+      </div>
 
       {/* Atmospheric backgrounds */}
       <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">

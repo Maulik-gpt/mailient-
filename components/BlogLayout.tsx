@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { useTheme } from "next-themes";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { Footer } from "@/components/Footer";
 import { DynamicIslandTOC } from "@/components/ui/dynamic-island-toc";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
@@ -74,10 +74,10 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
   }, [tableOfContents]);
 
   return (
-    <div className="min-h-screen bg-[#fafafa] dark:bg-[#030303] text-black dark:text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
       <Navbar theme={theme === "dark" ? "dark" : "light"} />
-      <div className="absolute top-24 right-6 md:right-12 z-[60]">
-        <ThemeToggle />
+      <div className="fixed top-8 right-8 z-50">
+        <AnimatedThemeToggler className="bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-neutral-800" />
       </div>
 
       {/* Reading Progress Bar */}
@@ -270,7 +270,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content h2 {
           font-size: 1.6rem;
           font-weight: 600;
-          color: var(--foreground);
+          color: #1a1a1a;
           margin-top: 3rem;
           margin-bottom: 1rem;
           letter-spacing: -0.02em;
@@ -280,7 +280,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content h3 {
           font-size: 1.2rem;
           font-weight: 600;
-          color: var(--foreground);
+          color: #1a1a1a;
           margin-top: 2rem;
           margin-bottom: 0.75rem;
           letter-spacing: -0.01em;
@@ -290,16 +290,16 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content p {
           font-size: 1rem;
           line-height: 1.85;
-          color: var(--muted-foreground);
+          color: #525252;
           margin-bottom: 1.25rem;
           font-weight: 300;
         }
         .blog-article-content strong {
-          color: var(--foreground);
+          color: #1a1a1a;
           font-weight: 600;
         }
         .blog-article-content em {
-          color: var(--muted-foreground);
+          color: #525252;
           font-style: italic;
         }
         .blog-article-content ul, .blog-article-content ol {
@@ -309,27 +309,27 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content li {
           font-size: 1rem;
           line-height: 1.85;
-          color: var(--muted-foreground);
+          color: #525252;
           margin-bottom: 0.5rem;
           font-weight: 300;
         }
         .blog-article-content li::marker {
-          color: var(--muted-foreground);
+          color: #525252;
         }
         .blog-article-content a {
-          color: var(--foreground);
+          color: #1a1a1a;
           text-decoration: underline;
           text-underline-offset: 3px;
           transition: color 0.2s;
         }
         .blog-article-content a:hover {
-          color: var(--foreground);
+          color: #1a1a1a;
         }
         .blog-article-content blockquote {
           border-left: 3px solid var(--border);
           padding-left: 1.25rem;
           margin: 1.5rem 0;
-          color: var(--muted-foreground);
+          color: #525252;
           font-style: italic;
           font-weight: 300;
         }
@@ -355,7 +355,23 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
           padding: 0.15rem 0.4rem;
           border-radius: 6px;
           font-size: 0.875rem;
-          color: var(--foreground);
+          color: #1a1a1a;
+        }
+        .dark .blog-article-content h2, 
+        .dark .blog-article-content h3, 
+        .dark .blog-article-content strong, 
+        .dark .blog-article-content a,
+        .dark .blog-article-content code {
+          color: #fafafa;
+        }
+        .dark .blog-article-content p, 
+        .dark .blog-article-content li, 
+        .dark .blog-article-content em,
+        .dark .blog-article-content blockquote {
+          color: #d4d4d4;
+        }
+        .dark .blog-article-content li::marker {
+          color: #d4d4d4;
         }
       `}} />
     </div>
