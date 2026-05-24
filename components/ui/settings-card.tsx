@@ -774,33 +774,6 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                        <button className="flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-500/20 hover:border-blue-300 dark:hover:border-blue-500/40 transition-colors group">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-blue-200 dark:bg-blue-500/20 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                                                    <Sparkles className="w-5 h-5" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className="text-sm font-bold text-black dark:text-white">Apply for Creator</div>
-                                                    <div className="text-[11px] text-neutral-600 dark:text-neutral-400">Join the Creator Program</div>
-                                                </div>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
-                                        </button>
-
-                                        <button className="flex items-center justify-between px-6 py-4 rounded-2xl bg-gradient-to-r from-emerald-100 to-teal-100 dark:from-emerald-900/20 dark:to-teal-900/20 border border-emerald-200 dark:border-emerald-500/20 hover:border-emerald-300 dark:hover:border-emerald-500/40 transition-colors group">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 rounded-full bg-emerald-200 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-                                                    <Zap className="w-5 h-5" />
-                                                </div>
-                                                <div className="text-left">
-                                                    <div className="text-sm font-bold text-black dark:text-white">Apply for Affiliate</div>
-                                                    <div className="text-[11px] text-neutral-600 dark:text-neutral-400">Earn 30% recurring</div>
-                                                </div>
-                                            </div>
-                                            <ChevronRight className="w-4 h-4 text-neutral-500 group-hover:text-black dark:group-hover:text-white transition-colors" />
-                                        </button>
-                                    </div>
 
                                     <div className="flex items-center justify-between px-2 pt-4">
                                         <div className="flex gap-4">
