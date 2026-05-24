@@ -588,6 +588,7 @@ body,
   --ds-shadow-border: 0 0 0 1px rgba(0, 0, 0, 0.08);
   --ds-shadow-small: 0px 2px 2px rgba(0, 0, 0, 0.04);
   --ds-shadow-border-small: var(--ds-shadow-border), var(--ds-shadow-small);
+  --blur-bg: #ffffff;
 }
 
 /* ===== DARK THEME ===== */
@@ -598,6 +599,7 @@ body,
   --arcus-surface:          #232323; /* Dark Graphite 800 (Lighter than elevated) */
   --arcus-surface-hover:    #2A2A2A; /* Dark Graphite 700 */
   --arcus-raised:           #363636; /* Dark Graphite 600 */
+  --blur-bg:                #0a0a0a;
   --arcus-border:           #2A2A2A; /* Dark Graphite 700 */
   --arcus-divider:          #2A2A2A; /* Dark Graphite 700 */
 

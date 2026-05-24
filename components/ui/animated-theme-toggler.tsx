@@ -2,11 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { flushSync } from "react-dom"
-
 import { Moon, Sun } from "lucide-react"
-
 import { motion, AnimatePresence } from "framer-motion"
-
+import { useTheme } from "next-themes"
 import { cn } from "@/lib/utils"
 
 type AnimatedThemeTogglerProps = {
@@ -15,6 +13,7 @@ type AnimatedThemeTogglerProps = {
 
 export const AnimatedThemeToggler = ({ className }: AnimatedThemeTogglerProps) => {
     const buttonRef = useRef<HTMLButtonElement>(null)
+    const { theme, setTheme } = useTheme()
     const [darkMode, setDarkMode] = useState(() =>
         typeof window !== "undefined"
             ? document.documentElement.classList.contains("dark")
@@ -36,22 +35,24 @@ export const AnimatedThemeToggler = ({ className }: AnimatedThemeTogglerProps) =
     const onToggle = useCallback(async () => {
         if (!buttonRef.current) return
 
+        const toggled = !darkMode
+
         // @ts-ignore - document.startViewTransition is not in all typings yet
         if (!document.startViewTransition) {
-            const toggled = !darkMode
             setDarkMode(toggled)
             document.documentElement.classList.toggle("dark", toggled)
             localStorage.setItem("theme", toggled ? "dark" : "light")
+            setTheme(toggled ? "dark" : "light")
             return
         }
 
         // @ts-ignore
         await document.startViewTransition(() => {
             flushSync(() => {
-                const toggled = !darkMode
                 setDarkMode(toggled)
                 document.documentElement.classList.toggle("dark", toggled)
                 localStorage.setItem("theme", toggled ? "dark" : "light")
+                setTheme(toggled ? "dark" : "light")
             })
         }).ready
 

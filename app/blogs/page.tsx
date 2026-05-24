@@ -236,8 +236,8 @@ export default function BlogsPage() {
 
       <Footer />
 
-      <ProgressiveBlur position="top" backgroundColor={blurBg} height="120px" blurAmount="10px" className="fixed z-40" />
-      <ProgressiveBlur position="bottom" backgroundColor={blurBg} height="80px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="top" backgroundColor="var(--blur-bg)" height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor="var(--blur-bg)" height="80px" blurAmount="10px" className="fixed z-40" />
     </div>
   );
 }
