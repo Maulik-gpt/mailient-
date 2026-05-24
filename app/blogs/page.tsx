@@ -76,7 +76,7 @@ export default function BlogsPage() {
   const regularPosts = filteredPosts.filter((p) => !p.featured || activeCategory !== "All");
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#030303] text-black dark:text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
       <Navbar theme="dark" />
 
       {/* Atmospheric backgrounds */}
@@ -88,8 +88,8 @@ export default function BlogsPage() {
             backgroundSize: "24px 24px"
           }}
         />
-        <div className="absolute top-[15%] left-1/4 w-[800px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.015),transparent_70%)] blur-[100px]" />
-        <div className="absolute top-[45%] right-1/4 w-[700px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.01),transparent_70%)] blur-[120px]" />
+        <div className="absolute top-[15%] left-1/4 w-[800px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(150,150,150,0.015),transparent_70%)] blur-[100px]" />
+        <div className="absolute top-[45%] right-1/4 w-[700px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(150,150,150,0.01),transparent_70%)] blur-[120px]" />
       </div>
 
       <AnimatedGradient
@@ -101,7 +101,7 @@ export default function BlogsPage() {
       {/* Hero Section */}
       <section className="relative z-10 pt-40 pb-8 md:pt-48 md:pb-12 px-6 text-center max-w-4xl mx-auto flex flex-col items-center space-y-4">
         <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
-          <div className="inline-flex items-center gap-2.5 px-4.5 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.06] shadow-2xl mb-4 group cursor-pointer hover:border-white/[0.12] transition-colors">
+          <div className="inline-flex items-center gap-2.5 px-4.5 py-1.5 rounded-full bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] shadow-2xl mb-4 group cursor-pointer hover:border-white/[0.12] transition-colors">
             <BookOpen className="w-3.5 h-3.5 text-neutral-300 animate-pulse" />
             <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-300 uppercase">
               Platform Insights // Blog
@@ -110,14 +110,14 @@ export default function BlogsPage() {
         </BlurFade>
 
         <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-          <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-white leading-tight">
+          <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-black dark:text-white leading-tight">
             Engineering Mailient. <br />
             <span className="font-medium italic text-neutral-300 bg-gradient-to-r from-neutral-200 via-neutral-350 to-neutral-500 bg-clip-text text-transparent">Deep Dives & Essays.</span>
           </h1>
         </BlurFade>
 
         <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
-          <p className="text-neutral-400 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed tracking-tight">
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed tracking-tight">
             Explore articles on AI email automation, inbox security, voice profiling, and the future of productivity — written by the team building Mailient.
           </p>
         </BlurFade>
@@ -135,7 +135,7 @@ export default function BlogsPage() {
                   "px-4 py-1.5 rounded-full text-[11px] font-semibold transition-all duration-300 border",
                   activeCategory === cat
                     ? "bg-white text-black border-white/20"
-                    : "bg-white/[0.02] text-neutral-400 border-white/[0.06] hover:text-white hover:border-white/[0.12]"
+                    : "bg-black/[0.02] dark:bg-white/[0.02] text-neutral-600 dark:text-neutral-400 border-black/[0.06] dark:border-white/[0.06] hover:text-black dark:text-white hover:border-white/[0.12]"
                 )}
               >
                 {cat}
@@ -151,24 +151,24 @@ export default function BlogsPage() {
           <BlurFade delay={0.4} duration={0.8} yOffset={18} inView>
             <Link
               href={`/blogs/${featuredPost.slug}`}
-              className="group block w-full rounded-3xl border border-white/[0.06] bg-white/[0.01] hover:bg-white/[0.025] hover:border-white/[0.1] transition-all duration-500 p-8 md:p-10 relative overflow-hidden"
+              className="group block w-full rounded-3xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.01] hover:bg-black/[0.025] dark:hover:bg-white/[0.025] hover:border-white/[0.1] transition-all duration-500 p-8 md:p-10 relative overflow-hidden"
             >
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(99,102,241,0.04),transparent_60%)] pointer-events-none" />
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(163,163,163,0.04),transparent_60%)] pointer-events-none" />
               <div className="relative z-10 flex flex-col md:flex-row md:items-center gap-6">
                 <div className="flex-1 space-y-4">
                   <div className="flex items-center gap-3">
-                    <span className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-[9px] font-bold tracking-[0.15em] text-indigo-400 uppercase">
+                    <span className="px-3 py-1 rounded-full bg-neutral-500 dark:neutral-500/10 border border-neutral-500 dark:neutral-500/20 text-[9px] font-bold tracking-[0.15em] text-neutral-600 dark:text-neutral-400 dark:neutral-400 uppercase">
                       Featured
                     </span>
-                    <span className="text-[10px] text-neutral-500 font-medium">{featuredPost.category}</span>
+                    <span className="text-[10px] text-neutral-500 dark:text-neutral-500 font-medium">{featuredPost.category}</span>
                   </div>
-                  <h2 className="text-2xl md:text-3xl font-medium tracking-tight text-white leading-snug group-hover:text-neutral-200 transition-colors">
+                  <h2 className="text-2xl md:text-3xl font-medium tracking-tight text-black dark:text-white leading-snug group-hover:text-neutral-200 transition-colors">
                     {featuredPost.title}
                   </h2>
-                  <p className="text-sm text-neutral-400 font-light leading-relaxed max-w-lg">
+                  <p className="text-sm text-neutral-600 dark:text-neutral-400 font-light leading-relaxed max-w-lg">
                     {featuredPost.excerpt}
                   </p>
-                  <div className="flex items-center gap-4 text-[11px] text-neutral-500 font-medium">
+                  <div className="flex items-center gap-4 text-[11px] text-neutral-500 dark:text-neutral-500 font-medium">
                     <span>{featuredPost.date}</span>
                     <span className="w-1 h-1 rounded-full bg-neutral-700" />
                     <span className="flex items-center gap-1">
@@ -178,7 +178,7 @@ export default function BlogsPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-white/[0.04] border border-white/[0.08] group-hover:bg-white/[0.08] transition-all shrink-0">
-                  <ArrowRight className="w-5 h-5 text-neutral-400 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                  <ArrowRight className="w-5 h-5 text-neutral-600 dark:text-neutral-400 group-hover:text-black dark:text-white group-hover:translate-x-0.5 transition-all" />
                 </div>
               </div>
             </Link>
@@ -193,28 +193,28 @@ export default function BlogsPage() {
             <BlurFade key={post.slug} delay={0.45 + idx * 0.08} duration={0.7} yOffset={14} inView>
               <Link
                 href={`/blogs/${post.slug}`}
-                className="group block h-full rounded-2xl border border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.025] hover:border-white/[0.08] transition-all duration-400 p-6 relative overflow-hidden"
+                className="group block h-full rounded-2xl border border-black/[0.04] dark:border-white/[0.04] bg-black/[0.01] dark:bg-white/[0.01] hover:bg-black/[0.025] dark:hover:bg-white/[0.025] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all duration-400 p-6 relative overflow-hidden"
               >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.008),transparent_50%)] pointer-events-none" />
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(150,150,150,0.008),transparent_50%)] pointer-events-none" />
                 <div className="relative z-10 space-y-3 flex flex-col h-full">
                   <div className="flex items-center gap-3">
-                    <span className="text-[9px] font-bold tracking-[0.15em] text-indigo-400 uppercase">
+                    <span className="text-[9px] font-bold tracking-[0.15em] text-neutral-600 dark:text-neutral-400 dark:neutral-400 uppercase">
                       {post.category}
                     </span>
                     <span className="text-[10px] text-neutral-600">{post.date}</span>
                   </div>
-                  <h3 className="text-base font-semibold text-white group-hover:text-neutral-200 transition-colors leading-snug flex-1">
+                  <h3 className="text-base font-semibold text-black dark:text-white group-hover:text-neutral-200 transition-colors leading-snug flex-1">
                     {post.title}
                   </h3>
-                  <p className="text-xs text-neutral-500 font-light leading-relaxed line-clamp-2">
+                  <p className="text-xs text-neutral-500 dark:text-neutral-500 font-light leading-relaxed line-clamp-2">
                     {post.excerpt}
                   </p>
-                  <div className="flex items-center justify-between pt-2 border-t border-white/[0.04]">
-                    <span className="text-[11px] text-neutral-500 flex items-center gap-1">
+                  <div className="flex items-center justify-between pt-2 border-t border-black/[0.04] dark:border-white/[0.04]">
+                    <span className="text-[11px] text-neutral-500 dark:text-neutral-500 flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {post.readTime}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-white group-hover:translate-x-0.5 transition-all" />
+                    <ChevronRight className="w-4 h-4 text-neutral-600 group-hover:text-black dark:text-white group-hover:translate-x-0.5 transition-all" />
                   </div>
                 </div>
               </Link>

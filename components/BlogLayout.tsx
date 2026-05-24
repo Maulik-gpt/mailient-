@@ -3,6 +3,8 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { useTheme } from "next-themes";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Footer } from "@/components/Footer";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
@@ -35,6 +37,7 @@ interface BlogLayoutProps {
 }
 
 export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts = [] }: BlogLayoutProps) {
+  const { theme } = useTheme();
   const [readProgress, setReadProgress] = useState(0);
   const [activeSection, setActiveSection] = useState("");
 
@@ -71,13 +74,16 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
   }, [tableOfContents]);
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
-      <Navbar theme="dark" />
+    <div className="min-h-screen bg-[#fafafa] dark:bg-[#030303] text-black dark:text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
+      <Navbar theme={theme === "dark" ? "dark" : "light"} />
+      <div className="absolute top-24 right-6 md:right-12 z-[60]">
+        <ThemeToggle />
+      </div>
 
       {/* Reading Progress Bar */}
       <div className="fixed top-0 left-0 right-0 z-[60] h-[2px] bg-transparent">
         <div
-          className="h-full bg-gradient-to-r from-indigo-500 via-white to-indigo-400 transition-all duration-150 ease-out"
+          className="h-full bg-gradient-to-r from-neutral-500 dark:neutral-500 via-white to-neutral-400 dark:neutral-400 transition-all duration-150 ease-out"
           style={{ width: `${readProgress}%` }}
         />
       </div>
@@ -91,8 +97,8 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
             backgroundSize: "24px 24px"
           }}
         />
-        <div className="absolute top-[10%] left-1/4 w-[800px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.012),transparent_70%)] blur-[100px]" />
-        <div className="absolute top-[50%] right-1/4 w-[700px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.008),transparent_70%)] blur-[120px]" />
+        <div className="absolute top-[10%] left-1/4 w-[800px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(150,150,150,0.012),transparent_70%)] blur-[100px]" />
+        <div className="absolute top-[50%] right-1/4 w-[700px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(150,150,150,0.008),transparent_70%)] blur-[120px]" />
       </div>
 
       <AnimatedGradient
@@ -107,7 +113,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         <BlurFade delay={0.05} duration={0.7} yOffset={8} inView>
           <Link
             href="/blogs"
-            className="inline-flex items-center gap-2 text-[11px] font-medium tracking-wide text-neutral-500 hover:text-neutral-300 transition-colors uppercase group mb-2"
+            className="inline-flex items-center gap-2 text-[11px] font-medium tracking-wide text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 transition-colors uppercase group mb-2"
           >
             <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
             All Posts
@@ -116,9 +122,9 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
         {/* Category Badge */}
         <BlurFade delay={0.1} duration={0.8} yOffset={10} inView>
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.06] shadow-2xl">
-            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
-            <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-400 uppercase">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-black/[0.02] dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] shadow-2xl">
+            <span className="w-1.5 h-1.5 rounded-full bg-neutral-400 dark:neutral-400 animate-pulse" />
+            <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-600 dark:text-neutral-400 uppercase">
               {meta.category}
             </span>
           </div>
@@ -126,21 +132,21 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
         {/* Title */}
         <BlurFade delay={0.18} duration={0.8} yOffset={14} inView>
-          <h1 className="text-3xl md:text-[52px] font-medium tracking-[-0.035em] text-white leading-[1.12] max-w-3xl">
+          <h1 className="text-3xl md:text-[52px] font-medium tracking-[-0.035em] text-black dark:text-white leading-[1.12] max-w-3xl">
             {meta.title}
           </h1>
         </BlurFade>
 
         {/* Subtitle / Description */}
         <BlurFade delay={0.26} duration={0.8} yOffset={10} inView>
-          <p className="text-neutral-400 text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed tracking-tight">
+          <p className="text-neutral-600 dark:text-neutral-400 text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed tracking-tight">
             {meta.description}
           </p>
         </BlurFade>
 
         {/* Meta Row */}
         <BlurFade delay={0.32} duration={0.8} yOffset={8} inView>
-          <div className="flex items-center gap-5 text-[11px] text-neutral-500 font-medium">
+          <div className="flex items-center gap-5 text-[11px] text-neutral-500 dark:text-neutral-500 font-medium">
             <span className="flex items-center gap-1.5">
               <Calendar className="w-3.5 h-3.5" />
               {meta.date}
@@ -176,8 +182,8 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
                       href={`#${item.id}`}
                       className={`block text-[11px] py-1.5 pl-3 border-l-2 transition-all duration-300 font-medium ${
                         activeSection === item.id
-                          ? "border-indigo-400 text-white"
-                          : "border-white/[0.04] text-neutral-500 hover:text-neutral-300 hover:border-white/[0.1]"
+                          ? "border-neutral-400 dark:neutral-400 text-black dark:text-white"
+                          : "border-black/[0.04] dark:border-white/[0.04] text-neutral-500 dark:text-neutral-500 hover:text-neutral-300 hover:border-white/[0.1]"
                       }`}
                     >
                       {item.label}
@@ -203,8 +209,8 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
       {/* Related Posts */}
       {relatedPosts.length > 0 && (
         <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-16">
-          <div className="border-t border-white/[0.06] pt-12">
-            <h3 className="text-xs font-bold tracking-[0.2em] text-neutral-500 uppercase mb-8">
+          <div className="border-t border-black/[0.06] dark:border-white/[0.06] pt-12">
+            <h3 className="text-xs font-bold tracking-[0.2em] text-neutral-500 dark:text-neutral-500 uppercase mb-8">
               Continue Reading
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -212,15 +218,15 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
                 <Link
                   key={post.slug}
                   href={`/blogs/${post.slug}`}
-                  className="group block p-6 rounded-2xl border border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08] transition-all duration-300"
+                  className="group block p-6 rounded-2xl border border-black/[0.04] dark:border-white/[0.04] bg-black/[0.01] dark:bg-white/[0.01] hover:bg-black/[0.03] dark:hover:bg-white/[0.03] hover:border-black/[0.08] dark:hover:border-white/[0.08] transition-all duration-300"
                 >
-                  <span className="text-[9px] font-bold tracking-[0.15em] text-indigo-400 uppercase block mb-2">
+                  <span className="text-[9px] font-bold tracking-[0.15em] text-neutral-600 dark:text-neutral-400 dark:neutral-400 uppercase block mb-2">
                     {post.category}
                   </span>
-                  <span className="text-sm font-semibold text-white group-hover:text-neutral-200 transition-colors block leading-snug">
+                  <span className="text-sm font-semibold text-black dark:text-white group-hover:text-neutral-200 transition-colors block leading-snug">
                     {post.title}
                   </span>
-                  <span className="text-[11px] text-neutral-500 mt-2 flex items-center gap-1.5">
+                  <span className="text-[11px] text-neutral-500 dark:text-neutral-500 mt-2 flex items-center gap-1.5">
                     {post.readTime}
                     <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
                   </span>
@@ -233,12 +239,12 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
       {/* CTA Section */}
       <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-24">
-        <div className="border border-white/[0.06] bg-white/[0.01] backdrop-blur-xl rounded-3xl p-10 md:p-14 text-center space-y-5 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.06),transparent_60%)] pointer-events-none" />
-          <h3 className="text-2xl md:text-3xl font-medium tracking-tight text-white relative z-10">
+        <div className="border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.01] dark:bg-white/[0.01] backdrop-blur-xl rounded-3xl p-10 md:p-14 text-center space-y-5 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(163,163,163,0.06),transparent_60%)] pointer-events-none" />
+          <h3 className="text-2xl md:text-3xl font-medium tracking-tight text-black dark:text-white relative z-10">
             Ready to reclaim your inbox?
           </h3>
-          <p className="text-sm text-neutral-400 font-light max-w-md mx-auto relative z-10">
+          <p className="text-sm text-neutral-600 dark:text-neutral-400 font-light max-w-md mx-auto relative z-10">
             Mailient handles your email while you sleep. Autonomous triage, voice-matched drafts, and encrypted privacy — all on autopilot.
           </p>
           <a
@@ -264,7 +270,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content h2 {
           font-size: 1.6rem;
           font-weight: 600;
-          color: #ffffff;
+          color: var(--foreground);
           margin-top: 3rem;
           margin-bottom: 1rem;
           letter-spacing: -0.02em;
@@ -274,7 +280,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content h3 {
           font-size: 1.2rem;
           font-weight: 600;
-          color: #e5e5e5;
+          color: var(--foreground);
           margin-top: 2rem;
           margin-bottom: 0.75rem;
           letter-spacing: -0.01em;
@@ -284,16 +290,16 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content p {
           font-size: 1rem;
           line-height: 1.85;
-          color: #a3a3a3;
+          color: var(--muted-foreground);
           margin-bottom: 1.25rem;
           font-weight: 300;
         }
         .blog-article-content strong {
-          color: #e5e5e5;
+          color: var(--foreground);
           font-weight: 600;
         }
         .blog-article-content em {
-          color: #d4d4d4;
+          color: var(--muted-foreground);
           font-style: italic;
         }
         .blog-article-content ul, .blog-article-content ol {
@@ -303,33 +309,33 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         .blog-article-content li {
           font-size: 1rem;
           line-height: 1.85;
-          color: #a3a3a3;
+          color: var(--muted-foreground);
           margin-bottom: 0.5rem;
           font-weight: 300;
         }
         .blog-article-content li::marker {
-          color: #6366f1;
+          color: var(--muted-foreground);
         }
         .blog-article-content a {
-          color: #818cf8;
+          color: var(--foreground);
           text-decoration: underline;
           text-underline-offset: 3px;
           transition: color 0.2s;
         }
         .blog-article-content a:hover {
-          color: #c7d2fe;
+          color: var(--foreground);
         }
         .blog-article-content blockquote {
-          border-left: 3px solid rgba(99, 102, 241, 0.4);
+          border-left: 3px solid var(--border);
           padding-left: 1.25rem;
           margin: 1.5rem 0;
-          color: #d4d4d4;
+          color: var(--muted-foreground);
           font-style: italic;
           font-weight: 300;
         }
         .blog-article-content .callout-box {
-          background: rgba(255, 255, 255, 0.02);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: var(--secondary);
+          border: 1px solid var(--border);
           border-radius: 16px;
           padding: 1.5rem;
           margin: 1.5rem 0;
@@ -339,17 +345,17 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
         }
         .blog-article-content hr {
           border: none;
-          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          border-top: 1px solid var(--border);
           margin: 2.5rem 0;
         }
         .blog-article-content code {
           font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: var(--accent);
+          border: 1px solid var(--border);
           padding: 0.15rem 0.4rem;
           border-radius: 6px;
           font-size: 0.875rem;
-          color: #c7d2fe;
+          color: var(--foreground);
         }
       `}} />
     </div>
