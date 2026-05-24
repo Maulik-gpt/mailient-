@@ -27,51 +27,109 @@ async function refreshGoogleToken(userId: string): Promise<string | null> {
     const supabase = getSupabaseAdmin();
     const uid = userId.toLowerCase();
 
-    const { data } = await supabase
+    // 1. Try to find in arcus_integrations (V3)
+    const { data: v3 } = await supabase
+      .from('arcus_integrations')
+      .select('refresh_token, provider')
+      .eq('user_id', uid)
+      .in('provider', ['gcal', 'gmail'])
+      .maybeSingle();
+
+    if (v3?.refresh_token) {
+      const refreshToken = decrypt(v3.refresh_token);
+      const newToken = await performGoogleRefresh(refreshToken);
+      if (newToken) {
+        await supabase
+          .from('arcus_integrations')
+          .update({
+            access_token: encrypt(newToken),
+            expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', uid)
+          .eq('provider', v3.provider);
+        return newToken;
+      }
+    }
+
+    // 2. Try to find in integration_credentials (legacy V2)
+    const { data: legacy } = await supabase
+      .from('integration_credentials')
+      .select('encrypted_refresh_token, refresh_token, provider')
+      .eq('user_id', uid)
+      .in('provider', ['google_calendar', 'google'])
+      .maybeSingle();
+
+    if (legacy) {
+      const encryptedRf = legacy.encrypted_refresh_token || (legacy.refresh_token ? encrypt(legacy.refresh_token) : null);
+      if (encryptedRf) {
+        const refreshToken = decrypt(encryptedRf);
+        const newToken = await performGoogleRefresh(refreshToken);
+        if (newToken) {
+          await supabase
+            .from('integration_credentials')
+            .update({
+              encrypted_access_token: encrypt(newToken),
+              access_token: newToken,
+              expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+              updated_at: new Date().toISOString(),
+            })
+            .eq('user_id', uid)
+            .eq('provider', legacy.provider);
+          return newToken;
+        }
+      }
+    }
+
+    // 3. Fallback to user_tokens
+    const { data: ut } = await supabase
       .from('user_tokens')
       .select('encrypted_refresh_token')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
       .maybeSingle();
 
-    if (!data?.encrypted_refresh_token) return null;
+    if (ut?.encrypted_refresh_token) {
+      const refreshToken = decrypt(ut.encrypted_refresh_token);
+      const newToken = await performGoogleRefresh(refreshToken);
+      if (newToken) {
+        await supabase
+          .from('user_tokens')
+          .update({
+            encrypted_access_token: encrypt(newToken),
+            access_token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`);
+        return newToken;
+      }
+    }
 
-    const refreshToken = decrypt(data.encrypted_refresh_token);
-    const clientId = process.env.GOOGLE_CLIENT_ID;
-    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-    if (!clientId || !clientSecret) return null;
-
-    const res = await fetch('https://oauth2.googleapis.com/token', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        client_id: clientId,
-        client_secret: clientSecret,
-        refresh_token: refreshToken,
-        grant_type: 'refresh_token',
-      }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (!res.ok) return null;
-
-    const json = await res.json();
-    const newToken = json.access_token;
-    if (!newToken) return null;
-
-    // Persist new token
-    await supabase
-      .from('user_tokens')
-      .update({
-        encrypted_access_token: encrypt(newToken),
-        access_token_expires_at: new Date(Date.now() + (json.expires_in ?? 3600) * 1000).toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`);
-
-    return newToken;
+    return null;
   } catch {
     return null;
   }
+}
+
+async function performGoogleRefresh(refreshToken: string): Promise<string | null> {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return null;
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken,
+      grant_type: 'refresh_token',
+    }),
+    signal: AbortSignal.timeout(8000),
+  });
+
+  if (!res.ok) return null;
+  const json = await res.json();
+  return json.access_token || null;
 }
 
 async function getGmailToken(userId: string): Promise<string | null> {
@@ -987,7 +1045,7 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
     body: eventBodyStr,
     signal: AbortSignal.timeout(12000),
   });
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
@@ -1051,7 +1109,7 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
 
   const calEventsUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
   let res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
-  if (res.status === 401) {
+  if (res.status === 401 || res.status === 403) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }

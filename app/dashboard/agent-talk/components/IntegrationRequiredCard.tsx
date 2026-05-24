@@ -125,8 +125,9 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
       const statusRes = await fetch('/api/integrations/status').catch(() => null);
       if (statusRes?.ok) {
         const status = await statusRes.json();
-        if (status.gmail) providers.push('gmail');
-        if (status.google_calendar) providers.push('gcal');
+        const connectedArray = status.integrations || [];
+        if (connectedArray.some((i: any) => i.provider === 'gmail' && i.connected)) providers.push('gmail');
+        if (connectedArray.some((i: any) => i.provider === 'google_calendar' && i.connected)) providers.push('gcal');
       }
       setConnectedSet(new Set(providers));
     } catch { /* non-critical */ } finally {
@@ -173,8 +174,9 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
             const statusRes = await fetch('/api/integrations/status').catch(() => null);
             if (statusRes?.ok) {
               const status = await statusRes.json();
-              if (status.gmail) providers.push('gmail');
-              if (status.google_calendar) providers.push('gcal');
+              const connectedArray = status.integrations || [];
+              if (connectedArray.some((i: any) => i.provider === 'gmail' && i.connected)) providers.push('gmail');
+              if (connectedArray.some((i: any) => i.provider === 'google_calendar' && i.connected)) providers.push('gcal');
             }
             if (!providers.includes(integrationId)) {
               setLastFailedId(integrationId);
