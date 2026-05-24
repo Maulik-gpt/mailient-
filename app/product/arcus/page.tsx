@@ -125,14 +125,17 @@ export default function ArcusProductPage() {
           </div>
         </Suspense>
 
-        <div className="w-full flex flex-col items-start text-left max-w-5xl z-10">
+        <div className="w-full flex flex-col items-center text-center max-w-5xl z-10">
           
           {/* Premium Logo and Title Sideways Container */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <div className="flex flex-col items-start gap-4 mb-4">
-              <span className="text-2xl md:text-[32px] text-neutral-400 font-light tracking-tight font-sans">
+            <div className="flex flex-col items-center gap-6 mb-4">
+              
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-neutral-400 text-xs font-medium uppercase tracking-widest">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
                 Introducing
-              </span>
+              </div>
+
               <div className="flex items-center gap-6">
                 {/* Official Arcus Cat Logo Component */}
                 <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
@@ -158,7 +161,7 @@ export default function ArcusProductPage() {
 
           {/* Thick Solid Black Clean Pill Button */}
           <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
-            <div className="flex mt-10">
+            <div className="flex flex-col items-center gap-12 mt-10">
               <CircleExpandButton
                 href="https://tally.so/r/b5KpB6"
                 target="_blank"
