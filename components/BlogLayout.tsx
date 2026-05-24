@@ -1,0 +1,357 @@
+"use client";
+
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
+import { ProgressiveBlur } from "@/components/ui/progressive-blur";
+import { BlurFade } from "@/components/ui/blur-fade";
+import AnimatedGradient from "@/components/ui/animated-gradient";
+import { ArrowLeft, Clock, Calendar, ChevronRight, ArrowRight } from "lucide-react";
+
+interface BlogMeta {
+  title: string;
+  description: string;
+  date: string;
+  readTime: string;
+  category: string;
+  slug: string;
+  author?: string;
+}
+
+interface RelatedPost {
+  title: string;
+  slug: string;
+  category: string;
+  readTime: string;
+}
+
+interface BlogLayoutProps {
+  meta: BlogMeta;
+  children: React.ReactNode;
+  tableOfContents?: { id: string; label: string }[];
+  relatedPosts?: RelatedPost[];
+}
+
+export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts = [] }: BlogLayoutProps) {
+  const [readProgress, setReadProgress] = useState(0);
+  const [activeSection, setActiveSection] = useState("");
+
+  useEffect(() => {
+    document.title = `${meta.title} // Mailient Blog`;
+  }, [meta.title]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const article = document.getElementById("blog-article");
+      if (!article) return;
+      const rect = article.getBoundingClientRect();
+      const scrollHeight = article.scrollHeight - window.innerHeight;
+      const scrolled = Math.max(0, -rect.top);
+      const progress = Math.min(100, (scrolled / scrollHeight) * 100);
+      setReadProgress(progress);
+
+      // Track active TOC section
+      if (tableOfContents.length > 0) {
+        for (let i = tableOfContents.length - 1; i >= 0; i--) {
+          const el = document.getElementById(tableOfContents[i].id);
+          if (el) {
+            const elRect = el.getBoundingClientRect();
+            if (elRect.top <= 120) {
+              setActiveSection(tableOfContents[i].id);
+              break;
+            }
+          }
+        }
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [tableOfContents]);
+
+  return (
+    <div className="min-h-screen bg-[#030303] text-white flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-white selection:text-black">
+      <Navbar theme="dark" />
+
+      {/* Reading Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 z-[60] h-[2px] bg-transparent">
+        <div
+          className="h-full bg-gradient-to-r from-indigo-500 via-white to-indigo-400 transition-all duration-150 ease-out"
+          style={{ width: `${readProgress}%` }}
+        />
+      </div>
+
+      {/* Atmospheric backgrounds */}
+      <div className="absolute inset-0 z-0 pointer-events-none select-none overflow-hidden">
+        <div
+          className="absolute inset-0 opacity-[0.012]"
+          style={{
+            backgroundImage: `radial-gradient(circle, #fff 1px, transparent 1px)`,
+            backgroundSize: "24px 24px"
+          }}
+        />
+        <div className="absolute top-[10%] left-1/4 w-[800px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.012),transparent_70%)] blur-[100px]" />
+        <div className="absolute top-[50%] right-1/4 w-[700px] h-[500px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.008),transparent_70%)] blur-[120px]" />
+      </div>
+
+      <AnimatedGradient
+        config={{ preset: "Prism", speed: 6 }}
+        noise={{ opacity: 0.006 }}
+        className="opacity-10 pointer-events-none"
+      />
+
+      {/* Hero / Article Header */}
+      <section className="relative z-10 pt-36 pb-12 md:pt-44 md:pb-16 px-6 text-center max-w-4xl mx-auto flex flex-col items-center space-y-5">
+        {/* Back to blog */}
+        <BlurFade delay={0.05} duration={0.7} yOffset={8} inView>
+          <Link
+            href="/blogs"
+            className="inline-flex items-center gap-2 text-[11px] font-medium tracking-wide text-neutral-500 hover:text-neutral-300 transition-colors uppercase group mb-2"
+          >
+            <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+            All Posts
+          </Link>
+        </BlurFade>
+
+        {/* Category Badge */}
+        <BlurFade delay={0.1} duration={0.8} yOffset={10} inView>
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.06] shadow-2xl">
+            <span className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-pulse" />
+            <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-400 uppercase">
+              {meta.category}
+            </span>
+          </div>
+        </BlurFade>
+
+        {/* Title */}
+        <BlurFade delay={0.18} duration={0.8} yOffset={14} inView>
+          <h1 className="text-3xl md:text-[52px] font-medium tracking-[-0.035em] text-white leading-[1.12] max-w-3xl">
+            {meta.title}
+          </h1>
+        </BlurFade>
+
+        {/* Subtitle / Description */}
+        <BlurFade delay={0.26} duration={0.8} yOffset={10} inView>
+          <p className="text-neutral-400 text-sm md:text-base max-w-2xl mx-auto font-light leading-relaxed tracking-tight">
+            {meta.description}
+          </p>
+        </BlurFade>
+
+        {/* Meta Row */}
+        <BlurFade delay={0.32} duration={0.8} yOffset={8} inView>
+          <div className="flex items-center gap-5 text-[11px] text-neutral-500 font-medium">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="w-3.5 h-3.5" />
+              {meta.date}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-neutral-700" />
+            <span className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" />
+              {meta.readTime}
+            </span>
+            <span className="w-1 h-1 rounded-full bg-neutral-700" />
+            <span>{meta.author || "Maulik"}</span>
+          </div>
+        </BlurFade>
+
+        {/* Divider */}
+        <div className="w-full max-w-xl h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent mt-4" />
+      </section>
+
+      {/* Article Body + TOC Sidebar */}
+      <section className="relative z-10 w-full max-w-7xl mx-auto px-6 pb-20">
+        <div className="flex gap-12 items-start">
+          {/* Table of Contents — Desktop Sidebar */}
+          {tableOfContents.length > 0 && (
+            <aside className="hidden xl:block w-56 shrink-0 sticky top-28">
+              <BlurFade delay={0.4} duration={0.8} yOffset={10} inView>
+                <div className="space-y-1">
+                  <span className="text-[9px] font-bold tracking-[0.2em] text-neutral-600 uppercase block mb-3">
+                    In this article
+                  </span>
+                  {tableOfContents.map((item) => (
+                    <a
+                      key={item.id}
+                      href={`#${item.id}`}
+                      className={`block text-[11px] py-1.5 pl-3 border-l-2 transition-all duration-300 font-medium ${
+                        activeSection === item.id
+                          ? "border-indigo-400 text-white"
+                          : "border-white/[0.04] text-neutral-500 hover:text-neutral-300 hover:border-white/[0.1]"
+                      }`}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
+                </div>
+              </BlurFade>
+            </aside>
+          )}
+
+          {/* Main Article Content */}
+          <article
+            id="blog-article"
+            className="flex-1 max-w-[720px] mx-auto blog-article-content"
+          >
+            <BlurFade delay={0.38} duration={0.9} yOffset={16} inView>
+              {children}
+            </BlurFade>
+          </article>
+        </div>
+      </section>
+
+      {/* Related Posts */}
+      {relatedPosts.length > 0 && (
+        <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-16">
+          <div className="border-t border-white/[0.06] pt-12">
+            <h3 className="text-xs font-bold tracking-[0.2em] text-neutral-500 uppercase mb-8">
+              Continue Reading
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {relatedPosts.map((post) => (
+                <Link
+                  key={post.slug}
+                  href={`/blogs/${post.slug}`}
+                  className="group block p-6 rounded-2xl border border-white/[0.04] bg-white/[0.01] hover:bg-white/[0.03] hover:border-white/[0.08] transition-all duration-300"
+                >
+                  <span className="text-[9px] font-bold tracking-[0.15em] text-indigo-400 uppercase block mb-2">
+                    {post.category}
+                  </span>
+                  <span className="text-sm font-semibold text-white group-hover:text-neutral-200 transition-colors block leading-snug">
+                    {post.title}
+                  </span>
+                  <span className="text-[11px] text-neutral-500 mt-2 flex items-center gap-1.5">
+                    {post.readTime}
+                    <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* CTA Section */}
+      <section className="relative z-10 w-full max-w-4xl mx-auto px-6 pb-24">
+        <div className="border border-white/[0.06] bg-white/[0.01] backdrop-blur-xl rounded-3xl p-10 md:p-14 text-center space-y-5 relative overflow-hidden">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(99,102,241,0.06),transparent_60%)] pointer-events-none" />
+          <h3 className="text-2xl md:text-3xl font-medium tracking-tight text-white relative z-10">
+            Ready to reclaim your inbox?
+          </h3>
+          <p className="text-sm text-neutral-400 font-light max-w-md mx-auto relative z-10">
+            Mailient handles your email while you sleep. Autonomous triage, voice-matched drafts, and encrypted privacy — all on autopilot.
+          </p>
+          <a
+            href="https://tally.so/r/b5KpB6"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 px-7 py-3 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200 transition-colors relative z-10"
+          >
+            Join the waitlist
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </div>
+      </section>
+
+      <Footer />
+
+      <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
+      <FloatingNavbar />
+
+      {/* Blog Article Typography Styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .blog-article-content h2 {
+          font-size: 1.6rem;
+          font-weight: 600;
+          color: #ffffff;
+          margin-top: 3rem;
+          margin-bottom: 1rem;
+          letter-spacing: -0.02em;
+          line-height: 1.3;
+          scroll-margin-top: 100px;
+        }
+        .blog-article-content h3 {
+          font-size: 1.2rem;
+          font-weight: 600;
+          color: #e5e5e5;
+          margin-top: 2rem;
+          margin-bottom: 0.75rem;
+          letter-spacing: -0.01em;
+          line-height: 1.4;
+          scroll-margin-top: 100px;
+        }
+        .blog-article-content p {
+          font-size: 1rem;
+          line-height: 1.85;
+          color: #a3a3a3;
+          margin-bottom: 1.25rem;
+          font-weight: 300;
+        }
+        .blog-article-content strong {
+          color: #e5e5e5;
+          font-weight: 600;
+        }
+        .blog-article-content em {
+          color: #d4d4d4;
+          font-style: italic;
+        }
+        .blog-article-content ul, .blog-article-content ol {
+          margin-bottom: 1.25rem;
+          padding-left: 1.5rem;
+        }
+        .blog-article-content li {
+          font-size: 1rem;
+          line-height: 1.85;
+          color: #a3a3a3;
+          margin-bottom: 0.5rem;
+          font-weight: 300;
+        }
+        .blog-article-content li::marker {
+          color: #6366f1;
+        }
+        .blog-article-content a {
+          color: #818cf8;
+          text-decoration: underline;
+          text-underline-offset: 3px;
+          transition: color 0.2s;
+        }
+        .blog-article-content a:hover {
+          color: #c7d2fe;
+        }
+        .blog-article-content blockquote {
+          border-left: 3px solid rgba(99, 102, 241, 0.4);
+          padding-left: 1.25rem;
+          margin: 1.5rem 0;
+          color: #d4d4d4;
+          font-style: italic;
+          font-weight: 300;
+        }
+        .blog-article-content .callout-box {
+          background: rgba(255, 255, 255, 0.02);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 16px;
+          padding: 1.5rem;
+          margin: 1.5rem 0;
+        }
+        .blog-article-content .callout-box p {
+          margin-bottom: 0;
+        }
+        .blog-article-content hr {
+          border: none;
+          border-top: 1px solid rgba(255, 255, 255, 0.06);
+          margin: 2.5rem 0;
+        }
+        .blog-article-content code {
+          font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+          background: rgba(255, 255, 255, 0.04);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          padding: 0.15rem 0.4rem;
+          border-radius: 6px;
+          font-size: 0.875rem;
+          color: #c7d2fe;
+        }
+      `}} />
+    </div>
+  );
+}
