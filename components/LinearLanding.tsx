@@ -120,10 +120,7 @@ const landingFaqs = [
     q: "Does Mailient work for teams?",
     a: "Currently Mailient is built for individual founders, freelancers, and consultants — one Gmail account per workspace. Team and multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at maulik@mailient.xyz."
   },
-  {
-    q: "What if I'm not satisfied?",
-    a: "Email Maulik within 30 days of your first payment and get a full refund — no questions asked. This is a founder-to-founder promise backed by a real human, not a support ticket system."
-  },
+
   {
     q: "Who built Mailient?",
     a: "Maulik — a 14-year-old founder who built Mailient because he watched smart people lose deals, miss opportunities, and burn hours on email every single day. The product exists because the problem is real. You can talk to him directly at @mailientz on X or maulikbuilder@gmail.com."
