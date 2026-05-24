@@ -127,24 +127,24 @@ export default function ArcusProductPage() {
 
         <div className="w-full flex flex-col items-center text-center max-w-5xl z-10">
           
-          {/* Premium Logo and Title Sideways Container */}
-          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <div className="flex flex-col items-center gap-6 mb-4">
-              
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.03] border border-white/[0.08] text-neutral-400 text-xs font-medium uppercase tracking-widest">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                Introducing
-              </div>
-
-              <div className="flex items-center gap-6">
-                {/* Official Arcus Cat Logo Component */}
-                <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
-                
-                <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] leading-[1.05] font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                  Arcus
-                </h1>
-              </div>
+          {/* Eyebrow Platform Badge */}
+          <BlurFade delay={0.05} duration={0.8} yOffset={10} inView>
+            <div className="inline-flex items-center gap-2.5 px-4 py-1 rounded-full bg-white/[0.02] border border-white/[0.05] shadow-2xl mb-8">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-indigo-300"></span>
+              </span>
+              <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
+                Product // Arcus Flagship
+              </span>
             </div>
+          </BlurFade>
+
+          {/* Headline & Subtitle */}
+          <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
+            <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
+              Inbox Employee. <br />On autopilot.
+            </h1>
           </BlurFade>
 
           {/* Sleek Detailed Word Blur Streaming Subtitle */}
