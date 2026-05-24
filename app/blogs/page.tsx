@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { BlurFade } from "@/components/ui/blur-fade";
 import AnimatedGradient from "@/components/ui/animated-gradient";
@@ -227,7 +226,6 @@ export default function BlogsPage() {
 
       <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
       <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
-      <FloatingNavbar />
     </div>
   );
 }

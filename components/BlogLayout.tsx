@@ -6,7 +6,7 @@ import { Navbar } from "@/components/Navbar";
 import { useTheme } from "next-themes";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { Footer } from "@/components/Footer";
-import { FloatingNavbar } from "@/components/FloatingNavbar";
+import { DynamicIslandTOC } from "@/components/ui/dynamic-island-toc";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { BlurFade } from "@/components/ui/blur-fade";
 import AnimatedGradient from "@/components/ui/animated-gradient";
@@ -263,7 +263,7 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
       <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
       <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
-      <FloatingNavbar />
+      <DynamicIslandTOC selector=".blog-article-content h2, .blog-article-content h3" />
 
       {/* Blog Article Typography Styles */}
       <style dangerouslySetInnerHTML={{ __html: `
