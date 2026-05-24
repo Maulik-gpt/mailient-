@@ -63,7 +63,8 @@ const BLOG_POSTS = [
 const CATEGORIES = ["All", "Productivity", "Security", "Engineering", "Industry"];
 
 export default function BlogsPage() {
-  const { theme } = useTheme();
+  const { theme, resolvedTheme } = useTheme();
+  const currentTheme = resolvedTheme || theme;
   const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
@@ -79,7 +80,7 @@ export default function BlogsPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
-      <Navbar theme={theme === "dark" ? "dark" : "light"} />
+      <Navbar theme={currentTheme === "dark" ? "dark" : "light"} />
       <div className="fixed top-8 right-8 z-50">
         <AnimatedThemeToggler className="bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-neutral-800" />
       </div>
@@ -230,8 +231,8 @@ export default function BlogsPage() {
 
       <Footer />
 
-      <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
-      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="top" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="80px" blurAmount="10px" className="fixed z-40" />
     </div>
   );
 }
