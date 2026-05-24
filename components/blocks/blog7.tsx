@@ -50,7 +50,7 @@ const Blog7 = ({
           <p className="mb-8 text-muted-foreground md:text-lg lg:max-w-2xl mx-auto leading-relaxed font-light">
             {description}
           </p>
-          <Button variant="link" className="w-full sm:w-auto font-semibold text-sm hover:no-underline hover:text-indigo-500 transition-colors group" asChild>
+          <Button variant="link" className="w-full sm:w-auto font-semibold text-sm hover:no-underline hover:text-neutral-500 transition-colors group" asChild>
             <a href={buttonUrl} target="_blank">
               {buttonText}
               <ArrowRight className="ml-2 size-4 group-hover:translate-x-1 transition-transform" />
@@ -75,12 +75,12 @@ const Blog7 = ({
               </div>
               <CardHeader className="p-7 pb-3">
                 <div className="mb-4 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 px-3 py-1 rounded-full uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-neutral-600 dark:text-neutral-400 bg-neutral-100 dark:bg-neutral-800/40 border border-neutral-200 dark:border-neutral-800 px-3 py-1 rounded-full uppercase tracking-widest">
                     {post.label}
                   </span>
                   <span className="text-[11px] font-medium text-muted-foreground">{post.published}</span>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold hover:text-indigo-500 transition-colors leading-snug text-foreground">
+                <h3 className="text-xl md:text-2xl font-bold hover:text-neutral-500 transition-colors leading-snug text-foreground">
                   <a href={post.url} target="_blank">
                     {post.title}
                   </a>
