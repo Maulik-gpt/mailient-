@@ -125,17 +125,22 @@ export default function ArcusProductPage() {
           </div>
         </Suspense>
 
-        <div className="w-full flex flex-col items-center max-w-5xl z-10">
+        <div className="w-full flex flex-col items-start text-left max-w-5xl z-10">
           
           {/* Premium Logo and Title Sideways Container */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
-            <div className="flex items-center gap-6 mb-4 justify-center">
-              {/* Official Arcus Cat Logo Component */}
-              <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
-              
-              <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] leading-[1.05] font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Arcus
-              </h1>
+            <div className="flex flex-col items-start gap-4 mb-4">
+              <span className="text-2xl md:text-[32px] text-neutral-400 font-light tracking-tight font-sans">
+                Introducing
+              </span>
+              <div className="flex items-center gap-6">
+                {/* Official Arcus Cat Logo Component */}
+                <ArcusLogo size={80} className="shadow-[0_20px_50px_rgba(255,255,255,0.06)] rounded-[24px] shrink-0 border border-white/[0.08]" />
+                
+                <h1 className="text-5xl md:text-[80px] font-medium tracking-[-0.035em] leading-[1.05] font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+                  Arcus
+                </h1>
+              </div>
             </div>
           </BlurFade>
 
@@ -146,14 +151,14 @@ export default function ArcusProductPage() {
                 text="An autonomous inbox engine that sweeps your incoming threads, generates smart drafts matching your style, and manages your scheduling completely on autopilot."
                 msPerWord={80}
                 startupMs={400}
-                holdMs={3500}
+                loop={false}
               />
             </div>
           </BlurFade>
 
           {/* Thick Solid Black Clean Pill Button */}
           <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
-            <div className="flex flex-col items-center gap-12 mt-10">
+            <div className="flex mt-10">
               <CircleExpandButton
                 href="https://tally.so/r/b5KpB6"
                 target="_blank"
