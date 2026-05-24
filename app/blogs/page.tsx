@@ -64,12 +64,17 @@ const CATEGORIES = ["All", "Productivity", "Security", "Engineering", "Industry"
 
 export default function BlogsPage() {
   const { theme, resolvedTheme } = useTheme();
-  const currentTheme = resolvedTheme || theme;
+  const [mounted, setMounted] = useState(false);
   const [activeCategory, setActiveCategory] = useState("All");
 
   useEffect(() => {
+    setMounted(true);
     document.title = "Platform Insights // Mailient Blog";
   }, []);
+
+  const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
+  const currentTheme = isDark ? "dark" : "light";
+  const blurBg = isDark ? "#0a0a0a" : "#ffffff";
 
   const filteredPosts = activeCategory === "All"
     ? BLOG_POSTS
@@ -231,8 +236,8 @@ export default function BlogsPage() {
 
       <Footer />
 
-      <ProgressiveBlur position="top" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="120px" blurAmount="10px" className="fixed z-40" />
-      <ProgressiveBlur position="bottom" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="80px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="top" backgroundColor={blurBg} height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor={blurBg} height="80px" blurAmount="10px" className="fixed z-40" />
     </div>
   );
 }

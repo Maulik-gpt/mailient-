@@ -38,13 +38,18 @@ interface BlogLayoutProps {
 
 export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts = [] }: BlogLayoutProps) {
   const { theme, resolvedTheme } = useTheme();
-  const currentTheme = resolvedTheme || theme;
+  const [mounted, setMounted] = useState(false);
   const [readProgress, setReadProgress] = useState(0);
   const [activeSection, setActiveSection] = useState("");
 
   useEffect(() => {
+    setMounted(true);
     document.title = `${meta.title} // Mailient Blog`;
   }, [meta.title]);
+
+  const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
+  const currentTheme = isDark ? "dark" : "light";
+  const blurBg = isDark ? "#0a0a0a" : "#ffffff";
 
   useEffect(() => {
     const handleScroll = () => {
@@ -262,8 +267,8 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
       <Footer />
 
-      <ProgressiveBlur position="top" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="120px" blurAmount="10px" className="fixed z-40" />
-      <ProgressiveBlur position="bottom" backgroundColor={currentTheme === "dark" ? "#0a0a0a" : "#ffffff"} height="80px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="top" backgroundColor={blurBg} height="120px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor={blurBg} height="80px" blurAmount="10px" className="fixed z-40" />
       <DynamicIslandTOC selector=".blog-article-content h2, .blog-article-content h3" />
 
       {/* Blog Article Typography Styles */}
