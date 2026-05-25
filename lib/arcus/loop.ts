@@ -228,6 +228,13 @@ export interface LoopOptions {
    * runs always emit a report instead of being 504'd into oblivion.
    */
   deadlineMs?: number;
+  /**
+   * Stable conversation id — threaded into executeTool so the session-state
+   * approval gate (send_email / schedule_meeting / send_slack_message /
+   * create_notion_page) can match a request_confirmation row against the
+   * subsequent write. Omit for background-agent runs; the gate fails open.
+   */
+  conversationId?: string;
 }
 
 // ── Main loop ──────────────────────────────────────────────────────────────────
@@ -242,7 +249,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     isPlanMode = false,
     maxToolCalls,
     deadlineMs,
+    conversationId,
   } = opts;
+  const toolContext = { conversationId };
 
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
   const toolCallLimit =
@@ -580,7 +589,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                       };
                     }
 
-                    let result = await executeTool(tc.name, inputToUse, userId);
+                    let result = await executeTool(tc.name, inputToUse, userId, toolContext);
 
                     // Newsletter layer 2: classify what slipped through
                     let extraArchiveCount = 0;
@@ -869,7 +878,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 log('info', `tool_call #${totalToolCalls} (last-resort)`, { tool: tc.name, iteration });
                 emit('tool_call', { tool: tc.name, params: tc.input, iteration });
                 try {
-                  let result = await executeTool(tc.name, tc.input, userId);
+                  let result = await executeTool(tc.name, tc.input, userId, toolContext);
                   if (result.success === false) {
                     const code = result.errorCode || 'tool_failed';
                     const failureMsg =

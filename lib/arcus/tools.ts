@@ -14,6 +14,12 @@ import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './in
 import { getConnectedIntegrations } from './system-prompt';
 import { callLLM, getText } from './engine';
 import type { ToolSchema } from './engine';
+import {
+  recordPendingApproval,
+  consumeApproval,
+  normalizeTargetKey,
+  type ApprovalActionType,
+} from './session-state';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
 
@@ -723,10 +729,21 @@ function failureResult(message: string, code: string): ToolResult {
 
 function ts() { return new Date().toISOString().slice(11, 23); }
 
+export interface ToolContext {
+  /**
+   * Stable conversation identifier — used to scope session approval lookups
+   * for write tools (send_email, schedule_meeting, send_slack_message,
+   * create_notion_page). Omitted on background-agent runs, in which case the
+   * approval gate fails open.
+   */
+  conversationId?: string;
+}
+
 export async function executeTool(
   name: string,
   input: Record<string, any>,
-  userId: string
+  userId: string,
+  context: ToolContext = {},
 ): Promise<ToolResult> {
   const start = Date.now();
   try {
@@ -737,17 +754,17 @@ export async function executeTool(
       case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
       case 'get_voice_profile': result = await getVoiceProfileTool(userId); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
-      case 'send_email':        result = await sendEmail(userId, input); break;
-      case 'request_confirmation': result = await requestConfirmation(input); break;
-      case 'schedule_meeting':  result = await scheduleMeeting(userId, input); break;
+      case 'send_email':        result = await sendEmail(userId, input, context); break;
+      case 'request_confirmation': result = await requestConfirmation(input, userId, context); break;
+      case 'schedule_meeting':  result = await scheduleMeeting(userId, input, context); break;
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
-      case 'create_notion_page': result = await createNotionPage(userId, input); break;
+      case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
       case 'open_canvas':           result = openCanvas(input); break;
       case 'update_canvas':         result = updateCanvas(input); break;
       case 'web_search':            result = await webSearch(input); break;
-      case 'send_slack_message':    result = await sendSlackMessage(userId, input); break;
+      case 'send_slack_message':    result = await sendSlackMessage(userId, input, context); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
       case 'check_followups':       result = await checkFollowups(userId, input); break;
       case 'digest_newsletters':    result = await digestNewsletters(userId, input); break;
@@ -1006,7 +1023,27 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   };
 }
 
-async function sendEmail(userId: string, input: any): Promise<ToolResult> {
+async function sendEmail(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // Executor-level confirmation gate. The system prompt tells the LLM to call
+  // request_confirmation first, but prompt rules drift — the gate here makes
+  // it non-negotiable. consumeApproval fails open if the migration isn't
+  // applied or Supabase is unreachable, so existing deployments don't break.
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('send_email', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'send_email',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to send. No approved request_confirmation found for sending an email to ${input.to || 'this recipient'} with subject "${input.subject || ''}". You MUST call request_confirmation first with details { To: "${input.to || ''}", Subject: "${input.subject || ''}" }, wait for the user to click Confirm, and only then call send_email.`,
+        'confirmation_required',
+      );
+    }
+  }
+
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
@@ -1047,7 +1084,24 @@ async function sendEmail(userId: string, input: any): Promise<ToolResult> {
   return { output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}` };
 }
 
-async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> {
+async function scheduleMeeting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('schedule_meeting', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'schedule_meeting',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      const att = Array.isArray(input.attendees) ? input.attendees.join(', ') : '';
+      return failureResult(
+        `Refusing to create event. No approved request_confirmation found for scheduling "${input.title || ''}" at ${input.startTime || ''}${att ? ` with ${att}` : ''}. Call request_confirmation first with the meeting details, wait for the user to click Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+
   let token = await getGcalToken(userId);
   if (!token) return failureResult('Google Calendar is not connected. Ask the user to connect it in Settings → Integrations.', 'gcal_not_connected');
 
@@ -1360,7 +1414,23 @@ async function fetchNotionDbSchema(
 
 // ── createNotionPage ────────────────────────────────────────────────────────────
 
-async function createNotionPage(userId: string, input: any): Promise<ToolResult> {
+async function createNotionPage(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('create_notion_page', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'create_notion_page',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to create the Notion page. No approved request_confirmation found for creating "${input.title || 'this page'}" in database "${input.database || input.parentId || 'unknown'}". Call request_confirmation first with details { Database: "${input.database || ''}", Title: "${input.title || ''}" }, wait for the user to click Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+
   const token = await getNotionToken(userId);
   if (!token) return failureResult('Notion is not connected. Ask the user to connect Notion in Settings → Integrations.', 'notion_not_connected');
 
@@ -2058,7 +2128,23 @@ Founder & Team:
   return failureResult(`Web search for "${query}": All search providers are temporarily unavailable. Try rephrasing the query or breaking it into a more specific term.`, 'web_search_unavailable');
 }
 
-async function sendSlackMessage(userId: string, input: any): Promise<ToolResult> {
+async function sendSlackMessage(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('send_slack_message', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'send_slack_message',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to post to Slack. No approved request_confirmation found for posting to ${input.channel || 'this channel'}. Call request_confirmation first with details { Channel: "${input.channel || ''}" }, wait for the user to click Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+
   const token = await getSlackToken(userId);
   if (!token) return failureResult('Slack is not connected. Ask the user to connect Slack in Settings → Integrations.', 'slack_not_connected');
 
@@ -2200,13 +2286,55 @@ async function getUserTimezone(userId: string): Promise<string> {
   } catch { return 'UTC'; }
 }
 
-async function requestConfirmation(input: any): Promise<ToolResult> {
+async function requestConfirmation(input: any, userId: string, context: ToolContext = {}): Promise<ToolResult> {
   const details: Record<string, string> = {};
   if (input.details && typeof input.details === 'object') {
     for (const [k, v] of Object.entries(input.details)) {
       if (v !== null && v !== undefined && v !== '') details[k] = String(v);
     }
   }
+
+  // Infer which write action this confirmation gates so the executor-level
+  // gate in sendEmail/scheduleMeeting/sendSlackMessage/createNotionPage can
+  // match it. The LLM's `action` string is freeform ("Send email", "Post to
+  // Slack"), so we use a coarse keyword classifier.
+  const lower = (input.action || '').toLowerCase();
+  let actionType: ApprovalActionType | null = null;
+  if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
+  else if (/\bschedule\b|\bmeeting\b|\bcalendar\b.*\bevent\b|\bbook\b/.test(lower)) actionType = 'schedule_meeting';
+  else if (/\bslack\b|\bdm\b|\bchannel\b/.test(lower)) actionType = 'send_slack_message';
+  else if (/\bnotion\b|\bpage\b|\bdatabase\b/.test(lower)) actionType = 'create_notion_page';
+
+  let approvalId: string | null = null;
+  if (actionType && context.conversationId) {
+    // Reconstruct an input-shape from details so normalizeTargetKey can hash
+    // the same key the write tool will produce when it runs.
+    const detailsLower: Record<string, any> = {};
+    for (const [k, v] of Object.entries(details)) detailsLower[k.toLowerCase()] = v;
+    // Map common detail labels to the field names the write tools use.
+    if (actionType === 'send_email') {
+      detailsLower.to = detailsLower.to || detailsLower.recipient || detailsLower['to:'];
+      detailsLower.subject = detailsLower.subject || detailsLower['subject:'];
+    } else if (actionType === 'send_slack_message') {
+      detailsLower.channel = detailsLower.channel || detailsLower.to || detailsLower.recipient;
+    } else if (actionType === 'create_notion_page') {
+      detailsLower.database = detailsLower.database || detailsLower.db;
+      detailsLower.title = detailsLower.title || detailsLower.name;
+    } else if (actionType === 'schedule_meeting') {
+      detailsLower.startTime = detailsLower.starttime || detailsLower.when || detailsLower.start;
+      const att = detailsLower.attendees || detailsLower.with || detailsLower.attendee;
+      if (typeof att === 'string') detailsLower.attendees = att.split(/[,;]/).map((s: string) => s.trim());
+    }
+    const targetKey = normalizeTargetKey(actionType, detailsLower);
+    approvalId = await recordPendingApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType,
+      targetKey,
+      actionLabel: input.action,
+    });
+  }
+
   return {
     output: `Confirmation requested. Waiting for user to approve: "${input.action}". Do NOT call any more tools — the loop will stop here.`,
     requiresConfirmation: true,
@@ -2218,6 +2346,9 @@ async function requestConfirmation(input: any): Promise<ToolResult> {
         action: input.action || 'Action',
         description: input.description || '',
         details,
+        // Picked up by ConfirmationCard.onAction — POSTed to /api/arcus/approval/confirm
+        // when the user clicks Confirm so the executor-level gate can match.
+        approvalId,
       },
     },
   };

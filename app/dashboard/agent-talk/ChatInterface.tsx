@@ -2256,6 +2256,10 @@ export default function ChatInterface({
                   action: pm.action || cv.title || 'Action',
                   description: pm.description || '',
                   details: pm.details || {},
+                  // Threaded through so the card's Confirm click can POST to
+                  // /api/arcus/approval/confirm — without it the executor gate
+                  // refuses the subsequent send/schedule/post/create call.
+                  approvalId: pm.approvalId || undefined,
                 };
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -4706,7 +4710,7 @@ export default function ChatInterface({
                                       <ConfirmationCard
                                         data={(msg as AgentMessage).meta!.confirmationData!}
                                         status={(msg as AgentMessage).meta?.confirmationStatus}
-                                        onAction={(action) => {
+                                        onAction={async (action) => {
                                           // Mark the card as resolved
                                           setMessages(msgs => msgs.map(m => {
                                             if (m.id !== msg.id || m.type !== 'agent') return m;
@@ -4718,6 +4722,28 @@ export default function ChatInterface({
                                               },
                                             };
                                           }));
+                                          // Flip the server-side approval row first so the executor
+                                          // gate in send_email / schedule_meeting / send_slack_message /
+                                          // create_notion_page lets the LLM proceed on the next turn.
+                                          // Without this round trip, the LLM's follow-up write tool call
+                                          // refuses with code 'confirmation_required'.
+                                          const approvalId = (msg as AgentMessage).meta?.confirmationData?.approvalId;
+                                          if (approvalId) {
+                                            try {
+                                              await fetch('/api/arcus/approval/confirm', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  approvalId,
+                                                  decision: action === 'confirm' ? 'confirm' : 'cancel',
+                                                }),
+                                              });
+                                            } catch (err) {
+                                              // Network failure here means the gate will refuse the write
+                                              // on the next turn — surface it but don't abort the flow.
+                                              console.warn('[Arcus] approval/confirm failed:', err);
+                                            }
+                                          }
                                           // Resume the agent with the user's decision
                                           const response = action === 'confirm'
                                             ? `Confirmed — please proceed with the action.`

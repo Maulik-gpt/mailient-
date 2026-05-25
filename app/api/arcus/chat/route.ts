@@ -185,6 +185,7 @@ export async function POST(request: NextRequest) {
       userMessage: message,
       connectedIntegrations,
       isPlanMode,
+      conversationId,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });

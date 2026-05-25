@@ -10,6 +10,17 @@ export interface ConfirmationData {
   action: string;
   description: string;
   details?: Record<string, string>;
+  /**
+   * Server-issued approval id from request_confirmation. When the user clicks
+   * Confirm, the card POSTs this to /api/arcus/approval/confirm before
+   * resuming the agent — the executor-level gate in send_email /
+   * schedule_meeting / send_slack_message / create_notion_page checks for
+   * an approved row with this id before proceeding.
+   *
+   * Optional: legacy in-flight cards from before the gate landed won't have
+   * one; the gate falls back to a no-op in that case.
+   */
+  approvalId?: string;
 }
 
 interface ConfirmationCardProps {
