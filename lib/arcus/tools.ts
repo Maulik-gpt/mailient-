@@ -343,6 +343,40 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'voice_profile_generate',
+    description:
+      'Rebuild the user\'s saved voice profile from their last 90 days of sent mail. ' +
+      'Use when the user explicitly asks to retrain, rebuild, or refresh their voice — or when their existing profile is stale and they\'ve sent significant new mail. ' +
+      'Slow: 10-30s. Time-boxed at 30s; on timeout returns success:false. The newly built profile is saved and used by the NEXT turn\'s system-prompt injection (not the current turn). ' +
+      'Output: confirmation text with sample count and the new profile\'s tone/greeting/closing summary. ' +
+      'Errors (success:false): gmail_not_connected, insufficient_sent_mail (under 20 sent emails), voice_profile_generate_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        sampleSize: { type: 'number', description: 'Number of sent emails to analyse (20-200, default 90).' },
+      },
+    },
+  },
+  {
+    name: 'voice_profile_update',
+    description:
+      'Patch specific fields on the saved voice profile. Use after user feedback like "I never write Best, M — it\'s always Cheers, M" or "drop the dashes, I never use them". ' +
+      'Shallow-merges the `updates` object into the stored profile (top-level fields overwrite; arrays replace, do not concat). ' +
+      'Output: confirmation text + a diff summary of the changed fields. ' +
+      'Errors (success:false): voice_profile_missing (no profile to patch), validation_error (empty updates), voice_profile_update_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        updates: {
+          type: 'object',
+          description: 'Partial profile object. Recognised top-level fields: tone, greeting_patterns (string[]), closing_patterns (string[]), vocabulary (string[]), avoid_phrases (string[]), average_length, formality.',
+          additionalProperties: true,
+        },
+      },
+      required: ['updates'],
+    },
+  },
+  {
     name: 'draft_reply',
     description:
       'Save a Gmail draft reply (does NOT send) and render it inline as a draft card. ' +
@@ -807,6 +841,8 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   gmail_get_profile: 'gmail',
   get_sent_emails: 'gmail',
   get_voice_profile: null,
+  voice_profile_generate: 'gmail',
+  voice_profile_update: null,
   draft_reply: 'gmail',
   send_email: 'gmail',
   schedule_meeting: 'gcal',
@@ -932,6 +968,8 @@ export async function executeTool(
       case 'gmail_get_profile': result = await gmailGetProfile(userId); break;
       case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
       case 'get_voice_profile': result = await getVoiceProfileTool(userId); break;
+      case 'voice_profile_generate': result = await voiceProfileGenerate(userId, input); break;
+      case 'voice_profile_update': result = await voiceProfileUpdate(userId, input); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
       case 'send_email':        result = await sendEmail(userId, input, context); break;
       case 'request_confirmation': result = await requestConfirmation(input, userId, context); break;
@@ -1330,6 +1368,131 @@ async function getVoiceProfileTool(userId: string): Promise<ToolResult> {
     return { output: lines.join('\n') };
   } catch (err: any) {
     return failureResult(`Failed to read voice profile: ${err.message}`, 'voice_profile_read_failed');
+  }
+}
+
+// ── voice_profile_generate ────────────────────────────────────────────────────
+// On-demand rebuild from sent mail. The chat route auto-bootstraps once on a
+// user's first turn; this tool exists so the LLM can rebuild later when the
+// user explicitly asks ("refresh my voice profile", "retrain on my recent
+// emails"). 30s hard ceiling — the chat route's bootstrap uses 22s but we get
+// slightly more headroom because the user is actively waiting for this one.
+async function voiceProfileGenerate(userId: string, input: any): Promise<ToolResult> {
+  const sampleSize = Math.max(20, Math.min(200, Number(input?.sampleSize) || 90));
+
+  try {
+    // @ts-ignore — JS module, no .d.ts
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+
+    // Need a Gmail handle to fetch sent mail.
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('access_token, refresh_token')
+      .eq('user_id', userId.toLowerCase())
+      .eq('provider', 'gmail')
+      .maybeSingle();
+
+    if (!data?.access_token) {
+      return failureResult('Gmail is not connected — cannot generate a voice profile without sent mail access.', 'gmail_not_connected');
+    }
+
+    const accessToken = decrypt(data.access_token);
+    const refreshToken = data.refresh_token ? decrypt(data.refresh_token) : '';
+    // @ts-ignore — JS module
+    const { GmailService } = await import('../gmail');
+    const gmail = new GmailService(accessToken, refreshToken);
+
+    const TIMEOUT = Symbol('timeout');
+    const built = await Promise.race([
+      (async () => {
+        const sent = await voiceProfileService.fetchSentEmails(gmail, sampleSize);
+        if (!Array.isArray(sent) || sent.length < 20) {
+          return { tooFew: sent?.length ?? 0 };
+        }
+        const profile = await voiceProfileService.analyzeVoiceProfile(sent);
+        await voiceProfileService.saveVoiceProfile(userId, profile);
+        return { profile, count: sent.length };
+      })(),
+      new Promise((resolve) => setTimeout(() => resolve(TIMEOUT), 30000)),
+    ]);
+
+    if (built === TIMEOUT) {
+      return failureResult('Voice profile generation timed out after 30s. Try again, or send a few more emails first.', 'voice_profile_generate_failed');
+    }
+    const result = built as { profile?: any; count?: number; tooFew?: number };
+    if (typeof result.tooFew === 'number') {
+      return failureResult(
+        `Need at least 20 sent emails to build a voice profile — found ${result.tooFew}. Send a few more emails (or use the manual Voice Settings to set defaults) and try again.`,
+        'insufficient_sent_mail',
+      );
+    }
+
+    const p = result.profile;
+    const summary = [
+      `Voice profile rebuilt from ${result.count} sent emails.`,
+      p.tone ? `Tone: ${p.tone}` : null,
+      p.greeting_patterns?.length ? `Greetings: ${p.greeting_patterns.slice(0, 3).join(', ')}` : null,
+      p.closing_patterns?.length ? `Closings: ${p.closing_patterns.slice(0, 3).join(', ')}` : null,
+      p.formality ? `Formality: ${p.formality}` : null,
+      '',
+      'The new profile is saved and will be injected into the system prompt on the NEXT turn (it does not retroactively change drafts in this turn).',
+    ].filter(Boolean).join('\n');
+
+    return { output: summary };
+  } catch (err: any) {
+    return failureResult(`Voice profile generation failed: ${err.message}`, 'voice_profile_generate_failed');
+  }
+}
+
+// ── voice_profile_update ──────────────────────────────────────────────────────
+// Shallow merge of user-specified patches into the stored profile. Arrays
+// REPLACE (do not concat) so the user can remove an unwanted phrase by passing
+// the array without it. The merged profile is saved and used from the next
+// turn's prompt injection onward.
+async function voiceProfileUpdate(userId: string, input: any): Promise<ToolResult> {
+  const updates = (input && typeof input.updates === 'object' && input.updates) ? input.updates : null;
+  if (!updates || !Object.keys(updates).length) {
+    return failureResult('updates must be a non-empty object — e.g. { closing_patterns: ["Cheers, M"] }.', 'validation_error');
+  }
+
+  try {
+    // @ts-ignore — JS module
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+    const current: any = await voiceProfileService.getVoiceProfile(userId);
+    if (!current || current.status === 'default') {
+      return failureResult('No saved voice profile to update. Call voice_profile_generate first.', 'voice_profile_missing');
+    }
+
+    // Shallow merge — arrays replace, primitives overwrite, objects overwrite.
+    // We deliberately do NOT deep-merge so removing items from a list works.
+    const merged: Record<string, any> = { ...current };
+    const changed: string[] = [];
+    for (const [k, v] of Object.entries(updates)) {
+      if (v === undefined) continue;
+      merged[k] = v;
+      changed.push(k);
+    }
+    merged.updated_at = new Date().toISOString();
+
+    await voiceProfileService.saveVoiceProfile(userId, merged);
+
+    const diffLines = changed.map((k) => {
+      const before = current[k];
+      const after = merged[k];
+      const fmt = (x: any) => Array.isArray(x) ? `[${x.slice(0, 3).join(', ')}${x.length > 3 ? `, +${x.length - 3} more` : ''}]` : JSON.stringify(x);
+      return `  • ${k}: ${fmt(before)} → ${fmt(after)}`;
+    });
+    return {
+      output: [
+        `Voice profile updated (${changed.length} field${changed.length === 1 ? '' : 's'} changed):`,
+        ...diffLines,
+        '',
+        'The patched profile takes effect on the next turn.',
+      ].join('\n'),
+    };
+  } catch (err: any) {
+    return failureResult(`Voice profile update failed: ${err.message}`, 'voice_profile_update_failed');
   }
 }
 

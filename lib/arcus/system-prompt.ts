@@ -60,6 +60,8 @@ const ALWAYS_AVAILABLE = [
   'get_contact_context / remember_about_contact — read and write per-contact relationship memory.',
   'get_delegation_rules / create_delegation_rule — manage automation rules used during proactive triage.',
   'get_voice_profile — INSPECT the saved voice profile only; do not call before drafts (profile is already in this prompt).',
+  'voice_profile_generate — rebuild the saved voice profile from the user\'s last 90 days of sent mail. Use when they explicitly ask to refresh / retrain.',
+  'voice_profile_update — patch specific fields of the saved profile after user feedback ("I never sign off with Best"). Shallow merge; arrays replace.',
   'request_confirmation — pause before any write action; required before send_email, schedule_meeting, send_slack_message, create_notion_page.',
   'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous.',
   'create_scheduled_agent — register a cron-scheduled background agent.',
