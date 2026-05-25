@@ -35,7 +35,8 @@ import {
     Camera,
     CheckCircle2,
     AlertCircle,
-    Loader2
+    Loader2,
+    Plug
 } from 'lucide-react';
 import { ToggleSwitch } from './toggle-switch';
 import { Button } from './button';
@@ -52,13 +53,14 @@ import {
 } from 'lucide-react';
 import { CancellationFlow } from './cancellation-flow';
 import { ThemeToggle } from './theme-toggle';
+import { SUPPORTED_APPS, V3_DIRECT_ROUTES } from './connectors-modal';
 
 interface SettingsCardProps {
     onClose: () => void;
     onOpenHelp?: () => void;
 }
 
-type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'privacy';
+type SettingsSection = 'general' | 'system' | 'account' | 'team' | 'subscription' | 'privacy' | 'integrations';
 
 export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const { data: session, update: updateSession } = useSession();
@@ -67,6 +69,81 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const [activeSection, setActiveSection] = useState<SettingsSection>('general');
     const [isLoadingSubscription, setIsLoadingSubscription] = useState(false);
     const [isConfirmingCancel, setIsConfirmingCancel] = useState(false);
+    const [integrationStatuses, setIntegrationStatuses] = useState<any[]>([]);
+
+    useEffect(() => {
+        if (activeSection === 'integrations') {
+            const fetchStatus = async () => {
+                try {
+                    const res = await fetch('/api/integrations/status');
+                    if (res.ok) {
+                        const data = await res.json();
+                        setIntegrationStatuses(Array.isArray(data.integrations) ? data.integrations : []);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch status:', err);
+                }
+            };
+            fetchStatus();
+        }
+    }, [activeSection]);
+
+    useEffect(() => {
+        if (typeof window !== 'undefined' && activeSection === 'integrations') {
+            const params = new URLSearchParams(window.location.search);
+            const success = params.get('success');
+            const provider = params.get('provider');
+            
+            if (success === 'connected' && provider) {
+                toast.success('Connection Successful');
+                // Clear query params without reload
+                window.history.replaceState({}, '', window.location.pathname);
+            }
+        }
+    }, [activeSection]);
+
+    const isAppConnected = (appId: string) => {
+        if (Array.isArray(integrationStatuses)) {
+            return integrationStatuses.find((s: any) => s.provider === appId)?.connected;
+        }
+        return (integrationStatuses as any)?.[appId] === true || (integrationStatuses as any)?.[appId]?.connected === true;
+    };
+
+    const handleConnectAction = async (appId: string) => {
+        if (V3_DIRECT_ROUTES[appId]) {
+            window.location.assign(V3_DIRECT_ROUTES[appId]);
+            return;
+        }
+        try {
+            const res = await fetch(`/api/integrations/${appId}/auth`);
+            if (res.ok) {
+                const data = await res.json();
+                if (data.url) { window.location.assign(data.url); return; }
+            }
+            toast.error('Authentication failed. Please try again.');
+        } catch {
+            toast.error('Could not reach authentication server.');
+        }
+    };
+
+    const handleDisconnectApp = async (appId: string) => {
+        try {
+            const res = await fetch(`/api/integrations?provider=${appId}`, {
+                method: 'DELETE'
+            });
+            if (res.ok) {
+                const resStatus = await fetch('/api/integrations/status');
+                if (resStatus.ok) {
+                    const data = await resStatus.json();
+                    setIntegrationStatuses(Array.isArray(data.integrations) ? data.integrations : []);
+                }
+                toast.success('App disconnected');
+            }
+        } catch (err) {
+            toast.error('Failed to disconnect app');
+            console.error('Failed to disconnect:', err);
+        }
+    };
 
     const isPro = subscriptionData?.planType?.toLowerCase() === 'pro';
     const isStarter = subscriptionData?.planType?.toLowerCase() === 'starter';
@@ -284,6 +361,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                         </div>
                         <MenuButton id="general" icon={Settings2} label="General" />
                         <MenuButton id="system" icon={Monitor} label="System" />
+                        <MenuButton id="integrations" icon={Plug} label="Integrations" />
 
                         <div className="hidden md:block my-2 h-px bg-neutral-200 dark:bg-white/5" />
 
@@ -1122,6 +1200,77 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                 >
                                     <Users className="w-12 h-12 text-neutral-500 dark:text-neutral-400 mb-4 animate-pulse-slow" />
                                     <p className="text-neutral-500 dark:text-neutral-400 font-medium">Coming soon</p>
+                                </motion.div>
+                            )}
+
+                            {activeSection === 'integrations' && (
+                                <motion.div
+                                    key="integrations"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -10 }}
+                                    className="space-y-6"
+                                >
+                                    <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-8 md:p-10 border border-neutral-200 dark:border-white/5 space-y-6">
+                                        <div className="mb-4">
+                                            <h3 className="text-[15px] font-semibold text-black dark:text-white mb-1">Connected Apps</h3>
+                                            <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage your integrations to extend Mailient's capabilities.</p>
+                                        </div>
+                                        <div className="space-y-4">
+                                            {SUPPORTED_APPS.map((app) => {
+                                                const isConnected = isAppConnected(app.id);
+                                                return (
+                                                    <div key={app.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 rounded-2xl bg-white dark:bg-[#1C1C1C] border border-neutral-200 dark:border-white/10 shadow-sm gap-4">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center p-2.5 shrink-0 ${app.id === 'notion' || app.id === 'cal_com' ? 'bg-white border border-neutral-200 dark:border-white/10' : 'bg-black/5 dark:bg-black/60 border border-neutral-200 dark:border-white/5'}`}>
+                                                                <app.icon className="w-full h-full" />
+                                                            </div>
+                                                            <div>
+                                                                <div className="flex items-center gap-2 mb-1">
+                                                                    <h4 className="text-[14px] font-bold text-black dark:text-white tracking-tight">{app.name}</h4>
+                                                                    {app.comingSoon && (
+                                                                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/5 dark:bg-white/10 text-neutral-500 dark:text-white/40">
+                                                                            Coming soon
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <p className="text-[12px] text-neutral-500 dark:text-neutral-400 line-clamp-1">{app.details}</p>
+                                                            </div>
+                                                        </div>
+                                                        <div className="shrink-0 flex items-center">
+                                                            {isConnected ? (
+                                                                <div className="flex items-center gap-3">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium border bg-emerald-50 border-emerald-200 text-emerald-600 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400">
+                                                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                                                                        Connected
+                                                                    </span>
+                                                                    <Button 
+                                                                        variant="outline" 
+                                                                        className="h-9 px-4 rounded-xl border-red-200 text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-900/20 text-xs font-semibold"
+                                                                        onClick={() => handleDisconnectApp(app.id)}
+                                                                    >
+                                                                        Disconnect
+                                                                    </Button>
+                                                                </div>
+                                                            ) : app.comingSoon ? (
+                                                                <Button variant="outline" disabled className="h-9 px-4 rounded-xl text-xs font-semibold opacity-50 cursor-not-allowed">
+                                                                    Soon
+                                                                </Button>
+                                                            ) : (
+                                                                <Button 
+                                                                    variant="default" 
+                                                                    className="h-9 px-4 rounded-xl text-xs font-semibold bg-black dark:bg-white text-white dark:text-black hover:bg-neutral-800 dark:hover:bg-neutral-200"
+                                                                    onClick={() => handleConnectAction(app.id)}
+                                                                >
+                                                                    Connect
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
                                 </motion.div>
                             )}
                         </AnimatePresence>

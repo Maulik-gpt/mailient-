@@ -24,7 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 
 // Custom SVG Brand Icons
-const BrandIcons = {
+export const BrandIcons = {
   GoogleCalendar: ({ className }: { className?: string }) => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 141.7 141.7" id="google-calendar" className={className}>
       <path fill="#fff" d="M95.8,45.9H45.9V95.8H95.8Z"></path>
@@ -90,7 +90,7 @@ const BrandIcons = {
 };
 
 // Definitive list of supported connectors (Phase 4 canonical)
-const SUPPORTED_APPS = [
+export const SUPPORTED_APPS = [
   {
     id: 'google_calendar',
     name: 'Google Calendar', 
@@ -183,6 +183,15 @@ const SUPPORTED_APPS = [
     comingSoon: true
   }
 ];
+
+// V3 providers redirect directly; legacy providers return { url } from /auth
+export const V3_DIRECT_ROUTES: Record<string, string> = {
+  gmail:            '/api/arcus/v3/oauth/gmail',
+  google_calendar:  '/api/arcus/v3/oauth/gcal',
+  slack:            '/api/arcus/v3/oauth/slack',
+  notion:           '/api/arcus/v3/oauth/notion',
+  notion_calendar:  '/api/arcus/v3/oauth/notion', // shares Notion OAuth
+};
 
 interface ConnectorsModalProps {
   isOpen: boolean;
@@ -284,14 +293,7 @@ export function ConnectorsModal({
     if (isOpen) fetchStatus();
   }, [isOpen]);
 
-  // V3 providers redirect directly; legacy providers return { url } from /auth
-  const V3_DIRECT_ROUTES: Record<string, string> = {
-    gmail:            '/api/arcus/v3/oauth/gmail',
-    google_calendar:  '/api/arcus/v3/oauth/gcal',
-    slack:            '/api/arcus/v3/oauth/slack',
-    notion:           '/api/arcus/v3/oauth/notion',
-    notion_calendar:  '/api/arcus/v3/oauth/notion', // shares Notion OAuth
-  };
+
 
   const handleConnectAction = async (appId: string) => {
     // V3 providers: just navigate — the route itself redirects to the provider
