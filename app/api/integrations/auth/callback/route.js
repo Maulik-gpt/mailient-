@@ -107,34 +107,4 @@ export async function GET(request) {
   }
 }
 
-/**
- * Individual provider callback routes for specific handling
- */
 
-// Google Calendar callback
-export async function googleCalendarCallback(request) {
-  const url = new URL(request.url);
-  url.searchParams.set('provider', 'google_calendar');
-  return GET(new Request(url.toString()));
-}
-
-// Cal.com callback
-export async function calComCallback(request) {
-  const url = new URL(request.url);
-  url.searchParams.set('provider', 'cal_com');
-  return GET(new Request(url.toString()));
-}
-
-// Notion callback
-export async function notionCallback(request) {
-  const url = new URL(request.url);
-  url.searchParams.set('provider', 'notion');
-  return GET(new Request(url.toString()));
-}
-
-// Google Tasks callback
-export async function googleTasksCallback(request) {
-  const url = new URL(request.url);
-  url.searchParams.set('provider', 'google_tasks');
-  return GET(new Request(url.toString()));
-}

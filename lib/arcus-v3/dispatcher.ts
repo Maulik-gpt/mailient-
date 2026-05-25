@@ -20,7 +20,7 @@ import { executeGmailAction } from './handlers/gmail';
 export async function executeStep(
   step: { app: string; action: string; params: Record<string, unknown> },
   userId: string
-): Promise<void> {
+): Promise<any> {
   const tokens = await getDecryptedTokens(userId, step.app);
 
   switch (step.app) {

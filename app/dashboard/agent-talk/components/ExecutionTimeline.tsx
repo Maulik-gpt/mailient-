@@ -42,7 +42,15 @@ interface ExecutionTimelineProps {
   runStatus: 'initializing' | 'thinking' | 'searching' | 'synthesizing' | 'approval' | 'executing' | 'completed' | 'failed';
 }
 
-const statusConfig = {
+interface StatusConfigItem {
+  icon: React.ComponentType<any>;
+  color: string;
+  bg: string;
+  label: string;
+  animate?: boolean;
+}
+
+const statusConfig: Record<string, StatusConfigItem> = {
   pending: { icon: Circle, color: 'text-neutral-600 dark:text-gray-500', bg: 'bg-neutral-100 dark:bg-gray-800', label: 'Pending' },
   running: { icon: Loader2, color: 'text-blue-400', bg: 'bg-blue-500/20', label: 'Running', animate: true },
   completed: { icon: CheckCircle2, color: 'text-green-500', bg: 'bg-green-500/20', label: 'Completed' },

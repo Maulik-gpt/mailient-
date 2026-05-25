@@ -14,7 +14,7 @@ interface BriefItem {
   reason: string;
 }
 
-interface Brief {
+export interface BriefData {
   date: string;
   critical_path: BriefItem[];
   high_priority: BriefItem[];
@@ -22,7 +22,7 @@ interface Brief {
 }
 
 interface PlanModeBriefProps {
-  brief: Brief | null;
+  brief: BriefData | null;
   onGenerate: () => void;
   loading: boolean;
 }

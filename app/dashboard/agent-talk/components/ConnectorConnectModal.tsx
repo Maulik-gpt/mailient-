@@ -28,7 +28,7 @@ interface ConnectorConnectModalProps {
   provider: {
     id: string;
     name: string;
-    icon: React.ElementType;
+    icon: React.ComponentType<any>;
     description: string;
     connected: boolean;
     scopes: string[];

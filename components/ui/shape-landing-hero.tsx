@@ -4,7 +4,7 @@ import React from "react";
 import { motion, Variants } from "framer-motion";
 import { Circle } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { EtherealShadow } from "@/components/ui/etheral-shadow";
+import { EtheralShadow } from "@/components/ui/etheral-shadow";
 
 function HeroGeometric({
     badge = "Design Collective",
@@ -40,13 +40,12 @@ function HeroGeometric({
                     transition={{ duration: 2, ease: "easeOut" }}
                     className="w-full h-full"
                 >
-                    <EtherealShadow
+                    <EtheralShadow
                         color="rgba(100, 100, 120, 0.8)"
                         animation={{ scale: 35, speed: 25 }}
                         noise={{ opacity: 0.3, scale: 1.5 }}
                         sizing="fill"
                         className="opacity-70"
-                        showTitle={false}
                     />
                 </motion.div>
             </div>
@@ -59,12 +58,11 @@ function HeroGeometric({
                     transition={{ duration: 2.5, ease: "easeOut", delay: 0.3 }}
                     className="w-full h-full"
                 >
-                    <EtherealShadow
+                    <EtheralShadow
                         color="rgba(80, 80, 100, 0.6)"
                         animation={{ scale: 25, speed: 20 }}
                         sizing="fill"
                         className="opacity-50"
-                        showTitle={false}
                     />
                 </motion.div>
             </div>

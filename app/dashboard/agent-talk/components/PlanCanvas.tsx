@@ -286,7 +286,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
 // ─── Status Label ─────────────────────────────────────────────
 function StatusLabel({ status }: { status: PlanStatus }) {
-  const config: Record<PlanStatus, { label: string; cls: string }> = {
+  const config: Partial<Record<PlanStatus, { label: string; cls: string }>> = {
     draft:     { label: 'Draft',     cls: 'text-amber-400/60' },
     approved:  { label: 'Approved',  cls: 'text-emerald-400/60' },
     executing: { label: 'Running',   cls: 'text-blue-400/60' },
@@ -294,7 +294,7 @@ function StatusLabel({ status }: { status: PlanStatus }) {
     failed:    { label: 'Failed',    cls: 'text-red-400/60' },
     cancelled: { label: 'Cancelled', cls: 'text-white/20' },
   };
-  const c = config[status];
+  const c = config[status] || { label: status, cls: 'text-white/40' };
   return (
     <span className={cn("text-[10px] font-bold uppercase tracking-wider", c.cls)}>
       {c.label}

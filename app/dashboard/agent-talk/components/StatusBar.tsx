@@ -26,7 +26,7 @@ interface StatusBarMetric {
   id: string;
   label: string;
   value: number;
-  icon: React.ElementType;
+  icon: React.ComponentType<any>;
   color: string;
   pulse?: boolean;
 }

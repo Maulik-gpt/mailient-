@@ -34,7 +34,7 @@ interface ConnectorBarProps {
   className?: string;
 }
 
-const iconMap: Record<string, React.ElementType> = {
+const iconMap: Record<string, React.ComponentType<any>> = {
   calendar: Calendar,
   video: Video,
   notion: FileText,

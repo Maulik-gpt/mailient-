@@ -7,7 +7,6 @@
  */
 
 import type { ArcusEvent } from '../types';
-import { v4 as uuidv4 } from 'crypto';
 import crypto from 'crypto';
 
 interface GCalEvent {

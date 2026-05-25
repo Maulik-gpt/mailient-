@@ -65,10 +65,11 @@ export async function GET(request: NextRequest) {
         if (newPages.length > 0) {
           // Enqueue a job for this user
           // We pass the full payload of changes
-          await enqueueArcusEvent({
+          await enqueueEvent({
             userId: integration.user_id,
             source: 'notion',
             eventType: 'pages-changed',
+            timestamp: Date.now(),
             payload: { pages: newPages },
           });
           eventsEnqueued++;

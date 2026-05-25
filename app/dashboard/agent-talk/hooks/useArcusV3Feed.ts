@@ -93,7 +93,7 @@ function v3PlanToArtifact(plan: ArcusV3Plan): PlanArtifact {
     app: step.app || 'gcal',
     action: step.action || 'unknown',
     params: step.params || {},
-    humanReadable: step.human_readable || step.humanReadable || `${step.app}.${step.action}`,
+    human_readable: step.human_readable || step.humanReadable || `${step.app}.${step.action}`,
     irreversible: step.irreversible || false,
     status: step.status === 'completed' ? 'completed' as const :
             step.status === 'executing' ? 'executing' as const :

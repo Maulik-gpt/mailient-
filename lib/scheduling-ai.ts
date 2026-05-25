@@ -12,7 +12,7 @@ export class SchedulingAIService {
         // Use all available keys for robustness
         this.apiKey = (process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY3 || '').trim();
         // Fallback chain of free/cheap models to handle rate limits
-        this.models = getModelChain();
+        this.models = getModelChain() as string[];
         this.baseURL = 'https://openrouter.ai/api/v1';
     }
 
@@ -23,7 +23,7 @@ export class SchedulingAIService {
         let lastError: Error | null = null;
         
         // Dynamically get models based on preference if provided
-        const modelsToTry = options.modelPreference ? getModelChain(options.modelPreference) : this.models;
+        const modelsToTry = options.modelPreference ? (getModelChain(options.modelPreference as any) as string[]) : this.models;
 
         for (const model of modelsToTry) {
             try {

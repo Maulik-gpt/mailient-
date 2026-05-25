@@ -687,7 +687,7 @@ export interface ToolResult {
     title: string;
     type: string;
     markdown: string;
-    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string };
+    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string; gmailDraftId?: string };
     pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
     isUpdate?: boolean;
   };

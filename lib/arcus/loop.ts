@@ -64,7 +64,7 @@ function logAudit(params: {
       success:        params.success,
       error_message:  params.errorMessage?.slice(0, 500),
       iteration:      params.iteration,
-    }).then(() => {/* intentional no-op */}).catch(() => {/* silently ignore */});
+    });
   } catch { /* non-fatal */ }
 }
 
@@ -278,8 +278,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         if (isPlanMode) {
           // Detect if the user has already answered questions (any user message with Q:/A: pairs)
           const alreadyAnswered = history.some(h =>
-            h.role === 'user' && /Q:.*\nA:/s.test(h.content)
-          ) || /Q:.*\nA:/s.test(userMessage);
+            h.role === 'user' && /Q:[\s\S]*\nA:/.test(h.content)
+          ) || /Q:[\s\S]*\nA:/.test(userMessage);
 
           if (!alreadyAnswered) {
             emit('thinking', { status: 'Analysing your request…' });

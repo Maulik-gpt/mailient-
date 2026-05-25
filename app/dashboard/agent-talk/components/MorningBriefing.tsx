@@ -35,7 +35,7 @@ interface BriefingCategory {
   id: string;
   label: string;
   count: number;
-  icon: React.ElementType;
+  icon: React.ComponentType<any>;
   color: string;
   bgColor: string;
   borderColor: string;
@@ -82,7 +82,7 @@ interface MorningBriefingProps {
 // HELPERS
 // ============================================================================
 
-function getGreeting(): { text: string; icon: React.ElementType } {
+function getGreeting(): { text: string; icon: React.ComponentType<any> } {
   const hour = new Date().getHours();
   if (hour < 12) return { text: 'Good morning', icon: Sun };
   if (hour < 17) return { text: 'Good afternoon', icon: Sun };
@@ -109,7 +109,7 @@ function StatCard({
   color,
   delay = 0
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<any>;
   label: string;
   value: number;
   color: string;

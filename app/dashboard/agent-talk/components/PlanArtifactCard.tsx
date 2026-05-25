@@ -13,26 +13,30 @@ import { useRelativeTime } from '../hooks/useRelativeTime';
 import { usePlanSSE, type SSEEvent } from '../hooks/usePlanSSE';
 import '../arcus-tokens.css';
 
-interface Finding {
+export type PlanStatus = 'detected' | 'plan_built' | 'executing' | 'completed' | 'failed' | 'dismissed' | 'proposed' | 'approved' | 'draft' | 'cancelled';
+
+export interface PlanOption {
+  label: string;
+  effort: string;
+  tradeoff: string;
+  irreversible: boolean;
+  steps: Array<{
+    app: string;
+    action: string;
+    params: Record<string, unknown>;
+    humanReadable: string;
+  }>;
+}
+
+export interface Finding {
   id: string;
   headline: string;
   impact: string;
-  options: Array<{
-    label: string;
-    effort: string;
-    tradeoff: string;
-    irreversible: boolean;
-    steps: Array<{
-      app: string;
-      action: string;
-      params: Record<string, unknown>;
-      humanReadable: string;
-    }>;
-  }>;
+  options: PlanOption[];
   recommended: number;
 }
 
-interface PlanStep {
+export interface PlanStep {
   id: string;
   position: number;
   app: string;
@@ -44,7 +48,7 @@ interface PlanStep {
   error: string | null;
 }
 
-interface PlanData {
+export interface PlanData {
   id: string;
   mode: string;
   status: string;
@@ -56,6 +60,29 @@ interface PlanData {
   created_at: string;
   completed_at: string | null;
   source: string | null;
+}
+
+export interface PlanArtifact {
+  planId: string;
+  status: PlanStatus;
+  severity: string;
+  findings: Finding[];
+  steps: PlanStep[];
+  sources: string[];
+  createdAt: string;
+  completedAt?: string;
+  selectedOption?: number;
+  title: string;
+  objective: string;
+  assumptions: any[];
+  questionsAnswered: any[];
+  acceptanceCriteria: any[];
+  version: number;
+  locked: boolean;
+  complexity: string;
+  intent: string;
+  canvasType: string;
+  todos: any[];
 }
 
 interface PlanArtifactCardProps {
