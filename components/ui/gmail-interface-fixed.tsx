@@ -1953,9 +1953,7 @@ export function GmailInterfaceFixed() {
                                                 </p>
                                             </div>
                                             <a
-                                                href="https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej"
-                                                target="_blank"
-                                                rel="noopener noreferrer"
+                                                href="/pricing"
                                                 className="h-10 px-6 bg-white hover:bg-zinc-200 text-black rounded-full text-[13px] font-bold transition-all shadow-lg shadow-white/5 flex items-center justify-center shrink-0 active:scale-95"
                                             >
                                                 Upgrade

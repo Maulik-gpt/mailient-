@@ -862,7 +862,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                 <div className="flex flex-col items-end gap-2">
                                                     {isFree && (
                                                         <Button
-                                                            onClick={() => window.open(`${PRO_URL}?customer_email=${encodeURIComponent(userEmail)}`, '_blank')}
+                                                            onClick={() => { window.location.href = '/pricing' }}
                                                             className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 px-6 h-10 rounded-2xl font-bold text-[13px] transition-all"
                                                         >
                                                             Upgrade to Pro
@@ -870,7 +870,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                     )}
                                                     {isStarter && (
                                                         <Button
-                                                            onClick={() => window.open(`${PRO_URL}?customer_email=${encodeURIComponent(userEmail)}`, '_blank')}
+                                                            onClick={() => { window.location.href = '/pricing' }}
                                                             className="bg-black dark:bg-white text-white dark:text-black hover:opacity-90 px-6 h-10 rounded-2xl font-bold text-[13px] transition-all"
                                                         >
                                                             Upgrade to Pro
