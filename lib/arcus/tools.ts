@@ -711,7 +711,23 @@ export interface ToolResult {
     title: string;
     type: string;
     markdown: string;
-    draftMeta?: { to?: string; subject?: string; threadId?: string; body?: string; recipientName?: string; gmailDraftId?: string };
+    draftMeta?: {
+      to?: string;
+      subject?: string;
+      threadId?: string;
+      body?: string;
+      recipientName?: string;
+      gmailDraftId?: string;
+      /**
+       * 0-100 score from the post-draft voice-profile critique. Surfaced on
+       * the draft card so the user knows when a draft drifted from their
+       * voice (typically when < 70). Computed inside draftReply via a
+       * second LLM pass against the injected voice profile.
+       */
+      voiceScore?: number;
+      /** Short reason behind a low score; surfaced under the score badge. */
+      voiceCritique?: string;
+    };
     pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
     isUpdate?: boolean;
   };
@@ -962,6 +978,62 @@ async function getVoiceProfileTool(userId: string): Promise<ToolResult> {
   }
 }
 
+/**
+ * Score a draft body against the user's saved voice profile. Returns a
+ * 0-100 voice-match score and a one-line critique if the score is low.
+ *
+ * Run as a post-draft critique pass inside draftReply so the score lands
+ * in canvasData.draftMeta and the UI can warn the user before they hit
+ * Send. Time-boxed to ~6s so a slow LLM call never stalls the draft path
+ * — on timeout we omit the score rather than refusing to save the draft.
+ */
+async function reviewDraft(userId: string, body: string): Promise<{ score: number; critique: string } | null> {
+  try {
+    const { voiceProfileService } = await import('../voice-profile-service.js');
+    const profile = (await voiceProfileService.getVoiceProfile(userId)) as any;
+    if (!profile || profile.status === 'default') return null;
+    const voicePrompt = (voiceProfileService.generateVoicePrompt(profile) as string | undefined)?.trim();
+    if (!voicePrompt) return null;
+
+    const TIMEOUT = Symbol('timeout');
+    const race = await Promise.race([
+      callLLM(
+        [
+          {
+            role: 'system',
+            content:
+              'You are a strict editor scoring how well a draft email body matches the user\'s saved writing voice. ' +
+              'Output ONLY raw JSON with two fields: {"score": <0-100 integer>, "critique": "<one short sentence>"}. ' +
+              'Score 90+ means the draft is indistinguishable from the user\'s real writing. ' +
+              'Score 70-89 means it mostly matches but has minor AI-isms. ' +
+              'Score below 70 means it sounds like generic AI — name the specific mismatch (greeting, sign-off, sentence length, hedging, formality) in the critique. ' +
+              'Critique stays under 20 words. No markdown fences, no preamble.',
+          },
+          {
+            role: 'user',
+            content:
+              `USER VOICE PROFILE:\n${voicePrompt}\n\n---\n\nDRAFT BODY TO SCORE:\n${body.slice(0, 4000)}\n\n---\n\nReturn the JSON now.`,
+          },
+        ],
+        [],
+        { maxTokens: 120, temperature: 0.1 },
+      ),
+      new Promise((resolve) => setTimeout(() => resolve(TIMEOUT), 6000)),
+    ]);
+
+    if (race === TIMEOUT) return null;
+    const text = getText((race as any).content).trim();
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) return null;
+    const parsed = JSON.parse(match[0]);
+    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const critique = typeof parsed.critique === 'string' ? parsed.critique.trim().slice(0, 200) : '';
+    return { score, critique };
+  } catch {
+    return null;
+  }
+}
+
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
@@ -1001,8 +1073,20 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   // Feature 4: Update contact on draft interaction
   touchContact(userId, input.to, displayName);
 
+  // Post-draft voice critique. Time-boxed and best-effort — if it fails the
+  // draft still ships, the user just won't see a score badge.
+  const review = await reviewDraft(userId, input.body || '');
+
+  // Surface a low-score warning to the LLM in the tool result so its final
+  // chat sentence can hedge ("voice match is 62/100 — worth a quick review").
+  const lowScoreNote = review && review.score < 70
+    ? `\n\nVOICE MATCH: ${review.score}/100. ${review.critique || ''} Mention this score to the user and suggest a quick review before sending.`
+    : review
+      ? `\n\nVOICE MATCH: ${review.score}/100. The draft sounds like the user.`
+      : '';
+
   return {
-    output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.`,
+    output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.${lowScoreNote}`,
     canvasData: {
       title: `Draft: ${subject}`,
       type: 'email_draft',
@@ -1018,7 +1102,16 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
         '',
         `[Open in Gmail](${previewUrl})`,
       ].join('\n'),
-      draftMeta: { to: input.to, subject, threadId: input.threadId, body: input.body, recipientName: displayName, gmailDraftId: draft.id },
+      draftMeta: {
+        to: input.to,
+        subject,
+        threadId: input.threadId,
+        body: input.body,
+        recipientName: displayName,
+        gmailDraftId: draft.id,
+        voiceScore: review?.score,
+        voiceCritique: review?.critique,
+      },
     },
   };
 }

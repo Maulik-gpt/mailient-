@@ -18,6 +18,10 @@ interface DraftReplyBoxProps {
         subject: string;
         threadId?: string;
         gmailDraftId?: string;
+        /** 0-100 voice-match score from reviewDraft (post-draft critique pass). */
+        voiceScore?: number;
+        /** One-line critique surfaced under the score badge when score < 70. */
+        voiceCritique?: string;
     } | null;
     onSendReply: (draftData: {
         content: string;
@@ -290,6 +294,42 @@ export function DraftReplyBox({
                     <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">Subject</span>
                     <span className="text-zinc-300 font-medium truncate">{draftData.subject}</span>
                 </div>
+                {typeof draftData.voiceScore === 'number' && (
+                    <>
+                        <div className="h-px bg-white/[0.02] w-full" />
+                        <div className="flex items-start gap-4 text-xs tracking-wide">
+                            <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">Voice</span>
+                            <div className="flex flex-col gap-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                    <span
+                                        className={cn(
+                                            'px-1.5 py-0.5 rounded-md font-bold text-[11px] tracking-wide tabular-nums',
+                                            draftData.voiceScore >= 85
+                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20'
+                                                : draftData.voiceScore >= 70
+                                                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/20'
+                                                    : 'bg-rose-500/15 text-rose-300 border border-rose-500/25',
+                                        )}
+                                    >
+                                        {draftData.voiceScore}/100
+                                    </span>
+                                    <span className="text-zinc-500 text-[11px]">
+                                        {draftData.voiceScore >= 85
+                                            ? 'Sounds like you.'
+                                            : draftData.voiceScore >= 70
+                                                ? 'Mostly matches your voice.'
+                                                : 'May not match your voice — review before sending.'}
+                                    </span>
+                                </div>
+                                {draftData.voiceScore < 70 && draftData.voiceCritique && (
+                                    <span className="text-rose-300/70 text-[11px] leading-snug">
+                                        {draftData.voiceCritique}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+                    </>
+                )}
             </div>
 
             {/* Email Body Content Area */}

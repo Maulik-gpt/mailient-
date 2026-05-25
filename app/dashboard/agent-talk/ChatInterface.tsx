@@ -66,7 +66,6 @@ import { usePlanModeBrief } from './hooks/usePlanModeBrief';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { ProactiveNudge } from './components/ProactiveNudge';
-import { AuditPanel } from './components/AuditPanel';
 
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
@@ -523,6 +522,11 @@ interface AgentMessage {
       senderName: string;
       subject: string;
       threadId?: string;
+      gmailDraftId?: string;
+      /** Post-draft voice-match score (0-100) from reviewDraft. */
+      voiceScore?: number;
+      /** One-line critique surfaced under the score badge when score < 70. */
+      voiceCritique?: string;
     };
     planCard?: PlanCardData;
     planIntro?: string;
@@ -1478,7 +1482,6 @@ export default function ChatInterface({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [showShortcutsModal, setShowShortcutsModal] = useState(false);
-  const [showAuditPanel, setShowAuditPanel] = useState(false);
 
   const [userName, setUserName] = useState<string>('User');
   const [emailStats, setEmailStats] = useState({
@@ -1854,10 +1857,9 @@ export default function ChatInterface({
       const sendBtn = document.querySelector<HTMLButtonElement>('[aria-label="Send"], button[type="submit"]');
       sendBtn?.click();
     },
-    onCloseCanvas: () => { setIsCanvasOpen(false); setShowShortcutsModal(false); setShowAuditPanel(false); },
+    onCloseCanvas: () => { setIsCanvasOpen(false); setShowShortcutsModal(false); },
     onNewChat: () => startNewChat(),
     onShowShortcuts: () => setShowShortcutsModal(prev => !prev),
-    onAuditPanel: () => setShowAuditPanel(prev => !prev),
     onMorningBrief: () => {
       setSuggestionInput({ text: 'Give me a morning briefing — summarize my inbox, flag urgent emails, and list follow-ups.', id: Date.now() });
     },
@@ -1874,7 +1876,6 @@ export default function ChatInterface({
     onToggleSidebar: () => setIsSidebarCollapsed(prev => !prev),
     onEscapeAction: () => {
       if (showShortcutsModal) { setShowShortcutsModal(false); return; }
-      if (showAuditPanel) { setShowAuditPanel(false); return; }
       if (isCanvasOpen) { setIsCanvasOpen(false); return; }
     },
   });
@@ -2316,6 +2317,8 @@ export default function ChatInterface({
                         subject: cv.draftMeta.subject || cv.title || '',
                         threadId: cv.draftMeta.threadId,
                         gmailDraftId: cv.draftMeta.gmailDraftId,
+                        voiceScore: (cv.draftMeta as any).voiceScore,
+                        voiceCritique: (cv.draftMeta as any).voiceCritique,
                       }
                     : undefined;
                   if (draftReply) currentDraftReply = draftReply;
@@ -3765,10 +3768,6 @@ export default function ChatInterface({
           shortcuts={shortcuts}
         />
 
-        <AuditPanel
-          open={showAuditPanel}
-          onClose={() => setShowAuditPanel(false)}
-        />
 
         <div className="flex h-full w-full text-arcus-fg bg-arcus-bg selection:bg-arcus-surface selection:text-arcus-fg dark:selection:bg-arcus-surface dark:selection:text-arcus-fg overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
@@ -4052,20 +4051,6 @@ export default function ChatInterface({
 
 
                         <div className="flex items-center gap-1">
-                          <Tooltip delayDuration={100}>
-                            <TooltipTrigger asChild>
-                              <button
-                                onClick={() => setShowAuditPanel(prev => !prev)}
-                                className={cn('p-2 rounded-lg transition-all focus:outline-none focus:ring-0', showAuditPanel ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white' : 'hover:bg-black/5 dark:hover:bg-white/5 text-black dark:text-white/60')}
-                              >
-                                <Shield className="w-[18px] h-[18px]" />
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="bottom">
-                              <span className="text-[10px]">Audit Trail <kbd className="ml-1 opacity-50">⌘⇧A</kbd></span>
-                            </TooltipContent>
-                          </Tooltip>
-
                           <Tooltip delayDuration={100}>
                             <TooltipTrigger asChild>
                               <button
