@@ -26,7 +26,12 @@ export interface SystemPromptOptions {
 const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] }> = {
   gmail: {
     label: 'Gmail',
-    tools: ['search_gmail', 'read_email', 'get_sent_emails', 'draft_reply', 'send_email', 'check_followups', 'digest_newsletters'],
+    tools: [
+      'search_gmail', 'read_email', 'gmail_read_thread', 'get_sent_emails',
+      'draft_reply', 'send_email',
+      'gmail_get_labels', 'gmail_apply_label', 'gmail_archive_thread', 'gmail_get_profile',
+      'check_followups', 'digest_newsletters',
+    ],
   },
   gcal: {
     label: 'Google Calendar',

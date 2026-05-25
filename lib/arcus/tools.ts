@@ -382,6 +382,70 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'gmail_read_thread',
+    description:
+      'Fetch every message in a Gmail thread by threadId — full bodies, senders, recipients, dates, attachment metadata. ' +
+      'Use when you need the back-and-forth context, not just one message (read_email returns a single message by messageId). ' +
+      'Output: plain text with thread-level header, then each message numbered with its From / To / Date / RFC-Message-ID / body. ' +
+      'Errors (success:false): gmail_not_connected, not_found (status 404), upstream_gmail.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadId: { type: 'string', description: 'Gmail thread id from search_gmail or read_email.' },
+      },
+      required: ['threadId'],
+    },
+  },
+  {
+    name: 'gmail_get_labels',
+    description:
+      'List every label in the user\'s Gmail account (system labels like INBOX/SENT plus user labels). ' +
+      'Call this before gmail_apply_label so you reference real label ids, not names. ' +
+      'Output: numbered list of "<labelName>  [id: <labelId>  type: system|user]". ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'gmail_apply_label',
+    description:
+      'Add one or more existing labels to a thread. Reversible write — does not require request_confirmation. ' +
+      'Prerequisite: gmail_get_labels (so labelIds you pass actually exist). ' +
+      'Output: "Applied <N> label(s) to thread <threadId>." ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail, validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadId: { type: 'string', description: 'Gmail thread id.' },
+        labelIds: { type: 'array', items: { type: 'string' }, description: 'Label ids from gmail_get_labels (NOT names).' },
+      },
+      required: ['threadId', 'labelIds'],
+    },
+  },
+  {
+    name: 'gmail_archive_thread',
+    description:
+      'Archive a thread (remove the INBOX label). Reversible write — emails remain in All Mail and can be searched/restored. Does not require request_confirmation for single threads. ' +
+      'For bulk newsletter archives use digest_newsletters instead. ' +
+      'Output: "Archived thread <threadId>." ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail, validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadId: { type: 'string', description: 'Gmail thread id to archive.' },
+      },
+      required: ['threadId'],
+    },
+  },
+  {
+    name: 'gmail_get_profile',
+    description:
+      'Return the authenticated Gmail account\'s email address, total message count, and total thread count. ' +
+      'Use to know who Arcus is acting as, or to ground claims about inbox volume. ' +
+      'Output: plain text with "Email: <addr>", "Messages: <n>", "Threads: <n>". ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'schedule_meeting',
     description:
       'Create a Google Calendar event with an auto-generated Google Meet link and send invites to attendees. ' +
@@ -736,6 +800,11 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
 const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   search_gmail: 'gmail',
   read_email: 'gmail',
+  gmail_read_thread: 'gmail',
+  gmail_get_labels: 'gmail',
+  gmail_apply_label: 'gmail',
+  gmail_archive_thread: 'gmail',
+  gmail_get_profile: 'gmail',
   get_sent_emails: 'gmail',
   get_voice_profile: null,
   draft_reply: 'gmail',
@@ -856,6 +925,11 @@ export async function executeTool(
     switch (name) {
       case 'search_gmail':      result = await searchGmail(userId, input); break;
       case 'read_email':        result = await readEmail(userId, input); break;
+      case 'gmail_read_thread': result = await gmailReadThread(userId, input); break;
+      case 'gmail_get_labels':  result = await gmailGetLabels(userId); break;
+      case 'gmail_apply_label': result = await gmailApplyLabel(userId, input); break;
+      case 'gmail_archive_thread': result = await gmailArchiveThread(userId, input); break;
+      case 'gmail_get_profile': result = await gmailGetProfile(userId); break;
       case 'get_sent_emails':   result = await getSentEmails(userId, input); break;
       case 'get_voice_profile': result = await getVoiceProfileTool(userId); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
@@ -975,6 +1049,198 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
   // Pattern Recognition Intelligence: annotate with booking links, calendar invites,
   // time-sensitive demands, and revenue opportunities detected in the email body.
   return { output: annotateEmailWithSignals(rawOutput) };
+}
+
+// ── gmail_read_thread ─────────────────────────────────────────────────────────
+// Whole-thread fetch — every message in chronological order. The spec's
+// "single source of truth for email content." Single-message reads stay on
+// read_email; this is for the back-and-forth case.
+async function gmailReadThread(userId: string, input: any): Promise<ToolResult> {
+  const threadId = (input.threadId || '').trim();
+  if (!threadId) return failureResult('threadId is required.', 'validation_error');
+
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}?format=full`;
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) }); }
+  }
+  if (!res.ok) {
+    return failureResult(`Could not read thread (${res.status}).`, res.status === 404 ? 'not_found' : 'upstream_gmail');
+  }
+
+  const thread = await res.json();
+  const msgs: any[] = thread.messages || [];
+  if (!msgs.length) return failureResult(`Thread ${threadId} has no messages.`, 'not_found');
+
+  const lines: string[] = [
+    `Thread-ID: ${thread.id}`,
+    `History-ID: ${thread.historyId}`,
+    `Messages: ${msgs.length}`,
+    '',
+  ];
+  msgs.forEach((m: any, i: number) => {
+    const h = m.payload?.headers || [];
+    const body = extractBody(m.payload);
+    lines.push(`--- Message ${i + 1} of ${msgs.length} ---`);
+    lines.push(`Message-ID: ${m.id}`);
+    lines.push(`RFC-Message-ID: ${getHeader(h, 'Message-ID')}`);
+    lines.push(`From: ${getHeader(h, 'From')}`);
+    lines.push(`To: ${getHeader(h, 'To')}`);
+    const cc = getHeader(h, 'Cc');
+    if (cc) lines.push(`Cc: ${cc}`);
+    lines.push(`Subject: ${getHeader(h, 'Subject')}`);
+    lines.push(`Date: ${getHeader(h, 'Date')}`);
+    // Attachment metadata only — never download attachment content
+    const parts = collectAttachmentMeta(m.payload);
+    if (parts.length) {
+      lines.push(`Attachments: ${parts.map(a => `${a.filename} (${a.mimeType}, ${a.size}B)`).join('; ')}`);
+    }
+    lines.push('');
+    lines.push(body || '(no plain text body)');
+    lines.push('');
+  });
+
+  return { output: annotateEmailWithSignals(lines.join('\n')) };
+}
+
+// Walk the MIME tree of a Gmail message payload and collect attachment metadata.
+// Returns [] for messages with no attachments. Body content is never returned.
+function collectAttachmentMeta(payload: any): Array<{ filename: string; mimeType: string; size: number }> {
+  const out: Array<{ filename: string; mimeType: string; size: number }> = [];
+  const walk = (p: any) => {
+    if (!p) return;
+    if (p.filename && p.body?.attachmentId) {
+      out.push({ filename: p.filename, mimeType: p.mimeType || 'application/octet-stream', size: p.body.size || 0 });
+    }
+    (p.parts || []).forEach(walk);
+  };
+  walk(payload);
+  return out;
+}
+
+// ── gmail_get_labels ──────────────────────────────────────────────────────────
+async function gmailGetLabels(userId: string): Promise<ToolResult> {
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/labels';
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
+  }
+  if (!res.ok) return failureResult(`Could not list labels (${res.status}).`, 'upstream_gmail');
+
+  const data = await res.json();
+  const labels: any[] = data.labels || [];
+  if (!labels.length) return { output: 'No labels found.' };
+
+  const lines = labels.map((l: any, i: number) =>
+    `${i + 1}. ${l.name}  [id: ${l.id}  type: ${l.type || 'user'}]`,
+  );
+  return { output: `${labels.length} label(s):\n${lines.join('\n')}` };
+}
+
+// ── gmail_apply_label ─────────────────────────────────────────────────────────
+async function gmailApplyLabel(userId: string, input: any): Promise<ToolResult> {
+  const threadId = (input.threadId || '').trim();
+  const labelIds: string[] = Array.isArray(input.labelIds) ? input.labelIds.filter((s: any) => typeof s === 'string' && s.trim()) : [];
+  if (!threadId) return failureResult('threadId is required.', 'validation_error');
+  if (!labelIds.length) return failureResult('labelIds (non-empty array of label ids from gmail_get_labels) is required.', 'validation_error');
+
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}/modify`;
+  const body = JSON.stringify({ addLabelIds: labelIds });
+  let res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body,
+    signal: AbortSignal.timeout(10000),
+  });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(10000),
+      });
+    }
+  }
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    return failureResult(`Apply label failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
+  }
+  return { output: `Applied ${labelIds.length} label(s) to thread ${threadId}.` };
+}
+
+// ── gmail_archive_thread ──────────────────────────────────────────────────────
+// Reversible — just removes the INBOX label. Emails stay in All Mail and can
+// be searched/restored. No request_confirmation gate for single threads.
+async function gmailArchiveThread(userId: string, input: any): Promise<ToolResult> {
+  const threadId = (input.threadId || '').trim();
+  if (!threadId) return failureResult('threadId is required.', 'validation_error');
+
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}/modify`;
+  const body = JSON.stringify({ removeLabelIds: ['INBOX'] });
+  let res = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body,
+    signal: AbortSignal.timeout(10000),
+  });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(10000),
+      });
+    }
+  }
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    return failureResult(`Archive failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
+  }
+  return { output: `Archived thread ${threadId}.` };
+}
+
+// ── gmail_get_profile ─────────────────────────────────────────────────────────
+async function gmailGetProfile(userId: string): Promise<ToolResult> {
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const url = 'https://gmail.googleapis.com/gmail/v1/users/me/profile';
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }); }
+  }
+  if (!res.ok) return failureResult(`Could not read profile (${res.status}).`, 'upstream_gmail');
+
+  const p = await res.json();
+  return {
+    output: [
+      `Email: ${p.emailAddress}`,
+      `Messages: ${p.messagesTotal}`,
+      `Threads: ${p.threadsTotal}`,
+      `History-ID: ${p.historyId}`,
+    ].join('\n'),
+  };
 }
 
 async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
