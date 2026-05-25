@@ -4,12 +4,12 @@ import { auth } from '../../../../../lib/auth.js';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
-function getKey(): string | undefined {
-  return (
-    process.env.OPENROUTER_API_KEY ||
-    process.env.OPENROUTER_API_KEY2 ||
-    process.env.OPENROUTER_API_KEY3
-  );
+function getKeys(): string[] {
+  return [
+    process.env.OPENROUTER_API_KEY,
+    process.env.OPENROUTER_API_KEY2,
+    process.env.OPENROUTER_API_KEY3,
+  ].filter(Boolean) as string[];
 }
 
 export async function POST(request: NextRequest) {
@@ -30,8 +30,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'draft is required' }, { status: 400 });
   }
 
-  const apiKey = getKey();
-  if (!apiKey) {
+  const apiKeys = getKeys();
+  if (!apiKeys.length) {
     return NextResponse.json({ error: 'LLM not available' }, { status: 503 });
   }
 
@@ -50,33 +50,45 @@ Rules:
 - Plain prose only — no bullet points, no headers, no markdown
 - Never add anything the user didn't imply — only expand what's there`;
 
-  try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://mailient.xyz',
-      },
-      body: JSON.stringify({
-        models: ['meta-llama/llama-3.3-70b-instruct:free', 'qwen/qwen-2.5-72b-instruct:free', 'google/gemma-2-9b-it:free'],
-        max_tokens: 400,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `Here is my draft:\n\n${draft.slice(0, 1000)}` },
-        ],
-      }),
-    });
+  let lastError = 'Enhancement failed';
 
-    if (!res.ok) throw new Error(`OpenRouter ${res.status}`);
+  for (const apiKey of apiKeys) {
+    try {
+      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://mailient.xyz',
+        },
+        body: JSON.stringify({
+          model: 'meta-llama/llama-3.3-70b-instruct:free',
+          max_tokens: 400,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: `Here is my draft:\n\n${draft.slice(0, 1000)}` },
+          ],
+        }),
+      });
 
-    const json = await res.json();
-    const enhanced: string = json.choices?.[0]?.message?.content?.trim() || '';
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`OpenRouter ${res.status}: ${errText}`);
+      }
 
-    if (!enhanced) throw new Error('Empty response');
+      const json = await res.json();
+      const enhanced: string = json.choices?.[0]?.message?.content?.trim() || '';
 
-    return NextResponse.json({ enhanced });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Enhancement failed' }, { status: 500 });
+      if (!enhanced) throw new Error('Empty response');
+
+      return NextResponse.json({ enhanced });
+    } catch (err: any) {
+      console.error('[Enhance API] Key failed:', err.message);
+      lastError = err.message;
+      // If it's a 429, continue to the next key. Otherwise, also continue just in case.
+      continue;
+    }
   }
+
+  return NextResponse.json({ error: lastError }, { status: 500 });
 }
