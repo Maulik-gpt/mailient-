@@ -63,7 +63,7 @@ Rules:
           'HTTP-Referer': 'https://mailient.xyz',
         },
         body: JSON.stringify({
-          model: 'google/gemma-2-9b-it:free',
+          model: 'meta-llama/llama-3.1-8b-instruct:free',
           max_tokens: 400,
           messages: [
             { role: 'system', content: systemPrompt },
