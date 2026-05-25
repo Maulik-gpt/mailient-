@@ -12,6 +12,7 @@
 
 import { getSupabaseAdmin } from '../../supabase.js';
 import { SupermemoryClient } from '../../supermemory-client.js';
+import { isMemoryEnabled, extractAndSaveEmailInsights } from '../../arcus/memory';
 import { getToken, getTokenPair } from '../integrations';
 
 // ── Gmail helpers ──────────────────────────────────────────────────────────────
@@ -149,7 +150,7 @@ export async function readEmail(
   const messageId = getHeader(headers, 'Message-ID');
   const body = extractBody(msg.payload);
 
-  return [
+  const out = [
     `Message-ID: ${msg.id}`,
     `Thread-ID: ${msg.threadId}`,
     `RFC-Message-ID: ${messageId}`,
@@ -161,6 +162,15 @@ export async function readEmail(
     '--- Body ---',
     body || '(no plain text body)',
   ].join('\n');
+
+  // Asynchronously extract insights from the body so Arcus remembers this context
+  if (body) {
+    extractAndSaveEmailInsights(userId, body).catch(err => {
+      console.error('[Memory] Error extracting email insights:', err);
+    });
+  }
+
+  return out;
 }
 
 export async function readThread(
@@ -189,7 +199,19 @@ export async function readThread(
     return `--- Message ${i + 1} ---\nFrom: ${from}\nDate: ${date}\nSubject: ${subject}\n\n${body || '(no plain text)'}`;
   });
 
-  return `Thread ${input.threadId} — ${messages.length} message(s):\n\n${formatted.join('\n\n')}`;
+
+
+  const out = `Thread ${input.threadId} — ${messages.length} message(s):\n\n${formatted.join('\n\n')}`;
+
+  // Asynchronously extract insights from the combined thread body
+  const combinedBody = messages.map((m: any) => extractBody(m.payload)).join('\n');
+  if (combinedBody) {
+    extractAndSaveEmailInsights(userId, combinedBody).catch(err => {
+      console.error('[Memory] Error extracting thread insights:', err);
+    });
+  }
+
+  return out;
 }
 
 export async function draftReply(
@@ -993,6 +1015,10 @@ export async function searchMemory(
   userId: string,
   input: { query: string; limit?: number }
 ): Promise<string> {
+  // Check if user has memory enabled
+  const enabled = await isMemoryEnabled(userId);
+  if (!enabled) return 'Memory is disabled. The user has turned off memory in their Arcus settings.';
+
   const results = await supermemory.getMemories(userId, input.query, input.limit || 5);
   if (!results.length) return 'No memories found for that query.';
 
@@ -1007,6 +1033,10 @@ export async function addMemory(
   userId: string,
   input: { content: string; category?: string }
 ): Promise<string> {
+  // Check if user has memory enabled
+  const enabled = await isMemoryEnabled(userId);
+  if (!enabled) return 'Memory is disabled. The user has turned off memory in their Arcus settings.';
+
   const result = await supermemory.addMemory(userId, input.content, {
     category: input.category || 'context',
     source: 'arcus_chat',

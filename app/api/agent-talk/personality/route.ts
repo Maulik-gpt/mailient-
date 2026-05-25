@@ -24,9 +24,13 @@ export async function GET() {
       .maybeSingle();
 
     const prefs = (data?.preferences as Record<string, unknown>) || {};
-    return NextResponse.json({ personality: (prefs.arcus_personality as string) || '' });
+    return NextResponse.json({
+      personality: (prefs.arcus_personality as string) || '',
+      instructionsEnabled: prefs.arcus_instructions_enabled !== false,
+      memoryEnabled: prefs.arcus_memory_enabled !== false,
+    });
   } catch {
-    return NextResponse.json({ personality: '' });
+    return NextResponse.json({ personality: '', instructionsEnabled: true, memoryEnabled: true });
   }
 }
 
@@ -38,9 +42,13 @@ export async function POST(request: NextRequest) {
   const userId = session.user.email.toLowerCase();
 
   let personality = '';
+  let instructionsEnabled: boolean | undefined;
   try {
     const body = await request.json();
     personality = (body.personality as string) || '';
+    if (typeof body.instructionsEnabled === 'boolean') {
+      instructionsEnabled = body.instructionsEnabled;
+    }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
@@ -56,7 +64,10 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     const existingPrefs = (existing?.preferences as Record<string, unknown>) || {};
-    const updatedPrefs = { ...existingPrefs, arcus_personality: personality };
+    const updatedPrefs: Record<string, unknown> = { ...existingPrefs, arcus_personality: personality };
+    if (instructionsEnabled !== undefined) {
+      updatedPrefs.arcus_instructions_enabled = instructionsEnabled;
+    }
 
     if (existing) {
       await supabase

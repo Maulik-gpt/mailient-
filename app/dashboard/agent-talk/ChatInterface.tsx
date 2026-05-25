@@ -34,7 +34,7 @@ import remarkGfm from 'remark-gfm';
 import { PromptInputBox } from '@/components/ui/ai-prompt-box';
 import { ConnectorsModal } from '@/components/ui/connectors-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
-import { PersonalitySettingsModal } from '@/components/ui/personality-settings-modal';
+import { ArcusSettingsModal } from '@/components/ui/arcus-settings-modal';
 import { GradientButton } from '@/components/ui/gradient-button';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { RainbowButton } from '@/components/ui/rainbow-button';
@@ -1389,6 +1389,8 @@ export default function ChatInterface({
   const [isMoreOptionsOpen, setIsMoreOptionsOpen] = useState<boolean>(false);
   const [isPersonalityModalOpen, setIsPersonalityModalOpen] = useState(false);
   const [savedPersonality, setSavedPersonality] = useState<string>('');
+  const [instructionsEnabled, setInstructionsEnabled] = useState(true);
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [gmailTokenSource, setGmailTokenSource] = useState<string | null>(null);
   const [isNotesQuery, setIsNotesQuery] = useState<boolean>(false);
@@ -3174,27 +3176,34 @@ export default function ChatInterface({
       if (response.ok) {
         const data = await response.json();
         setSavedPersonality(data.personality || '');
+        setInstructionsEnabled(data.instructionsEnabled !== false);
+        setMemoryEnabled(data.memoryEnabled !== false);
       }
     } catch (error) {
       console.error('Error loading personality preferences:', error);
     }
   };
 
-  const handleSavePersonality = async (personality: string) => {
+  const handleSavePersonality = async (personality: string, enabled: boolean) => {
     try {
       const response = await fetch('/api/agent-talk/personality', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ personality }),
+        body: JSON.stringify({ personality, instructionsEnabled: enabled }),
       });
       if (response.ok) {
         setSavedPersonality(personality);
+        setInstructionsEnabled(enabled);
       }
     } catch (error) {
       console.error('Error saving personality preferences:', error);
     }
+  };
+
+  const handleToggleMemory = (enabled: boolean) => {
+    setMemoryEnabled(enabled);
   };
 
   // Pull a fresh Gmail access token — only if Gmail is actually connected
@@ -4981,7 +4990,15 @@ export default function ChatInterface({
             setIsEmailSelectionModalOpen(false);
           }}
         />
-        <PersonalitySettingsModal isOpen={isPersonalityModalOpen} onClose={() => setIsPersonalityModalOpen(false)} onSave={handleSavePersonality} initialPersonality={savedPersonality} />
+        <ArcusSettingsModal
+          isOpen={isPersonalityModalOpen}
+          onClose={() => setIsPersonalityModalOpen(false)}
+          onSaveInstructions={handleSavePersonality}
+          onToggleMemory={handleToggleMemory}
+          initialInstructions={savedPersonality}
+          initialInstructionsEnabled={instructionsEnabled}
+          initialMemoryEnabled={memoryEnabled}
+        />
 
         {/* Library overlay modal */}
         <ArtifactsGalleryPanel

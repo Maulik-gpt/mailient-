@@ -18,6 +18,28 @@ function getKey(): string | null {
   return process.env.SUPERMEMORY_API_KEY || process.env.DATAFAST_API_KEY || null;
 }
 
+/**
+ * Check if memory is enabled for a user via their preferences in Supabase.
+ * Returns true by default (memory enabled unless explicitly disabled).
+ * Never throws.
+ */
+export async function isMemoryEnabled(userId: string): Promise<boolean> {
+  try {
+    const { getSupabaseAdmin } = await import('../supabase.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+
+    const prefs = (data?.preferences as Record<string, unknown>) || {};
+    return prefs.arcus_memory_enabled !== false;
+  } catch {
+    return true; // default enabled — never break conversation
+  }
+}
+
 // ── Core API ───────────────────────────────────────────────────────────────────
 
 /**
@@ -145,6 +167,10 @@ export async function extractAndSaveInsights(
   userMessage: string,
   assistantReply: string,
 ): Promise<void> {
+  // Check if memory is enabled for this user
+  const enabled = await isMemoryEnabled(userId);
+  if (!enabled) return;
+
   const combined = `${userMessage} ${assistantReply}`;
   const saves: Promise<void>[] = [];
 
@@ -199,4 +225,51 @@ export async function saveConversationTurn(
   assistantReply: string,
 ): Promise<void> {
   await extractAndSaveInsights(userId, userMessage, assistantReply);
+}
+
+/**
+ * Extracts insights from raw email content automatically when Arcus reads emails.
+ */
+export async function extractAndSaveEmailInsights(
+  userId: string,
+  emailText: string,
+): Promise<void> {
+  // Check if memory is enabled
+  const enabled = await isMemoryEnabled(userId);
+  if (!enabled || !emailText) return;
+
+  const saves: Promise<void>[] = [];
+  
+  // ── Relationship memories from emails ────────────────────────────────────────
+  for (const pattern of CLIENT_PATTERNS) {
+    const match = emailText.match(pattern);
+    if (match) {
+      const name = (match[1] || match[2] || '').trim();
+      if (name && name.length > 1 && name.length < 40) {
+        saves.push(saveMemory(
+          userId,
+          `[RELATIONSHIP] ${name} is a high-value client/contact (extracted from email context) — prioritize their threads.`,
+          ['relationship', 'client', 'auto-extracted'],
+        ));
+      }
+      break; 
+    }
+  }
+
+  // ── Preference memories from emails ──────────────────────────────────────────
+  for (const { re, label } of PREFERENCE_PATTERNS) {
+    const match = emailText.match(re);
+    if (match) {
+      const pref = label(match);
+      if (pref && pref.length > 4 && pref.length < 120) {
+        saves.push(saveMemory(
+          userId,
+          `[PREFERENCE] ${pref} (extracted from email)`,
+          ['preference', 'auto-extracted'],
+        ));
+      }
+    }
+  }
+
+  await Promise.allSettled(saves);
 }
