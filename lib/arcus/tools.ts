@@ -291,116 +291,154 @@ function buildRaw(to: string, subject: string, body: string, threadId?: string, 
 export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'search_gmail',
-    description: 'Search the user\'s Gmail inbox. Use Gmail search operators: from:, to:, subject:, is:unread, is:starred, has:attachment, after:YYYY/MM/DD, newer_than:Nd, label:. Returns email summaries with IDs. ALWAYS call this before reading or replying to emails.',
+    description:
+      'Search Gmail metadata only — returns id, threadId, From, Subject, Date, snippet for each match. ' +
+      'Does NOT return full bodies; call read_email for body. ' +
+      'Output: plain-text list of numbered email summaries, or "No emails found matching that query." when empty. ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail.',
     input_schema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Gmail search query. E.g. "from:client@co.com is:unread newer_than:7d"' },
-        maxResults: { type: 'number', description: 'Max emails to return (default 10, max 25)' },
+        query: { type: 'string', description: 'Gmail search query using Gmail operators. Examples: "from:client@co.com is:unread", "subject:proposal newer_than:7d", "has:attachment after:2026/01/01".' },
+        maxResults: { type: 'number', description: 'Max emails (1-25, default 10).' },
       },
       required: ['query'],
     },
   },
   {
     name: 'read_email',
-    description: 'Read the full content of an email including body, sender, thread history. Pass messageId from search_gmail. Use to get full context before drafting a reply.',
+    description:
+      'Fetch a single email\'s full content given its message id. Required before any claim about a specific email\'s body. ' +
+      'Output: plain text with Message-ID, Thread-ID, RFC-Message-ID, From, To, Subject, Date, then the body. ' +
+      'Errors (success:false): gmail_not_connected, not_found (status 404), upstream_gmail.',
     input_schema: {
       type: 'object',
       properties: {
-        messageId: { type: 'string', description: 'Gmail message ID from search_gmail results' },
+        messageId: { type: 'string', description: 'Gmail message id from search_gmail.' },
       },
       required: ['messageId'],
     },
   },
   {
     name: 'get_sent_emails',
-    description: 'Read the user\'s recent sent emails as raw samples — used ONLY when the user explicitly asks you to analyse, audit, or describe their writing style. The voice profile is already loaded into the system prompt at the start of every conversation; do NOT call this before every draft. Calling this on every reply wastes a tool slot and adds latency.',
+    description:
+      'Return raw text of the user\'s recent sent emails for writing-style analysis. ' +
+      'Call ONLY when the user explicitly asks to audit/describe their voice — the voice profile is already injected at prompt-start every turn. ' +
+      'Output: plain-text dump of up to N sent emails plus the formatted voice profile block. ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail, no_sent_mail.',
     input_schema: {
       type: 'object',
       properties: {
-        limit: { type: 'number', description: 'Number of sent emails to fetch (default 30, max 50)' },
+        limit: { type: 'number', description: 'Sent emails to fetch (1-50, default 30).' },
       },
     },
   },
   {
     name: 'get_voice_profile',
-    description: 'Return the user\'s saved voice profile object for INSPECTION ONLY — call this when the user asks "do you have my voice profile?", "what does my voice profile say?", or wants to see/audit it. Do NOT call this before drafting emails. The voice profile is already injected at the top of the system prompt every turn; calling this tool to use it for drafting is wasted work.',
-    input_schema: {
-      type: 'object',
-      properties: {},
-    },
+    description:
+      'Return the saved voice profile object for INSPECTION ONLY (user asks "do you have my voice profile?"). ' +
+      'Do NOT call before drafting — voice profile is already in this prompt. ' +
+      'Output: plain text with profile fields (tone, greetings, closings, vocabulary). ' +
+      'Errors (success:false): voice_profile_missing, voice_profile_read_failed.',
+    input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'draft_reply',
-    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) schedule any meeting if needed. Write the body using the voice profile already injected at the top of the system prompt PLUS the recipient context from step 2. STOP after calling — do NOT call send_email.',
+    description:
+      'Save a Gmail draft reply (does NOT send) and render it inline as a draft card. ' +
+      'Prerequisites: read_email for the thread you\'re replying to, get_recipient_context for the recipient. ' +
+      'Body must use the voice profile in this prompt. ' +
+      'Output: confirmation text + canvasData.draftMeta with voiceScore/voiceCritique from the post-draft voice critique. ' +
+      'Errors (success:false): gmail_not_connected, draft_save_failed. ' +
+      'Never use this for summaries — use open_canvas. After calling, do NOT call send_email; the user reviews and sends from the card.',
     input_schema: {
       type: 'object',
       properties: {
-        threadId: { type: 'string', description: 'Gmail thread ID (from read_email results)' },
-        to: { type: 'string', description: 'Recipient email address' },
-        subject: { type: 'string', description: 'Subject (usually "Re: original subject")' },
-        body: { type: 'string', description: 'Email body — written in the user\'s voice. Include Google Meet link if a meeting was scheduled.' },
-        inReplyToMessageId: { type: 'string', description: 'RFC Message-ID for threading (from read_email)' },
-        recipientName: { type: 'string', description: 'Display name of the recipient (e.g. "Priya") — used in the draft preview UI' },
+        threadId: { type: 'string', description: 'Gmail thread id from read_email.' },
+        to: { type: 'string', description: 'Recipient email address.' },
+        subject: { type: 'string', description: 'Subject line (usually "Re: original subject").' },
+        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice. Include Meet link if a meeting was scheduled.' },
+        inReplyToMessageId: { type: 'string', description: 'RFC Message-ID from read_email for proper threading.' },
+        recipientName: { type: 'string', description: 'Display name for the draft card.' },
       },
       required: ['threadId', 'to', 'body'],
     },
   },
   {
     name: 'send_email',
-    description: 'Send an email immediately via Gmail. Only use when user explicitly says to SEND (not just draft). Requires user approval in the UI first — show the email content and ask for approval before calling this.',
+    description:
+      'Send an email immediately. GATED: requires a prior request_confirmation that the user approved with matching to+subject; the executor refuses otherwise with code "confirmation_required". ' +
+      'Output: success line with Message ID, recipient, subject. ' +
+      'Errors (success:false): confirmation_required, gmail_not_connected, send_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        to: { type: 'string', description: 'Recipient email address' },
-        subject: { type: 'string', description: 'Email subject' },
-        body: { type: 'string', description: 'Email body' },
-        threadId: { type: 'string', description: 'Thread ID if this is a reply' },
+        to: { type: 'string', description: 'Recipient email address — must match the To field passed to request_confirmation.' },
+        subject: { type: 'string', description: 'Subject line — must match the Subject passed to request_confirmation.' },
+        body: { type: 'string', description: 'Final email body in plain text.' },
+        threadId: { type: 'string', description: 'Thread id if this is a reply.' },
       },
       required: ['to', 'subject', 'body'],
     },
   },
   {
     name: 'schedule_meeting',
-    description: 'Create a Google Calendar event with a Google Meet link. Checks availability first. Returns the calendar event link and Meet URL.',
+    description:
+      'Create a Google Calendar event with an auto-generated Google Meet link and send invites to attendees. ' +
+      'GATED: requires a prior request_confirmation with matching attendees and start time. ' +
+      'Prerequisites: get_calendar_events to verify the slot is free (and Notion calendar via search_notion when connected). ' +
+      'Output: confirmation text + canvasData.pageMeta with htmlLink and Meet URL. ' +
+      'Errors (success:false): confirmation_required, gcal_not_connected, gcal_scope_missing, gcal_create_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'Meeting title' },
-        startTime: { type: 'string', description: 'Start time ISO 8601 with timezone e.g. "2024-01-15T14:00:00-05:00"' },
-        endTime: { type: 'string', description: 'End time ISO 8601 with timezone' },
-        attendees: { type: 'array', items: { type: 'string' }, description: 'Attendee email addresses' },
-        description: { type: 'string', description: 'Meeting agenda or description' },
+        title: { type: 'string', description: 'Event title shown on the calendar.' },
+        startTime: { type: 'string', description: 'ISO 8601 start time WITH timezone offset, e.g. "2026-05-26T14:00:00-04:00".' },
+        endTime: { type: 'string', description: 'ISO 8601 end time WITH timezone offset.' },
+        attendees: { type: 'array', items: { type: 'string' }, description: 'Attendee email addresses; they receive Google Calendar invites.' },
+        description: { type: 'string', description: 'Agenda or notes shown in the event description.' },
       },
       required: ['title', 'startTime', 'endTime'],
     },
   },
   {
     name: 'get_calendar_events',
-    description: 'Get upcoming Google Calendar events to check availability and understand the user\'s schedule.',
+    description:
+      'List the user\'s Google Calendar events in a forward window. Required before any claim about a slot being free. ' +
+      'Output: plain-text list with title, start time, attendees, or "No upcoming events..." when empty. ' +
+      'Errors (success:false): gcal_not_connected, gcal_scope_missing, upstream_gcal.',
     input_schema: {
       type: 'object',
       properties: {
-        daysAhead: { type: 'number', description: 'How many days ahead to look (default 7)' },
-        maxResults: { type: 'number', description: 'Max events (default 20)' },
+        daysAhead: { type: 'number', description: 'Forward window in days (default 7).' },
+        maxResults: { type: 'number', description: 'Max events (default 20).' },
       },
     },
   },
   {
     name: 'search_notion',
-    description: 'Search the user\'s Notion workspace for pages, databases, or specific content. Returns titles and summaries.',
+    description:
+      'Search the Notion workspace for pages whose title or content matches the query. ' +
+      'Output: plain-text list of matching pages with title, id, url, last edited date. ' +
+      'Errors (success:false): notion_not_connected, upstream_notion. ' +
+      'Empty result returns success:true with "No Notion pages found...".',
     input_schema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Search query for Notion' },
-        maxResults: { type: 'number', description: 'Max results (default 5)' },
+        query: { type: 'string', description: 'Free-text query — Notion does full-text search on title and content.' },
+        maxResults: { type: 'number', description: 'Max results (1-10, default 5).' },
       },
       required: ['query'],
     },
   },
   {
     name: 'open_canvas',
-    description: 'Open the built-in Canvas Panel — a beautiful full-screen document viewer on the right side. ALWAYS available, requires no integration. Use for ANYTHING longer than 3 paragraphs: email drafts, reports, analyses, summaries, action plans, weekly digests. Never render long content in chat — use open_canvas instead. To include custom visual charts/graphs in your canvas content, use these exact code block schemas:\n1. Bar chart: ```bar-chart\ntitle: Chart Title\nlabels: ["Mon", "Tue", ...]\nlabel: Label 1\ndata: [10, 20, ...]\nlabel: Label 2\ndata: [15, 25, ...]\n```\n2. Line chart: ```line-chart\ntitle: Chart Title\nlabels: ["Mon", "Tue", ...]\nlabel: Label 1\ndata: [10, 20, ...]\n```\n3. Pie/Donut chart: ```pie-chart\ntitle: Chart Title\nLabel 1: 10\nLabel 2: 20\n```',
+    description:
+      'Render a long document (report, prep doc, schedule, analysis, full email draft for review) in the side Canvas panel. ' +
+      'Use whenever the user-facing output would exceed 3 paragraphs — long content NEVER goes in chat. ' +
+      'Output: confirmation text + canvasData with title/type/markdown. ' +
+      'Errors (success:false): validation_error (empty markdown). ' +
+      'Inline charts use fenced code blocks: ```bar-chart / ```line-chart / ```pie-chart — see input.markdown description for exact syntax.',
     input_schema: {
       type: 'object',
       properties: {
@@ -427,141 +465,174 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   // ── Feature: Follow-up Radar ─────────────────────────────────────────────────
   {
     name: 'check_followups',
-    description: 'Scan sent emails for threads that have NOT received a reply — surfaces what the user is waiting on. Use proactively when asked "what needs follow-up", "anything I\'m waiting on", or as part of a morning briefing. Returns threads sorted by how long they\'ve been waiting.',
+    description:
+      'Scan recent sent mail for threads with no external reply — surfaces what the user is waiting on. ' +
+      'Output: list of awaiting threads sorted by days waiting (longest first), or "All your recent sent emails have received replies." ' +
+      'Errors (success:false): gmail_not_connected, upstream_gmail.',
     input_schema: {
       type: 'object',
       properties: {
-        days:       { type: 'number', description: 'Days back to scan sent mail (default 7, max 21)' },
-        maxResults: { type: 'number', description: 'Max sent threads to scan (default 15)' },
+        days:       { type: 'number', description: 'Days back to scan sent mail (1-21, default 7).' },
+        maxResults: { type: 'number', description: 'Max sent threads to scan (default 15).' },
       },
     },
   },
   // ── Feature: Recipient Context ────────────────────────────────────────────────
   {
     name: 'get_recipient_context',
-    description: 'Fetch rich context about an email recipient before drafting — upcoming meetings with them, Notion notes, and relationship memory. MANDATORY: call this BEFORE draft_reply whenever you have the recipient\'s email address. This ensures every draft is contextually aware of the relationship.',
+    description:
+      'Aggregate everything known about a recipient: upcoming GCal meetings with them, Notion pages mentioning them, and stored relationship memory. ' +
+      'REQUIRED before draft_reply for any recipient whose email you have. ' +
+      'Output: plain text grouped by source (Calendar / Notion / Memory) — or "No context found..." when empty (still success:true). ' +
+      'Errors (success:false): validation_error.',
     input_schema: {
       type: 'object',
       properties: {
-        email: { type: 'string', description: 'Recipient\'s email address' },
-        name:  { type: 'string', description: 'Recipient\'s name (improves Notion search)' },
+        email: { type: 'string', description: 'Recipient\'s email address.' },
+        name:  { type: 'string', description: 'Recipient\'s display name (improves Notion match quality).' },
       },
       required: ['email'],
     },
   },
-  // ── Feature: Relationship Memory ─────────────────────────────────────────────
   {
     name: 'get_contact_context',
-    description: 'Look up stored relationship memory for a contact — notes, interaction history, tags. Use whenever preparing to reach out to someone or when context about a person is needed.',
+    description:
+      'Look up the persisted relationship-memory row for a contact (notes, tag list, email count, last contact). ' +
+      'Output: plain-text contact card or "No relationship memory yet for <email>." ' +
+      'Errors (success:false): validation_error, migration_missing.',
     input_schema: {
       type: 'object',
       properties: {
-        email: { type: 'string', description: 'Contact email address' },
+        email: { type: 'string', description: 'Contact email address.' },
       },
       required: ['email'],
     },
   },
   {
     name: 'remember_about_contact',
-    description: 'Save a note or fact about a contact to long-term relationship memory. Use whenever you learn something important — their preferences, company, a promise made, their timezone, communication style. This powers the CRM layer.',
+    description:
+      'Append a durable note (and optional tags) to a contact\'s relationship-memory row. Use when the user states a fact about someone worth keeping. ' +
+      'Output: "Saved to relationship memory for ..." ' +
+      'Errors (success:false): validation_error, contact_save_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        email: { type: 'string', description: 'Contact email address' },
-        name:  { type: 'string', description: 'Contact display name' },
-        note:  { type: 'string', description: 'What to remember about this person' },
-        tags:  { type: 'array', items: { type: 'string' }, description: 'Optional tags, e.g. ["client", "vip", "partner"]' },
+        email: { type: 'string', description: 'Contact email address (lowercased before storage).' },
+        name:  { type: 'string', description: 'Display name to set/update.' },
+        note:  { type: 'string', description: 'Free-text fact to remember.' },
+        tags:  { type: 'array', items: { type: 'string' }, description: 'Optional tags, e.g. ["client", "vip"].' },
       },
       required: ['email', 'note'],
     },
   },
-  // ── Feature: Delegation Rules ─────────────────────────────────────────────────
   {
     name: 'get_delegation_rules',
-    description: 'List the user\'s active delegation rules — standing instructions like "whenever someone asks for a meeting, propose 3 times". Show these when the user asks to see or manage their rules.',
+    description:
+      'List active delegation rules — standing instructions Arcus applies during proactive triage. ' +
+      'Output: numbered list of rules with name, action type, triggers; or "No delegation rules set up yet." ' +
+      'Errors (success:false): migration_missing.',
     input_schema: { type: 'object', properties: {} },
   },
   {
     name: 'create_delegation_rule',
-    description: 'Create a delegation rule — a standing instruction Arcus will apply automatically to matching emails. Use when the user says "whenever X happens, do Y". Rules run during proactive triage.',
+    description:
+      'Persist a new delegation rule. Use when the user says "whenever X happens, do Y." ' +
+      'Output: "Delegation rule \\"X\\" created..." ' +
+      'Errors (success:false): validation_error (missing name or action_type), rule_save_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        name:             { type: 'string', description: 'Short rule name, e.g. "Auto-propose meeting times"' },
-        trigger_keywords: { type: 'array', items: { type: 'string' }, description: 'Keywords that trigger the rule in email subject/body' },
-        trigger_from:     { type: 'string', description: 'Optional: only trigger for emails from this address/domain' },
-        action_type:      { type: 'string', enum: ['draft_reply', 'notify', 'label'], description: 'What to do when triggered' },
-        action_config:    { type: 'object', description: 'Action details — e.g. { template: "reply draft text" } or { label: "urgent" }' },
+        name:             { type: 'string', description: 'Short rule name shown to the user.' },
+        trigger_keywords: { type: 'array', items: { type: 'string' }, description: 'Keywords matched against incoming email subject/body.' },
+        trigger_from:     { type: 'string', description: 'Optional: only trigger for emails from this address or domain.' },
+        action_type:      { type: 'string', enum: ['draft_reply', 'notify', 'label'], description: 'What to do when the rule triggers.' },
+        action_config:    { type: 'object', description: 'Action parameters, e.g. { template: "..." } or { label: "urgent" }.' },
       },
       required: ['name', 'action_type'],
     },
   },
   {
     name: 'update_canvas',
-    description: 'Update the content already displayed in the Canvas Panel — use when the user asks to rewrite, revise, shorten, expand, or apply any change to an existing canvas document. The panel will blur-fade from old content to new. Use this instead of open_canvas when a canvas is already open. Provide the complete updated markdown — not just the changed section.',
+    description:
+      'Replace the currently-open Canvas document with new markdown. Use when the user asks to rewrite/revise/shorten/expand an existing canvas. ' +
+      'Provide the FULL updated markdown, not a diff. ' +
+      'Output: "Canvas updated: ..." + canvasData.isUpdate = true. ' +
+      'Errors (success:false): validation_error (empty markdown).',
     input_schema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'Canvas title (can keep existing or change it)' },
-        type: {
-          type: 'string',
-          enum: ['email_draft', 'report', 'notes', 'analysis', 'action_plan'],
-          description: 'Content type (keep the same unless the type itself is changing)',
-        },
-        markdown: { type: 'string', description: 'Full updated markdown content — complete replacement, not a diff.' },
+        title: { type: 'string', description: 'New title (or repeat the existing title).' },
+        type: { type: 'string', enum: ['email_draft', 'report', 'notes', 'analysis', 'action_plan'], description: 'Document type.' },
+        markdown: { type: 'string', description: 'Complete replacement markdown.' },
       },
       required: ['title', 'markdown'],
     },
   },
   {
     name: 'web_search',
-    description: 'Search the internet for current information, news, company details, or any topic. Returns clean summarized results.',
+    description:
+      'Web search via Serper/Brave/DuckDuckGo with automatic provider fallback. Returns summaries — not full pages. ' +
+      'Output: "Web search results for X:" followed by numbered hits with title, snippet, URL. ' +
+      'Errors (success:false): web_search_unavailable (all providers down).',
     input_schema: {
       type: 'object',
       properties: {
-        query: { type: 'string', description: 'Search query' },
-        maxResults: { type: 'number', description: 'Max results (default 5)' },
+        query: { type: 'string', description: 'Search query.' },
+        maxResults: { type: 'number', description: 'Max results (1-10, default 6).' },
       },
       required: ['query'],
     },
   },
   {
     name: 'send_slack_message',
-    description: 'Send a Slack message to the user\'s DM or a channel. Only works if the user has connected Slack. Use for real-time notifications about important emails or completed tasks.',
+    description:
+      'Post a Slack message to a channel or DM the user. ' +
+      'GATED: requires a prior request_confirmation with matching Channel detail. ' +
+      'Output: "Slack message sent to <channel>." ' +
+      'Errors (success:false): confirmation_required, slack_not_connected, upstream_slack.',
     input_schema: {
       type: 'object',
       properties: {
-        channel: { type: 'string', description: 'Channel name or "dm" for direct message to the user' },
-        text: { type: 'string', description: 'Message text (markdown supported)' },
+        channel: { type: 'string', description: 'Channel name (e.g. "#general") or "dm" to DM the user themselves.' },
+        text: { type: 'string', description: 'Message body in Slack mrkdwn.' },
       },
       required: ['channel', 'text'],
     },
   },
   {
     name: 'fetch_notion_schema',
-    description: 'ALWAYS call this BEFORE create_notion_page when writing to a database. Fetches the exact property names and types from the Notion database schema so you never use wrong field names. Returns the database_id to pass as parentId and the exact property names to pass in the properties object.',
+    description:
+      'Resolve a database hint to a real Notion database id and return its property schema. ' +
+      'REQUIRED before create_notion_page when writing to a database. ' +
+      'Output: plain text with database_id and a property table (name + type + options). ' +
+      'Errors (success:false): notion_not_connected, notion_db_not_found, notion_schema_unreadable.',
     input_schema: {
       type: 'object',
       properties: {
-        database: { type: 'string', description: 'Database name hint, e.g. "meetings", "tasks", "contacts"' },
-        parentId: { type: 'string', description: 'Optional exact database ID if you already have it' },
+        database: { type: 'string', description: 'Database hint, e.g. "meetings", "tasks", "contacts".' },
+        parentId: { type: 'string', description: 'Exact database id if you already have one — skips the search.' },
       },
       required: ['database'],
     },
   },
   {
     name: 'create_notion_page',
-    description: 'Create a new page in the user\'s Notion workspace. IMPORTANT: Always call fetch_notion_schema first to get exact field names — never hardcode them. Pass the database_id returned by fetch_notion_schema as parentId. Pass any additional database properties (date, status, tags, etc.) as a key/value object in the properties field using the EXACT names from the schema.',
+    description:
+      'Create a page in a Notion database (or as a free-form page if no database match). ' +
+      'GATED: requires a prior request_confirmation with matching Database+Title. ' +
+      'Prerequisites: fetch_notion_schema first — pass the returned id as parentId and the EXACT property names from the schema in `properties`. ' +
+      'Output: confirmation text + canvasData.pageMeta with the page URL. ' +
+      'Errors (success:false): confirmation_required, notion_not_connected, notion_db_not_found, notion_create_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'Page title, e.g. "Meeting with Priya — 2024-01-15" or "Task: Send proposal"' },
-        content: { type: 'string', description: 'Full page content in plain text or markdown. Include all relevant details: contact, date, discussion points, action items, links.' },
-        database: { type: 'string', description: 'Hint for which Notion database to log into, e.g. "meetings", "tasks", "contacts", "calendar". Arcus will search for a matching database.' },
-        parentId: { type: 'string', description: 'Exact Notion database ID returned by fetch_notion_schema. Prefer this over the database hint.' },
+        title: { type: 'string', description: 'Page title.' },
+        content: { type: 'string', description: 'Full page body in plain text / markdown.' },
+        database: { type: 'string', description: 'Database hint when parentId is unknown — Arcus searches for a matching db.' },
+        parentId: { type: 'string', description: 'Exact database id from fetch_notion_schema — preferred over `database` hint.' },
         properties: {
           type: 'object',
-          description: 'Additional database fields to set — use EXACT property names from fetch_notion_schema. Values: string for text/select/date, array of strings for multi_select, number for number, boolean for checkbox.',
+          description: 'Per-property values keyed by EXACT schema property name. Strings for text/select/date/url, string[] for multi_select, number for number, boolean for checkbox.',
           additionalProperties: true,
         },
       },
@@ -570,7 +641,12 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'create_scheduled_agent',
-    description: 'Create a real, persistent background scheduled agent that the cron runner will execute on a recurring schedule. ALWAYS available. Call this AFTER you have written and opened the agent specification document via open_canvas. This actually creates the agent in the database — it is not a draft. Provide a clear name, a detailed task_description written as a direct instruction to the future agent (what to do every run, what to filter, what to deliver), and a valid 5-field cron expression.',
+    description:
+      'Register a persistent background agent that runs on a cron schedule via Vercel Cron. ' +
+      'Insert the row IMMEDIATELY after writing the spec to canvas — the agent is live the moment this returns. ' +
+      'Output: confirmation text + canvasData (type "scheduled_agent") with the next run time. ' +
+      'Errors (success:false): validation_error (missing name/task/cron, bad cron format), migration_missing, agent_create_failed. ' +
+      'If required integrations aren\'t connected, returns success:true with canvasData.type "integration_required" and asks the user to connect them.',
     input_schema: {
       type: 'object',
       properties: {
@@ -587,7 +663,11 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'request_confirmation',
-    description: 'Pause execution and show the user a confirmation card before performing a major action. Call this BEFORE: send_email (direct send), schedule_meeting (create calendar event), send_slack_message to any channel, create_notion_page. Do NOT use for draft_reply (drafts are reviewed in the UI). After calling, STOP — do not call any more tools in this turn. When the user confirms, proceed with the action in the next run.',
+    description:
+      'Show the user a confirmation card and pause the loop. REQUIRED before any of: send_email, schedule_meeting, send_slack_message, create_notion_page — the executor refuses those write calls without a matching approved row. ' +
+      'After calling, STOP — do not call any more tools this turn. Transitions state to CONFIRMING. ' +
+      'Output: confirmation message + canvasData with type "confirmation_required" and an approvalId the UI POSTs to /api/arcus/approval/confirm. ' +
+      'No failure path under normal use — always success:true.',
     input_schema: {
       type: 'object',
       properties: {
@@ -604,7 +684,11 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'ask_user',
-    description: 'Ask the user clarifying questions before proceeding. Use this ONLY when the instruction is genuinely ambiguous and you cannot make a reasonable default decision. Keep questions concise. Provide 2-3 short option labels when the answer space is bounded; omit options for open-ended questions. Maximum 3 questions per call.',
+    description:
+      'Ask 1-3 clarifying questions when the instruction is genuinely ambiguous and a reasonable default does not exist. ' +
+      'Loop emits a `question` SSE event and ends the turn. ' +
+      'Output: emits a question event; tool result content is short. ' +
+      'No failure path. Do NOT use ask_user when context, history, or sensible defaults can resolve the ambiguity — answer questions cost the user time.',
     input_schema: {
       type: 'object',
       properties: {
@@ -630,7 +714,12 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'digest_newsletters',
-    description: "Solve newsletter overload: find the newsletters/promotional digests cluttering the user's inbox, condense them into ONE clean digest of what actually matters (per-source key takeaways + any links worth clicking), and optionally clear them out of the inbox so the user's mind is clear. Use when the user mentions being subscribed to too many newsletters, having no time to read them, or wanting a cleaner inbox. The digest renders in the Canvas panel. IMPORTANT: archiving moves emails out of the inbox — set archive:true ONLY after the user has confirmed (use request_confirmation first when they haven't explicitly said to clear/archive them). For a recurring weekly catch-up, pair this with create_scheduled_agent and set sendEmail:true so the digest is emailed.",
+    description:
+      'Find recent newsletter/promotional emails, condense them into one Canvas digest, and (optionally) archive them. ' +
+      'Use when the user explicitly asks to digest, clear, or summarize newsletters. ' +
+      'Output: summary text + canvasData (type "report") with the digest. Reports the digested count, archived count, and whether emailed. ' +
+      'Errors (success:false): gmail_not_connected, digest_failed. ' +
+      'archive:true is a write — set it only after the user has explicitly approved archiving (omit it on the first call and offer to clear after).',
     input_schema: {
       type: 'object',
       properties: {
