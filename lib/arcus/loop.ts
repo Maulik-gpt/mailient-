@@ -384,6 +384,34 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         const outcomes: ToolOutcome[] = [];
         let forceNextToolCall = false;
 
+        // ── Agent state machine (RC3) ──────────────────────────────────────
+        // Four phases the run can be in:
+        //   PLANNING   — fetching context, no writes yet
+        //   CONFIRMING — request_confirmation emitted, waiting on user (loop ends turn)
+        //   EXECUTING  — user approved, write tools running
+        //   REPORTING  — all tool calls done, composing final message
+        //
+        // The hard write-time gate already lives in tools.ts/session-state.ts
+        // (Phase 2). This tracker is for observability: the UI shows the
+        // current phase and the LLM sees a [STATE: ...] tag so it knows
+        // what's expected of it next. State transitions also feed audit log.
+        type RunState = 'PLANNING' | 'CONFIRMING' | 'EXECUTING' | 'REPORTING';
+        let runState: RunState = 'PLANNING';
+        const transitionState = (next: RunState, reason: string) => {
+          if (runState === next) return;
+          log('info', 'state_change', { from: runState, to: next, reason });
+          runState = next;
+          emit('state_change', { state: next, reason, iteration });
+        };
+        emit('state_change', { state: runState, reason: 'run_start', iteration: 0 });
+
+        // If the user message looks like an approval response ("yes", "go
+        // ahead", "confirmed"), the LLM is being woken up from a previous
+        // CONFIRMING turn — start this turn in EXECUTING so the LLM knows
+        // the gate is open. Cheap heuristic; the real gate is consumeApproval.
+        const looksLikeApproval = /^(yes|y|yep|yeah|go ahead|confirmed|confirm|please proceed|do it|send it|proceed)\b/i.test(userMessage.trim());
+        if (looksLikeApproval) transitionState('EXECUTING', 'user_message_looks_like_approval');
+
         // ── Context Switching Elimination: Unified context sweep ───────────
         // For broad tasks ("morning brief", "prepare for tomorrow", "what did I miss"),
         // pre-fetch from all connected integrations in parallel BEFORE the LLM
@@ -492,18 +520,35 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         // ── Main agentic loop ───────────────────────────────────────────────
         while (true) {
-          // Inject budget counter so the model always knows its remaining allowance
+          // Inject budget counter + current state so the model always knows
+          // its remaining allowance AND which phase of the run it is in.
           const budgetUsed = totalToolCalls;
           const budgetLeft = toolCallLimit - budgetUsed;
+          // Cast widens TS's view past the let-initializer narrowing —
+          // runState is mutated via transitionState() but TS can't follow
+          // the closure mutation.
+          const currentState: RunState = runState as RunState;
+          const stateNote = (() => {
+            switch (currentState) {
+              case 'PLANNING':
+                return '[STATE: PLANNING] — gather context with read-only tools (search_gmail, read_email, get_calendar_events, etc.). Do NOT call write tools (send_email, schedule_meeting, send_slack_message, create_notion_page) yet — call request_confirmation first.';
+              case 'CONFIRMING':
+                return '[STATE: CONFIRMING] — waiting for user approval. Do not call any more tools this turn.';
+              case 'EXECUTING':
+                return '[STATE: EXECUTING] — user has approved. Call the write tool that matches the approval now.';
+              case 'REPORTING':
+                return '[STATE: REPORTING] — all tool calls done. Write the final user-facing message and stop.';
+            }
+          })();
           const budgetMsg = budgetLeft <= 3
-            ? `[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. RESERVE these for report delivery. Stop executing new tasks and write your final report NOW.]`
-            : `[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. Planning phase: use 1-2. Execution: use remaining. Reserve 3 for report/Notion log.]`;
+            ? `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. RESERVE these for report delivery. Stop executing new tasks and write your final report NOW.]`
+            : `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining.]`;
           if (messages.at(-1)?.role !== 'user') {
             messages.push({ role: 'user', content: budgetMsg } as any);
           } else {
             // Append to the last user message so we don't break the alternating pattern
             const last = messages[messages.length - 1] as any;
-            if (typeof last.content === 'string' && !last.content.startsWith('[TOOL BUDGET')) {
+            if (typeof last.content === 'string' && !last.content.startsWith('[STATE:') && !last.content.includes('[STATE:')) {
               last.content = `${last.content}\n\n${budgetMsg}`;
             }
           }
@@ -659,6 +704,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 }
 
                 if (result.requiresConfirmation) {
+                  transitionState('CONFIRMING', `request_confirmation:${tc.name}`);
                   toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
                   mustStop = true;
                   continue; // collect remaining results into toolResults before stopping
@@ -668,6 +714,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 emit('tool_result', { tool: tc.name, success: true, summary: result.output.slice(0, 300), iteration });
                 outcomes.push({ tool: tc.name, ok: true });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
+
+                // State transition: a write tool just succeeded. Move from
+                // EXECUTING (or PLANNING, if the LLM somehow bypassed the
+                // gate — shouldn't happen since the executor refuses, but
+                // belt-and-braces) into EXECUTING so subsequent writes in
+                // the same turn don't get mislabelled.
+                if (
+                  tc.name === 'send_email' ||
+                  tc.name === 'schedule_meeting' ||
+                  tc.name === 'send_slack_message' ||
+                  tc.name === 'create_notion_page'
+                ) {
+                  transitionState('EXECUTING', `write_completed:${tc.name}`);
+                }
 
                 // ── Deep Integration Auto-Bridge ──────────────────────────
                 if (tc.name === 'schedule_meeting' && connectedIntegrations.includes('notion')) {
@@ -1028,6 +1088,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         if (taskCount > 0) {
           emit('task_progress', { completedCount: taskCount });
         }
+
+        // Final state transition before delivering the user-facing message.
+        transitionState('REPORTING', 'final_message');
 
         if (isPlanMode) {
           const titleMatch = finalText.match(/^#\s+(.+)$/m);
