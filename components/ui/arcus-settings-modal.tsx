@@ -313,7 +313,7 @@ export function ArcusSettingsModal({
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ type: 'spring', damping: 30, stiffness: 350 }}
-        className="relative w-[min(92vw,580px)] max-h-[85vh] shadow-2xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e0e0e] flex flex-col overflow-hidden"
+        className="relative w-[min(92vw,580px)] h-[540px] max-h-[85vh] shadow-2xl rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-[#0e0e0e] flex flex-col overflow-hidden"
       >
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between px-6 pt-5 pb-0">
