@@ -613,6 +613,29 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 }
 
                 const { tc, result, extraArchiveCount } = outcome;
+
+                // ── Soft-failure gate ──────────────────────────────────────
+                // Tool ran without throwing but explicitly flagged success:false
+                // (e.g. integration not connected, upstream 4xx, validation
+                // error). Without this, the LLM treats the failure-message
+                // string as a normal result and confabulates next steps.
+                // Forcing the failure into the tool_result content with a hard
+                // acknowledgement instruction breaks that loop.
+                if (result.success === false) {
+                  const code = result.errorCode || 'tool_failed';
+                  const failureMsg =
+                    `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
+                    `You MUST handle this failure explicitly. Do not pretend it succeeded. ` +
+                    `Either (a) tell the user exactly what failed in one sentence and what they should do, ` +
+                    `or (b) try a documented alternative tool if one exists. ` +
+                    `Never fabricate the data this tool would have returned.`;
+                  log('warn', `tool_result soft_fail`, { tool: tc.name, code, output: result.output.slice(0, 200) });
+                  emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
+                  outcomes.push({ tool: tc.name, ok: false, error: result.output });
+                  toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: failureMsg });
+                  continue;
+                }
+
                 archivedCount += extraArchiveCount;
 
                 if (result.canvasData) {
@@ -645,13 +668,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     content: '[AUTO-BRIDGE] Meeting created. Notion is connected — automatically log this meeting to Notion now using create_notion_page (database hint: "meetings"). Include: attendees, time, agenda, Meet link. Report "Logged to Notion ✓" after.',
                   } as any);
                 }
-                if (tc.name === 'get_sent_emails') {
-                  toolResults.push({
-                    type: 'tool_result',
-                    tool_use_id: `bridge_${tc.id}`,
-                    content: '[WRITING STYLE READY — ACTION REQUIRED] You now have the user\'s writing style, tone, and voice. The task is NOT complete. You MUST call draft_reply immediately with the full email body written in the user\'s voice. Do NOT output any text message. Do NOT say "Done" or "Completed". Call draft_reply NOW.',
-                  } as any);
-                }
+                // get_sent_emails auto-bridge removed: voice profile is now
+                // injected once at the top of the system prompt, so calling
+                // get_sent_emails is no longer a "drafting precursor" — it's
+                // an analysis call the user explicitly asked for. Forcing
+                // draft_reply afterward turned every voice-profile audit into
+                // an unsolicited email draft.
                 if (tc.name === 'draft_reply' && connectedIntegrations.includes('notion')) {
                   toolResults.push({
                     type: 'tool_result',
@@ -848,6 +870,16 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 emit('tool_call', { tool: tc.name, params: tc.input, iteration });
                 try {
                   let result = await executeTool(tc.name, tc.input, userId);
+                  if (result.success === false) {
+                    const code = result.errorCode || 'tool_failed';
+                    const failureMsg =
+                      `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
+                      `You MUST handle this failure explicitly. Do not pretend it succeeded.`;
+                    emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
+                    outcomes.push({ tool: tc.name, ok: false, error: result.output });
+                    toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: failureMsg });
+                    continue;
+                  }
                   if (result.canvasData) {
                     if (result.canvasData.type !== 'scheduled_agent' && result.canvasData.type !== 'integration_required') {
                       canvasContent = result.canvasData;

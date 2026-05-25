@@ -308,7 +308,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'get_sent_emails',
-    description: 'Get the user\'s recent sent emails to analyze their writing style, tone, and voice. Only call this if get_voice_profile returns no stored profile. Do NOT call this just because the user asked about their voice profile — call get_voice_profile first.',
+    description: 'Read the user\'s recent sent emails as raw samples — used ONLY when the user explicitly asks you to analyse, audit, or describe their writing style. The voice profile is already loaded into the system prompt at the start of every conversation; do NOT call this before every draft. Calling this on every reply wastes a tool slot and adds latency.',
     input_schema: {
       type: 'object',
       properties: {
@@ -318,7 +318,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'get_voice_profile',
-    description: 'Read the user\'s saved voice/writing style profile from the database. Call this FIRST when: (1) the user asks about their voice profile, writing style, or tone, (2) before drafting any email reply to check for a stored profile. Returns the full voice profile including tone, greeting patterns, closing patterns, vocabulary, and sample phrases. If no profile has been saved yet, it will say so — only then should you fall back to get_sent_emails to build one. NEVER call get_sent_emails just to answer "do you have access to my voice profile?" — use this tool instead.',
+    description: 'Return the user\'s saved voice profile object for INSPECTION ONLY — call this when the user asks "do you have my voice profile?", "what does my voice profile say?", or wants to see/audit it. Do NOT call this before drafting emails. The voice profile is already injected at the top of the system prompt every turn; calling this tool to use it for drafting is wasted work.',
     input_schema: {
       type: 'object',
       properties: {},
@@ -326,7 +326,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   },
   {
     name: 'draft_reply',
-    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) get_voice_profile to load the stored voice/writing style profile — if it returns no profile, THEN call get_sent_emails to build one, (4) schedule any meeting if needed. Write the body using the voice profile AND the recipient context gathered in steps 2-3. STOP after calling — do NOT call send_email.',
+    description: 'Save a Gmail draft reply to an existing email thread AND display it inline in the chat for the user to review and send. ONLY call this when the user explicitly asks to REPLY TO or RESPOND TO a specific existing email. NEVER use this for summaries or reports — use open_canvas. MANDATORY sequence before calling: (1) read_email to get the thread content, (2) get_recipient_context to load relationship context, calendar, and Notion notes, (3) schedule any meeting if needed. Write the body using the voice profile already injected at the top of the system prompt PLUS the recipient context from step 2. STOP after calling — do NOT call send_email.',
     input_schema: {
       type: 'object',
       properties: {
@@ -682,6 +682,24 @@ export function getAvailableTools(connectedIntegrations: string[]): ToolSchema[]
 
 export interface ToolResult {
   output: string;
+  /**
+   * False on any soft-failure path the tool handled gracefully (missing
+   * integration, upstream 4xx/5xx, empty result with no useful data, validation
+   * error). Undefined or true means the tool produced usable data.
+   *
+   * The agentic loop reads this directly — it is what the LLM uses to decide
+   * whether to surface a failure to the user or proceed. Without it, the loop
+   * trusts the LLM's narration of a "success" string and confabulates next
+   * steps as if the tool returned real data.
+   */
+  success?: boolean;
+  /**
+   * Stable short identifier for the failure class — e.g. `gmail_not_connected`,
+   * `upstream_4xx`, `not_found`, `validation_error`, `confirmation_required`.
+   * Surfaced to the LLM in the failure-acknowledgement bridge so it can pick
+   * the right recovery path (reconnect prompt vs. retry vs. alternative tool).
+   */
+  errorCode?: string;
   requiresConfirmation?: boolean;
   canvasData?: {
     title: string;
@@ -691,6 +709,16 @@ export interface ToolResult {
     pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
     isUpdate?: boolean;
   };
+}
+
+/**
+ * Build a structured soft-failure result. The loop reads `success: false` and
+ * injects a hard failure-acknowledgement message back to the LLM so it cannot
+ * continue as if the call succeeded. `message` lands in the tool result the
+ * LLM sees; `code` is for branch logic and telemetry.
+ */
+function failureResult(message: string, code: string): ToolResult {
+  return { success: false, errorCode: code, output: message };
 }
 
 function ts() { return new Date().toISOString().slice(11, 23); }
@@ -730,7 +758,7 @@ export async function executeTool(
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
         console.warn(`[Arcus:Tools] ${ts()} Unknown tool requested: "${name}"`);
-        return { output: `Unknown tool: ${name}` };
+        return failureResult(`Unknown tool: ${name}`, 'unknown_tool');
     }
     console.log(`[Arcus:Tools] ${ts()} ${name} ok (${Date.now() - start}ms) output=${result.output.length}chars`);
     return result;
@@ -749,7 +777,7 @@ export async function executeTool(
 
 async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.' };
+  if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
 
   const max = Math.min(input.maxResults || 10, 25);
   const params = new URLSearchParams({ q: input.query, maxResults: String(max) });
@@ -760,7 +788,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!listRes.ok) return { output: `Gmail search failed (${listRes.status}).` };
+  if (!listRes.ok) return failureResult(`Gmail search failed (${listRes.status}).`, 'upstream_gmail');
 
   const listData = await listRes.json();
   const messages: any[] = listData.messages || [];
@@ -780,7 +808,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   }));
 
   const valid = details.filter(Boolean);
-  if (!valid.length) return { output: 'Found emails but could not read metadata.' };
+  if (!valid.length) return failureResult('Found emails but could not read metadata.', 'upstream_gmail');
 
   const lines = valid.map((m: any, i: number) =>
     `${i + 1}. [ID: ${m.id}] [Thread: ${m.threadId}]\n   From: ${m.from}\n   Subject: ${m.subject}\n   Date: ${m.date}\n   Preview: ${m.snippet}`
@@ -794,7 +822,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
 
 async function readEmail(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected.' };
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${input.messageId}?format=full`;
   let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
@@ -802,7 +830,7 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!res.ok) return { output: `Could not read email (${res.status}).` };
+  if (!res.ok) return failureResult(`Could not read email (${res.status}).`, res.status === 404 ? 'not_found' : 'upstream_gmail');
 
   const m = await res.json();
   const h = m.payload?.headers || [];
@@ -829,7 +857,7 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
 
 async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected.' };
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const limit = Math.min(input.limit || 30, 50);
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&labelIds=SENT`;
@@ -838,11 +866,11 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!listRes.ok) return { output: `Could not fetch sent emails (${listRes.status}).` };
+  if (!listRes.ok) return failureResult(`Could not fetch sent emails (${listRes.status}).`, 'upstream_gmail');
 
   const listData = await listRes.json();
   const messages: any[] = (listData.messages || []).slice(0, limit);
-  if (!messages.length) return { output: 'No sent emails found.' };
+  if (!messages.length) return failureResult('No sent emails found — voice profile cannot be built from empty sent mail.', 'no_sent_mail');
 
   const details = await Promise.all(messages.slice(0, 15).map(async ({ id }: any) => {
     try {
@@ -892,9 +920,10 @@ async function getVoiceProfileTool(userId: string): Promise<ToolResult> {
     const profile = await voiceProfileService.getVoiceProfile(userId) as any;
 
     if (!profile || profile.status === 'default') {
-      return {
-        output: `No saved voice profile found for this user yet. To build one, call get_sent_emails — it will analyze the user's recent sent mail and generate a voice profile automatically. Once built, subsequent calls to get_voice_profile will return the stored profile.`,
-      };
+      return failureResult(
+        `No saved voice profile found for this user yet. To build one, call get_sent_emails — it will analyze the user's recent sent mail and generate a voice profile automatically. Once built, subsequent calls to get_voice_profile will return the stored profile.`,
+        'voice_profile_missing',
+      );
     }
 
     const prompt = voiceProfileService.generateVoicePrompt(profile) as string | undefined;
@@ -912,13 +941,13 @@ async function getVoiceProfileTool(userId: string): Promise<ToolResult> {
 
     return { output: lines.join('\n') };
   } catch (err: any) {
-    return { output: `Failed to read voice profile: ${err.message}` };
+    return failureResult(`Failed to read voice profile: ${err.message}`, 'voice_profile_read_failed');
   }
 }
 
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected.' };
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const subject = input.subject || 'Re: (no subject)';
   const raw = buildRaw(input.to, subject, input.body, input.threadId, input.inReplyToMessageId);
@@ -945,7 +974,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    return { output: `Failed to save draft (${res.status}): ${err.slice(0, 200)}` };
+    return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
   }
 
   const draft = await res.json();
@@ -979,7 +1008,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
 
 async function sendEmail(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected.' };
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const raw = buildRaw(input.to, input.subject, input.body, input.threadId);
   const reqBody: Record<string, any> = { raw };
@@ -1007,7 +1036,7 @@ async function sendEmail(userId: string, input: any): Promise<ToolResult> {
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    return { output: `Failed to send email (${res.status}): ${err.slice(0, 200)}` };
+    return failureResult(`Failed to send email (${res.status}): ${err.slice(0, 200)}`, 'send_failed');
   }
 
   const sent = await res.json();
@@ -1020,7 +1049,7 @@ async function sendEmail(userId: string, input: any): Promise<ToolResult> {
 
 async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> {
   let token = await getGcalToken(userId);
-  if (!token) return { output: 'Google Calendar is not connected. Ask the user to connect it in Settings → Integrations.' };
+  if (!token) return failureResult('Google Calendar is not connected. Ask the user to connect it in Settings → Integrations.', 'gcal_not_connected');
 
   const event: Record<string, any> = {
     summary: input.title,
@@ -1059,9 +1088,9 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
   }
 
   if (!res.ok) {
-    if (isScopeError(res.status)) return { output: CALENDAR_SCOPE_MESSAGE };
+    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
     const err = await res.text().catch(() => '');
-    return { output: `Failed to create event (${res.status}): ${err.slice(0, 200)}` };
+    return failureResult(`Failed to create event (${res.status}): ${err.slice(0, 200)}`, 'gcal_create_failed');
   }
 
   const created = await res.json();
@@ -1092,7 +1121,7 @@ async function scheduleMeeting(userId: string, input: any): Promise<ToolResult> 
 
 async function getCalendarEvents(userId: string, input: any): Promise<ToolResult> {
   let token = await getGcalToken(userId);
-  if (!token) return { output: 'Google Calendar is not connected.' };
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
 
   const days = input.daysAhead || 7;
   const max = input.maxResults || 20;
@@ -1114,8 +1143,8 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
     if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }
   if (!res.ok) {
-    if (isScopeError(res.status)) return { output: CALENDAR_SCOPE_MESSAGE };
-    return { output: `Calendar fetch failed (${res.status}).` };
+    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
   }
 
   const data = await res.json();
@@ -1133,7 +1162,7 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
 
 async function searchNotion(userId: string, input: any): Promise<ToolResult> {
   const token = await getNotionToken(userId);
-  if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
+  if (!token) return failureResult('Notion is not connected. Ask the user to connect Notion in Settings → Integrations.', 'notion_not_connected');
 
   const max = Math.min(input.maxResults || 5, 10);
   const res = await fetch('https://api.notion.com/v1/search', {
@@ -1148,7 +1177,7 @@ async function searchNotion(userId: string, input: any): Promise<ToolResult> {
     signal: AbortSignal.timeout(10000),
   });
 
-  if (!res.ok) return { output: `Notion search failed (${res.status}).` };
+  if (!res.ok) return failureResult(`Notion search failed (${res.status}).`, 'upstream_notion');
 
   const data = await res.json();
   const pages = data.results || [];
@@ -1253,7 +1282,7 @@ function buildNotionDbProperties(
 
 async function fetchNotionSchemaForAgent(userId: string, input: any): Promise<ToolResult> {
   const token = await getNotionToken(userId);
-  if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
+  if (!token) return failureResult('Notion is not connected. Ask the user to connect Notion in Settings → Integrations.', 'notion_not_connected');
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
@@ -1294,12 +1323,12 @@ async function fetchNotionSchemaForAgent(userId: string, input: any): Promise<To
   }
 
   if (!dbId) {
-    return { output: `Could not find a Notion database matching "${input.database}". Try a broader name like "meetings", "tasks", or "contacts". Use search_notion to discover available database names.` };
+    return failureResult(`Could not find a Notion database matching "${input.database}". Try a broader name like "meetings", "tasks", or "contacts". Use search_notion to discover available database names.`, 'notion_db_not_found');
   }
 
   const schema = await fetchNotionDbSchema(headers, dbId);
   if (!schema) {
-    return { output: `Found database "${dbTitle}" but could not read its schema. Notion may not have granted access to this database.` };
+    return failureResult(`Found database "${dbTitle}" but could not read its schema. Notion may not have granted access to this database.`, 'notion_schema_unreadable');
   }
 
   const schemaLines = schema.map(p => {
@@ -1333,7 +1362,7 @@ async function fetchNotionDbSchema(
 
 async function createNotionPage(userId: string, input: any): Promise<ToolResult> {
   const token = await getNotionToken(userId);
-  if (!token) return { output: 'Notion is not connected. Ask the user to connect Notion in Settings → Integrations.' };
+  if (!token) return failureResult('Notion is not connected. Ask the user to connect Notion in Settings → Integrations.', 'notion_not_connected');
 
   const headers: Record<string, string> = {
     Authorization: `Bearer ${token}`,
@@ -1401,7 +1430,7 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
   }
 
   if (!parentBlock) {
-    return { output: `Failed to create Notion page: could not locate a database matching "${input.database ?? 'unknown'}" and no fallback page found. Ensure Notion is connected with workspace access.` };
+    return failureResult(`Failed to create Notion page: could not locate a database matching "${input.database ?? 'unknown'}" and no fallback page found. Ensure Notion is connected with workspace access.`, 'notion_db_not_found');
   }
 
   // ── Step 2: Build properties from real schema ─────────────────────────────
@@ -1472,7 +1501,7 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
   if (!createRes.ok) {
     const err = await createRes.text().catch(() => '');
     const skipNote = skipped.length ? ` Fields skipped: ${skipped.join('; ')}.` : '';
-    return { output: `Failed to create Notion page "${input.title}" (${createRes.status}): ${err.slice(0, 200)}.${skipNote}` };
+    return failureResult(`Failed to create Notion page "${input.title}" (${createRes.status}): ${err.slice(0, 200)}.${skipNote}`, 'notion_create_failed');
   }
 
   const created = await createRes.json();
@@ -1500,7 +1529,7 @@ async function createNotionPage(userId: string, input: any): Promise<ToolResult>
 
 function openCanvas(input: any): ToolResult {
   if (!input.markdown?.trim()) {
-    return { output: 'Error: open_canvas requires non-empty markdown content. Write the full document content and pass it in the markdown parameter, then call open_canvas again.' };
+    return failureResult('Error: open_canvas requires non-empty markdown content. Write the full document content and pass it in the markdown parameter, then call open_canvas again.', 'validation_error');
   }
   const isAgentSpec = input.type === 'report' && (
     input.title?.toLowerCase().includes('agent') ||
@@ -1522,7 +1551,7 @@ function openCanvas(input: any): ToolResult {
 
 function updateCanvas(input: any): ToolResult {
   if (!input.markdown?.trim()) {
-    return { output: 'Error: update_canvas requires non-empty markdown content.' };
+    return failureResult('Error: update_canvas requires non-empty markdown content.', 'validation_error');
   }
   return {
     output: `Canvas updated: "${input.title}"`,
@@ -1541,7 +1570,7 @@ function updateCanvas(input: any): ToolResult {
 
 async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected.' };
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const days = Math.min(input.days || 7, 21);
   const maxCheck = Math.min(input.maxResults || 15, 20);
@@ -1553,7 +1582,7 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!sentRes.ok) return { output: `Could not check sent mail (${sentRes.status}).` };
+  if (!sentRes.ok) return failureResult(`Could not check sent mail (${sentRes.status}).`, 'upstream_gmail');
 
   const sentData = await sentRes.json();
   const sentMessages: any[] = sentData.messages || [];
@@ -1621,7 +1650,7 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
 async function getRecipientContext(userId: string, input: any): Promise<ToolResult> {
   const recipientEmail: string = (input.email || '').trim();
   const recipientName: string = input.name || recipientEmail.split('@')[0];
-  if (!recipientEmail) return { output: 'Recipient email is required.' };
+  if (!recipientEmail) return failureResult('Recipient email is required.', 'validation_error');
 
   const parts: string[] = [];
 
@@ -1802,7 +1831,7 @@ function touchContact(userId: string, email: string, name: string): void {
 
 async function getContactContext(userId: string, input: any): Promise<ToolResult> {
   const email = (input.email || '').toLowerCase();
-  if (!email) return { output: 'Email address required.' };
+  if (!email) return failureResult('Email address required.', 'validation_error');
 
   try {
     const supabase = getSupabaseAdmin();
@@ -1825,13 +1854,13 @@ async function getContactContext(userId: string, input: any): Promise<ToolResult
     ].filter(Boolean);
     return { output: lines.join('\n') };
   } catch {
-    return { output: `No relationship memory for ${email} (run migration: supabase/migrations/arcus_contacts.sql).` };
+    return failureResult(`No relationship memory for ${email} (run migration: supabase/migrations/arcus_contacts.sql).`, 'migration_missing');
   }
 }
 
 async function rememberAboutContact(userId: string, input: any): Promise<ToolResult> {
   const email = (input.email || '').toLowerCase();
-  if (!email) return { output: 'Email address required.' };
+  if (!email) return failureResult('Email address required.', 'validation_error');
 
   try {
     const supabase = getSupabaseAdmin();
@@ -1863,7 +1892,7 @@ async function rememberAboutContact(userId: string, input: any): Promise<ToolRes
     if (error) throw error;
     return { output: `Saved to relationship memory for ${input.name || email}: "${input.note}"` };
   } catch (err: any) {
-    return { output: `Could not save contact note: ${err.message}` };
+    return failureResult(`Could not save contact note: ${err.message}`, 'contact_save_failed');
   }
 }
 
@@ -1888,12 +1917,12 @@ async function getDelegationRules(userId: string): Promise<ToolResult> {
     );
     return { output: `${data.length} active delegation rule${data.length !== 1 ? 's' : ''}:\n\n${lines.join('\n\n')}` };
   } catch {
-    return { output: 'Delegation rules not yet set up (run migration: supabase/migrations/arcus_delegation_rules.sql).' };
+    return failureResult('Delegation rules not yet set up (run migration: supabase/migrations/arcus_delegation_rules.sql).', 'migration_missing');
   }
 }
 
 async function createDelegationRule(userId: string, input: any): Promise<ToolResult> {
-  if (!input.name || !input.action_type) return { output: 'Rule name and action_type are required.' };
+  if (!input.name || !input.action_type) return failureResult('Rule name and action_type are required.', 'validation_error');
 
   try {
     const supabase = getSupabaseAdmin();
@@ -1909,7 +1938,7 @@ async function createDelegationRule(userId: string, input: any): Promise<ToolRes
     if (error) throw error;
     return { output: `Delegation rule "${input.name}" created. Arcus will now automatically ${input.action_type} when triggered.` };
   } catch (err: any) {
-    return { output: `Could not create rule: ${err.message}` };
+    return failureResult(`Could not create rule: ${err.message}`, 'rule_save_failed');
   }
 }
 
@@ -2026,12 +2055,12 @@ Founder & Team:
     }
   } catch { /* fallthrough */ }
 
-  return { output: `Web search for "${query}": All search providers are temporarily unavailable. Try rephrasing the query or breaking it into a more specific term.` };
+  return failureResult(`Web search for "${query}": All search providers are temporarily unavailable. Try rephrasing the query or breaking it into a more specific term.`, 'web_search_unavailable');
 }
 
 async function sendSlackMessage(userId: string, input: any): Promise<ToolResult> {
   const token = await getSlackToken(userId);
-  if (!token) return { output: 'Slack is not connected. Ask the user to connect Slack in Settings → Integrations.' };
+  if (!token) return failureResult('Slack is not connected. Ask the user to connect Slack in Settings → Integrations.', 'slack_not_connected');
 
   // Get DM channel with the user themselves for "dm" target
   let channelId = input.channel;
@@ -2060,9 +2089,9 @@ async function sendSlackMessage(userId: string, input: any): Promise<ToolResult>
     signal: AbortSignal.timeout(10000),
   });
 
-  if (!res.ok) return { output: `Slack message failed (${res.status}).` };
+  if (!res.ok) return failureResult(`Slack message failed (${res.status}).`, 'upstream_slack');
   const data = await res.json();
-  if (!data.ok) return { output: `Slack error: ${data.error}` };
+  if (!data.ok) return failureResult(`Slack error: ${data.error}`, 'upstream_slack');
   return { output: `Slack message sent to ${input.channel} ✅` };
 }
 
@@ -2196,11 +2225,11 @@ async function requestConfirmation(input: any): Promise<ToolResult> {
 
 async function createScheduledAgent(userId: string, input: any): Promise<ToolResult> {
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
-    return { output: 'Cannot create the agent — a name and a task description are both required.' };
+    return failureResult('Cannot create the agent — a name and a task description are both required.', 'validation_error');
   }
   const cron = (input.cron_schedule || '0 7 * * *').trim();
   if (cron.split(/\s+/).length !== 5) {
-    return { output: `Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).` };
+    return failureResult(`Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).`, 'validation_error');
   }
 
   // ── Integration gate ────────────────────────────────────────────────────────
@@ -2253,10 +2282,10 @@ async function createScheduledAgent(userId: string, input: any): Promise<ToolRes
     .single();
 
   if (error?.code === '42P01') {
-    return { output: 'The agents table is not set up in the database yet. Tell the user the scheduled-agents feature needs the arcus_agents migration applied.' };
+    return failureResult('The agents table is not set up in the database yet. Tell the user the scheduled-agents feature needs the arcus_agents migration applied.', 'migration_missing');
   }
   if (error) {
-    return { output: `Failed to create the scheduled agent: ${error.message}` };
+    return failureResult(`Failed to create the scheduled agent: ${error.message}`, 'agent_create_failed');
   }
 
   const scheduleLabel = cronToLabel(cron);
@@ -2465,7 +2494,7 @@ export async function runNewsletterDigest(
 
 async function digestNewsletters(userId: string, input: any): Promise<ToolResult> {
   const token = await getGmailToken(userId);
-  if (!token) return { output: 'Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.' };
+  if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
 
   let r: NewsletterDigestResult;
   try {
@@ -2475,8 +2504,8 @@ async function digestNewsletters(userId: string, input: any): Promise<ToolResult
       sendEmail: !!input?.sendEmail,
     });
   } catch (e: any) {
-    if (e.message === 'GMAIL_NOT_CONNECTED') return { output: 'Gmail is not connected.' };
-    return { output: `Could not build the newsletter digest: ${e.message}` };
+    if (e.message === 'GMAIL_NOT_CONNECTED') return failureResult('Gmail is not connected.', 'gmail_not_connected');
+    return failureResult(`Could not build the newsletter digest: ${e.message}`, 'digest_failed');
   }
 
   if (r.count === 0) {
