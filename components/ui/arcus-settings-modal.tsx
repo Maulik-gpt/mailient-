@@ -232,7 +232,7 @@ export function ArcusSettingsModal({
   const handleSaveInstructions = async () => {
     setIsSavingInstructions(true);
     try {
-      onSaveInstructions(instructions, instructionsEnabled);
+      await onSaveInstructions(instructions, instructionsEnabled);
     } finally {
       setIsSavingInstructions(false);
       onClose();

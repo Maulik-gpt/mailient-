@@ -148,6 +148,23 @@ async function getRecentEmailSummary(userId: string): Promise<string> {
   }
 }
 
+async function getPersonalityInstructions(userId: string): Promise<string> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+
+    const prefs = (data?.preferences as Record<string, any>) || {};
+    if (prefs.arcus_instructions_enabled === false) return '';
+    return typeof prefs.arcus_personality === 'string' ? prefs.arcus_personality.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
 // ── Content helpers ────────────────────────────────────────────────────────────
 
 function extractTextFromContent(content: any): string {
@@ -178,10 +195,14 @@ function buildSystemPrompt(
   emailSummary: string,
   userName: string,
   voicePromptBlock: string,
+  customInstructions: string,
 ): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const voiceSection = voicePromptBlock
     ? `\n\n────────────────────────────────────────────────────────────────────────\nVOICE PROFILE — HIGHEST PRIORITY FOR EVERY EMAIL BODY\n────────────────────────────────────────────────────────────────────────\nThis profile was learned from the user's own sent emails. Every email body you draft via draft_reply or send via send_email must apply this profile — tone, formality, greeting style, sentence length, sign-off. No exceptions, no "default" tone. Cross-reference it with the tone used in any prior thread you read for the specific recipient.\n\n${voicePromptBlock}\n`
+    : '';
+  const instructionsSection = customInstructions
+    ? `\n\n────────────────────────────────────────────────────────────────────────\nUSER CUSTOM INSTRUCTIONS\n────────────────────────────────────────────────────────────────────────\nThe user has provided the following custom instructions for your behavior, tone, and formatting. You MUST follow these instructions precisely in every interaction:\n\n${customInstructions}\n`
     : '';
   return `You are Arcus, an AI executive agent built for founders. You live inside the user's Mailient workspace with real access to Gmail, Google Calendar, Notion, Notion Calendar (Notion databases with a date property), and Slack. You execute — you don't just advise.
 
@@ -190,6 +211,7 @@ Today is ${today}. The user's name is ${userName || 'there'}.
 ${integrationInfo}
 ${emailSummary}
 ${voiceSection}
+${instructionsSection}
 ────────────────────────────────────────────────────────────────────────
 MAILIENT PLATFORM KNOWLEDGE
 ────────────────────────────────────────────────────────────────────────
@@ -412,13 +434,14 @@ export async function POST(request: NextRequest) {
         // ── 1. Load context ──────────────────────────────────────────────────
         emit('thinking', { status: 'Loading your workspace context…' });
 
-        const [integrationInfo, emailSummary, dbHistory, voicePromptBlock] = await Promise.all([
+        const [integrationInfo, emailSummary, dbHistory, voicePromptBlock, customInstructions] = await Promise.all([
           getUserIntegrations(userId),
           getRecentEmailSummary(userId),
           conversationId
             ? getConversationHistory(userId, conversationId, 20)
             : Promise.resolve([]),
           getVoiceProfileBlock(userId),
+          getPersonalityInstructions(userId),
         ]);
 
         // Merge: DB history (cross-session) + client history (in-session), deduplicate by position
@@ -429,7 +452,7 @@ export async function POST(request: NextRequest) {
             : dbHistory.slice(-20);
 
         // ── 2. Build messages for LLM ────────────────────────────────────────
-        const systemPrompt = buildSystemPrompt(integrationInfo, emailSummary, userName, voicePromptBlock);
+        const systemPrompt = buildSystemPrompt(integrationInfo, emailSummary, userName, voicePromptBlock, customInstructions);
 
         const llmMessages: Array<{ role: string; content: any }> = [
           ...baseHistory.map(h => ({ role: h.role, content: h.content })),
