@@ -9,6 +9,7 @@ function getKeys(): string[] {
     process.env.OPENROUTER_API_KEY,
     process.env.OPENROUTER_API_KEY2,
     process.env.OPENROUTER_API_KEY3,
+    process.env.OPENROUTER_API_KEY4,
   ].filter(Boolean) as string[];
 }
 
@@ -62,7 +63,7 @@ Rules:
           'HTTP-Referer': 'https://mailient.xyz',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-70b-instruct:free',
+          model: 'google/gemma-2-9b-it:free',
           max_tokens: 400,
           messages: [
             { role: 'system', content: systemPrompt },
