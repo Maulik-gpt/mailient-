@@ -446,7 +446,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[13px] font-bold hover:bg-black/90 dark:hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
+                className="px-6 py-2.5 !bg-zinc-900 dark:!bg-white !text-white dark:!text-black rounded-xl text-[13px] font-bold hover:!bg-zinc-800 dark:hover:!bg-zinc-200 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
               >
                 {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Save Profile
@@ -486,9 +486,12 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           appearance: none;
           height: 4px;
           border-radius: 2px;
-          background: var(--slider-bg, rgba(255,255,255,0.12));
+          background: rgba(0,0,0,0.1);
           outline: none;
           cursor: pointer;
+        }
+        :global(.dark) .voice-slider, .dark .voice-slider {
+          background: rgba(255,255,255,0.12);
         }
         .voice-slider::-webkit-slider-thumb {
           -webkit-appearance: none;
@@ -497,10 +500,14 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           height: 16px;
           border-radius: 50%;
           background: #7db4f5;
-          border: 2px solid var(--slider-thumb-border, #0f0f0f);
-          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.15);
           cursor: pointer;
           transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        :global(.dark) .voice-slider::-webkit-slider-thumb, .dark .voice-slider::-webkit-slider-thumb {
+          border: 2px solid #0f0f0f;
+          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
         }
         .voice-slider::-webkit-slider-thumb:hover {
           transform: scale(1.2);
@@ -511,20 +518,21 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           height: 16px;
           border-radius: 50%;
           background: #7db4f5;
-          border: 2px solid var(--slider-thumb-border, #0f0f0f);
-          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.15);
           cursor: pointer;
+        }
+        :global(.dark) .voice-slider::-moz-range-thumb, .dark .voice-slider::-moz-range-thumb {
+          border: 2px solid #0f0f0f;
+          box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
         }
         .voice-slider::-moz-range-track {
           height: 4px;
           border-radius: 2px;
-          background: var(--slider-bg, rgba(255,255,255,0.12));
+          background: rgba(0,0,0,0.1);
         }
-        @media (prefers-color-scheme: light) {
-          .voice-slider {
-            --slider-bg: rgba(0,0,0,0.1);
-            --slider-thumb-border: #ffffff;
-          }
+        :global(.dark) .voice-slider::-moz-range-track, .dark .voice-slider::-moz-range-track {
+          background: rgba(255,255,255,0.12);
         }
       ` }} />
     </div>
