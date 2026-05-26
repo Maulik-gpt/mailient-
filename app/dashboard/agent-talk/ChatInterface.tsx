@@ -150,15 +150,15 @@ const linkify = (text: string, isUser: boolean = false): string => {
 };
 
 const MarkdownComponents: any = {
-  h1: ({ children }: any) => <h1 className="text-2xl font-bold text-white mb-4 mt-6 first:mt-0 tracking-tight border-b border-white/10 pb-2">{children}</h1>,
-  h2: ({ children }: any) => <h2 className="text-xl font-bold text-white mb-3 mt-5 tracking-tight flex items-center gap-2">{children}</h2>,
-  h3: ({ children }: any) => <h3 className="text-lg font-bold text-white mb-2 mt-4 tracking-tight">{children}</h3>,
-  h4: ({ children }: any) => <h4 className="text-base font-bold text-white mb-2 mt-3">{children}</h4>,
-  h5: ({ children }: any) => <h5 className="text-sm font-bold text-white mb-1 mt-2">{children}</h5>,
-  h6: ({ children }: any) => <h6 className="text-xs font-bold text-white mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
-  p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-white">{children}</p>,
-  ul: ({ children }: any) => <ul className="list-none pl-0 mb-4 space-y-2 text-white">{children}</ul>,
-  ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-white">{children}</ol>,
+  h1: ({ children }: any) => <h1 className="text-2xl font-bold text-zinc-900 dark:text-white mb-4 mt-6 first:mt-0 tracking-tight border-b border-black/10 dark:border-white/10 pb-2">{children}</h1>,
+  h2: ({ children }: any) => <h2 className="text-xl font-bold text-zinc-900 dark:text-white mb-3 mt-5 tracking-tight flex items-center gap-2">{children}</h2>,
+  h3: ({ children }: any) => <h3 className="text-lg font-bold text-zinc-900 dark:text-white mb-2 mt-4 tracking-tight">{children}</h3>,
+  h4: ({ children }: any) => <h4 className="text-base font-bold text-zinc-900 dark:text-white mb-2 mt-3">{children}</h4>,
+  h5: ({ children }: any) => <h5 className="text-sm font-bold text-zinc-900 dark:text-white mb-1 mt-2">{children}</h5>,
+  h6: ({ children }: any) => <h6 className="text-xs font-bold text-zinc-900 dark:text-white mb-1 mt-2 uppercase tracking-widest">{children}</h6>,
+  p: ({ children }: any) => <p className="mb-4 last:mb-0 leading-relaxed text-[16px] text-zinc-800 dark:text-zinc-100">{children}</p>,
+  ul: ({ children }: any) => <ul className="list-none pl-0 mb-4 space-y-2 text-zinc-800 dark:text-zinc-100">{children}</ul>,
+  ol: ({ children }: any) => <ol className="list-decimal pl-6 mb-4 space-y-1.5 text-zinc-800 dark:text-zinc-100">{children}</ol>,
   li: ({ children }: any) => {
     // Check if this is a main bullet (starts with ◆) or sub bullet (starts with •)
     const text = typeof children === 'string' ? children : '';
@@ -167,42 +167,42 @@ const MarkdownComponents: any = {
     return (
       <li className={cn(
         "flex items-start gap-2",
-        isMainBullet && "font-medium text-white",
-        isActionItem && "bg-white/[0.03] rounded-lg px-3 py-2 -mx-3"
+        isMainBullet && "font-medium text-zinc-900 dark:text-white",
+        isActionItem && "bg-black/[0.03] dark:bg-white/[0.03] rounded-lg px-3 py-2 -mx-3"
       )}>
         <span className={cn(
           "mt-1.5 flex-shrink-0",
-          isMainBullet ? "w-1.5 h-1.5 bg-white rounded-full" : "w-1.5 h-1.5 bg-white/40 rounded-full"
+          isMainBullet ? "w-1.5 h-1.5 bg-zinc-800 dark:bg-white rounded-full" : "w-1.5 h-1.5 bg-zinc-400 dark:bg-white/40 rounded-full"
         )} />
         <span className="flex-1">{children}</span>
       </li>
     );
   },
   table: ({ children }: any) => (
-    <div className="my-6 w-full overflow-hidden rounded-xl border border-white/[0.08] bg-[#1C1C1C] shadow-xl">
+    <div className="my-6 w-full overflow-hidden rounded-xl border border-zinc-200 dark:border-white/[0.08] bg-zinc-50/50 dark:bg-[#1C1C1C] shadow-md dark:shadow-xl">
       <table className="w-full border-collapse text-sm text-left">
         {children}
       </table>
     </div>
   ),
-  thead: ({ children }: any) => <thead className="bg-[#242424] border-b border-white/[0.08]">{children}</thead>,
-  th: ({ children }: any) => <th className="px-4 py-3 font-bold text-white uppercase tracking-wider text-[11px]">{children}</th>,
+  thead: ({ children }: any) => <thead className="bg-zinc-100 dark:bg-[#242424] border-b border-zinc-200 dark:border-white/[0.08]">{children}</thead>,
+  th: ({ children }: any) => <th className="px-4 py-3 font-bold text-zinc-700 dark:text-white uppercase tracking-wider text-[11px]">{children}</th>,
   td: ({ children }: any) => {
     // Highlight status symbols in table cells
     const text = typeof children === 'string' ? children : '';
     const hasStatus = /[✅❌⚠️⏳💰🚀🔥⚡📊📈]/.test(text.toString());
     return (
       <td className={cn(
-        "px-4 py-2.5 text-white border-b border-white/[0.06] last:border-0",
+        "px-4 py-2.5 text-zinc-800 dark:text-white border-b border-zinc-100 dark:border-white/[0.06] last:border-0",
         hasStatus && "font-medium"
       )}>{children}</td>
     );
   },
-  tr: ({ children }: any) => <tr className="hover:bg-white/[0.04] transition-colors">{children}</tr>,
-  hr: () => <div className="my-6 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />,
+  tr: ({ children }: any) => <tr className="hover:bg-zinc-100/50 dark:hover:bg-white/[0.04] transition-colors">{children}</tr>,
+  hr: () => <div className="my-6 h-px bg-gradient-to-r from-transparent via-zinc-200 dark:via-white/20 to-transparent" />,
   blockquote: ({ children }: any) => (
-    <blockquote className="border-l-2 border-white/30 pl-4 py-2 my-4 bg-white/[0.02] rounded-r-lg">
-      <p className="text-white italic text-sm">{children}</p>
+    <blockquote className="border-l-2 border-zinc-300 dark:border-white/30 pl-4 py-2 my-4 bg-zinc-100/40 dark:bg-white/[0.02] rounded-r-lg">
+      <p className="text-zinc-700 dark:text-white italic text-sm">{children}</p>
     </blockquote>
   ),
   code: ({ node, inline, className, children, ...props }: any) => {
@@ -212,8 +212,8 @@ const MarkdownComponents: any = {
       <code className={cn(
         "font-mono text-sm",
         inline
-          ? "px-1.5 py-0.5 rounded bg-white/[0.08] text-white"
-          : "block p-4 bg-arcus-elevated border border-arcus-border rounded-lg text-white my-4 overflow-x-auto",
+          ? "px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-white/[0.08] text-zinc-800 dark:text-white"
+          : "block p-4 bg-zinc-50 dark:bg-arcus-elevated border border-zinc-200 dark:border-arcus-border rounded-lg text-zinc-800 dark:text-white my-4 overflow-x-auto",
         className
       )} {...props}>
         {children}
@@ -221,20 +221,20 @@ const MarkdownComponents: any = {
     );
   },
   pre: ({ children }: any) => (
-    <pre className="block my-4 bg-arcus-elevated border border-arcus-border rounded-lg overflow-hidden">
+    <pre className="block my-4 bg-zinc-50 dark:bg-arcus-elevated border border-zinc-200 dark:border-arcus-border rounded-lg overflow-hidden">
       {children}
     </pre>
   ),
   a: ({ node, ...props }: any) => (
     <a
-      className="text-white underline underline-offset-4 decoration-white/30 hover:decoration-white/70 transition-all font-medium hover:text-white"
+      className="text-zinc-800 dark:text-white underline underline-offset-4 decoration-zinc-300 dark:decoration-white/30 hover:decoration-zinc-500 dark:hover:decoration-white/70 transition-all font-medium hover:text-zinc-900 dark:hover:text-white"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
     />
   ),
-  strong: ({ children }: any) => <strong className="font-bold text-white">{children}</strong>,
-  em: ({ children }: any) => <em className="italic text-white">{children}</em>
+  strong: ({ children }: any) => <strong className="font-bold text-zinc-900 dark:text-white">{children}</strong>,
+  em: ({ children }: any) => <em className="italic text-zinc-800 dark:text-white">{children}</em>
 };
 
 const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {

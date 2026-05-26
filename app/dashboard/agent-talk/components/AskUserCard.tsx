@@ -98,10 +98,10 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.97 }}
       transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-      className="w-full max-w-[640px] mx-auto mb-3 rounded-[20px] bg-white/[0.05] backdrop-blur-xl border border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)] overflow-hidden"
+      className="w-full max-w-[640px] mx-auto mb-3 rounded-[20px] bg-zinc-50/90 dark:bg-[#1A1A1E]/80 backdrop-blur-xl border border-zinc-200 dark:border-white/[0.1] shadow-[0_8px_32px_rgba(0,0,0,0.05),inset_0_1px_0_rgba(255,255,255,0.8)] dark:shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)] overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200 dark:border-white/[0.07]">
         <div className="flex items-center gap-2">
           <MessageCircleQuestion className="w-4 h-4 text-arcus-fg-tertiary" />
           <span className="text-[12px] font-bold text-arcus-fg-secondary uppercase tracking-widest">Question</span>
@@ -139,7 +139,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
         >
           {/* Question text */}
           <div className="flex items-start gap-3 mb-3">
-            <span className="text-[13px] font-bold text-blue-400/80 tabular-nums mt-0.5 shrink-0">
+            <span className="text-[13px] font-bold text-blue-500 dark:text-blue-400/80 tabular-nums mt-0.5 shrink-0">
               {currentIndex + 1}
             </span>
             <p className="text-[14px] font-semibold text-arcus-fg leading-snug">{current.text}</p>
@@ -155,14 +155,14 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150",
                   currentAnswer === opt && !customInputs[currentIndex]
                     ? "bg-blue-500/20 border border-blue-500/40 text-arcus-fg"
-                    : "bg-white/[0.03] border border-white/[0.06] text-arcus-fg-secondary hover:bg-white/[0.06] hover:text-arcus-fg"
+                    : "bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-arcus-fg-secondary hover:bg-zinc-200 dark:hover:bg-white/[0.06] hover:text-arcus-fg"
                 )}
               >
                 <span className={cn(
                   "w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center shrink-0 transition-colors",
                   currentAnswer === opt && !customInputs[currentIndex]
                     ? "bg-blue-500 text-white"
-                    : "bg-white/[0.07] text-arcus-fg-muted"
+                    : "bg-zinc-200 dark:bg-white/[0.07] text-arcus-fg-muted"
                 )}>
                   {OPTION_LABELS[i]}
                 </span>
@@ -176,7 +176,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
                 "w-full flex items-center gap-3 rounded-xl transition-all duration-150 overflow-hidden",
                 customInputs[currentIndex]
                   ? "bg-blue-500/10 border border-blue-500/30"
-                  : "bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06]"
+                  : "bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] hover:bg-zinc-200 dark:hover:bg-white/[0.06]"
               )}
             >
               <span
@@ -185,7 +185,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
                   "w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center shrink-0 ml-3 my-2.5 cursor-pointer transition-colors",
                   customInputs[currentIndex]
                     ? "bg-blue-500 text-white"
-                    : "bg-white/[0.07] text-arcus-fg-muted"
+                    : "bg-zinc-200 dark:bg-white/[0.07] text-arcus-fg-muted"
                 )}
               >
                 {OPTION_LABELS[(current.options?.length ?? 0)]}
@@ -209,7 +209,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
       </AnimatePresence>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-white/[0.06]">
+      <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-zinc-200 dark:border-white/[0.06]">
         <button
           onClick={onDismiss}
           className="px-3 py-1.5 text-[12px] font-medium text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors"
@@ -224,7 +224,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
               "px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all",
               isAnswered
                 ? "bg-blue-500 hover:bg-blue-400 text-white"
-                : "bg-white/[0.05] text-arcus-fg-muted cursor-not-allowed"
+                : "bg-zinc-200 dark:bg-white/[0.05] text-arcus-fg-muted cursor-not-allowed"
             )}
           >
             Next

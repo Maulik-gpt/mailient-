@@ -105,21 +105,21 @@ function PlanModal({ plan, onClose }: { plan: PlanCardData; onClose: () => void 
               <div className="text-[10px] font-bold tracking-[0.10em] uppercase text-arcus-fg-muted mb-1">
                 Plan Document
               </div>
-              <h2 className="text-[18px] font-bold text-white tracking-tight leading-tight truncate">
+              <h2 className="text-[18px] font-bold text-zinc-900 dark:text-white tracking-tight leading-tight truncate">
                 {stripEmojis(plan.title)}
               </h2>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 onClick={() => handleDownload(plan)}
-                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
+                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-zinc-900 dark:hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
                 title="Download as Markdown"
               >
                 <Download className="w-4 h-4" />
               </button>
               <button
                 onClick={onClose}
-                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
+                className="p-2.5 rounded-xl text-arcus-fg-muted hover:text-zinc-900 dark:hover:text-white hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all"
                 title="Close"
               >
                 <X className="w-4 h-4" />
@@ -201,7 +201,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               </div>
               <div className={cn(
                 'text-[15px] font-bold tracking-tight leading-tight truncate',
-                isDone ? 'text-arcus-fg-secondary' : isCancelled ? 'text-arcus-fg-muted' : 'text-white',
+                isDone ? 'text-arcus-fg-secondary' : isCancelled ? 'text-arcus-fg-muted' : 'text-zinc-900 dark:text-white',
               )}>
                 {stripEmojis(plan.title)}
               </div>
@@ -236,7 +236,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
             <div className="flex items-center gap-2 px-5 py-3 border-t border-arcus-border bg-arcus-elevated">
               <button
                 onClick={() => setIsModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-zinc-900 dark:hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all"
               >
                 <Maximize2 className="w-3 h-3" />
                 View plan
@@ -247,7 +247,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               <button
                 onClick={() => onCancel(plan)}
                 disabled={isExecuting}
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold text-arcus-fg-secondary hover:text-zinc-900 dark:hover:text-white hover:bg-arcus-surface border border-arcus-divider hover:border-arcus-divider transition-all disabled:opacity-30 disabled:cursor-not-allowed"
               >
                 <X className="w-3 h-3" />
                 Cancel
@@ -256,7 +256,7 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
               <button
                 onClick={handleExecute}
                 disabled={isExecuting}
-                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold text-black bg-white hover:bg-neutral-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-white/15 hover:shadow-white/20 active:scale-95"
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold text-white dark:text-black bg-zinc-900 dark:bg-white hover:bg-zinc-800 dark:hover:bg-neutral-100 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-md dark:shadow-lg active:scale-95"
               >
                 {isExecuting ? (
                   <><Loader2 className="w-3 h-3 animate-spin" />Executing…</>
@@ -317,16 +317,16 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
         remarkPlugins={[remarkGfm]}
         components={{
           h1: ({ children }) => (
-            <h1 className="text-[28px] font-bold text-white tracking-tight mb-5 mt-2 leading-[1.2]">
+            <h1 className="text-[28px] font-bold text-zinc-900 dark:text-white tracking-tight mb-5 mt-2 leading-[1.2]">
               {children}
             </h1>
           ),
           h2: ({ children }) => (
             <div className="mt-9 mb-4">
-              <h2 className="text-[18px] font-bold text-white tracking-tight leading-snug">
+              <h2 className="text-[18px] font-bold text-zinc-900 dark:text-white tracking-tight leading-snug">
                 {children}
               </h2>
-              <div className="mt-2.5 h-px bg-gradient-to-r from-white/15 to-transparent" />
+              <div className="mt-2.5 h-px bg-gradient-to-r from-black/10 dark:from-white/15 to-transparent" />
             </div>
           ),
           h3: ({ children }) => (
@@ -368,11 +368,11 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
           ),
           hr: () => (
             <div className="my-8 flex items-center gap-3">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-black/10 dark:via-white/12 to-transparent" />
             </div>
           ),
           strong: ({ children }) => (
-            <strong className="font-semibold text-white">{children}</strong>
+            <strong className="font-semibold text-zinc-900 dark:text-white">{children}</strong>
           ),
           em: ({ children }) => (
             <em className="italic text-arcus-fg-secondary">{children}</em>
@@ -385,13 +385,13 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
           code: ({ children, className }) => (
             <code className={className
               ? 'text-[13px] text-arcus-fg-secondary font-mono'
-              : 'bg-arcus-surface border border-arcus-border rounded-md px-1.5 py-0.5 text-[13px] text-white font-mono'
+              : 'bg-arcus-surface border border-arcus-border rounded-md px-1.5 py-0.5 text-[13px] text-zinc-800 dark:text-white font-mono'
             }>
               {children}
             </code>
           ),
           blockquote: ({ children }) => (
-            <blockquote className="border-l-[2px] border-white/20 pl-5 my-5 text-arcus-fg-secondary italic text-[15px] leading-[1.8]">
+            <blockquote className="border-l-[2px] border-black/10 dark:border-white/20 pl-5 my-5 text-arcus-fg-secondary italic text-[15px] leading-[1.8]">
               {children}
             </blockquote>
           ),
