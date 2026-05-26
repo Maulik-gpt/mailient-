@@ -978,7 +978,7 @@ function MarkdownView({ content }: { content: string }) {
         ),
       }}
     >
-      {content}
+      {content.replace(/<br\s*\/?>/gi, '\n')}
     </ReactMarkdown>
   );
 }

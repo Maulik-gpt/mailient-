@@ -31,6 +31,7 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from './tool
 // Simple markdown renderer for bold text
 const renderMarkdown = (text: string): string => {
     if (!text) return text;
+    text = text.replace(/<br\s*\/?>/gi, '\n');
 
     // Handle paragraphs: Split by double newlines and wrap in <p>
     const paragraphs = text.split(/\n\n+/);
@@ -2668,7 +2669,7 @@ export function GmailInterfaceFixed() {
                                         <Button
                                             onClick={refreshInsights}
                                             disabled={loading || !mounted}
-                                            className="h-11 px-8 !bg-black dark:!bg-white !text-white dark:!text-black hover:!bg-black/90 dark:hover:!bg-white/90 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none inline-flex items-center justify-center"
+                                            className="h-11 px-8 bg-black text-white hover:bg-black/90 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none inline-flex items-center justify-center"
                                         >
                                             {loading && mounted ? (
                                                 <>

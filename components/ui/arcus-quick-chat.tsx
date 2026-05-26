@@ -327,7 +327,7 @@ export const ArcusQuickChat: React.FC<ArcusQuickChatProps> = ({ isOpen, onClose,
                             hr: ({node, ...props}) => <hr className="my-6 border-white/10" {...props} />
                           }}
                         >
-                          {msg.content}
+                          {msg.content.replace(/<br\s*\/?>/gi, '\n')}
                         </ReactMarkdown>
 
                         {msg.isDraft && msg.draftData && (

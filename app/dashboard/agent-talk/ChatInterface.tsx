@@ -240,7 +240,8 @@ const MarkdownComponents: any = {
 const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string, speed?: number, hideLinks?: boolean }) => {
   const [displayedText, setDisplayedText] = useState("");
   const [isDone, setIsDone] = useState(false);
-  const words = content.split(/(\s+)/); // Preserve spaces
+  const cleanedContent = content.replace(/<br\s*\/?>/gi, '\n');
+  const words = cleanedContent.split(/(\s+)/); // Preserve spaces
   const indexRef = useRef(0);
 
   useEffect(() => {
@@ -279,7 +280,7 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
         ...(hideLinks ? { a: ({ node, ...props }) => <span className="text-inherit underline underline-offset-2 opacity-50 cursor-default">{props.children}</span> } : {})
       }}
     >
-      {isDone ? content : displayedText}
+      {isDone ? cleanedContent : displayedText}
     </ReactMarkdown>
   );
 };
@@ -288,6 +289,7 @@ const TypewriterMarkdown = ({ content, speed = 4, hideLinks }: { content: string
 const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }: { content: any, isUser?: boolean, isTyping?: boolean, isNewResponse?: boolean, hideLinks?: boolean }) => {
   const textColorClass = "text-white";
   let textContent = typeof content === 'string' ? content : (content.text || '');
+  textContent = textContent.replace(/<br\s*\/?>/gi, '\n');
 
   const shouldAnimate = (isTyping || isNewResponse) && !isUser;
 

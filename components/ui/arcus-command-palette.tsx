@@ -69,6 +69,7 @@ function stripThinking(text: string): string {
 
 // Minimal, safe markdown → HTML for the inline answer (bold, links, bullets, headings).
 function renderAnswer(md: string): string {
+    md = md.replace(/<br\s*\/?>/gi, '\n');
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const inline = (s: string) => esc(s)
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')

@@ -107,7 +107,7 @@ const contactMethods = [
 ];
 
 const socialLinks = [
-  { icon: XIcon, href: "https://x.com/Maulik_055", label: "X" },
+  { icon: XIcon, href: "https://x.com/maulik_5", label: "X" },
   { icon: DiscordIcon, href: "https://discord.gg/Bh3DfpQNn", label: "Discord" },
   { icon: FoundrListIcon, href: "https://www.foundrlist.com/server/5788a18f-345c-434c-b2ad-1a58bf238faa", label: "FoundrList", external: true }
 ];
@@ -424,7 +424,7 @@ export default function ContactPage() {
               <span className="font-bold tracking-tight text-white">Mailient</span>
             </div>
             <div className="flex gap-8 text-sm font-bold text-zinc-400 uppercase tracking-widest">
-              <a href="https://x.com/Maulik_055" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Twitter</a>
+              <a href="https://x.com/maulik_5" target="_blank" rel="noopener noreferrer" className="hover:text-white transition-colors">Twitter</a>
               <a href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</a>
               <a href="/terms-of-service" className="hover:text-white transition-colors">Terms of Service</a>
             </div>

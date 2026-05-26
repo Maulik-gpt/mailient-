@@ -49,7 +49,7 @@ export default function WaitlistSuccessPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
             <Button
-              onClick={() => window.open('https://x.com/Maulik_055', '_blank')}
+              onClick={() => window.open('https://x.com/maulik_5', '_blank')}
               className="h-16 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all active:scale-95"
             >
               <Twitter className="w-5 h-5 fill-current" />

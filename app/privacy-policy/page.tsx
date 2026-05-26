@@ -299,7 +299,7 @@ export default function PrivacyPolicy() {
           <p className="font-bold text-black dark:text-white">Mailient Intelligence</p>
           <p>Email: <a href="mailto:mailient.xyz@gmail.com" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">mailient.xyz@gmail.com</a></p>
           <p>Website: <a href="https://mailient.xyz" className="hover:text-black dark:hover:text-white transition-colors">mailient.xyz</a></p>
-          <p>Founder: <a href="https://x.com/Maulik_055" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">@Maulik_055 on X</a></p>
+          <p>Founder: <a href="https://x.com/maulik_5" className="text-black dark:text-white font-medium underline underline-offset-4 decoration-neutral-300 dark:decoration-neutral-700 hover:decoration-black dark:hover:decoration-white transition-all">@maulik_5 on X</a></p>
         </div>
       )
     }
