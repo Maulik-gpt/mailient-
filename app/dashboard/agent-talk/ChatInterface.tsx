@@ -865,7 +865,7 @@ function CollapsibleSteps({
       {/* Toggle row */}
       <button
         onClick={() => setCollapsed(c => !c)}
-        className="flex items-center gap-1.5 text-white/30 hover:text-white/55 transition-colors mb-2"
+        className="flex items-center gap-1.5 text-black/40 dark:text-white/30 hover:text-black/60 dark:hover:text-white/55 transition-colors mb-2"
       >
         <ChevronDown
           className={cn(
@@ -882,7 +882,7 @@ function CollapsibleSteps({
         </span>
         {isActive && (
           <motion.span
-            className="inline-block w-1 h-1 rounded-full bg-white/35"
+            className="inline-block w-1 h-1 rounded-full bg-black/40 dark:bg-white/35"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
           />

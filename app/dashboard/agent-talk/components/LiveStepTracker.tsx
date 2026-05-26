@@ -179,25 +179,25 @@ const TIER_COLORS: Record<string, string> = {
 function SnippetRow({ snippet }: { snippet: ParsedSnippet }) {
   return (
     <div className="flex items-start gap-2.5 py-1.5">
-      <div className="w-1 h-1 rounded-full bg-white/20 mt-[7px] flex-shrink-0" />
+      <div className="w-1 h-1 rounded-full bg-black/20 dark:bg-white/20 mt-[7px] flex-shrink-0" />
       <div className="flex-1 min-w-0">
         <div className="flex items-baseline gap-2 min-w-0">
-          <span className="text-[12.5px] text-white/65 leading-snug truncate">
+          <span className="text-[12.5px] text-black/70 dark:text-white/65 leading-snug truncate">
             {snippet.subject}
           </span>
           {snippet.from && (
-            <span className="text-[11px] text-white/30 flex-shrink-0 truncate max-w-[100px]">
+            <span className="text-[11px] text-black/40 dark:text-white/30 flex-shrink-0 truncate max-w-[100px]">
               {snippet.from}
             </span>
           )}
           {snippet.tier && (
-            <span className={cn('text-[10px] font-semibold flex-shrink-0', TIER_COLORS[snippet.tier] ?? 'text-white/30')}>
+            <span className={cn('text-[10px] font-semibold flex-shrink-0', TIER_COLORS[snippet.tier] ?? 'text-black/40 dark:text-white/30')}>
               {snippet.tier}
             </span>
           )}
         </div>
         {snippet.preview && (
-          <p className="text-[11px] text-white/25 mt-0.5 leading-snug line-clamp-1">
+          <p className="text-[11px] text-black/40 dark:text-white/25 mt-0.5 leading-snug line-clamp-1">
             {snippet.preview}
           </p>
         )}
@@ -228,10 +228,10 @@ function StepCard({ step }: { step: AgentStep }) {
       className={cn(
         'rounded-xl border overflow-hidden transition-colors',
         isActive
-          ? 'bg-white/[0.04] border-white/10'
+          ? 'bg-black/[0.03] dark:bg-white/[0.04] border-black/10 dark:border-white/10'
           : isError
           ? 'bg-red-500/[0.04] border-red-500/20'
-          : 'bg-white/[0.03] border-white/[0.07]',
+          : 'bg-black/[0.02] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.07]',
       )}
     >
       {/* Header row */}
@@ -239,7 +239,7 @@ function StepCard({ step }: { step: AgentStep }) {
         onClick={() => hasDetails && setOpen(v => !v)}
         className={cn(
           'w-full flex items-center gap-3 px-3.5 py-2.5 text-left transition-colors',
-          hasDetails ? 'hover:bg-white/[0.03] cursor-pointer' : 'cursor-default',
+          hasDetails ? 'hover:bg-black/[0.03] dark:hover:bg-white/[0.03] cursor-pointer' : 'cursor-default',
         )}
       >
         {/* Tool icon */}
@@ -247,10 +247,10 @@ function StepCard({ step }: { step: AgentStep }) {
           className={cn(
             'flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center border',
             isActive
-              ? 'bg-white/[0.06] border-white/15 text-white/70'
+              ? 'bg-black/[0.05] dark:bg-white/[0.06] border-black/10 dark:border-white/15 text-black/70 dark:text-white/70'
               : isError
               ? 'bg-red-500/10 border-red-500/20 text-red-400'
-              : 'bg-white/[0.05] border-white/[0.08] text-white/40',
+              : 'bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.05] dark:border-white/[0.08] text-black/50 dark:text-white/40',
           )}
         >
           {isActive ? (
@@ -271,7 +271,7 @@ function StepCard({ step }: { step: AgentStep }) {
         <div className="flex-1 min-w-0">
           {isActive ? (
             <motion.span
-              className="text-[13px] font-medium text-white/60 tracking-tight block"
+              className="text-[13px] font-medium text-black/70 dark:text-white/60 tracking-tight block"
               animate={{ opacity: [0.6, 1, 0.6] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
             >
@@ -280,11 +280,11 @@ function StepCard({ step }: { step: AgentStep }) {
           ) : (
             <span className={cn(
               'text-[13px] font-medium tracking-tight block',
-              isError ? 'text-red-400/70' : 'text-white/55',
+              isError ? 'text-red-400/70' : 'text-black/60 dark:text-white/55',
             )}>
               {label}
               {resultLabel && (
-                <span className="ml-1.5 text-white/30">— {resultLabel}</span>
+                <span className="ml-1.5 text-black/40 dark:text-white/30">— {resultLabel}</span>
               )}
             </span>
           )}
@@ -296,14 +296,14 @@ function StepCard({ step }: { step: AgentStep }) {
             {[0, 0.2, 0.4].map((delay, i) => (
               <motion.span
                 key={i}
-                className="w-1 h-1 rounded-full bg-white/30"
+                className="w-1 h-1 rounded-full bg-black/40 dark:bg-white/30"
                 animate={{ opacity: [0.2, 0.8, 0.2] }}
                 transition={{ repeat: Infinity, duration: 1.2, delay, ease: 'easeInOut' }}
               />
             ))}
           </div>
         ) : hasDetails ? (
-          <div className="flex-shrink-0 text-white/20">
+          <div className="flex-shrink-0 text-black/30 dark:text-white/20">
             {open ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
           </div>
         ) : null}
@@ -317,9 +317,9 @@ function StepCard({ step }: { step: AgentStep }) {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.18, ease: [0.4, 0, 0.2, 1] }}
-            className="overflow-hidden border-t border-white/[0.06]"
+            className="overflow-hidden border-t border-black/[0.06] dark:border-white/[0.06]"
           >
-            <div className="px-3.5 pb-2 pt-1 divide-y divide-white/[0.04]">
+            <div className="px-3.5 pb-2 pt-1 divide-y divide-black/[0.04] dark:divide-white/[0.04]">
               {snippets.map((s, i) => (
                 <SnippetRow key={i} snippet={s} />
               ))}
@@ -366,7 +366,7 @@ export function LiveStepTracker({ steps, narratives = [], isActive }: {
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, ease: 'easeOut' }}
-                  className="text-[13px] text-white/35 leading-[1.7] pb-1.5"
+                  className="text-[13px] text-black/50 dark:text-white/35 leading-[1.7] pb-1.5"
                 >
                   {narrative.text}
                 </motion.p>
