@@ -664,6 +664,53 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'memory_search',
+    description:
+      'Search Supermemory for relevant context about a person, topic, or previous interaction. Call at the start of any task involving a known contact, project, or recurring concern so prior decisions and preferences inform the work. ' +
+      'Returns raw memory items so you can quote them; for the system-prompt summary form, the chat route already injects relevant memories every turn. ' +
+      'Output: numbered list of "<text>  [score: <n?>  when: <iso?>  tags: <csv?>]"; or "No memories found." ' +
+      'Errors (success:false): validation_error, memory_unavailable (no SUPERMEMORY_API_KEY set).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Free-text query — name, topic, project, decision.' },
+        limit: { type: 'number', description: 'Max items (1-20, default 8).' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'memory_save',
+    description:
+      'Save a fact, decision, or interaction summary to Supermemory. Use at the end of any significant interaction or after the user states something worth remembering ("Priya is our biggest client", "always cc legal on contracts"). ' +
+      'Stored under the current user. Tag with one or more categories so future searches can filter. Soft-write — no approval gate (the LLM is persisting observations, not contacting third parties). ' +
+      'Output: "Saved to memory: \\"<first 100 chars>\\"" or a failure reason. ' +
+      'Errors (success:false): validation_error, memory_unavailable.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'The fact, summary, or context to remember. Prefix with [RELATIONSHIP], [PREFERENCE], or leave plain for general context.' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional categorisation tags, e.g. ["client", "vip"] or ["preference"].' },
+      },
+      required: ['content'],
+    },
+  },
+  {
+    name: 'memory_get_contact_profile',
+    description:
+      'Aggregate everything Arcus knows about one contact: the persisted relationship row (notes / tags / email count / last contact) PLUS Supermemory items mentioning their email or name. ' +
+      'Output: plain-text card with the relationship row first, then a numbered list of related Supermemory items, or "No history exists for <email>." when both are empty. ' +
+      'Errors (success:false): validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactEmail: { type: 'string', description: 'Contact email address (lowercased internally).' },
+        name: { type: 'string', description: 'Optional display name to broaden the Supermemory search.' },
+      },
+      required: ['contactEmail'],
+    },
+  },
+  {
     name: 'get_contact_context',
     description:
       'Look up the persisted relationship-memory row for a contact (notes, tag list, email count, last contact). ' +
@@ -1037,6 +1084,9 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   get_recipient_context: null,
   get_contact_context: null,
   remember_about_contact: null,
+  memory_search: null,
+  memory_save: null,
+  memory_get_contact_profile: null,
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -1174,6 +1224,9 @@ export async function executeTool(
       case 'get_recipient_context': result = await getRecipientContext(userId, input); break;
       case 'get_contact_context':   result = await getContactContext(userId, input); break;
       case 'remember_about_contact': result = await rememberAboutContact(userId, input); break;
+      case 'memory_search':         result = await memorySearchTool(userId, input); break;
+      case 'memory_save':           result = await memorySaveTool(userId, input); break;
+      case 'memory_get_contact_profile': result = await memoryGetContactProfile(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -3487,6 +3540,118 @@ async function rememberAboutContact(userId: string, input: any): Promise<ToolRes
   } catch (err: any) {
     return failureResult(`Could not save contact note: ${err.message}`, 'contact_save_failed');
   }
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Supermemory tool wrappers — expose memory_search / memory_save /
+// memory_get_contact_profile as first-class tools the LLM can invoke. The chat
+// route already pre-fetches relevant memories every turn into the prompt;
+// these tools are for explicit reads/writes (auditing memory, saving facts on
+// demand, building a contact dossier).
+// ══════════════════════════════════════════════════════════════════════════════
+
+async function memorySearchTool(userId: string, input: any): Promise<ToolResult> {
+  const query = (input?.query || '').trim();
+  if (!query) return failureResult('query is required.', 'validation_error');
+  const limit = Math.max(1, Math.min(20, Number(input?.limit) || 8));
+
+  // @ts-ignore — JS module path
+  const { searchMemoriesRaw } = await import('./memory');
+  // The memory module returns [] when SUPERMEMORY_API_KEY is missing — same as
+  // "no memories found" from the LLM's POV, but we surface the distinction so
+  // the user can be told to configure the key.
+  if (!process.env.SUPERMEMORY_API_KEY && !process.env.DATAFAST_API_KEY) {
+    return failureResult('Supermemory is not configured — SUPERMEMORY_API_KEY env var missing.', 'memory_unavailable');
+  }
+
+  const items = await searchMemoriesRaw(userId, query, limit);
+  if (!items.length) return { output: `No memories found for "${query}".` };
+
+  const lines = items.map((m: any, i: number) => {
+    const meta: string[] = [];
+    if (typeof m.score === 'number') meta.push(`score: ${m.score.toFixed(2)}`);
+    if (m.timestamp) meta.push(`when: ${m.timestamp}`);
+    if (m.tags?.length) meta.push(`tags: ${m.tags.join(',')}`);
+    const metaStr = meta.length ? `  [${meta.join('  ')}]` : '';
+    return `${i + 1}. ${m.text}${metaStr}`;
+  });
+  return { output: `${items.length} memor${items.length === 1 ? 'y' : 'ies'} for "${query}":\n\n${lines.join('\n\n')}` };
+}
+
+async function memorySaveTool(userId: string, input: any): Promise<ToolResult> {
+  const content = (input?.content || '').trim();
+  if (!content) return failureResult('content is required.', 'validation_error');
+  if (!process.env.SUPERMEMORY_API_KEY && !process.env.DATAFAST_API_KEY) {
+    return failureResult('Supermemory is not configured — SUPERMEMORY_API_KEY env var missing.', 'memory_unavailable');
+  }
+  const tags = Array.isArray(input?.tags) ? input.tags.filter((t: any) => typeof t === 'string' && t.trim()).map((t: string) => t.trim()) : [];
+
+  // @ts-ignore — JS module path
+  const { saveMemory } = await import('./memory');
+  await saveMemory(userId, content, tags.length ? tags : undefined);
+  return {
+    output: `Saved to memory: "${content.slice(0, 100)}${content.length > 100 ? '…' : ''}"${tags.length ? ` (tags: ${tags.join(', ')})` : ''}`,
+  };
+}
+
+async function memoryGetContactProfile(userId: string, input: any): Promise<ToolResult> {
+  const email = (input?.contactEmail || '').trim().toLowerCase();
+  const name = (input?.name || '').trim();
+  if (!email) return failureResult('contactEmail is required.', 'validation_error');
+
+  const sections: string[] = [];
+
+  // 1) Persisted relationship row from arcus_contacts (best-effort; the
+  // migration may not be applied yet)
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_contacts')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('contact_email', email)
+      .maybeSingle();
+    if (data) {
+      const row = [
+        `**Relationship row**`,
+        `Contact: ${data.contact_name || email}`,
+        data.last_contact_at ? `Last contact: ${new Date(data.last_contact_at).toLocaleDateString()}` : null,
+        data.email_count ? `Emails exchanged: ${data.email_count}` : null,
+        data.notes ? `Notes: ${data.notes}` : null,
+        data.tags?.length ? `Tags: ${data.tags.join(', ')}` : null,
+      ].filter(Boolean).join('\n');
+      sections.push(row);
+    }
+  } catch { /* table may not exist — non-fatal */ }
+
+  // 2) Supermemory items mentioning the email or display name
+  if (process.env.SUPERMEMORY_API_KEY || process.env.DATAFAST_API_KEY) {
+    try {
+      // @ts-ignore — JS module path
+      const { searchMemoriesRaw } = await import('./memory');
+      const queries = [email];
+      if (name) queries.push(name);
+      const all: any[] = [];
+      for (const q of queries) {
+        const items = await searchMemoriesRaw(userId, q, 6);
+        for (const item of items) {
+          if (!all.some((a) => a.text === item.text)) all.push(item);
+        }
+      }
+      if (all.length) {
+        const lines = all.slice(0, 10).map((m: any, i: number) => {
+          const ts = m.timestamp ? `  (${m.timestamp})` : '';
+          return `  ${i + 1}. ${m.text}${ts}`;
+        });
+        sections.push(`**Supermemory items mentioning ${name || email}**\n${lines.join('\n')}`);
+      }
+    } catch { /* non-fatal */ }
+  }
+
+  if (!sections.length) {
+    return { output: `No history exists for ${email}.` };
+  }
+  return { output: sections.join('\n\n') };
 }
 
 // ══════════════════════════════════════════════════════════════════════════════

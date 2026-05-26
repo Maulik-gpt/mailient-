@@ -67,6 +67,59 @@ export async function saveMemory(userId: string, content: string, tags?: string[
   }
 }
 
+export interface RawMemoryItem {
+  text: string;
+  score?: number;
+  timestamp?: string;
+  tags?: string[];
+}
+
+/**
+ * Raw memory search — returns the underlying Supermemory items unchanged
+ * (truncated for safety). Used by the `memory_search` tool when the LLM
+ * needs to read individual entries rather than the prompt-injection summary.
+ * Never throws; returns [] on any error.
+ */
+export async function searchMemoriesRaw(userId: string, query: string, limit = 8): Promise<RawMemoryItem[]> {
+  const key = getKey();
+  if (!key) return [];
+
+  try {
+    let results: any[] = [];
+
+    const postRes = await fetch(`${BASE}/memories/search`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ q: query, limit, filters: { userId } }),
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (postRes.ok) {
+      const data = await postRes.json();
+      results = data.results ?? data.memories ?? data.data ?? [];
+    } else {
+      const params = new URLSearchParams({ q: query, limit: String(limit), userId });
+      const getRes = await fetch(`${BASE}/search?${params}`, {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(5000),
+      });
+      if (getRes.ok) {
+        const data = await getRes.json();
+        results = data.results ?? data.memories ?? data.data ?? [];
+      }
+    }
+
+    return results.slice(0, limit).map((r: any): RawMemoryItem => ({
+      text: String(r.content ?? r.text ?? r.memory ?? '').slice(0, 600),
+      score: typeof r.score === 'number' ? r.score : undefined,
+      timestamp: r.created_at ?? r.timestamp ?? undefined,
+      tags: Array.isArray(r.metadata?.tags) ? r.metadata.tags : undefined,
+    })).filter((m) => m.text);
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Search memories relevant to the current user message.
  * Returns a formatted context string to inject into the system prompt.
