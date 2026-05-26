@@ -45,6 +45,12 @@ export function DraftReplyBox({
     const [isEditing, setIsEditing] = useState(false);
     const [sendSuccess, setSendSuccess] = useState(false);
     const [sendError, setSendError] = useState<string | null>(null);
+    // PART 3: two-click send gate. Send Now opens this overlay; the user must
+    // explicitly press Confirm Send in the overlay before handleSend fires.
+    // The LLM-driven send path is already gated by Phase 2's executor approval
+    // system — this overlay is the *user-driven* gate, replacing the prior
+    // one-click send-from-card flow.
+    const [showConfirmOverlay, setShowConfirmOverlay] = useState(false);
     
     // AI Refinement State
     const [selection, setSelection] = useState<{ text: string; rect: DOMRect; start: number; end: number } | null>(null);
@@ -479,26 +485,50 @@ export function DraftReplyBox({
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Save to Drafts — the draft already lives in Gmail Drafts (saved on
+                        create), so this is "close the card, leave the draft alone." */}
                     <button
                         onClick={onDismiss}
                         disabled={isSending || sendSuccess}
                         className="px-5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none"
                     >
-                        Discard
+                        Save to Drafts
                     </button>
+                    {/* Edit Draft — toggles the same isEditing state as the header pencil */}
                     <button
-                        onClick={handleSend}
+                        onClick={() => setIsEditing(!isEditing)}
+                        disabled={isSending || sendSuccess}
+                        className={cn(
+                            'px-5 py-2.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none',
+                            isEditing
+                                ? 'bg-white text-black hover:bg-zinc-200'
+                                : 'text-zinc-300 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5',
+                        )}
+                    >
+                        {isEditing ? 'Done Editing' : 'Edit Draft'}
+                    </button>
+                    {/* Send Now — opens the inline confirm overlay (PART 3). Two clicks
+                        are required before the email actually goes out. */}
+                    <button
+                        onClick={() => {
+                            if (!draftData.recipientEmail) {
+                                setSendError('Missing recipient email');
+                                return;
+                            }
+                            setSendError(null);
+                            setShowConfirmOverlay(true);
+                        }}
                         disabled={isSending || sendSuccess || !draftData.recipientEmail}
                         className={cn(
-                            "group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 transform active:scale-95",
+                            'group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 transform active:scale-95',
                             isSending || sendSuccess
                                 ? 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
-                                : 'bg-white text-black hover:bg-zinc-200 shadow-lg shadow-white/5'
+                                : 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/25',
                         )}
                     >
                         {isSending ? (
                             <>
-                                <div className="w-3.5 h-3.5 border-2 border-black/20 border-t-black rounded-full animate-spin" />
+                                <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 Sending...
                             </>
                         ) : sendSuccess ? (
@@ -515,6 +545,78 @@ export function DraftReplyBox({
                     </button>
                 </div>
             </div>
+
+            {/* Inline confirm overlay (PART 3). Sits on top of the card body, not as
+                a modal popup — the user stays in context with the draft visible
+                underneath. Only this overlay's Confirm Send button calls handleSend. */}
+            <AnimatePresence>
+                {showConfirmOverlay && !sendSuccess && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.18 }}
+                        className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-md bg-black/55"
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, y: 16, scale: 0.96 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 12, scale: 0.97 }}
+                            transition={{ type: 'spring', damping: 26, stiffness: 320 }}
+                            className="mx-6 w-full max-w-md rounded-[20px] bg-[#1A1A1A] border border-white/10 shadow-2xl overflow-hidden"
+                        >
+                            <div className="px-6 py-5 border-b border-white/[0.06]">
+                                <p className="text-[10px] tracking-widest uppercase font-bold text-emerald-400/80 mb-2">Final confirmation</p>
+                                <p className="text-[15px] text-white/90 leading-snug">
+                                    Sending to <span className="font-semibold">{draftData.recipientName}</span>
+                                    {draftData.recipientEmail && (
+                                        <span className="font-mono text-[12px] text-white/55"> &lt;{draftData.recipientEmail}&gt;</span>
+                                    )}
+                                    .
+                                </p>
+                                <p className="text-[12px] text-white/45 mt-1">This cannot be undone.</p>
+                            </div>
+                            <div className="px-6 py-4 flex items-center justify-end gap-3 bg-white/[0.02]">
+                                <button
+                                    onClick={() => setShowConfirmOverlay(false)}
+                                    disabled={isSending}
+                                    className="px-5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        await handleSend();
+                                        // Overlay stays mounted through the sending state so the
+                                        // user sees the spinner; on success the card auto-dismisses
+                                        // via the existing 2s timer.
+                                        setShowConfirmOverlay(false);
+                                    }}
+                                    disabled={isSending}
+                                    className={cn(
+                                        'flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 active:scale-95',
+                                        isSending
+                                            ? 'bg-emerald-500/40 text-white/70 cursor-not-allowed'
+                                            : 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/30',
+                                    )}
+                                >
+                                    {isSending ? (
+                                        <>
+                                            <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                            Sending…
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Send className="w-3.5 h-3.5" />
+                                            Confirm Send
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
