@@ -2642,7 +2642,7 @@ export function GmailInterfaceFixed() {
                                             <Button
                                                 onClick={refreshInsights}
                                                 disabled={loading || !mounted}
-                                                className="h-10 px-6 bg-[#fafafa] hover:bg-neutral-200 text-[#0a0a0a] rounded-lg transition-colors font-medium"
+                                                className="h-10 px-6 !bg-neutral-100 dark:!bg-neutral-900 hover:!bg-neutral-200 dark:hover:!bg-neutral-800 !text-black dark:!text-white rounded-lg transition-colors font-medium inline-flex items-center justify-center"
                                             >
                                                 {loading && mounted ? (
                                                     <>
@@ -2668,7 +2668,7 @@ export function GmailInterfaceFixed() {
                                         <Button
                                             onClick={refreshInsights}
                                             disabled={loading || !mounted}
-                                            className="h-11 px-8 bg-black dark:bg-[#fafafa] text-white dark:text-black hover:bg-black/90 dark:hover:bg-neutral-200 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none"
+                                            className="h-11 px-8 !bg-black dark:!bg-white !text-white dark:!text-black hover:!bg-black/90 dark:hover:!bg-white/90 rounded-xl transition-all font-medium shadow-lg hover:scale-105 active:scale-95 border-none inline-flex items-center justify-center"
                                         >
                                             {loading && mounted ? (
                                                 <>
