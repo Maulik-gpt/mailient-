@@ -1039,9 +1039,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   isRecording
                     ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
                     : isLoading
-                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
+                      ? "!bg-black dark:!bg-zinc-900 hover:!bg-black/80 dark:hover:!bg-zinc-800 !text-white dark:!text-white shadow-lg"
                       : hasContent
-                        ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
+                        ? "!bg-black dark:!bg-zinc-900 hover:!bg-black/80 dark:hover:!bg-zinc-800 !text-white dark:!text-white shadow-lg"
                         : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
                 )}
                 onClick={(e) => {
@@ -1054,11 +1054,11 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 disabled={isLoading && !onStop}
               >
                 {isLoading ? (
-                  <Square className="h-4 w-4 fill-white dark:fill-black text-white dark:text-black" />
+                  <Square className="h-4 w-4 fill-white dark:fill-white text-white dark:text-white" />
                 ) : isRecording ? (
                   <StopCircle className="h-5 w-5 text-red-500" />
                 ) : hasContent ? (
-                  <ArrowUp className="h-4 w-4 text-white dark:text-black stroke-[3px]" />
+                  <ArrowUp className="h-4 w-4 !text-white dark:!text-white stroke-[3px]" />
                 ) : (
                   <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
                 )}
