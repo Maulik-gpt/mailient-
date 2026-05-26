@@ -227,13 +227,13 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.92, opacity: 0, y: 30 }}
           transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-          className="relative w-full max-w-2xl max-h-[85vh] bg-[#0f0f0f] border border-white/[0.08] rounded-[28px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-white"
+          className="relative w-full max-w-2xl max-h-[85vh] bg-white dark:bg-[#0f0f0f] border border-black/[0.05] dark:border-white/[0.08] rounded-[28px] flex flex-col shadow-[0_40px_120px_rgba(0,0,0,0.15)] dark:shadow-[0_40px_120px_rgba(0,0,0,0.8)] font-sans text-black dark:text-white"
         >
           {/* === HEADER === */}
           <div className="px-8 pt-7 pb-3 flex items-start justify-between">
             <div className="space-y-1.5">
               <div className="flex items-center gap-2.5">
-                <h2 className="text-[20px] font-semibold tracking-tight text-white/80">Voice Profile</h2>
+                <h2 className="text-[20px] font-semibold tracking-tight text-black/80 dark:text-white/80">Voice Profile</h2>
                 {(profile?.status && profile.status !== 'default') && (
                   <div className="flex items-center gap-1.5 px-2.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -241,15 +241,15 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                   </div>
                 )}
               </div>
-              <p className="text-[13px] text-white/35 font-light">
+              <p className="text-[13px] text-black/40 dark:text-white/35 font-light">
                 Mailient uses this to draft replies that sound like you.
               </p>
             </div>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/10 transition-colors border border-white/5 mt-1"
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10 transition-colors border border-black/5 dark:border-white/5 mt-1"
             >
-              <X className="w-4 h-4 text-white/50" />
+              <X className="w-4 h-4 text-black/50 dark:text-white/50" />
             </button>
           </div>
 
@@ -261,8 +261,8 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                 onClick={() => setActiveTab(tab)}
                 className={`px-5 py-1.5 rounded-full text-[12px] font-semibold tracking-wide transition-all border ${
                   activeTab === tab
-                    ? 'bg-white/10 text-white border-white/15'
-                    : 'bg-transparent text-white/30 border-white/[0.06] hover:text-white/50 hover:border-white/10'
+                    ? 'bg-black/10 dark:bg-white/10 text-black dark:text-white border-black/15 dark:border-white/15'
+                    : 'bg-transparent text-black/40 dark:text-white/30 border-black/[0.06] dark:border-white/[0.06] hover:text-black/60 dark:hover:text-white/50 hover:border-black/10 dark:hover:border-white/10'
                 }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -274,8 +274,8 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
           <div className="flex-1 px-8 pb-6 space-y-6 overflow-y-auto custom-scrollbar min-h-0">
             
             {/* ── TONE SECTION ── */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 space-y-5">
-              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/25">Tone</h3>
+            <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-5">
+              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Tone</h3>
               <ToneSlider label="Casual" labelRight="Formal" value={formality} onChange={setFormality} />
               <ToneSlider label="Brief" labelRight="Detailed" value={detail} onChange={setDetail} />
               <ToneSlider label="Warm" labelRight="Direct" value={warmth} onChange={setWarmth} />
@@ -283,18 +283,18 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
             </div>
 
             {/* ── HABITS & PREFERENCES ── */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 space-y-4">
-              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/25">Habits & Preferences</h3>
+            <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-4">
+              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Habits & Preferences</h3>
               <div className="flex flex-wrap gap-2">
                 {habits.map((habit) => (
                   <span
                     key={habit}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white/[0.06] border border-white/[0.08] rounded-full text-[12px] text-white/70 font-medium group hover:border-red-500/30 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.08] dark:border-white/[0.08] rounded-full text-[12px] text-black/80 dark:text-white/70 font-medium group hover:border-red-500/30 transition-colors"
                   >
                     {habit}
                     <button
                       onClick={() => removeHabit(habit)}
-                      className="text-white/20 hover:text-red-400 transition-colors ml-0.5"
+                      className="text-black/30 dark:text-white/20 hover:text-red-500 dark:hover:text-red-400 transition-colors ml-0.5"
                     >
                       ×
                     </button>
@@ -306,7 +306,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                   <button
                     key={suggestion}
                     onClick={() => addHabit(suggestion)}
-                    className="px-3.5 py-1.5 bg-transparent border border-dashed border-white/[0.08] rounded-full text-[12px] text-white/25 font-medium hover:text-white/50 hover:border-white/15 transition-all"
+                    className="px-3.5 py-1.5 bg-transparent border border-dashed border-black/[0.1] dark:border-white/[0.08] rounded-full text-[12px] text-black/40 dark:text-white/25 font-medium hover:text-black/70 dark:hover:text-white/50 hover:border-black/20 dark:hover:border-white/15 transition-all"
                   >
                     {suggestion}
                   </button>
@@ -324,11 +324,11 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                         if (e.key === 'Escape') { setShowHabitInput(false); setNewHabitInput(''); }
                       }}
                       placeholder="Type a habit..."
-                      className="px-3 py-1.5 bg-white/[0.04] border border-white/[0.1] rounded-full text-[12px] text-white/70 font-medium focus:outline-none focus:border-white/20 w-40"
+                      className="px-3 py-1.5 bg-black/[0.04] dark:bg-white/[0.04] border border-black/[0.1] dark:border-white/[0.1] rounded-full text-[12px] text-black/70 dark:text-white/70 font-medium focus:outline-none focus:border-black/20 dark:focus:border-white/20 w-40"
                     />
                     <button
                       onClick={() => addHabit(newHabitInput)}
-                      className="text-white/30 hover:text-white/60 text-sm"
+                      className="text-black/40 dark:text-white/30 hover:text-black/70 dark:hover:text-white/60 text-sm"
                     >
                       ✓
                     </button>
@@ -336,7 +336,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                 ) : (
                   <button
                     onClick={() => setShowHabitInput(true)}
-                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-transparent border border-dashed border-white/[0.1] rounded-full text-[12px] text-white/25 font-medium hover:text-white/50 hover:border-white/15 transition-all"
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 bg-transparent border border-dashed border-black/[0.15] dark:border-white/[0.1] rounded-full text-[12px] text-black/40 dark:text-white/25 font-medium hover:text-black/70 dark:hover:text-white/50 hover:border-black/20 dark:hover:border-white/15 transition-all"
                   >
                     <Plus className="w-3 h-3" /> Add
                   </button>
@@ -345,33 +345,33 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
             </div>
 
             {/* ── CUSTOM INSTRUCTIONS ── */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 space-y-3">
-              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/25">Custom Instructions</h3>
+            <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-3">
+              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Custom Instructions</h3>
               <textarea
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
                 placeholder="E.g., I never apologise for response time. I prefer to just get to the point. Oxford commas always."
-                className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-white/80 font-light leading-relaxed focus:outline-none focus:border-white/15 resize-none placeholder:text-white/20 transition-colors"
+                className="w-full bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-black/80 dark:text-white/80 font-light leading-relaxed focus:outline-none focus:border-black/15 dark:focus:border-white/15 resize-none placeholder:text-black/30 dark:placeholder:text-white/20 transition-colors"
                 rows={3}
               />
             </div>
 
             {/* ── LEARNING ── */}
             <div className="bg-emerald-500/[0.04] border border-emerald-500/[0.1] rounded-2xl p-6 space-y-5">
-              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-emerald-400/60">Learning</h3>
+              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-emerald-600 dark:text-emerald-400/60">Learning</h3>
               
               {/* Auto-improve toggle */}
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-[14px] font-semibold text-white/80">Auto-improve from sent mail</p>
-                  <p className="text-[12px] text-white/30 font-light mt-0.5">
+                  <p className="text-[14px] font-semibold text-black/80 dark:text-white/80">Auto-improve from sent mail</p>
+                  <p className="text-[12px] text-black/40 dark:text-white/30 font-light mt-0.5">
                     Mailient reads your edits to AI drafts and refines this profile
                   </p>
                 </div>
                 <button
                   onClick={() => setAutoImprove(!autoImprove)}
                   className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${
-                    autoImprove ? 'bg-emerald-500' : 'bg-white/10'
+                    autoImprove ? 'bg-emerald-500' : 'bg-black/10 dark:bg-white/10'
                   }`}
                 >
                   <div
@@ -385,15 +385,15 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
               {/* Run analysis */}
               <div className="flex items-center justify-between gap-4 pt-2 border-t border-emerald-500/[0.08]">
                 <div>
-                  <p className="text-[14px] font-semibold text-white/80">Analyse past 90 days of sent mail</p>
-                  <p className="text-[12px] text-white/30 font-light mt-0.5">
+                  <p className="text-[14px] font-semibold text-black/80 dark:text-white/80">Analyse past 90 days of sent mail</p>
+                  <p className="text-[12px] text-black/40 dark:text-white/30 font-light mt-0.5">
                     Bootstrap this profile from your existing writing patterns
                   </p>
                 </div>
                 <button
                   onClick={handleRunAnalysis}
                   disabled={isRunningAnalysis}
-                  className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.06] border border-white/[0.1] rounded-xl text-[13px] font-semibold text-white/60 hover:bg-white/10 hover:text-white transition-all disabled:opacity-40"
+                  className="flex items-center gap-2 px-5 py-2.5 bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.1] dark:border-white/[0.1] rounded-xl text-[13px] font-semibold text-black/60 dark:text-white/60 hover:bg-black/10 dark:hover:bg-white/10 hover:text-black dark:hover:text-white transition-all disabled:opacity-40"
                 >
                   {isRunningAnalysis ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -405,37 +405,37 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
             </div>
 
             {/* ── LIVE PREVIEW ── */}
-            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 space-y-3">
+            <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-white/25">Live Preview</h3>
+                <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Live Preview</h3>
               </div>
-              <p className="text-[12px] text-white/25 font-light">
-                Sample reply to: <span className="italic text-white/40">&ldquo;Can we reschedule Thursday&apos;s call to Friday?&rdquo;</span>
+              <p className="text-[12px] text-black/40 dark:text-white/25 font-light">
+                Sample reply to: <span className="italic text-black/50 dark:text-white/40">&ldquo;Can we reschedule Thursday&apos;s call to Friday?&rdquo;</span>
               </p>
-              <div className="bg-white/[0.03] border border-white/[0.04] rounded-xl px-5 py-4 min-h-[48px] relative">
+              <div className="bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.04] rounded-xl px-5 py-4 min-h-[48px] relative">
                 {isLoadingPreview ? (
-                  <div className="flex items-center gap-2 text-white/20 text-[13px]">
+                  <div className="flex items-center gap-2 text-black/40 dark:text-white/20 text-[13px]">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Generating preview...
                   </div>
                 ) : (
-                  <p className="text-[14px] text-white/70 font-light leading-relaxed">
+                  <p className="text-[14px] text-black/70 dark:text-white/70 font-light leading-relaxed">
                     {previewText || 'Adjust sliders above to see your profile in action'}
                   </p>
                 )}
               </div>
-              <p className="text-[11px] text-white/15 font-light">
+              <p className="text-[11px] text-black/30 dark:text-white/15 font-light">
                 Adjust sliders above to see your profile in action
               </p>
             </div>
           </div>
 
           {/* === FOOTER === */}
-          <div className="px-8 py-5 border-t border-white/[0.04] flex items-center justify-between">
+          <div className="px-8 py-5 border-t border-black/[0.06] dark:border-white/[0.04] flex items-center justify-between">
             <button
               onClick={handleReset}
-              className="text-[13px] text-white/25 hover:text-white/50 font-medium transition-colors"
+              className="text-[13px] text-black/40 dark:text-white/25 hover:text-black/70 dark:hover:text-white/50 font-medium transition-colors"
             >
               Reset to Defaults
             </button>
@@ -446,7 +446,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
               <button
                 onClick={handleSave}
                 disabled={isSaving}
-                className="px-6 py-2.5 bg-white text-black rounded-xl text-[13px] font-bold hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
+                className="px-6 py-2.5 bg-black dark:bg-white text-white dark:text-black rounded-xl text-[13px] font-bold hover:bg-black/90 dark:hover:bg-white/90 transition-all disabled:opacity-50 flex items-center gap-2 shadow-lg"
               >
                 {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
                 Save Profile
@@ -468,7 +468,7 @@ function ToneSlider({ label, labelRight, value, onChange }: {
 }) {
   return (
     <div className="flex items-center gap-4">
-      <span className="text-[13px] text-white/40 font-medium w-20 text-right shrink-0">{label}</span>
+      <span className="text-[13px] text-black/40 dark:text-white/40 font-medium w-20 text-right shrink-0">{label}</span>
       <div className="flex-1 relative group">
         <input
           type="range"
@@ -479,14 +479,14 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           className="voice-slider w-full"
         />
       </div>
-      <span className="text-[13px] text-white/40 font-medium w-20 shrink-0">{labelRight}</span>
+      <span className="text-[13px] text-black/40 dark:text-white/40 font-medium w-20 shrink-0">{labelRight}</span>
       <style dangerouslySetInnerHTML={{ __html: `
         .voice-slider {
           -webkit-appearance: none;
           appearance: none;
           height: 4px;
           border-radius: 2px;
-          background: linear-gradient(to right, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.12) 100%);
+          background: var(--slider-bg, rgba(255,255,255,0.12));
           outline: none;
           cursor: pointer;
         }
@@ -497,7 +497,7 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           height: 16px;
           border-radius: 50%;
           background: #7db4f5;
-          border: 2px solid #0f0f0f;
+          border: 2px solid var(--slider-thumb-border, #0f0f0f);
           box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
           cursor: pointer;
           transition: transform 0.15s ease, box-shadow 0.15s ease;
@@ -511,14 +511,20 @@ function ToneSlider({ label, labelRight, value, onChange }: {
           height: 16px;
           border-radius: 50%;
           background: #7db4f5;
-          border: 2px solid #0f0f0f;
+          border: 2px solid var(--slider-thumb-border, #0f0f0f);
           box-shadow: 0 0 0 2px rgba(125,180,245,0.15), 0 2px 8px rgba(0,0,0,0.4);
           cursor: pointer;
         }
         .voice-slider::-moz-range-track {
           height: 4px;
           border-radius: 2px;
-          background: rgba(255,255,255,0.12);
+          background: var(--slider-bg, rgba(255,255,255,0.12));
+        }
+        @media (prefers-color-scheme: light) {
+          .voice-slider {
+            --slider-bg: rgba(0,0,0,0.1);
+            --slider-thumb-border: #ffffff;
+          }
         }
       ` }} />
     </div>
