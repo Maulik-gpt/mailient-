@@ -971,6 +971,69 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'report_generate',
+    description:
+      'Render a structured agent-run report from a tool-call execution log. Deterministic templating (no LLM call) so reports always have the same shape: title, one-line summary, "What I Did" list, "Needs Your Attention" list (failures + skipped items), Links section (URLs extracted from outputs), and a footer with tool-call/failure counts. ' +
+      'Use this instead of hand-writing report markdown — keeps every background-agent report visually consistent. ' +
+      'Output: plain text containing the rendered markdown (the same string is returned as the LLM can quote it, send to gmail/slack via report_send_*, or render in canvas). ' +
+      'No failure path under normal use — empty executionLog still produces a valid report saying "Nothing was executed this run."',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agentName: { type: 'string', description: 'Display name for the report header.' },
+        runTimestamp: { type: 'string', description: 'ISO 8601 timestamp of the run; falls back to "now" if omitted.' },
+        executionLog: {
+          type: 'array',
+          description: 'Tool calls executed during the run. Each entry: { tool, success, summary, error?, links? }.',
+          items: {
+            type: 'object',
+            properties: {
+              tool: { type: 'string' },
+              success: { type: 'boolean' },
+              summary: { type: 'string' },
+              error: { type: 'string' },
+              links: { type: 'array', items: { type: 'string' } },
+            },
+          },
+        },
+        skippedItems: { type: 'array', items: { type: 'string' }, description: 'Items the agent deliberately did not handle this run (e.g. "12 newsletters not archived — user has not approved bulk archive").' },
+        summaryLine: { type: 'string', description: 'Optional one-line summary. If omitted, derived from executionLog counts.' },
+      },
+      required: ['agentName', 'executionLog'],
+    },
+  },
+  {
+    name: 'report_send_gmail',
+    description:
+      'Send an agent-run report to the user\'s OWN Gmail address as a formatted HTML email. ' +
+      'Self-send only (recipient = the authed user) so no request_confirmation gate. ' +
+      'Output: "Sent report to <email>. Gmail Message ID: <id>." ' +
+      'Errors (success:false): gmail_not_connected, validation_error, send_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled).' },
+        subject: { type: 'string', description: 'Email subject. Default "Arcus agent report — <date>".' },
+      },
+      required: ['reportMarkdown'],
+    },
+  },
+  {
+    name: 'report_send_slack',
+    description:
+      'Post an agent-run report to Slack. Default destination is a DM to the user themselves (no gate). When `channel` is set to a public/private channel, routes through send_slack_message and therefore requires a prior request_confirmation. ' +
+      'Output: "Sent report to <dm|channel>. ts: <message_ts>." ' +
+      'Errors (success:false): slack_not_connected, confirmation_required (when channel set without approval), upstream_slack.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled).' },
+        channel: { type: 'string', description: 'Optional Slack channel name. Omit (or pass "dm") to DM the user themselves with no confirmation gate.' },
+      },
+      required: ['reportMarkdown'],
+    },
+  },
+  {
     name: 'create_scheduled_agent',
     description:
       'Register a persistent background agent that runs on a cron schedule via Vercel Cron. ' +
@@ -1099,6 +1162,9 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   slack_send_dm: 'slack',
   slack_get_channels: 'slack',
   create_scheduled_agent: null,
+  report_generate: null,
+  report_send_gmail: 'gmail',
+  report_send_slack: 'slack',
   ask_user: null,
   check_followups: 'gmail',
   digest_newsletters: 'gmail',
@@ -1241,6 +1307,9 @@ export async function executeTool(
       case 'slack_send_dm':         result = await slackSendDm(userId, input, context); break;
       case 'slack_get_channels':    result = await slackGetChannels(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
+      case 'report_generate':       result = reportGenerate(input); break;
+      case 'report_send_gmail':     result = await reportSendGmail(userId, input); break;
+      case 'report_send_slack':     result = await reportSendSlack(userId, input, context); break;
       case 'check_followups':       result = await checkFollowups(userId, input); break;
       case 'digest_newsletters':    result = await digestNewsletters(userId, input); break;
       case 'get_recipient_context': result = await getRecipientContext(userId, input); break;
@@ -4652,4 +4721,369 @@ async function digestNewsletters(userId: string, input: any): Promise<ToolResult
     output: lines.join('\n'),
     canvasData: { title: 'Newsletter digest', type: 'report', markdown: r.markdown },
   };
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Reporting tools — structured agent-run report generator + Gmail / Slack
+// senders. The generator is deterministic templating so every report has the
+// same shape; the senders convert the markdown to HTML / Slack mrkdwn.
+// ══════════════════════════════════════════════════════════════════════════════
+
+interface ExecutionLogEntry {
+  tool: string;
+  success: boolean;
+  summary?: string;
+  error?: string;
+  links?: string[];
+}
+
+const URL_RE = /https?:\/\/[^\s"<>)]+/g;
+
+function deriveSummaryLine(log: ExecutionLogEntry[]): string {
+  if (!log.length) return 'Nothing was executed this run.';
+  const ok = log.filter((e) => e.success).length;
+  const fail = log.length - ok;
+  const counts = new Map<string, number>();
+  for (const e of log) {
+    if (!e.success) continue;
+    counts.set(e.tool, (counts.get(e.tool) || 0) + 1);
+  }
+  const parts: string[] = [];
+  for (const [tool, n] of counts) {
+    parts.push(`${n} × ${tool}`);
+  }
+  const failNote = fail ? `, ${fail} failure${fail === 1 ? '' : 's'}` : '';
+  return parts.length ? `Ran ${ok} step${ok === 1 ? '' : 's'} (${parts.join(', ')})${failNote}.` : `Ran ${ok} step${ok === 1 ? '' : 's'}${failNote}.`;
+}
+
+function reportGenerate(input: any): ToolResult {
+  const agentName = String(input?.agentName || 'Arcus agent').trim() || 'Arcus agent';
+  const runTs = input?.runTimestamp ? new Date(input.runTimestamp) : new Date();
+  const log: ExecutionLogEntry[] = Array.isArray(input?.executionLog) ? input.executionLog : [];
+  const skipped: string[] = Array.isArray(input?.skippedItems)
+    ? input.skippedItems.filter((s: any) => typeof s === 'string' && s.trim()).map((s: string) => s.trim())
+    : [];
+  const summaryLine: string = (input?.summaryLine && String(input.summaryLine).trim()) || deriveSummaryLine(log);
+
+  const succeeded = log.filter((e) => e.success);
+  const failed = log.filter((e) => !e.success);
+
+  // Collect links: explicit `links` arrays + any urls extracted from summaries
+  const linkSet = new Set<string>();
+  for (const e of log) {
+    if (Array.isArray(e.links)) e.links.forEach((u) => u && linkSet.add(String(u)));
+    if (e.summary) {
+      const matches = String(e.summary).match(URL_RE);
+      if (matches) matches.forEach((u) => linkSet.add(u));
+    }
+  }
+
+  const lines: string[] = [
+    `# ${agentName} — Run report`,
+    '',
+    `*${summaryLine}*`,
+    '',
+    '## What I did',
+  ];
+
+  if (succeeded.length) {
+    for (const e of succeeded) {
+      const summary = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+      lines.push(`- **${e.tool}** — ${summary || 'ok'}`);
+    }
+  } else {
+    lines.push('- (nothing completed this run)');
+  }
+
+  lines.push('', '## Needs your attention');
+  if (failed.length || skipped.length) {
+    for (const e of failed) {
+      const why = (e.error || e.summary || 'unknown error').replace(/\s+/g, ' ').trim().slice(0, 280);
+      lines.push(`- ❌ **${e.tool}** — ${why}`);
+    }
+    for (const s of skipped) {
+      lines.push(`- ⏸ ${s}`);
+    }
+  } else {
+    lines.push('- Nothing pending — everything ran cleanly.');
+  }
+
+  lines.push('', '## Links');
+  if (linkSet.size) {
+    for (const url of linkSet) lines.push(`- ${url}`);
+  } else {
+    lines.push('- (no links produced this run)');
+  }
+
+  lines.push(
+    '',
+    '---',
+    `*Generated ${runTs.toISOString()}. ${log.length} tool call${log.length === 1 ? '' : 's'}, ${failed.length} failure${failed.length === 1 ? '' : 's'}, ${skipped.length} skipped.*`,
+  );
+
+  return { output: lines.join('\n') };
+}
+
+// ── markdown → basic HTML for report_send_gmail ───────────────────────────────
+// Lightweight by design — handles only the markdown shapes reportGenerate
+// emits (headings, lists, bold, links, em, hr, paragraphs). Anything richer
+// (tables, fenced code, images) renders as plain paragraphs.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function inlineMd(text: string): string {
+  // Order matters: links before bold so the *s inside link text don't bold-wrap.
+  let s = escapeHtml(text);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#2563eb;text-decoration:underline;">$1</a>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
+  // Bare urls
+  s = s.replace(/(^|[\s(])((https?:\/\/[^\s"<>)]+))/g, '$1<a href="$2" style="color:#2563eb;text-decoration:underline;">$2</a>');
+  return s;
+}
+
+function markdownToHtml(md: string): string {
+  const blocks: string[] = [];
+  const lines = md.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length) {
+    const raw = lines[i];
+    const line = raw.trimEnd();
+
+    if (!line.trim()) { i++; continue; }
+
+    if (line.trim() === '---') {
+      blocks.push('<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">');
+      i++;
+      continue;
+    }
+
+    const hMatch = line.match(/^(#{1,6})\s+(.+)$/);
+    if (hMatch) {
+      const level = hMatch[1].length;
+      const fontSize = [24, 20, 17, 15, 14, 13][level - 1];
+      blocks.push(`<h${level} style="font-size:${fontSize}px;margin:18px 0 8px;font-weight:700;color:#111;">${inlineMd(hMatch[2])}</h${level}>`);
+      i++;
+      continue;
+    }
+
+    // Bulleted list
+    if (/^\s*-\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*-\s+/.test(lines[i])) {
+        items.push(inlineMd(lines[i].replace(/^\s*-\s+/, '')));
+        i++;
+      }
+      blocks.push(`<ul style="margin:8px 0 14px;padding-left:22px;color:#111;">${items.map((it) => `<li style="margin:4px 0;">${it}</li>`).join('')}</ul>`);
+      continue;
+    }
+
+    // Numbered list
+    if (/^\s*\d+\.\s+/.test(line)) {
+      const items: string[] = [];
+      while (i < lines.length && /^\s*\d+\.\s+/.test(lines[i])) {
+        items.push(inlineMd(lines[i].replace(/^\s*\d+\.\s+/, '')));
+        i++;
+      }
+      blocks.push(`<ol style="margin:8px 0 14px;padding-left:22px;color:#111;">${items.map((it) => `<li style="margin:4px 0;">${it}</li>`).join('')}</ol>`);
+      continue;
+    }
+
+    // Paragraph — gather contiguous non-empty, non-special lines
+    const para: string[] = [line];
+    i++;
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\s*-\s|\s*\d+\.\s|---$)/.test(lines[i])) {
+      para.push(lines[i]);
+      i++;
+    }
+    blocks.push(`<p style="margin:8px 0 14px;color:#111;line-height:1.55;">${inlineMd(para.join(' '))}</p>`);
+  }
+
+  return blocks.join('\n');
+}
+
+async function reportSendGmail(userId: string, input: any): Promise<ToolResult> {
+  const md = String(input?.reportMarkdown || '').trim();
+  if (!md) return failureResult('reportMarkdown is required.', 'validation_error');
+
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  // Resolve recipient = the authed user themselves
+  const profRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(6000),
+  });
+  if (!profRes.ok) return failureResult(`Could not resolve own email (${profRes.status}).`, 'upstream_gmail');
+  const profile = await profRes.json();
+  const to = profile.emailAddress as string;
+  if (!to) return failureResult('Gmail profile returned no email address.', 'upstream_gmail');
+
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  const subject = (input?.subject && String(input.subject).trim()) || `Arcus agent report — ${today}`;
+
+  const htmlBody = `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;color:#111;max-width:680px;margin:0 auto;padding:24px;">${markdownToHtml(md)}</body></html>`;
+
+  // Build RFC 2822 multipart/alternative so clients with HTML disabled still
+  // see the markdown plain text.
+  const boundary = `arcus-${Date.now().toString(36)}`;
+  const mime = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    md,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    htmlBody,
+    '',
+    `--${boundary}--`,
+  ].join('\r\n');
+  const raw = Buffer.from(mime).toString('base64url');
+
+  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ raw }),
+    signal: AbortSignal.timeout(12000),
+  });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ raw }),
+        signal: AbortSignal.timeout(12000),
+      });
+    }
+  }
+
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    return failureResult(`Report send failed (${res.status}): ${err.slice(0, 200)}`, 'send_failed');
+  }
+
+  const sent = await res.json();
+  return { output: `Sent report to ${to}. Gmail Message ID: ${sent.id}.` };
+}
+
+// ── markdown → Slack Block Kit ────────────────────────────────────────────────
+// Slack accepts mrkdwn natively (uses single * for bold, _ for italic).
+// We translate the markdown into a small set of blocks: header, section,
+// divider. Reports stay readable in the Slack preview without losing
+// structure.
+function markdownToSlackBlocks(md: string): any[] {
+  const blocks: any[] = [];
+  const lines = md.split(/\r?\n/);
+  let buffer: string[] = [];
+  const flushSection = () => {
+    const text = buffer.join('\n').trim();
+    buffer = [];
+    if (!text) return;
+    // Convert markdown **bold** to Slack *bold*, [text](url) to <url|text>
+    let slackText = text;
+    slackText = slackText.replace(/\*\*([^*]+)\*\*/g, '*$1*');
+    slackText = slackText.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<$2|$1>');
+    // Slack section text limit is 3000 chars — chunk if needed
+    const CHUNK = 2900;
+    for (let i = 0; i < slackText.length; i += CHUNK) {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: slackText.slice(i, i + CHUNK) } });
+    }
+  };
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (line.trim() === '---') {
+      flushSection();
+      blocks.push({ type: 'divider' });
+      continue;
+    }
+    const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+    if (hMatch) {
+      flushSection();
+      blocks.push({ type: 'header', text: { type: 'plain_text', text: hMatch[2].slice(0, 150), emoji: true } });
+      continue;
+    }
+    buffer.push(line);
+  }
+  flushSection();
+  // Slack rejects messages with more than 50 blocks — trim
+  return blocks.slice(0, 50);
+}
+
+async function reportSendSlack(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const md = String(input?.reportMarkdown || '').trim();
+  if (!md) return failureResult('reportMarkdown is required.', 'validation_error');
+
+  const requestedChannel = (input?.channel || '').trim();
+  const isDmSelf = !requestedChannel || requestedChannel.toLowerCase() === 'dm' || requestedChannel.toLowerCase() === 'self';
+
+  // Channel posts go through send_slack_message — same approval gate flow as
+  // an LLM-initiated channel post. DM-to-self bypasses the gate (recipient =
+  // user themselves, same policy as report_send_gmail).
+  if (!isDmSelf) {
+    // Delegate to sendSlackMessage so the executor-level approval gate
+    // applies. Pass the rendered markdown as text; Slack mrkdwn renders it
+    // reasonably. (Block-Kit formatting via blocks isn't exposed by
+    // send_slack_message, so channel posts render as a single text block.)
+    return sendSlackMessage(userId, { channel: requestedChannel, text: md }, context);
+  }
+
+  const token = await getSlackToken(userId);
+  if (!token) return failureResult('Slack is not connected.', 'slack_not_connected');
+
+  // 1) Open DM with self
+  let dmChannel = '';
+  try {
+    const identityRes = await fetch('https://slack.com/api/auth.test', {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(6000),
+    });
+    const identity = await identityRes.json();
+    if (identity.ok && identity.user_id) {
+      const dmRes = await fetch('https://slack.com/api/conversations.open', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ users: identity.user_id }),
+        signal: AbortSignal.timeout(6000),
+      });
+      const dmData = await dmRes.json();
+      if (dmData.ok && dmData.channel?.id) dmChannel = dmData.channel.id;
+    }
+  } catch { /* fallthrough */ }
+
+  if (!dmChannel) return failureResult('Could not open Slack DM-to-self.', 'upstream_slack');
+
+  // 2) Post with Block Kit
+  const blocks = markdownToSlackBlocks(md);
+  const postRes = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: dmChannel,
+      blocks,
+      text: md.slice(0, 200), // fallback for notification previews
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!postRes.ok) return failureResult(`Report post failed (${postRes.status}).`, 'upstream_slack');
+  const postData = await postRes.json();
+  if (!postData.ok) return failureResult(`Slack error: ${postData.error || 'unknown'}.`, 'upstream_slack');
+
+  return { output: `Sent report to DM-to-self. ts: ${postData.ts}.` };
 }

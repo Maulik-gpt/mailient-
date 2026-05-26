@@ -68,6 +68,9 @@ const ALWAYS_AVAILABLE = [
   'request_confirmation — pause before any write action; required before send_email, schedule_meeting, send_slack_message, create_notion_page.',
   'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous.',
   'create_scheduled_agent — register a cron-scheduled background agent.',
+  'report_generate — deterministic agent-run report template (one-line summary, What I Did, Needs Attention, Links). Use this instead of hand-writing report markdown.',
+  'report_send_gmail — email the rendered report to the user\'s own Gmail address (no gate; self-send).',
+  'report_send_slack — DM the rendered report to the user (Block Kit). Channel posts route through send_slack_message and require confirmation.',
 ];
 
 export function buildSystemPrompt(opts: SystemPromptOptions): string {
