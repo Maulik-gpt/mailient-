@@ -377,6 +377,43 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'draft_cold_email',
+    description:
+      'Save a Gmail draft for a NEW outbound email (no existing thread). Renders the same draft card as draft_reply; user reviews and sends from the card. ' +
+      'Soft-write — no request_confirmation gate. ' +
+      'Prerequisites: get_recipient_context if you have any prior history with the recipient. The system prompt already carries the voice profile. ' +
+      'Output: confirmation text + canvasData.draftMeta with the 5-dim voice critique composite (voiceScore) and a one-line voiceCritique. ' +
+      'Errors (success:false): gmail_not_connected, validation_error (missing to/subject/body), draft_save_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', description: 'Recipient email address.' },
+        subject: { type: 'string', description: 'Subject line — make it concrete and short.' },
+        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice. Open with a hook, close with one explicit ask.' },
+        recipientName: { type: 'string', description: 'Display name for the draft card.' },
+        purpose: { type: 'string', description: 'One sentence describing what the email is meant to achieve — improves the appropriate_tone and clear_cta critique scores.' },
+      },
+      required: ['to', 'subject', 'body'],
+    },
+  },
+  {
+    name: 'draft_review',
+    description:
+      'Score an email draft against the saved voice profile on five dimensions: sounds_like_user / appropriate_tone / clear_cta / correct_length / no_hallucinated_claims (each 0-100). ' +
+      'Returns a composite + per-dimension breakdown + up to 3 concrete suggestions. ' +
+      'Call this when the user asks "is this draft any good?", before sending a high-stakes message, or after manually editing a draft. draft_reply and draft_cold_email already auto-run this internally on save. ' +
+      'Output: plain-text scorecard with composite, each dimension, suggestions, and a critique line for sub-85 composites. ' +
+      'Errors (success:false): validation_error (empty draft), voice_profile_missing (no profile to score against — call voice_profile_generate first).',
+    input_schema: {
+      type: 'object',
+      properties: {
+        draft: { type: 'string', description: 'The full email body to score.' },
+        context: { type: 'string', description: 'Optional: 1-3 sentences of context (recipient, situation, goal) — improves appropriate_tone and clear_cta dimensions.' },
+      },
+      required: ['draft'],
+    },
+  },
+  {
     name: 'draft_reply',
     description:
       'Save a Gmail draft reply (does NOT send) and render it inline as a draft card. ' +
@@ -844,6 +881,8 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   voice_profile_generate: 'gmail',
   voice_profile_update: null,
   draft_reply: 'gmail',
+  draft_cold_email: 'gmail',
+  draft_review: null,
   send_email: 'gmail',
   schedule_meeting: 'gcal',
   get_calendar_events: 'gcal',
@@ -971,6 +1010,8 @@ export async function executeTool(
       case 'voice_profile_generate': result = await voiceProfileGenerate(userId, input); break;
       case 'voice_profile_update': result = await voiceProfileUpdate(userId, input); break;
       case 'draft_reply':       result = await draftReply(userId, input); break;
+      case 'draft_cold_email':  result = await draftColdEmail(userId, input); break;
+      case 'draft_review':      result = await draftReviewTool(userId, input); break;
       case 'send_email':        result = await sendEmail(userId, input, context); break;
       case 'request_confirmation': result = await requestConfirmation(input, userId, context); break;
       case 'schedule_meeting':  result = await scheduleMeeting(userId, input, context); break;
@@ -1497,16 +1538,55 @@ async function voiceProfileUpdate(userId: string, input: any): Promise<ToolResul
 }
 
 /**
- * Score a draft body against the user's saved voice profile. Returns a
- * 0-100 voice-match score and a one-line critique if the score is low.
- *
- * Run as a post-draft critique pass inside draftReply so the score lands
- * in canvasData.draftMeta and the UI can warn the user before they hit
- * Send. Time-boxed to ~6s so a slow LLM call never stalls the draft path
- * — on timeout we omit the score rather than refusing to save the draft.
+ * Five-dimension draft review. Composite + per-dimension scores + targeted
+ * suggestions. Used in two places:
+ *   1. Auto-run from draftReply / draftColdEmail — composite becomes the
+ *      voiceScore badge on the draft card, lowest-scoring dimension feeds the
+ *      critique line. Time-boxed; on timeout/failure the draft still ships
+ *      without a badge (best-effort).
+ *   2. Exposed as the draft_review tool so the LLM can request a deeper audit
+ *      on any draft, including drafts the user hand-edited.
  */
-async function reviewDraft(userId: string, body: string): Promise<{ score: number; critique: string } | null> {
+export interface DraftReview {
+  composite: number;
+  dimensions: {
+    sounds_like_user: number;
+    appropriate_tone: number;
+    clear_cta: number;
+    correct_length: number;
+    no_hallucinated_claims: number;
+  };
+  suggestions: string[];
+  /** One-line summary surfaced under the voice badge when composite < 70. */
+  critique: string;
+}
+
+const REVIEW_SYSTEM_PROMPT =
+  'You are a strict editor scoring an email draft on five dimensions. Output ONLY raw JSON, no markdown fences, no preamble. Shape:\n' +
+  '{\n' +
+  '  "dimensions": {\n' +
+  '    "sounds_like_user": <0-100 — how indistinguishable the draft is from the user\'s real writing per the voice profile>,\n' +
+  '    "appropriate_tone": <0-100 — does the tone match the recipient/context>,\n' +
+  '    "clear_cta": <0-100 — is there a clear next step or ask>,\n' +
+  '    "correct_length": <0-100 — neither too long nor too curt for the context>,\n' +
+  '    "no_hallucinated_claims": <0-100 — 100 means every factual claim is supported by the supplied context; lower if the draft asserts unverified specifics>\n' +
+  '  },\n' +
+  '  "suggestions": [<up to 3 short, concrete rewrites or removals; empty array if composite >= 85>],\n' +
+  '  "critique": "<one short sentence naming the most pressing dimension to fix; empty if composite >= 85>"\n' +
+  '}\n' +
+  'Scoring guide: 90+ ships as-is. 70-89 minor polish. Below 70 needs review before sending. Be strict — generic-AI tone, hedging language, "I hope this finds you well" greetings, and unsupported specifics all cost points.';
+
+function normalizeDim(n: any): number {
+  return Math.max(0, Math.min(100, Math.round(Number(n) || 0)));
+}
+
+async function reviewDraft(
+  userId: string,
+  body: string,
+  contextHint?: string,
+): Promise<DraftReview | null> {
   try {
+    // @ts-ignore — JS module
     const { voiceProfileService } = await import('../voice-profile-service.js');
     const profile = (await voiceProfileService.getVoiceProfile(userId)) as any;
     if (!profile || profile.status === 'default') return null;
@@ -1517,26 +1597,19 @@ async function reviewDraft(userId: string, body: string): Promise<{ score: numbe
     const race = await Promise.race([
       callLLM(
         [
-          {
-            role: 'system',
-            content:
-              'You are a strict editor scoring how well a draft email body matches the user\'s saved writing voice. ' +
-              'Output ONLY raw JSON with two fields: {"score": <0-100 integer>, "critique": "<one short sentence>"}. ' +
-              'Score 90+ means the draft is indistinguishable from the user\'s real writing. ' +
-              'Score 70-89 means it mostly matches but has minor AI-isms. ' +
-              'Score below 70 means it sounds like generic AI — name the specific mismatch (greeting, sign-off, sentence length, hedging, formality) in the critique. ' +
-              'Critique stays under 20 words. No markdown fences, no preamble.',
-          },
+          { role: 'system', content: REVIEW_SYSTEM_PROMPT },
           {
             role: 'user',
             content:
-              `USER VOICE PROFILE:\n${voicePrompt}\n\n---\n\nDRAFT BODY TO SCORE:\n${body.slice(0, 4000)}\n\n---\n\nReturn the JSON now.`,
+              `USER VOICE PROFILE:\n${voicePrompt}\n\n` +
+              (contextHint ? `CONTEXT:\n${contextHint.slice(0, 2000)}\n\n` : '') +
+              `DRAFT BODY:\n${body.slice(0, 4000)}\n\nReturn the JSON now.`,
           },
         ],
         [],
-        { maxTokens: 120, temperature: 0.1 },
+        { maxTokens: 400, temperature: 0.1 },
       ),
-      new Promise((resolve) => setTimeout(() => resolve(TIMEOUT), 6000)),
+      new Promise((resolve) => setTimeout(() => resolve(TIMEOUT), 8000)),
     ]);
 
     if (race === TIMEOUT) return null;
@@ -1544,12 +1617,69 @@ async function reviewDraft(userId: string, body: string): Promise<{ score: numbe
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) return null;
     const parsed = JSON.parse(match[0]);
-    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const d = parsed.dimensions || {};
+    const dimensions = {
+      sounds_like_user: normalizeDim(d.sounds_like_user),
+      appropriate_tone: normalizeDim(d.appropriate_tone),
+      clear_cta: normalizeDim(d.clear_cta),
+      correct_length: normalizeDim(d.correct_length),
+      no_hallucinated_claims: normalizeDim(d.no_hallucinated_claims),
+    };
+    const composite = Math.round(
+      (dimensions.sounds_like_user +
+        dimensions.appropriate_tone +
+        dimensions.clear_cta +
+        dimensions.correct_length +
+        dimensions.no_hallucinated_claims) /
+        5,
+    );
+    const suggestions = Array.isArray(parsed.suggestions)
+      ? parsed.suggestions.filter((s: any) => typeof s === 'string').map((s: string) => s.trim().slice(0, 200)).slice(0, 5)
+      : [];
     const critique = typeof parsed.critique === 'string' ? parsed.critique.trim().slice(0, 200) : '';
-    return { score, critique };
+    return { composite, dimensions, suggestions, critique };
   } catch {
     return null;
   }
+}
+
+/**
+ * Standalone draft_review tool — wraps reviewDraft so the LLM can audit any
+ * email draft on demand, not just the ones auto-run during draftReply.
+ */
+async function draftReviewTool(userId: string, input: any): Promise<ToolResult> {
+  const draft = typeof input?.draft === 'string' ? input.draft : '';
+  if (!draft.trim()) return failureResult('draft (non-empty string) is required.', 'validation_error');
+  const context = typeof input?.context === 'string' ? input.context : undefined;
+
+  const review = await reviewDraft(userId, draft, context);
+  if (!review) {
+    return failureResult(
+      'Could not score the draft — voice profile may be missing or the critique pass timed out. Try voice_profile_generate first.',
+      'voice_profile_missing',
+    );
+  }
+
+  const dims = review.dimensions;
+  const lines = [
+    `Composite voice match: ${review.composite}/100`,
+    '',
+    'Dimensions:',
+    `  • Sounds like user:        ${dims.sounds_like_user}/100`,
+    `  • Appropriate tone:        ${dims.appropriate_tone}/100`,
+    `  • Clear call-to-action:    ${dims.clear_cta}/100`,
+    `  • Correct length:          ${dims.correct_length}/100`,
+    `  • No hallucinated claims:  ${dims.no_hallucinated_claims}/100`,
+  ];
+  if (review.suggestions.length) {
+    lines.push('', 'Suggestions:');
+    review.suggestions.forEach((s) => lines.push(`  • ${s}`));
+  }
+  if (review.critique && review.composite < 85) {
+    lines.push('', `Critique: ${review.critique}`);
+  }
+
+  return { output: lines.join('\n') };
 }
 
 async function draftReply(userId: string, input: any): Promise<ToolResult> {
@@ -1591,17 +1721,25 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   // Feature 4: Update contact on draft interaction
   touchContact(userId, input.to, displayName);
 
-  // Post-draft voice critique. Time-boxed and best-effort — if it fails the
-  // draft still ships, the user just won't see a score badge.
+  // Post-draft 5-dim voice critique. Time-boxed and best-effort — if it
+  // fails the draft still ships, the user just won't see a score badge.
   const review = await reviewDraft(userId, input.body || '');
 
-  // Surface a low-score warning to the LLM in the tool result so its final
-  // chat sentence can hedge ("voice match is 62/100 — worth a quick review").
-  const lowScoreNote = review && review.score < 70
-    ? `\n\nVOICE MATCH: ${review.score}/100. ${review.critique || ''} Mention this score to the user and suggest a quick review before sending.`
+  // Surface composite + lowest-dimension callout to the LLM so its final chat
+  // sentence can hedge or ship clean. The badge on the draft card shows the
+  // composite; voiceCritique surfaces critique + first suggestion underneath.
+  const lowScoreNote = review && review.composite < 70
+    ? `\n\nVOICE MATCH: ${review.composite}/100. ${review.critique || ''}` +
+      (review.suggestions[0] ? ` Suggestion: ${review.suggestions[0]}` : '') +
+      ' Mention this score to the user and suggest a quick review before sending.'
     : review
-      ? `\n\nVOICE MATCH: ${review.score}/100. The draft sounds like the user.`
+      ? `\n\nVOICE MATCH: ${review.composite}/100. The draft sounds like the user.`
       : '';
+
+  // Combine critique + top suggestion for the under-badge UI line.
+  const combinedCritique = review
+    ? [review.critique, review.suggestions[0]].filter(Boolean).join(' — ').slice(0, 240)
+    : undefined;
 
   return {
     output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.${lowScoreNote}`,
@@ -1627,8 +1765,98 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
         body: input.body,
         recipientName: displayName,
         gmailDraftId: draft.id,
-        voiceScore: review?.score,
-        voiceCritique: review?.critique,
+        voiceScore: review?.composite,
+        voiceCritique: combinedCritique,
+      },
+    },
+  };
+}
+
+// ── draft_cold_email ──────────────────────────────────────────────────────────
+// New outbound email (no thread). Same Gmail draft save + voice critique as
+// draft_reply, but composes a fresh subject + body for a recipient the user
+// hasn't necessarily emailed before. Soft-write — user reviews and sends from
+// the draft card; no request_confirmation gate.
+async function draftColdEmail(userId: string, input: any): Promise<ToolResult> {
+  const to = (input.to || '').trim();
+  const subject = (input.subject || '').trim();
+  const body = (input.body || '').trim();
+  if (!to || !subject || !body) {
+    return failureResult('to, subject, and body are all required.', 'validation_error');
+  }
+
+  let token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const raw = buildRaw(to, subject, body);
+  const draftBodyJson = JSON.stringify({ message: { raw } });
+
+  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: draftBodyJson,
+    signal: AbortSignal.timeout(12000),
+  });
+  if (res.status === 401) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: draftBodyJson,
+        signal: AbortSignal.timeout(12000),
+      });
+    }
+  }
+  if (!res.ok) {
+    const err = await res.text().catch(() => '');
+    return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
+  }
+
+  const draft = await res.json();
+  const previewUrl = `https://mail.google.com/mail/u/0/#drafts/${draft.message?.id || ''}`;
+  const displayName = input.recipientName || to.split('@')[0];
+  touchContact(userId, to, displayName);
+
+  // Surface input.purpose to the critique so it knows what the email is meant
+  // to achieve (matters for the clear_cta and appropriate_tone dimensions).
+  const review = await reviewDraft(userId, body, input.purpose);
+  const lowScoreNote = review && review.composite < 70
+    ? `\n\nVOICE MATCH: ${review.composite}/100. ${review.critique || ''}` +
+      (review.suggestions[0] ? ` Suggestion: ${review.suggestions[0]}` : '')
+    : review
+      ? `\n\nVOICE MATCH: ${review.composite}/100. Sounds like the user.`
+      : '';
+  const combinedCritique = review
+    ? [review.critique, review.suggestions[0]].filter(Boolean).join(' — ').slice(0, 240)
+    : undefined;
+
+  return {
+    output: `Cold-outreach draft saved to Gmail.\nTo: ${displayName} <${to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${body.slice(0, 400)}${body.length > 400 ? '...' : ''}\n\nReview the draft below and hit Send when ready. Do NOT call send_email.${lowScoreNote}`,
+    canvasData: {
+      title: `Draft: ${subject}`,
+      type: 'email_draft',
+      markdown: [
+        `**To:** ${displayName} <${to}>`,
+        `**Subject:** ${subject}`,
+        '',
+        '---',
+        '',
+        body,
+        '',
+        '---',
+        '',
+        `[Open in Gmail](${previewUrl})`,
+      ].join('\n'),
+      draftMeta: {
+        to,
+        subject,
+        body,
+        recipientName: displayName,
+        gmailDraftId: draft.id,
+        voiceScore: review?.composite,
+        voiceCritique: combinedCritique,
       },
     },
   };

@@ -28,7 +28,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] 
     label: 'Gmail',
     tools: [
       'search_gmail', 'read_email', 'gmail_read_thread', 'get_sent_emails',
-      'draft_reply', 'send_email',
+      'draft_reply', 'draft_cold_email', 'draft_review', 'send_email',
       'gmail_get_labels', 'gmail_apply_label', 'gmail_archive_thread', 'gmail_get_profile',
       'check_followups', 'digest_newsletters',
     ],
