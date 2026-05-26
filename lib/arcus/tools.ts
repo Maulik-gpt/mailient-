@@ -551,6 +551,40 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'calendar_get_availability',
+    description:
+      'Compute the user\'s FREE time-slots in a window using Google\'s freeBusy API. Required before proposing a meeting time — never guess a slot. ' +
+      'Output: plain text listing busy ranges (with titles when fetchable) and the computed free ranges within the window. ' +
+      'Errors (success:false): gcal_not_connected, gcal_scope_missing, upstream_gcal, validation_error. ' +
+      'Note: queries the primary calendar only; Notion Calendar merge is handled by the LLM via search_notion when notion is connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'ISO 8601 start of window WITH timezone offset, e.g. "2026-05-26T09:00:00-04:00".' },
+        endDate: { type: 'string', description: 'ISO 8601 end of window WITH timezone offset.' },
+        timezone: { type: 'string', description: 'IANA timezone (default the request\'s default), e.g. "America/New_York".' },
+        minSlotMinutes: { type: 'number', description: 'Minimum free-slot length to report in minutes (default 30).' },
+      },
+      required: ['startDate', 'endDate'],
+    },
+  },
+  {
+    name: 'calendar_cancel_event',
+    description:
+      'Cancel a Google Calendar event and send cancellation invites to all attendees. ' +
+      'GATED: requires a prior request_confirmation with matching eventId — attendees receive an email so this is irreversible from their POV. ' +
+      'Output: "Cancelled event <eventId>. Notified <N> attendee(s)." ' +
+      'Errors (success:false): confirmation_required, gcal_not_connected, gcal_scope_missing, not_found, upstream_gcal, validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', description: 'Google Calendar event id from schedule_meeting / get_calendar_events.' },
+        reason: { type: 'string', description: 'Optional one-line reason — currently logged but Google Calendar does not include it in the cancellation invite body.' },
+      },
+      required: ['eventId'],
+    },
+  },
+  {
     name: 'search_notion',
     description:
       'Search the Notion workspace for pages whose title or content matches the query. ' +
@@ -886,6 +920,8 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   send_email: 'gmail',
   schedule_meeting: 'gcal',
   get_calendar_events: 'gcal',
+  calendar_get_availability: 'gcal',
+  calendar_cancel_event: 'gcal',
   search_notion: 'notion',
   fetch_notion_schema: 'notion',
   create_notion_page: 'notion',
@@ -1016,6 +1052,8 @@ export async function executeTool(
       case 'request_confirmation': result = await requestConfirmation(input, userId, context); break;
       case 'schedule_meeting':  result = await scheduleMeeting(userId, input, context); break;
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
+      case 'calendar_get_availability': result = await calendarGetAvailability(userId, input); break;
+      case 'calendar_cancel_event': result = await calendarCancelEvent(userId, input, context); break;
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
@@ -2051,6 +2089,208 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
   });
 
   return { output: `${events.length} upcoming events:\n\n${lines.join('\n\n')}` };
+}
+
+// ── calendar_get_availability ─────────────────────────────────────────────────
+// Uses GCal's freeBusy endpoint (purpose-built for this) and inverts the busy
+// set against the requested window to produce free slots >= minSlotMinutes.
+// Also fetches event titles for the busy ranges so the LLM can quote them when
+// explaining a conflict ("you have 'Standup' at 10am").
+async function calendarGetAvailability(userId: string, input: any): Promise<ToolResult> {
+  const startIso = (input.startDate || '').trim();
+  const endIso = (input.endDate || '').trim();
+  if (!startIso || !endIso) return failureResult('startDate and endDate (ISO 8601) are required.', 'validation_error');
+  const start = Date.parse(startIso);
+  const end = Date.parse(endIso);
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+    return failureResult('startDate and endDate must be valid ISO 8601 timestamps with endDate after startDate.', 'validation_error');
+  }
+  const minSlotMs = Math.max(5, Number(input.minSlotMinutes) || 30) * 60 * 1000;
+  const tz = (input.timezone || 'UTC').trim() || 'UTC';
+
+  let token = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  // 1) freeBusy — gives us the busy ranges only
+  const fbBody = JSON.stringify({
+    timeMin: new Date(start).toISOString(),
+    timeMax: new Date(end).toISOString(),
+    timeZone: tz,
+    items: [{ id: 'primary' }],
+  });
+  let fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: fbBody,
+    signal: AbortSignal.timeout(10000),
+  });
+  if (fbRes.status === 401 || fbRes.status === 403) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: fbBody,
+        signal: AbortSignal.timeout(10000),
+      });
+    }
+  }
+  if (!fbRes.ok) {
+    if (isScopeError(fbRes.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    return failureResult(`freeBusy fetch failed (${fbRes.status}).`, 'upstream_gcal');
+  }
+  const fbData = await fbRes.json();
+  const busyRaw: Array<{ start: string; end: string }> = fbData.calendars?.primary?.busy || [];
+
+  // 2) Pull events in the window to attach titles to the busy ranges (best-effort)
+  const eventTitles = new Map<string, string>(); // key = `${start}|${end}` -> title
+  try {
+    const params = new URLSearchParams({
+      timeMin: new Date(start).toISOString(),
+      timeMax: new Date(end).toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '50',
+    });
+    const evRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (evRes.ok) {
+      const data = await evRes.json();
+      for (const e of (data.items || []) as any[]) {
+        const s = e.start?.dateTime || (e.start?.date ? `${e.start.date}T00:00:00Z` : null);
+        const en = e.end?.dateTime || (e.end?.date ? `${e.end.date}T00:00:00Z` : null);
+        if (s && en) eventTitles.set(`${new Date(s).toISOString()}|${new Date(en).toISOString()}`, e.summary || '(no title)');
+      }
+    }
+  } catch { /* non-fatal — busy ranges still report without titles */ }
+
+  // 3) Normalize, clip, and sort busy ranges; then invert to find free slots
+  const clipped = busyRaw
+    .map(b => ({ s: Math.max(start, Date.parse(b.start)), e: Math.min(end, Date.parse(b.end)) }))
+    .filter(b => Number.isFinite(b.s) && Number.isFinite(b.e) && b.e > b.s)
+    .sort((a, b) => a.s - b.s);
+
+  // Merge overlaps so the free-slot inversion is correct
+  const merged: Array<{ s: number; e: number }> = [];
+  for (const b of clipped) {
+    const last = merged[merged.length - 1];
+    if (last && b.s <= last.e) last.e = Math.max(last.e, b.e);
+    else merged.push({ s: b.s, e: b.e });
+  }
+
+  const free: Array<{ s: number; e: number }> = [];
+  let cursor = start;
+  for (const b of merged) {
+    if (b.s - cursor >= minSlotMs) free.push({ s: cursor, e: b.s });
+    cursor = Math.max(cursor, b.e);
+  }
+  if (end - cursor >= minSlotMs) free.push({ s: cursor, e: end });
+
+  const fmt = (ms: number) => {
+    try {
+      return new Date(ms).toLocaleString('en-US', {
+        timeZone: tz,
+        weekday: 'short', month: 'short', day: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true,
+      });
+    } catch { return new Date(ms).toISOString(); }
+  };
+
+  const busyLines = merged.length
+    ? merged.map(b => {
+        const title = eventTitles.get(`${new Date(b.s).toISOString()}|${new Date(b.e).toISOString()}`);
+        return `  • ${fmt(b.s)} → ${fmt(b.e)}${title ? `  (${title})` : ''}`;
+      })
+    : ['  (none)'];
+
+  const freeLines = free.length
+    ? free.map(f => `  • ${fmt(f.s)} → ${fmt(f.e)}  (${Math.round((f.e - f.s) / 60000)} min)`)
+    : [`  (no free slots ≥ ${Math.round(minSlotMs / 60000)} min in this window)`];
+
+  return {
+    output: [
+      `Availability ${fmt(start)} → ${fmt(end)} (${tz})`,
+      '',
+      'Busy:',
+      ...busyLines,
+      '',
+      `Free (slots ≥ ${Math.round(minSlotMs / 60000)} min):`,
+      ...freeLines,
+    ].join('\n'),
+  };
+}
+
+// ── calendar_cancel_event ─────────────────────────────────────────────────────
+// Gated by the same session-approval mechanism as send_email. Notifying
+// attendees is irreversible (you can't unsend a cancellation email), so this
+// is treated as Tier 3 — explicit confirm per event.
+async function calendarCancelEvent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const eventId = (input.eventId || '').trim();
+  if (!eventId) return failureResult('eventId is required.', 'validation_error');
+
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('cancel_event', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'cancel_event',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to cancel. No approved request_confirmation found for cancelling event ${eventId}. Call request_confirmation first with action "Cancel event" and details { EventId: "${eventId}" }, wait for the user to Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+
+  let token = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  // Fetch attendee count first (best-effort) so the success message is informative.
+  let attendeeCount = 0;
+  try {
+    const evRes = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+    );
+    if (evRes.ok) {
+      const ev = await evRes.json();
+      attendeeCount = (ev.attendees || []).length;
+    }
+  } catch { /* non-fatal */ }
+
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`;
+  let res = await fetch(url, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (res.status === 401 || res.status === 403) {
+    const newToken = await refreshGoogleToken(userId);
+    if (newToken) {
+      token = newToken;
+      res = await fetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(10000),
+      });
+    }
+  }
+  if (!res.ok) {
+    if (res.status === 404 || res.status === 410) return failureResult(`Event ${eventId} not found.`, 'not_found');
+    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    const err = await res.text().catch(() => '');
+    return failureResult(`Cancel failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gcal');
+  }
+
+  const reason = input.reason ? ` Reason: ${input.reason}.` : '';
+  return {
+    output: `Cancelled event ${eventId}.${attendeeCount ? ` Notified ${attendeeCount} attendee(s).` : ''}${reason}`,
+  };
 }
 
 async function searchNotion(userId: string, input: any): Promise<ToolResult> {
@@ -3140,6 +3380,7 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   const lower = (input.action || '').toLowerCase();
   let actionType: ApprovalActionType | null = null;
   if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
+  else if (/\bcancel\b.*\b(event|meeting|invite|calendar)\b/.test(lower)) actionType = 'cancel_event';
   else if (/\bschedule\b|\bmeeting\b|\bcalendar\b.*\bevent\b|\bbook\b/.test(lower)) actionType = 'schedule_meeting';
   else if (/\bslack\b|\bdm\b|\bchannel\b/.test(lower)) actionType = 'send_slack_message';
   else if (/\bnotion\b|\bpage\b|\bdatabase\b/.test(lower)) actionType = 'create_notion_page';
@@ -3163,6 +3404,8 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
       detailsLower.startTime = detailsLower.starttime || detailsLower.when || detailsLower.start;
       const att = detailsLower.attendees || detailsLower.with || detailsLower.attendee;
       if (typeof att === 'string') detailsLower.attendees = att.split(/[,;]/).map((s: string) => s.trim());
+    } else if (actionType === 'cancel_event') {
+      detailsLower.eventId = detailsLower.eventid || detailsLower.event_id || detailsLower.id || detailsLower.event;
     }
     const targetKey = normalizeTargetKey(actionType, detailsLower);
     approvalId = await recordPendingApproval({

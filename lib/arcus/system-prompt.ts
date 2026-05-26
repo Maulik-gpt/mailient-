@@ -35,7 +35,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] 
   },
   gcal: {
     label: 'Google Calendar',
-    tools: ['get_calendar_events', 'schedule_meeting'],
+    tools: ['get_calendar_events', 'calendar_get_availability', 'schedule_meeting', 'calendar_cancel_event'],
   },
   notion: {
     label: 'Notion',

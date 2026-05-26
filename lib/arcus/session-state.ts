@@ -23,7 +23,8 @@ export type ApprovalActionType =
   | 'send_email'
   | 'schedule_meeting'
   | 'send_slack_message'
-  | 'create_notion_page';
+  | 'create_notion_page'
+  | 'cancel_event';
 
 const APPROVAL_TABLE = 'arcus_session_approvals';
 
@@ -57,6 +58,10 @@ export function normalizeTargetKey(action: ApprovalActionType, input: Record<str
       const db = String(input.database || input.Database || input.parentId || '').trim().toLowerCase();
       const title = String(input.title || input.Title || '').trim().toLowerCase().slice(0, 80);
       return `${db}|${title}`;
+    }
+    case 'cancel_event': {
+      // Event id alone is sufficient — there is exactly one event per id.
+      return String(input.eventId || input.EventId || input.event_id || '').trim().toLowerCase();
     }
   }
 }
