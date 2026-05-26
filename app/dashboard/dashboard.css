@@ -410,6 +410,7 @@ input:focus-visible {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   pointer-events: none;
+}
 /* Chats Page Styling */
 .chats-container {
   background: #0D0D0D;
@@ -911,6 +912,7 @@ input:focus-visible {
   opacity: 1;
   transform: translateY(0) scale(1);
   transition: opacity 0.3s ease, transform 0.3s ease;
+}
 /* Additional premium animations for chats */
 @keyframes slideInUp {
   from {
