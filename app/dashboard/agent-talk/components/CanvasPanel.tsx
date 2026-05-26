@@ -413,15 +413,6 @@ export function CanvasPanel({
         </div>
       </footer>
 
-      <style jsx global>{`
-        .canvas-scroll::-webkit-scrollbar          { width: 6px; }
-        .canvas-scroll::-webkit-scrollbar-track    { background: transparent; }
-        .canvas-scroll::-webkit-scrollbar-thumb    { background: rgba(9, 9, 11, 0.12); border-radius: 9999px; }
-        .canvas-scroll::-webkit-scrollbar-thumb:hover { background: rgba(9, 9, 11, 0.28); }
-        
-        .dark .canvas-scroll::-webkit-scrollbar-thumb    { background: rgba(255, 255, 255, 0.08); }
-        .dark .canvas-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.20); }
-      `}</style>
     </motion.div>
   );
 }

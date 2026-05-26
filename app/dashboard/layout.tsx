@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth.js';
 import { redirect } from 'next/navigation';
+import "./dashboard.css";
 
 export const metadata = {
   title: 'Arcus | Mailient',
