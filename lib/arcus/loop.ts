@@ -252,7 +252,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     deadlineMs,
     conversationId,
   } = opts;
-  const toolContext = { conversationId };
+  // Tracks every successful tool call this run so PART 4 Rule 1 (draft_reply
+  // requires a preceding read_email/gmail_read_thread) and Rule 3
+  // (schedule_meeting requires a preceding calendar fetch) can verify the
+  // LLM actually fetched ground truth before acting.
+  const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
+  const buildToolContext = () => ({ conversationId, toolHistory: [...toolHistory] });
 
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
   const toolCallLimit =
@@ -635,7 +640,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                       };
                     }
 
-                    let result = await executeTool(tc.name, inputToUse, userId, toolContext);
+                    let result = await executeTool(tc.name, inputToUse, userId, buildToolContext());
 
                     // Newsletter layer 2: classify what slipped through
                     let extraArchiveCount = 0;
@@ -733,6 +738,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 log('info', `tool_result ok`, { tool: tc.name, outputLen: result.output.length, hasCanvas: !!result.canvasData });
                 emit('tool_result', { tool: tc.name, success: true, summary: result.output.slice(0, 300), iteration });
                 outcomes.push({ tool: tc.name, ok: true });
+                toolHistory.push({ name: tc.name, input: tc.input, success: true });
                 toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
 
                 // State transition: a write tool just succeeded. Move from
@@ -825,7 +831,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const canvasCall = finalToolCalls.find(tc => tc.name === 'open_canvas');
               if (canvasCall) {
                 try {
-                  const canvasResult = await executeTool('open_canvas', canvasCall.input, userId, toolContext);
+                  const canvasResult = await executeTool('open_canvas', canvasCall.input, userId, buildToolContext());
                   if (canvasResult.canvasData) {
                     canvasContent = canvasResult.canvasData;
                     emit('canvas', canvasResult.canvasData);
@@ -958,7 +964,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 log('info', `tool_call #${totalToolCalls} (last-resort)`, { tool: tc.name, iteration });
                 emit('tool_call', { tool: tc.name, params: tc.input, iteration });
                 try {
-                  let result = await executeTool(tc.name, tc.input, userId, toolContext);
+                  let result = await executeTool(tc.name, tc.input, userId, buildToolContext());
                   if (result.success === false) {
                     const code = result.errorCode || 'tool_failed';
                     const failureMsg =
@@ -977,6 +983,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   }
                   emit('tool_result', { tool: tc.name, success: true, summary: result.output.slice(0, 300), iteration });
                   outcomes.push({ tool: tc.name, ok: true });
+                  toolHistory.push({ name: tc.name, input: tc.input, success: true });
                   toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: result.output });
                 } catch (err: any) {
                   const friendly = humanizeError(tc.name, err?.message ?? 'Unknown error');
@@ -1011,7 +1018,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const summaryCanvasCall = summaryToolCalls.find(tc => tc.name === 'open_canvas');
               if (summaryCanvasCall) {
                 try {
-                  const canvasResult = await executeTool('open_canvas', summaryCanvasCall.input, userId, toolContext);
+                  const canvasResult = await executeTool('open_canvas', summaryCanvasCall.input, userId, buildToolContext());
                   if (canvasResult.canvasData) {
                     canvasContent = canvasResult.canvasData;
                     emit('canvas', canvasResult.canvasData);

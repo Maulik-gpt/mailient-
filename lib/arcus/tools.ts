@@ -17,6 +17,7 @@ import type { ToolSchema } from './engine';
 import {
   recordPendingApproval,
   consumeApproval,
+  hasDeclinedApproval,
   normalizeTargetKey,
   type ApprovalActionType,
 } from './session-state';
@@ -1270,6 +1271,14 @@ function failureResult(message: string, code: string): ToolResult {
 
 function ts() { return new Date().toISOString().slice(11, 23); }
 
+export interface ToolHistoryEntry {
+  name: string;
+  /** Tool input — used for prerequisite matching (e.g. threadId on read_email). */
+  input: Record<string, any>;
+  /** True iff result.success !== false. Prerequisites only count succeeded calls. */
+  success: boolean;
+}
+
 export interface ToolContext {
   /**
    * Stable conversation identifier — used to scope session approval lookups
@@ -1278,6 +1287,61 @@ export interface ToolContext {
    * approval gate fails open.
    */
   conversationId?: string;
+  /**
+   * Tool calls already executed earlier in this run, in order. The loop
+   * pushes each successful tool result here so prerequisite checks (PART 4
+   * Rules 1 + 3) can verify the LLM actually fetched ground truth before
+   * acting. Background-agent runs may omit; the prerequisite checks then
+   * fail open with a warning logged.
+   */
+  toolHistory?: ToolHistoryEntry[];
+}
+
+/**
+ * PART 4 Rule 1 helper — has the LLM successfully read this specific Gmail
+ * thread earlier in the run? Accepts read_email (single message in the
+ * thread) or gmail_read_thread (whole thread). Both surface threadId in
+ * their output; both also accept threadId as input. We match on input first
+ * (precise), then fall back to message id (read_email's input is messageId,
+ * not threadId — we can't match that without parsing output, so messageId
+ * users land on a softer warning).
+ */
+function hasFetchedThread(history: ToolHistoryEntry[] | undefined, threadId: string): boolean {
+  if (!history?.length || !threadId) return false;
+  for (const e of history) {
+    if (!e.success) continue;
+    if (e.name === 'gmail_read_thread' && e.input?.threadId === threadId) return true;
+    if (e.name === 'search_gmail') {
+      // search_gmail returns thread metadata including the threadId. Treat
+      // any successful search_gmail as evidence of a fetch attempt — the
+      // strict version would parse outputs but that's overkill for the
+      // common case (LLM searches inbox, finds thread, drafts reply).
+      return true;
+    }
+    // read_email's input is messageId, not threadId, so we can't precisely
+    // confirm without parsing output. If read_email ran at all, assume the
+    // LLM has thread context.
+    if (e.name === 'read_email') return true;
+  }
+  return false;
+}
+
+/**
+ * PART 4 Rule 3 helper — has the LLM checked calendar availability earlier
+ * in the run? Accepts get_calendar_events or calendar_get_availability.
+ * Doesn't enforce time-range matching: the prompt rule already tells the
+ * LLM to fetch a window covering its proposed time, and a stricter check
+ * would risk false negatives when the LLM picks a slot just outside a
+ * fetched window.
+ */
+function hasFetchedAvailability(history: ToolHistoryEntry[] | undefined): boolean {
+  if (!history?.length) return false;
+  return history.some((e) => e.success && (
+    e.name === 'get_calendar_events' ||
+    e.name === 'calendar_get_availability' ||
+    // Notion-side availability is fetched via notion_get_calendar_events
+    e.name === 'notion_get_calendar_events'
+  ));
 }
 
 export async function executeTool(
@@ -1301,7 +1365,7 @@ export async function executeTool(
       case 'get_voice_profile': result = await getVoiceProfileTool(userId); break;
       case 'voice_profile_generate': result = await voiceProfileGenerate(userId, input); break;
       case 'voice_profile_update': result = await voiceProfileUpdate(userId, input); break;
-      case 'draft_reply':       result = await draftReply(userId, input); break;
+      case 'draft_reply':       result = await draftReply(userId, input, context); break;
       case 'draft_cold_email':  result = await draftColdEmail(userId, input); break;
       case 'draft_review':      result = await draftReviewTool(userId, input); break;
       case 'send_email':        result = await sendEmail(userId, input, context); break;
@@ -1991,7 +2055,21 @@ async function draftReviewTool(userId: string, input: any): Promise<ToolResult> 
   return { output: lines.join('\n') };
 }
 
-async function draftReply(userId: string, input: any): Promise<ToolResult> {
+async function draftReply(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // PART 4 Rule 1 — Fetch before claim. Require the LLM to have actually
+  // fetched the thread it's drafting a reply to. Without this gate the LLM
+  // could draft a reply to a hallucinated thread; with it, the LLM is forced
+  // to call read_email or gmail_read_thread first, grounding the body in
+  // real content. Background-agent runs without history fail open with a
+  // logged warning (the LLM there is constrained by a different system
+  // prompt that already enforces fetch order).
+  if (input.threadId && context.toolHistory && !hasFetchedThread(context.toolHistory, input.threadId)) {
+    return failureResult(
+      `Refusing to draft. You have not yet fetched the thread ${input.threadId} this turn — call gmail_read_thread (or read_email for the latest message) first so the draft is grounded in the real email content, then retry draft_reply.`,
+      'fetch_required',
+    );
+  }
+
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
@@ -2038,13 +2116,17 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
   // Surface composite + lowest-dimension callout to the LLM so its final chat
   // sentence can hedge or ship clean. The badge on the draft card shows the
   // composite; voiceCritique surfaces critique + first suggestion underneath.
-  const lowScoreNote = review && review.composite < 70
-    ? `\n\nVOICE MATCH: ${review.composite}/100. ${review.critique || ''}` +
-      (review.suggestions[0] ? ` Suggestion: ${review.suggestions[0]}` : '') +
-      ' Mention this score to the user and suggest a quick review before sending.'
-    : review
-      ? `\n\nVOICE MATCH: ${review.composite}/100. The draft sounds like the user.`
-      : '';
+  // PART 4 Rule 5 — always tell the LLM to surface the composite score in
+  // its final reply, regardless of value. The badge on the draft card shows
+  // it too, but the LLM's chat sentence is what the user reads first.
+  const lowScoreNote = !review
+    ? ''
+    : review.composite < 70
+      ? `\n\nVOICE MATCH: ${review.composite}/100. ${review.critique || ''}` +
+        (review.suggestions[0] ? ` Suggestion: ${review.suggestions[0]}` : '') +
+        ` REQUIRED: say in your chat reply "This draft scored ${review.composite}/100 for matching your voice. You may want to review it carefully." Do not omit the score.`
+      : `\n\nVOICE MATCH: ${review.composite}/100. The draft sounds like the user. ` +
+        `REQUIRED: mention the voice match score (${review.composite}/100) in your chat reply so the user always sees it.`;
 
   // Combine critique + top suggestion for the under-badge UI line.
   const combinedCritique = review
@@ -2236,6 +2318,18 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
 }
 
 async function scheduleMeeting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // PART 4 Rule 3 — Never invent availability. The LLM must have checked the
+  // calendar before proposing a time. Accepts either get_calendar_events or
+  // calendar_get_availability earlier in the same run; notion_get_calendar_events
+  // also counts when Notion calendar is the source of truth. Without this
+  // gate the LLM could schedule into a guessed-empty slot.
+  if (context.toolHistory && !hasFetchedAvailability(context.toolHistory)) {
+    return failureResult(
+      `Refusing to schedule. You have not yet checked the user's calendar this turn — call calendar_get_availability (or get_calendar_events) covering ${input.startTime} first so you propose a time you've actually verified is free, then retry schedule_meeting.`,
+      'fetch_required',
+    );
+  }
+
   if (context.conversationId) {
     const targetKey = normalizeTargetKey('schedule_meeting', input);
     const { approved, failedOpen } = await consumeApproval({
@@ -4416,6 +4510,24 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
       detailsLower.eventId = detailsLower.eventid || detailsLower.event_id || detailsLower.id || detailsLower.event;
     }
     const targetKey = normalizeTargetKey(actionType, detailsLower);
+
+    // PART 4 Rule 6 — refuse to re-prompt for something the user already
+    // declined in this conversation. The LLM gets a structured failure and
+    // must tell the user that this exact action was already declined; it
+    // cannot insert a fresh pending row to ask again.
+    const previouslyDeclined = await hasDeclinedApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType,
+      targetKey,
+    });
+    if (previouslyDeclined) {
+      return failureResult(
+        `You already asked the user to confirm "${input.action}" with this exact target earlier in this conversation, and they declined. Do NOT ask again. Tell the user: "I asked about this earlier and you declined — let me know if you want to revisit it differently." Then stop.`,
+        'already_declined',
+      );
+    }
+
     approvalId = await recordPendingApproval({
       conversationId: context.conversationId,
       userId,

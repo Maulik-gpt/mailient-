@@ -203,6 +203,41 @@ export async function approvePending(params: {
 }
 
 /**
+ * PART 4 Rule 6 — did the user already decline this exact action in this
+ * conversation? If yes, requestConfirmation refuses to insert a new pending
+ * row and returns null so the LLM surfaces "you already declined this" rather
+ * than re-prompting. One confirmation per action; no re-asks after a decline.
+ *
+ * Looks back across the whole conversation (no time window) — declines stick
+ * until the conversation ends. Fails open (returns false) on DB error.
+ */
+export async function hasDeclinedApproval(params: {
+  conversationId: string;
+  userId: string;
+  actionType: ApprovalActionType;
+  targetKey: string;
+}): Promise<boolean> {
+  if (!params.conversationId) return false;
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from(APPROVAL_TABLE)
+      .select('id')
+      .eq('conversation_id', params.conversationId)
+      .eq('user_id', params.userId.toLowerCase())
+      .eq('action_type', params.actionType)
+      .eq('target_key', params.targetKey)
+      .eq('status', 'declined')
+      .limit(1)
+      .maybeSingle();
+    if (error) return false;
+    return !!data;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Mark a pending approval as declined.
  */
 export async function declinePending(params: {
