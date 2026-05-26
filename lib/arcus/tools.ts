@@ -755,7 +755,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'send_slack_message',
     description:
-      'Post a Slack message to a channel or DM the user. ' +
+      'Post a Slack message to a channel or DM the user themselves. For DMs to OTHER users use slack_send_dm. ' +
       'GATED: requires a prior request_confirmation with matching Channel detail. ' +
       'Output: "Slack message sent to <channel>." ' +
       'Errors (success:false): confirmation_required, slack_not_connected, upstream_slack.',
@@ -766,6 +766,50 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         text: { type: 'string', description: 'Message body in Slack mrkdwn.' },
       },
       required: ['channel', 'text'],
+    },
+  },
+  {
+    name: 'slack_find_user',
+    description:
+      'Look up a Slack user by email (preferred) or display name. REQUIRED before slack_send_dm — never guess a Slack user id. ' +
+      'Output: plain text with "User: <name>  id: <U…>  email: <addr>"  for one match, OR a numbered list for multiple name matches. ' +
+      'Errors (success:false): slack_not_connected, validation_error, user_not_found, upstream_slack.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', description: 'Email address to look up (uses Slack\'s users.lookupByEmail — exact match, fastest path).' },
+        name: { type: 'string', description: 'Display name or real name fragment when email is unknown. Returns up to 5 matches.' },
+      },
+    },
+  },
+  {
+    name: 'slack_send_dm',
+    description:
+      'Open a DM conversation with a specific Slack user and post a message. ' +
+      'Prerequisites: slack_find_user to resolve the userId. ' +
+      'GATED: requires a prior request_confirmation with matching User detail. ' +
+      'Output: "Sent DM to <userId>." plus the message permalink. ' +
+      'Errors (success:false): confirmation_required, slack_not_connected, validation_error, upstream_slack.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        userId: { type: 'string', description: 'Slack user id (starts with U…) from slack_find_user.' },
+        text: { type: 'string', description: 'Message body in Slack mrkdwn.' },
+      },
+      required: ['userId', 'text'],
+    },
+  },
+  {
+    name: 'slack_get_channels',
+    description:
+      'List the public and private channels the Slack bot has access to (excludes archived and DMs). ' +
+      'Output: numbered list of "<name>  [id: <C…>  type: public|private  members: <n>]". ' +
+      'Errors (success:false): slack_not_connected, upstream_slack.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'Max channels to return (1-200, default 100).' },
+      },
     },
   },
   {
@@ -983,6 +1027,9 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   update_canvas: null,
   web_search: null,
   send_slack_message: 'slack',
+  slack_find_user: 'slack',
+  slack_send_dm: 'slack',
+  slack_get_channels: 'slack',
   create_scheduled_agent: null,
   ask_user: null,
   check_followups: 'gmail',
@@ -1118,6 +1165,9 @@ export async function executeTool(
       case 'update_canvas':         result = updateCanvas(input); break;
       case 'web_search':            result = await webSearch(input); break;
       case 'send_slack_message':    result = await sendSlackMessage(userId, input, context); break;
+      case 'slack_find_user':       result = await slackFindUser(userId, input); break;
+      case 'slack_send_dm':         result = await slackSendDm(userId, input, context); break;
+      case 'slack_get_channels':    result = await slackGetChannels(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
       case 'check_followups':       result = await checkFollowups(userId, input); break;
       case 'digest_newsletters':    result = await digestNewsletters(userId, input); break;
@@ -3654,6 +3704,182 @@ async function sendSlackMessage(userId: string, input: any, context: ToolContext
   return { output: `Slack message sent to ${input.channel} ✅` };
 }
 
+// ── slack_find_user ───────────────────────────────────────────────────────────
+// Email path uses users.lookupByEmail (exact, fast). Name path uses users.list
+// and filters client-side — Slack has no native name search.
+async function slackFindUser(userId: string, input: any): Promise<ToolResult> {
+  const email = (input?.email || '').trim();
+  const name = (input?.name || '').trim();
+  if (!email && !name) return failureResult('email or name is required.', 'validation_error');
+
+  const token = await getSlackToken(userId);
+  if (!token) return failureResult('Slack is not connected.', 'slack_not_connected');
+
+  // Path A: email — exact lookup
+  if (email) {
+    const url = `https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(email)}`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return failureResult(`Slack lookup failed (${res.status}).`, 'upstream_slack');
+    const data = await res.json();
+    if (data.ok && data.user) {
+      const u = data.user;
+      return {
+        output: `User: ${u.profile?.real_name || u.real_name || u.name}  id: ${u.id}  email: ${u.profile?.email || email}`,
+      };
+    }
+    if (data.error === 'users_not_found') {
+      return failureResult(`No Slack user with email ${email}.`, 'user_not_found');
+    }
+    return failureResult(`Slack lookup error: ${data.error || 'unknown'}.`, 'upstream_slack');
+  }
+
+  // Path B: name — paginate users.list, score by name substring
+  const matches: Array<{ id: string; name: string; email: string; score: number }> = [];
+  const nameLower = name.toLowerCase();
+  let cursor: string | undefined;
+  let pages = 0;
+  do {
+    const params = new URLSearchParams({ limit: '200' });
+    if (cursor) params.set('cursor', cursor);
+    const res = await fetch(`https://slack.com/api/users.list?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return failureResult(`Slack users.list failed (${res.status}).`, 'upstream_slack');
+    const data = await res.json();
+    if (!data.ok) return failureResult(`Slack error: ${data.error || 'unknown'}.`, 'upstream_slack');
+    for (const u of (data.members || []) as any[]) {
+      if (u.deleted || u.is_bot) continue;
+      const dn = (u.profile?.display_name || '').toLowerCase();
+      const rn = (u.profile?.real_name || u.real_name || '').toLowerCase();
+      const un = (u.name || '').toLowerCase();
+      const hay = `${dn} ${rn} ${un}`;
+      const idx = hay.indexOf(nameLower);
+      if (idx >= 0) {
+        matches.push({
+          id: u.id,
+          name: u.profile?.real_name || u.real_name || u.name,
+          email: u.profile?.email || '',
+          score: dn === nameLower ? 3 : rn === nameLower ? 3 : idx,
+        });
+      }
+    }
+    cursor = data.response_metadata?.next_cursor || '';
+    pages++;
+  } while (cursor && pages < 5); // hard cap: 1000 users scanned
+
+  if (!matches.length) return failureResult(`No Slack user matching "${name}".`, 'user_not_found');
+
+  matches.sort((a, b) => (a.score === b.score ? a.name.localeCompare(b.name) : a.score - b.score));
+  const top = matches.slice(0, 5);
+  if (top.length === 1) {
+    const m = top[0];
+    return { output: `User: ${m.name}  id: ${m.id}${m.email ? `  email: ${m.email}` : ''}` };
+  }
+  const lines = top.map((m, i) => `${i + 1}. ${m.name}  id: ${m.id}${m.email ? `  email: ${m.email}` : ''}`);
+  return { output: `${top.length} matches for "${name}":\n${lines.join('\n')}\n\nPick the right id and pass it as userId to slack_send_dm.` };
+}
+
+// ── slack_send_dm ─────────────────────────────────────────────────────────────
+// Opens (or reuses) the DM channel with the target user, then posts. Gated
+// by its own ApprovalActionType so the gate match key is the userId, not a
+// channel name.
+async function slackSendDm(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const targetUserId = (input?.userId || '').trim();
+  const text = (input?.text || '').trim();
+  if (!targetUserId) return failureResult('userId is required (use slack_find_user to resolve).', 'validation_error');
+  if (!text) return failureResult('text is required.', 'validation_error');
+
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('send_slack_dm', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'send_slack_dm',
+      targetKey,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to send DM. No approved request_confirmation found for DM to ${targetUserId}. Call request_confirmation first with action "Send Slack DM" and details { User: "${targetUserId}" }, then retry after the user clicks Confirm.`,
+        'confirmation_required',
+      );
+    }
+  }
+
+  const token = await getSlackToken(userId);
+  if (!token) return failureResult('Slack is not connected.', 'slack_not_connected');
+
+  // 1) conversations.open — idempotent, returns the existing IM channel id if one exists
+  const openRes = await fetch('https://slack.com/api/conversations.open', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ users: targetUserId }),
+    signal: AbortSignal.timeout(8000),
+  });
+  if (!openRes.ok) return failureResult(`Could not open Slack DM (${openRes.status}).`, 'upstream_slack');
+  const openData = await openRes.json();
+  if (!openData.ok || !openData.channel?.id) {
+    return failureResult(`Slack DM open failed: ${openData.error || 'unknown'}.`, 'upstream_slack');
+  }
+  const dmChannel = openData.channel.id;
+
+  // 2) chat.postMessage to the DM channel
+  const postRes = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel: dmChannel, text, mrkdwn: true }),
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!postRes.ok) return failureResult(`DM post failed (${postRes.status}).`, 'upstream_slack');
+  const postData = await postRes.json();
+  if (!postData.ok) return failureResult(`Slack error: ${postData.error || 'unknown'}.`, 'upstream_slack');
+
+  // 3) Permalink — best-effort; if it fails we still return success
+  let permalink = '';
+  try {
+    const plRes = await fetch(
+      `https://slack.com/api/chat.getPermalink?channel=${encodeURIComponent(dmChannel)}&message_ts=${encodeURIComponent(postData.ts)}`,
+      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(5000) },
+    );
+    if (plRes.ok) {
+      const pl = await plRes.json();
+      if (pl.ok && pl.permalink) permalink = pl.permalink;
+    }
+  } catch { /* non-fatal */ }
+
+  return {
+    output: `Sent DM to ${targetUserId} at ts ${postData.ts}.${permalink ? `\nPermalink: ${permalink}` : ''}`,
+  };
+}
+
+// ── slack_get_channels ────────────────────────────────────────────────────────
+async function slackGetChannels(userId: string, input: any): Promise<ToolResult> {
+  const limit = Math.max(1, Math.min(200, Number(input?.limit) || 100));
+  const token = await getSlackToken(userId);
+  if (!token) return failureResult('Slack is not connected.', 'slack_not_connected');
+
+  const params = new URLSearchParams({
+    types: 'public_channel,private_channel',
+    exclude_archived: 'true',
+    limit: String(Math.min(limit, 200)),
+  });
+  const res = await fetch(`https://slack.com/api/conversations.list?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) return failureResult(`Slack channels.list failed (${res.status}).`, 'upstream_slack');
+  const data = await res.json();
+  if (!data.ok) return failureResult(`Slack error: ${data.error || 'unknown'}.`, 'upstream_slack');
+
+  const channels: any[] = (data.channels || []).slice(0, limit);
+  if (!channels.length) return { output: 'No channels accessible to the Slack bot.' };
+
+  const lines = channels.map((c: any, i: number) =>
+    `${i + 1}. #${c.name}  [id: ${c.id}  type: ${c.is_private ? 'private' : 'public'}  members: ${c.num_members ?? '?'}]`,
+  );
+  return { output: `${channels.length} channel(s):\n${lines.join('\n')}` };
+}
+
 // ── Scheduled agent creation ───────────────────────────────────────────────────
 
 const INTEGRATION_DETECTION: Record<string, RegExp> = {
@@ -3776,7 +4002,8 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
   else if (/\bcancel\b.*\b(event|meeting|invite|calendar)\b/.test(lower)) actionType = 'cancel_event';
   else if (/\bschedule\b|\bmeeting\b|\bcalendar\b.*\bevent\b|\bbook\b/.test(lower)) actionType = 'schedule_meeting';
-  else if (/\bslack\b|\bdm\b|\bchannel\b/.test(lower)) actionType = 'send_slack_message';
+  else if (/\bslack\b.*\bdm\b|\bdirect\b.*\bmessage\b|\bdm\b\s+\w+/.test(lower)) actionType = 'send_slack_dm';
+  else if (/\bslack\b|\bchannel\b/.test(lower)) actionType = 'send_slack_message';
   else if (/\bnotion\b|\bpage\b|\bdatabase\b/.test(lower)) actionType = 'create_notion_page';
 
   let approvalId: string | null = null;
@@ -3791,6 +4018,8 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
       detailsLower.subject = detailsLower.subject || detailsLower['subject:'];
     } else if (actionType === 'send_slack_message') {
       detailsLower.channel = detailsLower.channel || detailsLower.to || detailsLower.recipient;
+    } else if (actionType === 'send_slack_dm') {
+      detailsLower.userId = detailsLower.userid || detailsLower.user_id || detailsLower.user || detailsLower.to || detailsLower.recipient;
     } else if (actionType === 'create_notion_page') {
       detailsLower.database = detailsLower.database || detailsLower.db;
       detailsLower.title = detailsLower.title || detailsLower.name;

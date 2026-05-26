@@ -47,7 +47,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] 
   },
   slack: {
     label: 'Slack',
-    tools: ['send_slack_message'],
+    tools: ['send_slack_message', 'slack_find_user', 'slack_send_dm', 'slack_get_channels'],
   },
 };
 

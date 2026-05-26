@@ -23,6 +23,7 @@ export type ApprovalActionType =
   | 'send_email'
   | 'schedule_meeting'
   | 'send_slack_message'
+  | 'send_slack_dm'
   | 'create_notion_page'
   | 'cancel_event';
 
@@ -53,6 +54,11 @@ export function normalizeTargetKey(action: ApprovalActionType, input: Record<str
     case 'send_slack_message': {
       const ch = String(input.channel || input.Channel || '').trim().toLowerCase();
       return ch;
+    }
+    case 'send_slack_dm': {
+      // DM target is a Slack user id (U0123...) — distinct from channel target
+      // so reusing send_slack_message's gate would risk cross-matching.
+      return String(input.userId || input.UserId || input.user_id || input.User || '').trim().toLowerCase();
     }
     case 'create_notion_page': {
       const db = String(input.database || input.Database || input.parentId || '').trim().toLowerCase();
