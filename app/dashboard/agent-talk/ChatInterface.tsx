@@ -2541,6 +2541,31 @@ export default function ChatInterface({
               break;
             }
 
+            case 'connector_required': {
+              // Emitted by the chat-route Gmail scope preflight OR mid-loop
+              // when a Gmail tool returns gmail_scope_missing. Renders the
+              // ConnectorRequiredPanel inline so the user can reconnect without
+              // leaving the chat. Auto-opens the integrations modal as well
+              // so reconnection is one click away.
+              const connectors = (data.connectors || []) as Array<{ id: string; name: string; description: string; connected?: boolean }>;
+              if (connectors.length) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      connectorRequired: {
+                        connectors,
+                        waitingForUser: data.waitingForUser ?? true,
+                      },
+                    },
+                  };
+                }));
+              }
+              break;
+            }
+
             case 'partial_failure': {
               // Structured failure report from Layer 3 of the agentic loop
               setMessages(msgs => msgs.map(m => {

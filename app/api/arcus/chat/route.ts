@@ -18,6 +18,7 @@ const auth: any = nextAuth;
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
+import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 
@@ -173,6 +174,53 @@ export async function POST(request: NextRequest) {
     .slice(-20)
     .filter(h => h.role && h.content?.trim())
     .map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }));
+
+  // ── Gmail scope preflight ──────────────────────────────────────────────────
+  // Cached 1h. The moment Google says 403 we replace the would-be loop with a
+  // tiny SSE stream that emits a connector_required card and a final message
+  // telling the user to reconnect. Saves the LLM from calling search_gmail
+  // mid-turn and surfacing the bare 403 string.
+  if (connectedIntegrations.includes('gmail')) {
+    const scopeCheck = await verifyGmailScopes(userId);
+    if (!scopeCheck.ok && scopeCheck.reason === 'scope_missing') {
+      log('warn', 'Gmail scope preflight failed — short-circuiting with connector_required', { userId });
+      const enc = new TextEncoder();
+      const preflightStream = new ReadableStream({
+        start(controller) {
+          const emit = (type: string, data: unknown) =>
+            controller.enqueue(enc.encode(`event: ${type}\ndata: ${JSON.stringify(data)}\n\n`));
+          const runId = `preflight-${Date.now()}`;
+          emit('run_start', { runId, message });
+          emit('connector_required', {
+            connectors: [{
+              id: 'gmail',
+              name: 'Gmail',
+              description: 'Your Gmail token is missing the scopes Arcus needs. Reconnecting takes 5 seconds and lets me search your inbox, draft, and send mail.',
+              connected: false,
+            }],
+            waitingForUser: true,
+            reason: 'gmail_scope_missing',
+          });
+          emit('message', {
+            content:
+              "I can't reach your Gmail yet — the connection is missing some permissions. " +
+              "Click **Reconnect Gmail** on the card above (or open the connectors button in the prompt box) and complete the Google sign-in. " +
+              "Then ask me again and I'll pick up right where you left off.",
+          });
+          emit('done', { runId, durationMs: Date.now() - reqStart, totalSteps: 0 });
+          controller.close();
+        },
+      });
+      return new Response(preflightStream, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache, no-transform',
+          Connection: 'keep-alive',
+          'X-Conversation-Id': conversationId || '',
+        },
+      });
+    }
+  }
 
   log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length });
 

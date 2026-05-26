@@ -43,6 +43,7 @@ import crypto from 'crypto';
 import { callLLM, getText, getRawText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
 import { processGmailResults, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
+import { invalidateGmailScope } from './gmail-scope';
 import { getSupabaseAdmin } from '../supabase.js';
 import type { LLMMessage } from './engine';
 
@@ -687,6 +688,25 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
                   outcomes.push({ tool: tc.name, ok: false, error: result.output });
                   toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: failureMsg });
+
+                  // Gmail scope-missing recovery: invalidate the preflight cache
+                  // so the next chat turn re-probes, and emit a connector_required
+                  // card so the user can reconnect inline without leaving the chat.
+                  // No retry this turn — scope changes require user OAuth consent.
+                  if (code === 'gmail_scope_missing') {
+                    invalidateGmailScope(userId).catch(() => { /* non-fatal */ });
+                    emit('connector_required', {
+                      connectors: [{
+                        id: 'gmail',
+                        name: 'Gmail',
+                        description:
+                          'Reconnect Gmail so I can finish that task — the current token is missing some scopes.',
+                        connected: false,
+                      }],
+                      waitingForUser: true,
+                      reason: 'gmail_scope_missing',
+                    });
+                  }
                   continue;
                 }
 
