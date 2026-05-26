@@ -3004,7 +3004,7 @@ export function GmailInterfaceFixed() {
                                                     
                                                     {/* Editor Container */}
                                                     <div 
-                                                        className="bg-[#1C1C1C] rounded-[24px] w-full max-w-3xl flex flex-col shadow-2xl relative z-10 mx-auto overflow-hidden"
+                                                        className="bg-[#fafafa] dark:bg-[#1C1C1C] border border-black/[0.05] dark:border-transparent rounded-[24px] w-full max-w-3xl flex flex-col shadow-2xl relative z-10 mx-auto overflow-hidden"
                                                         style={{ 
                                                             maxHeight: '85vh',
                                                             transform: showDraftEditor ? 'scale(1) translateY(0)' : 'scale(0.95) translateY(20px)',
@@ -3013,7 +3013,7 @@ export function GmailInterfaceFixed() {
                                                     >
                                                         {/* Header */}
                                                         <div className="flex justify-between items-center px-8 py-5">
-                                                            <span className="text-zinc-400 font-medium tracking-wide">Email</span>
+                                                            <span className="text-black/40 dark:text-zinc-400 font-medium tracking-wide">Email</span>
                                                             <div className="flex items-center gap-2">
                                                                 {/* Attachment Picker */}
                                                                 <input
@@ -3036,7 +3036,7 @@ export function GmailInterfaceFixed() {
                                                                 />
                                                                 <button 
                                                                     onClick={() => attachmentInputRef.current?.click()}
-                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors relative"
+                                                                    className="p-2 hover:bg-black/5 dark:hover:bg-neutral-800 rounded-lg text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors relative"
                                                                     title="Attach files"
                                                                 >
                                                                     <Paperclip className="w-[18px] h-[18px]" strokeWidth={1.5} />
@@ -3051,13 +3051,13 @@ export function GmailInterfaceFixed() {
                                                                         navigator.clipboard.writeText(tempDiv.innerText);
                                                                         toast.success('Copied to clipboard');
                                                                     }}
-                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors"
+                                                                    className="p-2 hover:bg-black/5 dark:hover:bg-neutral-800 rounded-lg text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
                                                                 >
                                                                     <Copy className="w-[18px] h-[18px]" strokeWidth={1.5} />
                                                                 </button>
                                                                 <button 
                                                                     onClick={handleSendReply}
-                                                                    className="p-2 hover:bg-neutral-800 rounded-lg text-white/50 hover:text-white transition-colors"
+                                                                    className="p-2 hover:bg-black/5 dark:hover:bg-neutral-800 rounded-lg text-black/40 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
                                                                 >
                                                                     <Send className="w-[18px] h-[18px]" strokeWidth={1.5} />
                                                                 </button>
@@ -3065,12 +3065,12 @@ export function GmailInterfaceFixed() {
                                                         </div>
 
                                                         {/* Subject Line */}
-                                                        <div className="px-8 pb-4 flex items-center gap-4 border-b border-white/[0.04]">
-                                                            <span className="text-white font-bold bg-transparent border-none">Subject</span>
+                                                        <div className="px-8 pb-4 flex items-center gap-4 border-b border-black/[0.06] dark:border-white/[0.04]">
+                                                            <span className="text-black dark:text-white font-bold bg-transparent border-none">Subject</span>
                                                             <input 
                                                                 value={draftSubject}
                                                                 onChange={(e) => setDraftSubject(e.target.value)}
-                                                                className="bg-transparent border-none focus:outline-none text-zinc-300 w-full"
+                                                                className="bg-transparent border-none focus:outline-none text-black/80 dark:text-zinc-300 w-full"
                                                                 placeholder="Email Subject"
                                                             />
                                                         </div>
@@ -3083,8 +3083,8 @@ export function GmailInterfaceFixed() {
                                                         >
                                                             {isDrafting ? (
                                                                 <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                                                                    <Loader2 className="w-6 h-6 text-neutral-500 animate-spin mb-3" />
-                                                                    <p className="text-xs font-medium text-zinc-500 tracking-tight">Crafting...</p>
+                                                                    <Loader2 className="w-6 h-6 text-black/40 dark:text-neutral-500 animate-spin mb-3" />
+                                                                    <p className="text-xs font-medium text-black/50 dark:text-zinc-500 tracking-tight">Crafting...</p>
                                                                 </div>
                                                             ) : (
                                                                 <>
@@ -3092,21 +3092,21 @@ export function GmailInterfaceFixed() {
                                                                         ref={draftContentEditorRef}
                                                                         contentEditable
                                                                         suppressContentEditableWarning
-                                                                        className="w-full h-full text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
+                                                                        className="w-full h-full text-black dark:text-zinc-100 focus:outline-none leading-[1.8] font-[400] text-[15px] selection:bg-blue-500/30 font-sans [&_a]:text-[#60a5fa] [&_a]:underline [&_a]:cursor-pointer [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_p]:mb-4 [&_p:last-child]:mb-0"
                                                                         onInput={(e) => setDraftContent(e.currentTarget.innerHTML)}
                                                                         style={{ minHeight: '200px' }}
                                                                     />
                                                                     {isGenerating && (
                                                                         <div className="flex items-center gap-2 mt-4 px-1">
                                                                             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-[arcus-dot-pulse_1.5s_infinite]" />
-                                                                            <span className="text-[10px] uppercase tracking-widest text-zinc-500 font-bold">Arcus Generating...</span>
+                                                                            <span className="text-[10px] uppercase tracking-widest text-black/50 dark:text-zinc-500 font-bold">Arcus Generating...</span>
                                                                         </div>
                                                                     )}
                                                                     {/* Attachment chips */}
                                                                     {draftAttachments.length > 0 && (
-                                                                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/[0.06]">
+                                                                        <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-black/[0.06] dark:border-white/[0.06]">
                                                                             {draftAttachments.map((file, i) => (
-                                                                                <div key={i} className="flex items-center gap-2 bg-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-zinc-300">
+                                                                                <div key={i} className="flex items-center gap-2 bg-black/[0.04] dark:bg-white/[0.06] rounded-lg px-3 py-1.5 text-sm text-black/70 dark:text-zinc-300">
                                                                                     <Paperclip className="w-3.5 h-3.5 text-zinc-500" />
                                                                                     <span className="max-w-[140px] truncate">{file.name}</span>
                                                                                     <span className="text-zinc-600 text-xs">({(file.size / 1024).toFixed(0)}KB)</span>
@@ -3118,10 +3118,10 @@ export function GmailInterfaceFixed() {
                                                                         </div>
                                                                     )}
                                                                     {/* Voice Profile Link */}
-                                                                    <div className="mt-4 pt-3 border-t border-white/[0.04]">
+                                                                    <div className="mt-4 pt-3 border-t border-black/[0.04] dark:border-white/[0.04]">
                                                                         <button
                                                                             onClick={() => setIsVoiceProfileModalOpen(true)}
-                                                                            className="text-[13px] text-white/30 underline underline-offset-2 decoration-white/15 hover:text-white/60 hover:decoration-white/30 transition-all font-medium flex items-center gap-1.5"
+                                                                            className="text-[13px] text-black/40 dark:text-white/30 underline underline-offset-2 decoration-black/20 dark:decoration-white/15 hover:text-black/70 dark:hover:text-white/60 hover:decoration-black/40 dark:hover:decoration-white/30 transition-all font-medium flex items-center gap-1.5"
                                                                         >
                                                                             <Mic className="w-3 h-3" />
                                                                             Voice Profile
@@ -3148,15 +3148,15 @@ export function GmailInterfaceFixed() {
                                                                         className="pointer-events-auto refinement-toolkit"
                                                                     >
                                                                         {!isRefinementActive && !proposedRefinement && !showLinkInput && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100]" onMouseDown={(e) => e.preventDefault()}>
+                                                                            <div className="bg-white dark:bg-[#2A2A2A] border border-black/10 dark:border-white/10 rounded-[14px] px-2 py-1.5 flex items-center gap-1 shadow-[0_20px_50px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[100]" onMouseDown={(e) => e.preventDefault()}>
                                                                                 <button 
                                                                                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setIsRefinementActive(true); }}
-                                                                                    className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-[#3b82f6] hover:text-blue-400 font-medium tracking-wide transition-colors text-[13px]"
+                                                                                    className="flex items-center gap-2 pl-3 pr-2 py-1.5 text-[#3b82f6] hover:text-blue-500 dark:hover:text-blue-400 font-medium tracking-wide transition-colors text-[13px]"
                                                                                 >
                                                                                     Ask for changes
                                                                                 </button>
                                                                                 
-                                                                                <div className="w-[1px] h-4 bg-zinc-700"></div>
+                                                                                <div className="w-[1px] h-4 bg-black/10 dark:bg-zinc-700"></div>
                                                                                 
                                                                                 <div className="flex items-center">
                                                                                     <button 
@@ -3166,7 +3166,7 @@ export function GmailInterfaceFixed() {
                                                                                             setShowLinkInput(true);
                                                                                             setLinkInputUrl('');
                                                                                         }}
-                                                                                        className="p-1.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md transition-colors"
+                                                                                        className="p-1.5 text-black/40 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-md transition-colors"
                                                                                         title="Insert link"
                                                                                     >
                                                                                         <LinkIcon className="w-4 h-4" />
@@ -3183,7 +3183,7 @@ export function GmailInterfaceFixed() {
                                                                                                 if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
                                                                                             }
                                                                                         }}
-                                                                                        className="p-1.5 px-2.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md font-bold transition-colors text-[14px]"
+                                                                                        className="p-1.5 px-2.5 text-black/40 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-md font-bold transition-colors text-[14px]"
                                                                                         title="Bold"
                                                                                     >
                                                                                         B
@@ -3200,7 +3200,7 @@ export function GmailInterfaceFixed() {
                                                                                                 if (draftContentEditorRef.current) setDraftContent(draftContentEditorRef.current.innerHTML);
                                                                                             }
                                                                                         }}
-                                                                                        className="p-1.5 px-2.5 text-zinc-400 hover:text-white hover:bg-white/10 rounded-md italic transition-colors text-[14px]"
+                                                                                        className="p-1.5 px-2.5 text-black/40 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 rounded-md italic transition-colors text-[14px]"
                                                                                         title="Italic"
                                                                                     >
                                                                                         I
@@ -3211,7 +3211,7 @@ export function GmailInterfaceFixed() {
 
                                                                         {/* Inline Link Input (replaces browser prompt) */}
                                                                         {showLinkInput && !isRefinementActive && !proposedRefinement && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[320px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.preventDefault()}>
+                                                                            <div className="bg-white dark:bg-[#2A2A2A] border border-black/10 dark:border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[320px] z-[100] ring-1 ring-black/5 dark:ring-white/5" onClick={(e) => e.stopPropagation()} onMouseDown={(e) => e.preventDefault()}>
                                                                                 <div className="relative">
                                                                                     <input
                                                                                         autoFocus
@@ -3245,7 +3245,7 @@ export function GmailInterfaceFixed() {
                                                                                             }
                                                                                         }}
                                                                                         placeholder="Paste or type a URL..."
-                                                                                        className="w-full bg-white/[0.04] text-white text-[13px] py-3 px-4 pr-12 rounded-xl border border-transparent focus:outline-none focus:bg-white/[0.06] transition-all placeholder:text-zinc-500 font-medium"
+                                                                                        className="w-full bg-black/[0.04] dark:bg-white/[0.04] text-black dark:text-white text-[13px] py-3 px-4 pr-12 rounded-xl border border-transparent focus:outline-none focus:bg-black/[0.06] dark:focus:bg-white/[0.06] transition-all placeholder:text-black/40 dark:placeholder:text-zinc-500 font-medium"
                                                                                     />
                                                                                     <button
                                                                                         onMouseDown={(e) => {
@@ -3279,7 +3279,7 @@ export function GmailInterfaceFixed() {
                                                                         )}
 
                                                                         {isRefinementActive && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
+                                                                            <div className="bg-white dark:bg-[#2A2A2A] border border-black/10 dark:border-white/10 rounded-[14px] p-1.5 shadow-[0_30px_70px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-black/5 dark:ring-white/5" onClick={(e) => e.stopPropagation()}>
                                                                                 <div className="relative group/input">
                                                                                     <input
                                                                                         autoFocus
@@ -3290,7 +3290,7 @@ export function GmailInterfaceFixed() {
                                                                                             if (e.key === 'Escape') setIsRefinementActive(false);
                                                                                         }}
                                                                                         placeholder="Describe your changes"
-                                                                                        className="w-full bg-white/[0.04] text-white text-[14px] py-3.5 px-5 pr-14 rounded-xl border border-transparent focus:outline-none focus:bg-white/[0.06] transition-all placeholder:text-zinc-500 font-medium tracking-tight"
+                                                                                        className="w-full bg-black/[0.04] dark:bg-white/[0.04] text-black dark:text-white text-[14px] py-3.5 px-5 pr-14 rounded-xl border border-transparent focus:outline-none focus:bg-black/[0.06] dark:focus:bg-white/[0.06] transition-all placeholder:text-black/40 dark:placeholder:text-zinc-500 font-medium tracking-tight"
                                                                                     />
                                                                                     <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                                                                                         <button
@@ -3310,20 +3310,20 @@ export function GmailInterfaceFixed() {
                                                                         )}
 
                                                                         {proposedRefinement && (
-                                                                            <div className="bg-[#2A2A2A] border border-white/10 rounded-[14px] p-2 flex flex-col gap-3 shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-white/5" onClick={(e) => e.stopPropagation()}>
-                                                                                <div className="px-3 pt-2 text-zinc-200 text-[14px] tracking-wide leading-relaxed font-medium">
+                                                                            <div className="bg-white dark:bg-[#2A2A2A] border border-black/10 dark:border-white/10 rounded-[14px] p-2 flex flex-col gap-3 shadow-[0_30px_70px_rgba(0,0,0,0.15)] dark:shadow-[0_30px_70px_rgba(0,0,0,0.6)] w-[360px] z-[100] ring-1 ring-black/5 dark:ring-white/5" onClick={(e) => e.stopPropagation()}>
+                                                                                <div className="px-3 pt-2 text-black/70 dark:text-zinc-200 text-[14px] tracking-wide leading-relaxed font-medium">
                                                                                     <div dangerouslySetInnerHTML={{ __html: proposedRefinement }} />
                                                                                 </div>
                                                                                 <div className="flex items-center gap-2 mt-1">
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); setProposedRefinement(null); }}
-                                                                                        className="h-9 w-full rounded-lg text-zinc-400 hover:text-white hover:bg-white/10 text-[13px] font-medium transition-all"
+                                                                                        className="h-9 w-full rounded-lg text-black/50 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 text-[13px] font-medium transition-all"
                                                                                     >
                                                                                         Discard
                                                                                     </button>
                                                                                     <button
                                                                                         onClick={(e) => { e.stopPropagation(); handleAcceptSiftRefinement(); }}
-                                                                                        className="h-9 w-full bg-white hover:bg-zinc-200 rounded-lg text-black text-[13px] font-bold transition-all shadow-md"
+                                                                                        className="h-9 w-full bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-zinc-200 rounded-lg text-white dark:text-black text-[13px] font-bold transition-all shadow-md"
                                                                                     >
                                                                                         Accept
                                                                                     </button>

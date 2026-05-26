@@ -171,9 +171,9 @@ function getSnippets(tool: string | undefined, summary: string | undefined): Par
 // ─── Single expandable step card ─────────────────────────────────────────────
 
 const TIER_COLORS: Record<string, string> = {
-  Client:     'text-blue-400/80',
-  Revenue:    'text-emerald-400/80',
-  Scheduling: 'text-amber-400/80',
+  Client:     'text-black/60 dark:text-zinc-400',
+  Revenue:    'text-black/60 dark:text-zinc-400',
+  Scheduling: 'text-black/60 dark:text-zinc-400',
 };
 
 function SnippetRow({ snippet }: { snippet: ParsedSnippet }) {
@@ -230,7 +230,7 @@ function StepCard({ step }: { step: AgentStep }) {
         isActive
           ? 'bg-black/[0.03] dark:bg-white/[0.04] border-black/10 dark:border-white/10'
           : isError
-          ? 'bg-red-500/[0.04] border-red-500/20'
+          ? 'bg-black/[0.05] dark:bg-white/[0.06] border-black/15 dark:border-white/15'
           : 'bg-black/[0.02] dark:bg-white/[0.03] border-black/[0.06] dark:border-white/[0.07]',
       )}
     >
@@ -249,7 +249,7 @@ function StepCard({ step }: { step: AgentStep }) {
             isActive
               ? 'bg-black/[0.05] dark:bg-white/[0.06] border-black/10 dark:border-white/15 text-black/70 dark:text-white/70'
               : isError
-              ? 'bg-red-500/10 border-red-500/20 text-red-400'
+              ? 'bg-black/10 dark:bg-white/10 border-black/20 dark:border-white/20 text-black/80 dark:text-zinc-300'
               : 'bg-black/[0.03] dark:bg-white/[0.05] border-black/[0.05] dark:border-white/[0.08] text-black/50 dark:text-white/40',
           )}
         >
@@ -280,7 +280,7 @@ function StepCard({ step }: { step: AgentStep }) {
           ) : (
             <span className={cn(
               'text-[13px] font-medium tracking-tight block',
-              isError ? 'text-red-400/70' : 'text-black/60 dark:text-white/55',
+              isError ? 'text-black/80 dark:text-zinc-300' : 'text-black/60 dark:text-white/55',
             )}>
               {label}
               {resultLabel && (
