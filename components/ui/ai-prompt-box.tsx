@@ -1038,11 +1038,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                   isRecording
                     ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
-                    : isLoading
-                      ? "!bg-black dark:!bg-zinc-900 hover:!bg-black/80 dark:hover:!bg-zinc-800 !text-white dark:!text-white shadow-lg"
-                      : hasContent
-                        ? "!bg-black dark:!bg-zinc-900 hover:!bg-black/80 dark:hover:!bg-zinc-800 !text-white dark:!text-white shadow-lg"
-                        : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
+                    : "!bg-black dark:!bg-zinc-900 hover:!bg-black/80 dark:hover:!bg-zinc-800 !text-white dark:!text-white shadow-lg"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1060,7 +1056,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 ) : hasContent ? (
                   <ArrowUp className="h-4 w-4 !text-white dark:!text-white stroke-[3px]" />
                 ) : (
-                  <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
+                  <Mic className="h-5 w-5 !text-white dark:!text-white transition-colors" />
                 )}
               </button>
             </PromptInputAction>
