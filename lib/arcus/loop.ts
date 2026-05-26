@@ -805,7 +805,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const canvasCall = finalToolCalls.find(tc => tc.name === 'open_canvas');
               if (canvasCall) {
                 try {
-                  const canvasResult = await executeTool('open_canvas', canvasCall.input, userId);
+                  const canvasResult = await executeTool('open_canvas', canvasCall.input, userId, toolContext);
                   if (canvasResult.canvasData) {
                     canvasContent = canvasResult.canvasData;
                     emit('canvas', canvasResult.canvasData);
@@ -991,7 +991,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const summaryCanvasCall = summaryToolCalls.find(tc => tc.name === 'open_canvas');
               if (summaryCanvasCall) {
                 try {
-                  const canvasResult = await executeTool('open_canvas', summaryCanvasCall.input, userId);
+                  const canvasResult = await executeTool('open_canvas', summaryCanvasCall.input, userId, toolContext);
                   if (canvasResult.canvasData) {
                     canvasContent = canvasResult.canvasData;
                     emit('canvas', canvasResult.canvasData);

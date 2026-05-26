@@ -20,6 +20,7 @@ import {
   normalizeTargetKey,
   type ApprovalActionType,
 } from './session-state';
+import { getCanvasState, setCanvasState } from './canvas-state';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
 
@@ -770,16 +771,19 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'update_canvas',
     description:
-      'Replace the currently-open Canvas document with new markdown. Use when the user asks to rewrite/revise/shorten/expand an existing canvas. ' +
-      'Provide the FULL updated markdown, not a diff. ' +
-      'Output: "Canvas updated: ..." + canvasData.isUpdate = true. ' +
+      'Update the currently-open Canvas document. Two modes:\n' +
+      '  • "replace" (default): pass the FULL updated markdown — overwrites whatever is on screen.\n' +
+      '  • "append": pass ONLY the new content to add; the server merges it onto the last-known canvas for this conversation (blank line separator) so you don\'t have to resend the whole document.\n' +
+      'Append falls back to replace when there is no prior canvas state for this conversation (first call, background-agent run, or after a server restart) — the output flags this so you can mention it.\n' +
+      'Output: "Canvas updated: <title>" with an optional " (appended)" or fallback note + canvasData.isUpdate = true. ' +
       'Errors (success:false): validation_error (empty markdown).',
     input_schema: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'New title (or repeat the existing title).' },
         type: { type: 'string', enum: ['email_draft', 'report', 'notes', 'analysis', 'action_plan'], description: 'Document type.' },
-        markdown: { type: 'string', description: 'Complete replacement markdown.' },
+        markdown: { type: 'string', description: 'For replace: complete updated markdown. For append: just the new content to add.' },
+        mode: { type: 'string', enum: ['replace', 'append'], description: 'Update mode. Default "replace".' },
       },
       required: ['title', 'markdown'],
     },
@@ -795,6 +799,22 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       properties: {
         query: { type: 'string', description: 'Search query.' },
         maxResults: { type: 'number', description: 'Max results (1-10, default 6).' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'web_search_instant',
+    description:
+      'DuckDuckGo Instant Answer ONLY — knowledge-base summary + related topics, no live web crawling. Fast (~1s) and zero-cost. ' +
+      'Use for quick fact checks ("when did X launch?", "who is X?") where a Wikipedia-style abstract is enough. For real web results, use web_search. ' +
+      'Output: "Instant answer for X:" with summary, an optional related-topics list, and the source abstract URL when one is given. ' +
+      'Errors (success:false): web_search_unavailable (DDG timeout or no answer in their knowledge base — try web_search instead). ' +
+      'Does NOT browse pages — say so explicitly to the user if they asked for deeper research.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Short fact-check query.' },
       },
       required: ['query'],
     },
@@ -1073,6 +1093,7 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   open_canvas: null,
   update_canvas: null,
   web_search: null,
+  web_search_instant: null,
   send_slack_message: 'slack',
   slack_find_user: 'slack',
   slack_send_dm: 'slack',
@@ -1211,9 +1232,10 @@ export async function executeTool(
       case 'notion_read_page':   result = await notionReadPage(userId, input); break;
       case 'notion_create_task': result = await notionCreateTask(userId, input, context); break;
       case 'notion_get_calendar_events': result = await notionGetCalendarEvents(userId, input); break;
-      case 'open_canvas':           result = openCanvas(input); break;
-      case 'update_canvas':         result = updateCanvas(input); break;
+      case 'open_canvas':           result = await openCanvas(input, userId, context); break;
+      case 'update_canvas':         result = await updateCanvas(input, userId, context); break;
       case 'web_search':            result = await webSearch(input); break;
+      case 'web_search_instant':    result = await webSearchInstant(input); break;
       case 'send_slack_message':    result = await sendSlackMessage(userId, input, context); break;
       case 'slack_find_user':       result = await slackFindUser(userId, input); break;
       case 'slack_send_dm':         result = await slackSendDm(userId, input, context); break;
@@ -3173,7 +3195,7 @@ async function notionGetCalendarEvents(userId: string, input: any): Promise<Tool
   };
 }
 
-function openCanvas(input: any): ToolResult {
+async function openCanvas(input: any, userId: string, context: ToolContext = {}): Promise<ToolResult> {
   if (!input.markdown?.trim()) {
     return failureResult('Error: open_canvas requires non-empty markdown content. Write the full document content and pass it in the markdown parameter, then call open_canvas again.', 'validation_error');
   }
@@ -3182,6 +3204,19 @@ function openCanvas(input: any): ToolResult {
     input.markdown?.toLowerCase().includes('agent objective') ||
     input.markdown?.toLowerCase().includes('cron')
   );
+
+  // Persist last-known canvas content per conversation so update_canvas with
+  // mode='append' can merge server-side next turn.
+  if (context.conversationId) {
+    await setCanvasState({
+      conversationId: context.conversationId,
+      userId,
+      title: input.title,
+      type: input.type || 'notes',
+      markdown: input.markdown,
+    });
+  }
+
   return {
     output: isAgentSpec
       ? `Canvas opened: "${input.title}". The specification is now visible to the user. IMPORTANT: You must now immediately call create_scheduled_agent to register this agent in the system. The agent is NOT yet created — open_canvas only displayed the spec.`
@@ -3195,16 +3230,56 @@ function openCanvas(input: any): ToolResult {
   };
 }
 
-function updateCanvas(input: any): ToolResult {
+async function updateCanvas(input: any, userId: string, context: ToolContext = {}): Promise<ToolResult> {
   if (!input.markdown?.trim()) {
     return failureResult('Error: update_canvas requires non-empty markdown content.', 'validation_error');
   }
+  const mode = input.mode === 'append' ? 'append' : 'replace';
+
+  let finalMarkdown = input.markdown;
+  let finalTitle = input.title;
+  let finalType = input.type || 'notes';
+  let appendFellBack = false;
+
+  if (mode === 'append') {
+    if (!context.conversationId) {
+      // No conversation context (background-agent runs) — append degrades to
+      // replace because there's no canonical "previous canvas" to merge with.
+      appendFellBack = true;
+    } else {
+      const prev = await getCanvasState(context.conversationId);
+      if (prev && prev.markdown) {
+        // Preserve the existing title/type when the caller didn't specify
+        finalTitle = input.title || prev.title || finalTitle;
+        finalType = input.type || prev.type || finalType;
+        finalMarkdown = `${prev.markdown.trimEnd()}\n\n${input.markdown.trimStart()}`;
+      } else {
+        // No prior state — first call after server restart, or open_canvas
+        // never ran. Treat the call as a replace.
+        appendFellBack = true;
+      }
+    }
+  }
+
+  if (context.conversationId) {
+    await setCanvasState({
+      conversationId: context.conversationId,
+      userId,
+      title: finalTitle,
+      type: finalType,
+      markdown: finalMarkdown,
+    });
+  }
+
+  const note = appendFellBack
+    ? ' (append fell back to replace — no prior canvas state for this conversation)'
+    : mode === 'append' ? ' (appended)' : '';
   return {
-    output: `Canvas updated: "${input.title}"`,
+    output: `Canvas updated: "${finalTitle}"${note}`,
     canvasData: {
-      title: input.title,
-      type: input.type || 'notes',
-      markdown: input.markdown,
+      title: finalTitle,
+      type: finalType,
+      markdown: finalMarkdown,
       isUpdate: true,
     },
   };
@@ -3814,6 +3889,59 @@ Founder & Team:
   } catch { /* fallthrough */ }
 
   return failureResult(`Web search for "${query}": All search providers are temporarily unavailable. Try rephrasing the query or breaking it into a more specific term.`, 'web_search_unavailable');
+}
+
+// ── web_search_instant ────────────────────────────────────────────────────────
+// Thin DuckDuckGo Instant Answer client. No fallbacks, no web crawl — when DDG
+// has no instant answer this returns success:false so the LLM can fall back to
+// web_search if it wants live web results.
+async function webSearchInstant(input: any): Promise<ToolResult> {
+  const query = (input?.query || '').trim();
+  if (!query) return failureResult('query is required.', 'validation_error');
+
+  try {
+    const params = new URLSearchParams({
+      q: query,
+      format: 'json',
+      no_html: '1',
+      skip_disambig: '1',
+    });
+    const res = await fetch(`https://api.duckduckgo.com/?${params}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(6000),
+    });
+    if (!res.ok) {
+      return failureResult(`DuckDuckGo Instant returned ${res.status}.`, 'web_search_unavailable');
+    }
+    const data = await res.json();
+
+    const summary = (data.AbstractText || '').slice(0, 1200);
+    const sourceUrl = data.AbstractURL || '';
+    const related: string[] = ((data.RelatedTopics as any[]) || [])
+      .filter((t) => t && typeof t.Text === 'string')
+      .slice(0, 8)
+      .map((t) => `  • ${t.Text.slice(0, 300)}${t.FirstURL ? ` — ${t.FirstURL}` : ''}`);
+
+    if (!summary && !related.length) {
+      return failureResult(
+        `DuckDuckGo Instant has no answer for "${query}" — its knowledge base is limited. Try web_search for live web results.`,
+        'web_search_unavailable',
+      );
+    }
+
+    const lines: string[] = [`Instant answer for "${query}":`];
+    if (summary) lines.push('', summary);
+    if (sourceUrl) lines.push('', `Source: ${sourceUrl}`);
+    if (related.length) lines.push('', 'Related topics:', ...related);
+    lines.push('', 'Note: this is a knowledge-base summary, not a live page crawl. For deeper research, use web_search.');
+
+    return { output: lines.join('\n') };
+  } catch (err: any) {
+    return failureResult(
+      `DuckDuckGo Instant failed: ${err.message || 'unknown error'}.`,
+      'web_search_unavailable',
+    );
+  }
 }
 
 async function sendSlackMessage(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {

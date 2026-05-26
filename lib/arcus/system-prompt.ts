@@ -55,7 +55,8 @@ const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
 
 const ALWAYS_AVAILABLE = [
   'open_canvas / update_canvas — render documents longer than 3 paragraphs (reports, drafts, prep docs, schedules).',
-  'web_search — current information lookup; not a full browser, returns summary + related topics.',
+  'web_search — multi-provider web search (Serper / Brave / DuckDuckGo HTML / Instant); returns summary + URL hits.',
+  'web_search_instant — DuckDuckGo Instant only (knowledge-base summary, fast, no live crawl). Falls back to failure when DDG has no answer; use web_search for live results.',
   'get_recipient_context — call before draft_reply; merges calendar, Notion notes, contact memory for one recipient.',
   'get_contact_context / remember_about_contact — read and write per-contact relationship memory (Supabase row).',
   'memory_search / memory_save — query and write Supermemory entries (long-term, semantic, cross-session).',
