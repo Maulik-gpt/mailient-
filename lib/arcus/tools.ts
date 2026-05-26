@@ -785,6 +785,57 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'notion_read_page',
+    description:
+      'Fetch a Notion page\'s full content as markdown plus its property values. Recursively walks child blocks (paragraphs, headings, lists, todos, quotes, code, dividers). ' +
+      'Output: plain text with the page URL, the property name/value pairs, then the body markdown. ' +
+      'Errors (success:false): notion_not_connected, validation_error, not_found, upstream_notion.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        pageId: { type: 'string', description: 'Notion page id (with or without dashes) or a Notion page URL.' },
+      },
+      required: ['pageId'],
+    },
+  },
+  {
+    name: 'notion_create_task',
+    description:
+      'Create a task in the user\'s tasks database — convenience wrapper over create_notion_page with task-specific fields. ' +
+      'GATED: shares the create_notion_page approval gate, so request_confirmation with action "Create Notion page" and Title detail is required first. ' +
+      'Auto-resolves the tasks database via the "tasks" hint and maps dueDate / priority onto the first matching schema property. ' +
+      'Output: confirmation text + canvasData with the new page URL. ' +
+      'Errors (success:false): confirmation_required, notion_not_connected, notion_db_not_found, notion_create_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Task title — what needs to be done.' },
+        dueDate: { type: 'string', description: 'Optional ISO 8601 date (YYYY-MM-DD or full timestamp).' },
+        description: { type: 'string', description: 'Optional task body — context, sub-steps, related links.' },
+        priority: { type: 'string', enum: ['Low', 'Medium', 'High', 'Urgent'], description: 'Optional priority — mapped onto the first select/status property whose options include this label.' },
+      },
+      required: ['title'],
+    },
+  },
+  {
+    name: 'notion_get_calendar_events',
+    description:
+      'Read pages from a Notion database that has a date property, filtered to a time window. Use to merge Notion-tracked calendar entries with Google Calendar. ' +
+      'Auto-discovers a database from the hint (default "calendar") or accepts an explicit databaseId. ' +
+      'Output: plain text listing each event with date, title, and any "attendees" / "people" property values. ' +
+      'Errors (success:false): notion_not_connected, validation_error, notion_db_not_found, notion_schema_unreadable, upstream_notion.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        startDate: { type: 'string', description: 'ISO 8601 start of window.' },
+        endDate: { type: 'string', description: 'ISO 8601 end of window.' },
+        database: { type: 'string', description: 'Hint for which Notion database to read; default "calendar". Ignored when databaseId is set.' },
+        databaseId: { type: 'string', description: 'Exact Notion database id — preferred when known.' },
+      },
+      required: ['startDate', 'endDate'],
+    },
+  },
+  {
     name: 'create_notion_page',
     description:
       'Create a page in a Notion database (or as a free-form page if no database match). ' +
@@ -925,6 +976,9 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   search_notion: 'notion',
   fetch_notion_schema: 'notion',
   create_notion_page: 'notion',
+  notion_read_page: 'notion',
+  notion_create_task: 'notion',
+  notion_get_calendar_events: 'notion',
   open_canvas: null,
   update_canvas: null,
   web_search: null,
@@ -1057,6 +1111,9 @@ export async function executeTool(
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
+      case 'notion_read_page':   result = await notionReadPage(userId, input); break;
+      case 'notion_create_task': result = await notionCreateTask(userId, input, context); break;
+      case 'notion_get_calendar_events': result = await notionGetCalendarEvents(userId, input); break;
       case 'open_canvas':           result = openCanvas(input); break;
       case 'update_canvas':         result = updateCanvas(input); break;
       case 'web_search':            result = await webSearch(input); break;
@@ -2673,6 +2730,343 @@ async function createNotionPage(userId: string, input: any, context: ToolContext
       markdown: rawContent,
       pageMeta: { url: created.url, pageId: created.id, contentPreview },
     },
+  };
+}
+
+// ── notion_read_page ──────────────────────────────────────────────────────────
+// Fetch page properties + recursively walk child blocks; convert to markdown.
+// Notion page ids in the URL form (with or without dashes) both work — we
+// normalize before calling the API.
+function normalizeNotionId(raw: string): string {
+  // Accept page urls and ids with or without dashes
+  const idMatch = (raw || '').match(/[0-9a-fA-F]{32}|[0-9a-fA-F-]{36}/);
+  if (!idMatch) return raw;
+  const stripped = idMatch[0].replace(/-/g, '');
+  if (stripped.length !== 32) return raw;
+  return `${stripped.slice(0, 8)}-${stripped.slice(8, 12)}-${stripped.slice(12, 16)}-${stripped.slice(16, 20)}-${stripped.slice(20)}`;
+}
+
+// Render a Notion rich_text array as plain text (annotations stripped — we
+// keep markdown bold/italic later as needed but for now just text).
+function richTextToString(rt: any[]): string {
+  if (!Array.isArray(rt)) return '';
+  return rt.map((r: any) => r.plain_text || '').join('');
+}
+
+// Convert a single Notion block to markdown. Returns '' for unsupported types.
+function notionBlockToMarkdown(block: any, depth = 0): string {
+  const indent = '  '.repeat(depth);
+  const t = block.type;
+  const data = block[t] || {};
+  switch (t) {
+    case 'paragraph':
+      return `${indent}${richTextToString(data.rich_text)}`;
+    case 'heading_1':
+      return `${indent}# ${richTextToString(data.rich_text)}`;
+    case 'heading_2':
+      return `${indent}## ${richTextToString(data.rich_text)}`;
+    case 'heading_3':
+      return `${indent}### ${richTextToString(data.rich_text)}`;
+    case 'bulleted_list_item':
+      return `${indent}- ${richTextToString(data.rich_text)}`;
+    case 'numbered_list_item':
+      return `${indent}1. ${richTextToString(data.rich_text)}`;
+    case 'to_do': {
+      const check = data.checked ? '[x]' : '[ ]';
+      return `${indent}- ${check} ${richTextToString(data.rich_text)}`;
+    }
+    case 'quote':
+      return `${indent}> ${richTextToString(data.rich_text)}`;
+    case 'code':
+      return `${indent}\`\`\`${data.language || ''}\n${richTextToString(data.rich_text)}\n${indent}\`\`\``;
+    case 'divider':
+      return `${indent}---`;
+    case 'callout':
+      return `${indent}> ${richTextToString(data.rich_text)}`;
+    case 'toggle':
+      return `${indent}▸ ${richTextToString(data.rich_text)}`;
+    case 'image': {
+      const url = data.file?.url || data.external?.url || '';
+      const caption = richTextToString(data.caption);
+      return `${indent}![${caption}](${url})`;
+    }
+    case 'bookmark':
+      return `${indent}🔖 ${data.url || ''}`;
+    case 'child_page':
+      return `${indent}📄 ${data.title || '(child page)'}`;
+    case 'child_database':
+      return `${indent}🗄️ ${data.title || '(child database)'}`;
+    default:
+      return '';
+  }
+}
+
+async function fetchAllChildren(
+  headers: Record<string, string>,
+  blockId: string,
+  depth = 0,
+  maxDepth = 4,
+): Promise<string[]> {
+  if (depth > maxDepth) return ['  '.repeat(depth) + '… (nested deeper than 4 levels — truncated)'];
+  const lines: string[] = [];
+  let cursor: string | undefined;
+  let pagesFetched = 0;
+  do {
+    const url = new URL(`https://api.notion.com/v1/blocks/${blockId}/children`);
+    url.searchParams.set('page_size', '100');
+    if (cursor) url.searchParams.set('start_cursor', cursor);
+    const res = await fetch(url.toString(), { headers, signal: AbortSignal.timeout(10000) });
+    if (!res.ok) {
+      lines.push('  '.repeat(depth) + `(could not read child blocks: ${res.status})`);
+      break;
+    }
+    const data = await res.json();
+    const blocks: any[] = data.results || [];
+    for (const b of blocks) {
+      const md = notionBlockToMarkdown(b, depth);
+      if (md) lines.push(md);
+      if (b.has_children) {
+        const childLines = await fetchAllChildren(headers, b.id, depth + 1, maxDepth);
+        lines.push(...childLines);
+      }
+    }
+    cursor = data.has_more ? data.next_cursor : undefined;
+    pagesFetched++;
+    if (pagesFetched > 5) break; // hard cap so a giant page can't blow the budget
+  } while (cursor);
+  return lines;
+}
+
+function notionPropertyValueToString(prop: any): string {
+  if (!prop) return '';
+  switch (prop.type) {
+    case 'title':
+    case 'rich_text':
+      return richTextToString(prop[prop.type]);
+    case 'number':
+      return prop.number != null ? String(prop.number) : '';
+    case 'select':
+      return prop.select?.name || '';
+    case 'multi_select':
+      return (prop.multi_select || []).map((o: any) => o.name).join(', ');
+    case 'status':
+      return prop.status?.name || '';
+    case 'date': {
+      const s = prop.date?.start;
+      const e = prop.date?.end;
+      return e ? `${s} → ${e}` : (s || '');
+    }
+    case 'checkbox':
+      return prop.checkbox ? '✓' : '✗';
+    case 'url':
+      return prop.url || '';
+    case 'email':
+      return prop.email || '';
+    case 'phone_number':
+      return prop.phone_number || '';
+    case 'people':
+      return (prop.people || []).map((p: any) => p.name || p.id).join(', ');
+    case 'relation':
+      return (prop.relation || []).length ? `${prop.relation.length} relation(s)` : '';
+    case 'created_time':
+      return prop.created_time || '';
+    case 'last_edited_time':
+      return prop.last_edited_time || '';
+    default:
+      return `(${prop.type})`;
+  }
+}
+
+async function notionReadPage(userId: string, input: any): Promise<ToolResult> {
+  const rawId = (input.pageId || '').trim();
+  if (!rawId) return failureResult('pageId is required.', 'validation_error');
+  const pageId = normalizeNotionId(rawId);
+
+  const token = await getNotionToken(userId);
+  if (!token) return failureResult('Notion is not connected. Ask the user to connect Notion in Settings → Integrations.', 'notion_not_connected');
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+
+  // 1) Page properties
+  const pageRes = await fetch(`https://api.notion.com/v1/pages/${pageId}`, { headers, signal: AbortSignal.timeout(10000) });
+  if (pageRes.status === 404) return failureResult(`Notion page ${rawId} not found (or not shared with the integration).`, 'not_found');
+  if (!pageRes.ok) return failureResult(`Could not read page (${pageRes.status}).`, 'upstream_notion');
+  const page = await pageRes.json();
+
+  // Pull the title — find the title-typed property and stringify it
+  let title = '(untitled)';
+  for (const [name, val] of Object.entries(page.properties || {}) as Array<[string, any]>) {
+    if (val.type === 'title') {
+      title = richTextToString(val.title) || name;
+      break;
+    }
+  }
+
+  const propLines: string[] = [];
+  for (const [name, val] of Object.entries(page.properties || {}) as Array<[string, any]>) {
+    if (val.type === 'title') continue;
+    const v = notionPropertyValueToString(val);
+    if (v) propLines.push(`  • ${name}: ${v}`);
+  }
+
+  // 2) Body blocks → markdown
+  const bodyLines = await fetchAllChildren(headers, pageId, 0);
+
+  const output = [
+    `Notion page: ${title}`,
+    `URL: ${page.url}`,
+    `Last edited: ${page.last_edited_time}`,
+    '',
+    propLines.length ? 'Properties:' : 'Properties: (none non-title)',
+    ...(propLines.length ? propLines : []),
+    '',
+    '--- Body ---',
+    ...(bodyLines.length ? bodyLines : ['(empty page)']),
+  ].join('\n');
+
+  return { output };
+}
+
+// ── notion_create_task ────────────────────────────────────────────────────────
+// Convenience wrapper. Delegates to createNotionPage with database hint
+// "tasks", maps the task-shaped fields onto generic properties. Shares the
+// 'create_notion_page' approval gate — no separate ActionType.
+async function notionCreateTask(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const title = (input.title || '').trim();
+  if (!title) return failureResult('title is required.', 'validation_error');
+
+  const properties: Record<string, any> = {};
+
+  // Most user task databases use a "Due", "Date", or "Deadline" date property —
+  // create_notion_page's buildNotionDbProperties matches by name. We pass the
+  // value under several common keys; only the one that matches the schema is
+  // applied, the rest land in `skipped` (which we suppress for tasks).
+  if (input.dueDate) {
+    const v = String(input.dueDate);
+    properties['Due'] = v;
+    properties['Date'] = v;
+    properties['Deadline'] = v;
+  }
+
+  if (input.priority) {
+    properties['Priority'] = input.priority;
+  }
+
+  return createNotionPage(userId, {
+    title,
+    content: input.description || '',
+    database: 'tasks',
+    properties,
+  }, context);
+}
+
+// ── notion_get_calendar_events ────────────────────────────────────────────────
+// Read pages from a Notion database with a date property, filtered to a window.
+// The merge-with-GCal job stays on the LLM — this tool just returns Notion-side
+// rows; calendar_get_availability returns the GCal-side rows.
+async function notionGetCalendarEvents(userId: string, input: any): Promise<ToolResult> {
+  const startIso = (input.startDate || '').trim();
+  const endIso = (input.endDate || '').trim();
+  if (!startIso || !endIso) return failureResult('startDate and endDate (ISO 8601) are required.', 'validation_error');
+  if (!Number.isFinite(Date.parse(startIso)) || !Number.isFinite(Date.parse(endIso))) {
+    return failureResult('startDate and endDate must be valid ISO 8601 timestamps.', 'validation_error');
+  }
+
+  const token = await getNotionToken(userId);
+  if (!token) return failureResult('Notion is not connected.', 'notion_not_connected');
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+
+  // 1) Resolve database id
+  let dbId = (input.databaseId || '').trim();
+  const dbHint = (input.database || 'calendar').trim();
+  if (!dbId) {
+    try {
+      const searchRes = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          query: dbHint,
+          filter: { value: 'database', property: 'object' },
+          page_size: 8,
+        }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (searchRes.ok) {
+        const data = await searchRes.json();
+        const results: any[] = data.results || [];
+        const hintLower = dbHint.toLowerCase();
+        const best = results.map((r: any) => {
+          const t = (r.title?.[0]?.plain_text ?? '').toLowerCase();
+          return { r, score: t === hintLower ? 2 : t.includes(hintLower) ? 1 : 0 };
+        }).sort((a: any, b: any) => b.score - a.score)[0]?.r;
+        if (best) dbId = best.id;
+      }
+    } catch { /* fallthrough */ }
+  }
+  if (!dbId) {
+    return failureResult(`Could not find a Notion database matching "${dbHint}". Pass databaseId explicitly or use a broader hint.`, 'notion_db_not_found');
+  }
+
+  // 2) Introspect schema to find the date property name
+  const schema = await fetchNotionDbSchema(headers, dbId);
+  if (!schema) return failureResult(`Found database "${dbHint}" but could not read its schema.`, 'notion_schema_unreadable');
+  const dateProp = schema.find(p => p.type === 'date');
+  if (!dateProp) {
+    return failureResult(
+      `Database "${dbHint}" has no date property — nothing to treat as a calendar event. Properties available: ${schema.map(p => `${p.name} (${p.type})`).join(', ')}.`,
+      'notion_schema_unreadable',
+    );
+  }
+  const titleProp = schema.find(p => p.type === 'title');
+
+  // 3) Query with a date filter (on_or_after start, on_or_before end)
+  const queryBody = JSON.stringify({
+    page_size: 50,
+    filter: {
+      and: [
+        { property: dateProp.name, date: { on_or_after: startIso } },
+        { property: dateProp.name, date: { on_or_before: endIso } },
+      ],
+    },
+    sorts: [{ property: dateProp.name, direction: 'ascending' }],
+  });
+  const qRes = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+    method: 'POST',
+    headers,
+    body: queryBody,
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!qRes.ok) {
+    const err = await qRes.text().catch(() => '');
+    return failureResult(`Notion query failed (${qRes.status}): ${err.slice(0, 200)}`, 'upstream_notion');
+  }
+  const qData = await qRes.json();
+  const rows: any[] = qData.results || [];
+  if (!rows.length) {
+    return { output: `No Notion calendar entries in "${dbHint}" between ${startIso} and ${endIso}.` };
+  }
+
+  // 4) Render
+  const peopleProp = schema.find(p => p.type === 'people');
+  const lines = rows.map((row: any, i: number) => {
+    const title = titleProp ? richTextToString(row.properties?.[titleProp.name]?.title || []) : '(no title)';
+    const dateVal = row.properties?.[dateProp.name]?.date;
+    const when = dateVal?.end ? `${dateVal.start} → ${dateVal.end}` : (dateVal?.start || '(no date)');
+    const att = peopleProp ? (row.properties?.[peopleProp.name]?.people || []).map((p: any) => p.name || p.id).join(', ') : '';
+    return `${i + 1}. ${title || '(untitled)'}\n   When: ${when}${att ? `\n   ${peopleProp!.name}: ${att}` : ''}\n   URL: ${row.url}`;
+  });
+
+  return {
+    output: `${rows.length} Notion entr${rows.length === 1 ? 'y' : 'ies'} in "${dbHint}" (date property: ${dateProp.name}):\n\n${lines.join('\n\n')}`,
   };
 }
 

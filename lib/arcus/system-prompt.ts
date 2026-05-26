@@ -39,7 +39,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] 
   },
   notion: {
     label: 'Notion',
-    tools: ['search_notion', 'fetch_notion_schema', 'create_notion_page'],
+    tools: ['search_notion', 'notion_read_page', 'fetch_notion_schema', 'create_notion_page', 'notion_create_task', 'notion_get_calendar_events'],
   },
   notion_calendar: {
     label: 'Notion Calendar',
