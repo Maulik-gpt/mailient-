@@ -800,8 +800,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-white/70 truncate font-medium">{file.name}</p>
-                      <p className="text-[9px] text-white/30 font-mono">{formatFileSize(file.size)}</p>
+                      <p className="text-[10px] text-black/70 dark:text-white/70 truncate font-medium">{file.name}</p>
+                      <p className="text-[9px] text-black/50 dark:text-white/30 font-mono">{formatFileSize(file.size)}</p>
                     </div>
                     <button
                       onClick={(e) => {
@@ -959,10 +959,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
             <PromptInputAction tooltip="Change the Model">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <button className="bg-arcus-surface hover:bg-arcus-surface-hover border border-arcus-border px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none">
+                  <button className="bg-white dark:bg-arcus-surface hover:bg-black/5 dark:hover:bg-arcus-surface-hover border border-black/10 dark:border-arcus-border px-4 py-1.5 rounded-full h-8 min-w-[70px] flex items-center justify-center transition-all duration-300 outline-none shadow-sm dark:shadow-none">
                     <div className="flex items-center gap-1.5">
-                      {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5" })}
-                      <span className="text-[13px] font-semibold text-arcus-fg">
+                      {activeModelId !== 'auto' && React.createElement(AI_MODELS.find(m => m.id === activeModelId)?.icon || AutoLogo, { className: "w-3.5 h-3.5 text-black dark:text-white" })}
+                      <span className="text-[13px] font-semibold text-black dark:text-arcus-fg">
                         {activeModelId === 'auto' ? 'Auto' : AI_MODELS.find(m => m.id === activeModelId)?.name}
                       </span>
                     </div>
@@ -1039,7 +1039,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   isRecording
                     ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
                     : isLoading
-                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black"
+                      ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
                       : hasContent
                         ? "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/80 text-white dark:text-black shadow-lg"
                         : "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
@@ -1054,11 +1054,11 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 disabled={isLoading && !onStop}
               >
                 {isLoading ? (
-                  <Square className="h-4 w-4 fill-white" />
+                  <Square className="h-4 w-4 fill-white dark:fill-black text-white dark:text-black" />
                 ) : isRecording ? (
                   <StopCircle className="h-5 w-5 text-red-500" />
                 ) : hasContent ? (
-                  <ArrowUp className="h-4 w-4 text-black" />
+                  <ArrowUp className="h-4 w-4 text-white dark:text-black stroke-[3px]" />
                 ) : (
                   <Mic className="h-5 w-5 text-[#9CA3AF] transition-colors" />
                 )}

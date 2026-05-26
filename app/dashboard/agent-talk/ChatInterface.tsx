@@ -681,7 +681,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
             animate={{ scale: 1, opacity: 1 }}
             className="w-4 h-4 rounded-full bg-arcus-elevated border border-arcus-border flex items-center justify-center flex-shrink-0"
           >
-            <div className="w-1 h-1 rounded-full bg-white/25" />
+            <div className="w-1 h-1 rounded-full bg-black/40 dark:bg-white/25" />
           </motion.div>
         )}
 
@@ -693,7 +693,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.25 }}
-              className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none whitespace-nowrap shrink-0"
+              className="text-[12px] font-semibold bg-[linear-gradient(110deg,#000,30%,#888,50%,#000,70%,#000)] dark:bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none whitespace-nowrap shrink-0"
               style={{ backgroundSize: '250% 100%', animation: 'shimmer-text 3s linear infinite' }}
             >
               {THINKING_LABELS[labelIdx]}
@@ -703,14 +703,14 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
           <motion.span
             initial={{ opacity: 0, x: -4 }}
             animate={{ opacity: 1, x: 0 }}
-            className="text-[11px] font-medium text-white/20 tracking-widest select-none uppercase whitespace-nowrap shrink-0"
+            className="text-[11px] font-medium text-black/40 dark:text-white/20 tracking-widest select-none uppercase whitespace-nowrap shrink-0"
           >
             Thought
           </motion.span>
         )}
 
         {!isComplete && (
-          <span className="text-[11px] font-mono text-white/25 tabular-nums shrink-0">{timer}s</span>
+          <span className="text-[11px] font-mono text-black/50 dark:text-white/25 tabular-nums shrink-0">{timer}s</span>
         )}
       </div>
 
@@ -1118,7 +1118,7 @@ const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
   return (
     <button
       onClick={handleCopy}
-      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-arcus-elevated border border-arcus-border text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-surface opacity-0 group-hover/msg:opacity-100 transition-all shadow-lg backdrop-blur-md"
+      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-arcus-elevated border border-black/5 dark:border-arcus-border text-black/40 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-arcus-fg hover:bg-black/5 dark:hover:bg-arcus-surface opacity-0 group-hover/msg:opacity-100 transition-all shadow-sm dark:shadow-lg backdrop-blur-md"
       title="Copy message"
     >
       <AnimatePresence mode="wait">
@@ -1201,7 +1201,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
           <TooltipTrigger asChild>
             <button
               onClick={handleCopy}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white relative"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white relative"
             >
               <AnimatePresence mode="wait">
                 {isCopied ? (
@@ -1216,10 +1216,10 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </AnimatePresence>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-white dark:bg-arcus-surface-hover border-black/10 dark:border-arcus-border text-black dark:text-white rounded-xl px-3 py-2 shadow-2xl">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold">Copy text</span>
-              <span className="text-white/20 text-[10px] font-mono">⌘C</span>
+              <span className="text-black/20 dark:text-white/20 text-[10px] font-mono">⌘C</span>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -1231,7 +1231,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               onClick={handleShare}
               className={cn(
                 "w-8 h-8 flex items-center justify-center rounded-full transition-all relative",
-                isShared ? "bg-white/10 text-white" : "hover:bg-white/10 text-white/40 hover:text-white"
+                isShared ? "bg-black/10 dark:bg-white/10 text-black dark:text-white" : "hover:bg-black/5 dark:hover:bg-white/10 text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
               )}
             >
               <AnimatePresence mode="wait">
@@ -1247,10 +1247,10 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </AnimatePresence>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-white dark:bg-arcus-surface-hover border-black/10 dark:border-arcus-border text-black dark:text-white rounded-xl px-3 py-2 shadow-2xl">
             <div className="flex items-center gap-2">
               <span className="text-[11px] font-bold">Share link</span>
-              <span className="text-white/20 text-[10px] font-mono">⌘L</span>
+              <span className="text-black/20 dark:text-white/20 text-[10px] font-mono">⌘L</span>
             </div>
           </TooltipContent>
         </Tooltip>
@@ -1260,7 +1260,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
           <TooltipTrigger asChild>
             <button
               onClick={handleLike}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
             >
               <motion.div
                 animate={isLiked ? { scale: [1, 1.3, 1], color: '#4ade80' } : {}}
@@ -1270,7 +1270,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-white dark:bg-arcus-surface-hover border-black/10 dark:border-arcus-border text-black dark:text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Helpful</span>
           </TooltipContent>
         </Tooltip>
@@ -1280,7 +1280,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
           <TooltipTrigger asChild>
             <button
               onClick={handleDislike}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
             >
               <motion.div
                 animate={isDisliked ? { scale: [1, 1.3, 1], color: '#f87171' } : {}}
@@ -1290,7 +1290,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-white dark:bg-arcus-surface-hover border-black/10 dark:border-arcus-border text-black dark:text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Not helpful</span>
           </TooltipContent>
         </Tooltip>
@@ -1300,7 +1300,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
           <TooltipTrigger asChild>
             <button
               onClick={() => onRegenerate(msg.id as number)}
-              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-all text-white/40 hover:text-white"
+              className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-black/5 dark:hover:bg-white/10 transition-all text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white"
             >
               <motion.div
                 animate={isRegenerating ? { rotate: 360 } : {}}
@@ -1310,7 +1310,7 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
               </motion.div>
             </button>
           </TooltipTrigger>
-          <TooltipContent className="bg-arcus-surface-hover border-arcus-border text-white rounded-xl px-3 py-2 shadow-2xl">
+          <TooltipContent className="bg-white dark:bg-arcus-surface-hover border-black/10 dark:border-arcus-border text-black dark:text-white rounded-xl px-3 py-2 shadow-2xl">
             <span className="text-[11px] font-bold">Regenerate</span>
           </TooltipContent>
         </Tooltip>
@@ -4263,7 +4263,7 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-white/[0.07] backdrop-blur-xl border border-white/[0.1] text-white shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]' : 'text-white px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-black/[0.03] dark:bg-white/[0.07] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.1] text-black dark:text-white shadow-none dark:shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]' : 'text-black dark:text-white px-0 py-1'}`}>
                                     {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
                                       <motion.div 
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
@@ -4362,8 +4362,8 @@ export default function ChatInterface({
                                               </div>
                                             )}
                                             <div className="flex flex-col overflow-hidden">
-                                              <span className="text-[11px] font-medium truncate">{file.name}</span>
-                                              <span className="text-[9px] opacity-40">{(file.size / 1024).toFixed(0)} KB</span>
+                                              <span className="text-[11px] text-black dark:text-white font-medium truncate">{file.name}</span>
+                                              <span className="text-[9px] text-black/40 dark:text-white/40">{(file.size / 1024).toFixed(0)} KB</span>
                                             </div>
                                           </div>
                                         ))}

@@ -275,7 +275,7 @@ function inlineFormat(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/<(?![a-zA-Z/])/g, '&lt;')
     // Inline code
-    .replace(/`([^`]+)`/g, '<code style="background:#333333;padding:2px 5px;border-radius:4px;font-family:monospace;font-size:0.9em;color:#e0e0e0">$1</code>')
+    .replace(/`([^`]+)`/g, '<code style="background:#f0f0f0;padding:2px 5px;border-radius:4px;font-family:monospace;font-size:0.9em;color:#e83e8c">$1</code>')
     // Bold + italic
     .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
@@ -283,7 +283,7 @@ function inlineFormat(text: string): string {
     .replace(/__(.+?)__/g, '<strong>$1</strong>')
     .replace(/_(.+?)_/g, '<em>$1</em>')
     // Links
-    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#ffffff;text-decoration:underline">$1</a>');
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:#0066cc;text-decoration:underline">$1</a>');
 }
 
 function markdownToHtml(markdown: string): string {
@@ -311,12 +311,12 @@ function markdownToHtml(markdown: string): string {
       closeList(); closeTable();
       const n = hm[1].length;
       const headingStyles: Record<number, string> = {
-        1: 'font-size:26px;font-weight:800;color:#111827;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #e5e7eb;letter-spacing:-0.5px',
-        2: 'font-size:20px;font-weight:700;color:#1f2937;margin:28px 0 10px',
-        3: 'font-size:17px;font-weight:700;color:#e0e0e0;margin:20px 0 8px',
-        4: 'font-size:15px;font-weight:600;color:#4b5563;margin:16px 0 6px',
-        5: 'font-size:13px;font-weight:600;color:#6b7280;margin:12px 0 4px;text-transform:uppercase;letter-spacing:0.5px',
-        6: 'font-size:12px;font-weight:600;color:#9ca3af;margin:8px 0 4px;text-transform:uppercase;letter-spacing:1px',
+        1: 'font-size:26px;font-weight:800;color:#111;margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid #eee;letter-spacing:-0.5px',
+        2: 'font-size:20px;font-weight:700;color:#222;margin:28px 0 10px',
+        3: 'font-size:17px;font-weight:700;color:#333;margin:20px 0 8px',
+        4: 'font-size:15px;font-weight:600;color:#444;margin:16px 0 6px',
+        5: 'font-size:13px;font-weight:600;color:#666;margin:12px 0 4px;text-transform:uppercase;letter-spacing:0.5px',
+        6: 'font-size:12px;font-weight:600;color:#888;margin:8px 0 4px;text-transform:uppercase;letter-spacing:1px',
       };
       out.push(`<h${n} style="${headingStyles[n]}">${inlineFormat(hm[2])}</h${n}>`);
       continue;
@@ -325,7 +325,7 @@ function markdownToHtml(markdown: string): string {
     // ── Horizontal rule ───────────────────────────────────────────────────────
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(line.trim())) {
       closeList(); closeTable();
-      out.push('<hr style="border:none;border-top:1px solid #333333;margin:20px 0">');
+      out.push('<hr style="border:none;border-top:1px solid #eee;margin:20px 0">');
       continue;
     }
 
@@ -350,17 +350,17 @@ function markdownToHtml(markdown: string): string {
       if (tableHeader) {
         out.push('<tr>');
         cells.forEach(c => {
-          out.push(`<th style="background:#f9fafb;border:1px solid #e5e7eb;padding:10px 14px;text-align:left;font-weight:700;color:#e0e0e0">${inlineFormat(c.trim())}</th>`);
+          out.push(`<th style="background:#fcfcfc;border:1px solid #eee;padding:10px 14px;text-align:left;font-weight:700;color:#333">${inlineFormat(c.trim())}</th>`);
         });
         out.push('</tr></thead><tbody>');
         tableHeader = false;
       } else {
         // Zebra stripe
         const rowIdx = out.filter(l => l.startsWith('<tr') && !l.includes('</tr')).length;
-        const bg = rowIdx % 2 === 0 ? '#191919' : '#222222';
+        const bg = rowIdx % 2 === 0 ? '#ffffff' : '#fafafa';
         out.push(`<tr style="background:${bg}">`);
         cells.forEach(c => {
-          out.push(`<td style="border:1px solid #e5e7eb;padding:9px 14px;color:#e0e0e0">${inlineFormat(c.trim())}</td>`);
+          out.push(`<td style="border:1px solid #eee;padding:9px 14px;color:#444">${inlineFormat(c.trim())}</td>`);
         });
         out.push('</tr>');
       }
@@ -374,7 +374,7 @@ function markdownToHtml(markdown: string): string {
     if (ulm) {
       closeTable();
       if (!inUl) { out.push('<ul style="margin:8px 0 8px 0;padding-left:24px">'); inUl = true; }
-      out.push(`<li style="margin:5px 0;color:#e0e0e0;line-height:1.6">${inlineFormat(ulm[2])}</li>`);
+      out.push(`<li style="margin:5px 0;color:#444;line-height:1.6">${inlineFormat(ulm[2])}</li>`);
       continue;
     }
 
@@ -383,7 +383,7 @@ function markdownToHtml(markdown: string): string {
     if (olm) {
       closeTable();
       if (!inOl) { out.push('<ol style="margin:8px 0 8px 0;padding-left:24px">'); inOl = true; }
-      out.push(`<li style="margin:5px 0;color:#e0e0e0;line-height:1.6">${inlineFormat(olm[1])}</li>`);
+      out.push(`<li style="margin:5px 0;color:#444;line-height:1.6">${inlineFormat(olm[1])}</li>`);
       continue;
     }
 
@@ -391,7 +391,7 @@ function markdownToHtml(markdown: string): string {
     const bqm = line.match(/^>\s*(.+)/);
     if (bqm) {
       closeList(); closeTable();
-      out.push(`<blockquote style="border-left:4px solid #888888;background:#252525;margin:12px 0;padding:10px 16px;border-radius:0 8px 8px 0;color:#aaaaaa;font-style:italic">${inlineFormat(bqm[1])}</blockquote>`);
+      out.push(`<blockquote style="border-left:4px solid #ccc;background:#f9f9f9;margin:12px 0;padding:10px 16px;border-radius:0 8px 8px 0;color:#555;font-style:italic">${inlineFormat(bqm[1])}</blockquote>`);
       continue;
     }
 
@@ -404,7 +404,7 @@ function markdownToHtml(markdown: string): string {
 
     // ── Paragraph ─────────────────────────────────────────────────────────────
     closeList(); closeTable();
-    out.push(`<p style="margin:6px 0;color:#e0e0e0;line-height:1.7;font-size:15px">${inlineFormat(line)}</p>`);
+    out.push(`<p style="margin:6px 0;color:#444;line-height:1.7;font-size:15px">${inlineFormat(line)}</p>`);
   }
 
   closeList();
@@ -418,6 +418,7 @@ function markdownToHtml(markdown: string): string {
 
 function buildReportHtml(agentName: string, date: string, report: string): string {
   const body = markdownToHtml(report);
+  const trackingId = Math.random().toString(36).substring(7).toUpperCase();
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -426,58 +427,48 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${agentName} — Arcus Report</title>
 </head>
-<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0A0A0A;padding:40px 16px">
-    <tr>
-      <td align="center">
-        <table width="640" cellpadding="0" cellspacing="0" style="max-width:640px;width:100%;background:#191919;border:1px solid #292929;border-radius:16px;overflow:hidden">
-          
-          <!-- Header -->
-          <tr>
-            <td style="padding:40px 48px 32px;border-bottom:1px solid #292929">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <div style="font-size:24px;font-weight:700;color:#ffffff;letter-spacing:-0.5px">Arcus Report</div>
-                    <div style="color:#888888;font-size:14px;margin-top:6px">${date}</div>
+<body style="margin:0;padding:40px 16px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif">
+  <div style="font-family: 'Satoshi', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #111; background: #fff; border-radius: 24px; border: 1px solid #f0f0f0; box-shadow: 0 4px 24px rgba(0,0,0,0.02);">
+      <div style="text-align: center; margin-bottom: 30px;">
+          <img src="https://mailient.xyz/mailient-logo-premium.png" alt="Mailient Logo" style="width: 48px; height: 48px; border-radius: 12px; border: 1px solid #f0f0f0;" />
+      </div>
+      
+      <h2 style="font-size: 22px; font-weight: 800; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; letter-spacing: -0.03em; text-align: center; color: #000;">
+          Arcus AI Report
+      </h2>
+      
+      <div style="margin-bottom: 25px; background: #fcfcfc; padding: 20px; border-radius: 16px; border: 1px solid #f5f5f5;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+              <tr>
+                  <td style="padding: 6px 0; color: #666; font-weight: 500; width: 120px;">Agent:</td>
+                  <td style="padding: 6px 0; color: #000; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;">
+                      ${agentName}
                   </td>
-                  <td align="right" valign="top">
-                    <div style="display:inline-block;padding:6px 12px;background:#222222;border:1px solid #333333;border-radius:6px;color:#cccccc;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px">
-                      Agent: ${agentName}
-                    </div>
+              </tr>
+              <tr>
+                  <td style="padding: 6px 0; color: #666; font-weight: 500;">Date:</td>
+                  <td style="padding: 6px 0; color: #000; font-weight: 700;">
+                      ${date}
                   </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+              </tr>
+          </table>
+      </div>
 
-          <!-- Report body -->
-          <tr>
-            <td style="padding:32px 48px 40px;color:#d1d5db;font-size:15px;line-height:1.7">
-              ${body}
-            </td>
-          </tr>
+      <div style="margin-bottom: 25px; font-size: 14px; line-height: 1.6; color: #333;">
+          ${body}
+      </div>
 
-          <!-- Footer -->
-          <tr>
-            <td style="background:#111111;border-top:1px solid #292929;padding:24px 48px">
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td>
-                    <div style="color:#666666;font-size:12px;line-height:1.6">
-                      Sent by <strong style="color:#aaaaaa">Arcus</strong> for <a href="https://mailient.xyz" style="color:#aaaaaa;text-decoration:none">Mailient</a>
-                      <br>Generated ${new Date().toLocaleString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}
-                    </div>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
+      <div style="text-align: center; margin-top: 35px;">
+          <a href="https://mailient.xyz/dashboard" 
+             style="background: #000; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; font-size: 13px; display: inline-block;">
+              View Dashboard
+          </a>
+      </div>
 
-        </table>
-      </td>
-    </tr>
-  </table>
+      <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top: 40px; font-size: 10px; color: #aaa; text-align: center; font-family: monospace; letter-spacing: 0.05em;">
+          ARCUS AUTONOMOUS REPORT // AGENT: ${agentName.toUpperCase()} // ID: ${trackingId} // SECURE
+      </div>
+  </div>
 </body>
 </html>`;
 }
