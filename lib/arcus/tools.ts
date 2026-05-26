@@ -220,8 +220,26 @@ const CALENDAR_SCOPE_MESSAGE =
   'Google Calendar access needs to be re-authorized. The current Google connection only has email permissions, not calendar permissions. ' +
   'Tell the user: "I need calendar access to do that. Click the connectors button in the prompt box, choose Google Calendar, and complete the Google sign-in — then ask me again."';
 
+// Gmail returns 403 when the OAuth token does not carry one of the Gmail
+// scopes the call requires (e.g. gmail.readonly, gmail.modify, gmail.send).
+// Most often this hits users who connected Google Sign-In before Arcus added
+// Gmail-specific permissions. The fix is a Gmail reconnect from the connectors
+// modal, which re-runs the OAuth consent screen with the missing scopes.
+const GMAIL_SCOPE_MESSAGE =
+  'Gmail access needs to be re-authorized. The current Google token is missing the required Gmail permissions. ' +
+  'Tell the user: "I need Gmail access to do that. Click the connectors button in the prompt box, choose Gmail, and complete the Google sign-in — then ask me again."';
+
 function isScopeError(status: number): boolean {
   return status === 403 || status === 401;
+}
+
+// Pick the right failure for a non-ok Gmail response. 403 is always a scope
+// problem from Google's side; 404 is a missing message/thread; everything
+// else is bucketed as upstream_gmail with the raw status surfaced.
+function gmailHttpFailure(status: number, contextLabel: string): ToolResult {
+  if (status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+  if (status === 404) return failureResult(`${contextLabel} (404 not found).`, 'not_found');
+  return failureResult(`${contextLabel} (${status}).`, 'upstream_gmail');
 }
 
 async function getNotionToken(userId: string): Promise<string | null> {
@@ -1352,7 +1370,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!listRes.ok) return failureResult(`Gmail search failed (${listRes.status}).`, 'upstream_gmail');
+  if (!listRes.ok) return gmailHttpFailure(listRes.status, 'Gmail search failed');
 
   const listData = await listRes.json();
   const messages: any[] = listData.messages || [];
@@ -1394,7 +1412,7 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!res.ok) return failureResult(`Could not read email (${res.status}).`, res.status === 404 ? 'not_found' : 'upstream_gmail');
+  if (!res.ok) return gmailHttpFailure(res.status, 'Could not read email');
 
   const m = await res.json();
   const h = m.payload?.headers || [];
@@ -1437,7 +1455,7 @@ async function gmailReadThread(userId: string, input: any): Promise<ToolResult> 
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) }); }
   }
   if (!res.ok) {
-    return failureResult(`Could not read thread (${res.status}).`, res.status === 404 ? 'not_found' : 'upstream_gmail');
+    return gmailHttpFailure(res.status, 'Could not read thread');
   }
 
   const thread = await res.json();
@@ -1501,7 +1519,7 @@ async function gmailGetLabels(userId: string): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }
-  if (!res.ok) return failureResult(`Could not list labels (${res.status}).`, 'upstream_gmail');
+  if (!res.ok) return gmailHttpFailure(res.status, 'Could not list labels');
 
   const data = await res.json();
   const labels: any[] = data.labels || [];
@@ -1545,6 +1563,7 @@ async function gmailApplyLabel(userId: string, input: any): Promise<ToolResult> 
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
+    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
     return failureResult(`Apply label failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
   }
   return { output: `Applied ${labelIds.length} label(s) to thread ${threadId}.` };
@@ -1582,6 +1601,7 @@ async function gmailArchiveThread(userId: string, input: any): Promise<ToolResul
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
+    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
     return failureResult(`Archive failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
   }
   return { output: `Archived thread ${threadId}.` };
@@ -1598,7 +1618,7 @@ async function gmailGetProfile(userId: string): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }); }
   }
-  if (!res.ok) return failureResult(`Could not read profile (${res.status}).`, 'upstream_gmail');
+  if (!res.ok) return gmailHttpFailure(res.status, 'Could not read profile');
 
   const p = await res.json();
   return {
@@ -1622,7 +1642,7 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!listRes.ok) return failureResult(`Could not fetch sent emails (${listRes.status}).`, 'upstream_gmail');
+  if (!listRes.ok) return gmailHttpFailure(listRes.status, 'Could not fetch sent emails');
 
   const listData = await listRes.json();
   const messages: any[] = (listData.messages || []).slice(0, limit);
@@ -2000,6 +2020,7 @@ async function draftReply(userId: string, input: any): Promise<ToolResult> {
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
+    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
     return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
   }
 
@@ -2100,6 +2121,7 @@ async function draftColdEmail(userId: string, input: any): Promise<ToolResult> {
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
+    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
     return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
   }
 
@@ -2201,6 +2223,7 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
+    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
     return failureResult(`Failed to send email (${res.status}): ${err.slice(0, 200)}`, 'send_failed');
   }
 
@@ -3372,7 +3395,7 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!sentRes.ok) return failureResult(`Could not check sent mail (${sentRes.status}).`, 'upstream_gmail');
+  if (!sentRes.ok) return gmailHttpFailure(sentRes.status, 'Could not check sent mail');
 
   const sentData = await sentRes.json();
   const sentMessages: any[] = sentData.messages || [];
