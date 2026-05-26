@@ -4901,11 +4901,11 @@ export default function ChatInterface({
                       className="absolute bottom-0 left-0 right-0 z-50 bg-arcus-bg"
                       style={{ backgroundColor: 'var(--arcus-bg)' }}
                     >
-                      {/* Dynamic, theme-aware shadow gradient to hide content seamlessly as it scrolls under the prompt box */}
+                      {/* Premium, theme-aware seamless fade gradient to make scrolled content merge beautifully into the page background */}
                       <div
-                        className="absolute bottom-full left-0 right-0 h-4 pointer-events-none"
+                        className="absolute bottom-full left-0 right-0 h-10 pointer-events-none"
                         style={{
-                          background: `linear-gradient(to top, ${isDark ? 'rgba(13, 13, 13, 0.5)' : 'rgba(235, 235, 235, 0.5)'} 0%, transparent 100%)`
+                          background: `linear-gradient(to top, var(--arcus-bg) 0%, transparent 100%)`
                         }}
                       />
 
