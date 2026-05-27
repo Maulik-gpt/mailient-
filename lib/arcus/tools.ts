@@ -1242,6 +1242,133 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       },
     },
   },
+  // ── PART 6 — Content generation tools ─────────────────────────────────────
+  {
+    name: 'generate_email_sequence',
+    description:
+      'Generate a multi-email follow-up sequence for one goal. Returns JSON array of { dayOffset, subject, body } emails. Pair with gmail_batch_send_emails for staggered dispatch (scheduled-send infra is not yet present, so user reviews drafts day-of). ' +
+      'Output: JSON. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        goal: { type: 'string', description: 'What the sequence should achieve (e.g. "warm a stalled deal", "nurture a cold lead").' },
+        recipientContext: { type: 'string', description: 'Background on the recipient (industry, prior context).' },
+        dayOffsets: { type: 'array', items: { type: 'number' }, description: 'Days from start for each step (default [1, 3, 7, 10, 14]).' },
+      },
+      required: ['goal'],
+    },
+  },
+  {
+    name: 'generate_proposal_documents',
+    description:
+      'Generate a professional proposal in markdown — executive summary, scope, deliverables, timeline, pricing, terms, next steps. Renders to canvas via canvasData. ' +
+      'Output: canvas + status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        clientName: { type: 'string' },
+        requirements: { type: 'string', description: 'What the client asked for.' },
+        pricing: { type: 'string', description: 'Pricing details (omit to mark TBD).' },
+        timeline: { type: 'string', description: 'Timeline (omit to mark TBD).' },
+      },
+      required: ['clientName', 'requirements'],
+    },
+  },
+  {
+    name: 'generate_client_reports',
+    description:
+      'Generate a monthly client report by aggregating recent emails + memory context for this client, then composing a structured markdown report (summary / activity / progress / next month / recommendations). ' +
+      'Output: canvas + status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        clientName: { type: 'string' },
+        clientEmail: { type: 'string', description: 'Optional — pulls recent emails to/from this address for activity metrics.' },
+        monthLabel: { type: 'string', description: 'Defaults to current month.' },
+      },
+      required: ['clientName'],
+    },
+  },
+  {
+    name: 'generate_sow_documents',
+    description:
+      'Generate a Statement of Work in markdown by extracting deliverables/timeline/pricing from either sourceContent (a string) or threadIds (will be read via gmail_bulk_read_threads). Saves to canvas. ' +
+      'Output: canvas + status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        projectName: { type: 'string' },
+        sourceContent: { type: 'string', description: 'Negotiation transcript / requirements text.' },
+        threadIds: { type: 'array', items: { type: 'string' }, description: 'Up to 5 Gmail threads to extract from.' },
+      },
+      required: ['projectName'],
+    },
+  },
+  {
+    name: 'generate_internal_documentation',
+    description:
+      'Generate a how-to / runbook for an internal wiki. Composes a structured markdown doc and saves to Notion (internal_docs database). ' +
+      'Output: notion page URL/status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        topic: { type: 'string' },
+        sourceContent: { type: 'string', description: 'Notes / transcript / examples to base the runbook on.' },
+      },
+      required: ['topic', 'sourceContent'],
+    },
+  },
+  // ── PART 5 — Memory tools ─────────────────────────────────────────────────
+  {
+    name: 'memory_unlimited_scan',
+    description:
+      'Run multiple memory_search queries in parallel and return the union as { query: [items] }. Useful for "find everything about Client X" across multiple aliases. ' +
+      'Output: JSON map of query → memory items. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        queries: { type: 'array', items: { type: 'string' }, description: 'Up to 20 search queries.' },
+        perQueryLimit: { type: 'number', description: 'Max items per query (1-20, default 10).' },
+      },
+      required: ['queries'],
+    },
+  },
+  {
+    name: 'memory_bulk_save_learning',
+    description:
+      'Save up to 100 memory entries in parallel. Each item: { content, tags? }. Use after a batch of email extraction so all 100 new facts land in one call. ' +
+      'Output: count saved. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              content: { type: 'string' },
+              tags: { type: 'array', items: { type: 'string' } },
+            },
+            required: ['content'],
+          },
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'memory_relationship_intelligence',
+    description:
+      'Build a relationship profile for one contact: persisted contact row + memory items + email-exchange metrics (sent/received counts, replyRatio) + risk flags (ghosted, lopsided). Tags the relationship as cold/warm/hot. ' +
+      'Output: JSON. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        contactEmail: { type: 'string' },
+      },
+      required: ['contactEmail'],
+    },
+  },
   // ── PART 4 — Slack tools ──────────────────────────────────────────────────
   {
     name: 'slack_post_daily_briefing',
@@ -1885,6 +2012,14 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   slack_deal_update_notifications: 'slack',
   slack_task_assignment_notifications: 'slack',
   slack_approval_request_routing: 'slack',
+  memory_unlimited_scan: null,
+  memory_bulk_save_learning: null,
+  memory_relationship_intelligence: 'gmail',
+  generate_email_sequence: null,
+  generate_proposal_documents: null,
+  generate_client_reports: null,
+  generate_sow_documents: null,
+  generate_internal_documentation: 'notion',
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -2161,6 +2296,16 @@ export async function executeTool(
       case 'slack_deal_update_notifications':     result = await slackDealUpdateNotifications(userId, input, context); break;
       case 'slack_task_assignment_notifications': result = await slackTaskAssignmentNotifications(userId, input, context); break;
       case 'slack_approval_request_routing':      result = await slackApprovalRequestRouting(userId, input, context); break;
+      // PART 5 — Memory
+      case 'memory_unlimited_scan':               result = await memoryUnlimitedScan(userId, input); break;
+      case 'memory_bulk_save_learning':           result = await memoryBulkSaveLearning(userId, input); break;
+      case 'memory_relationship_intelligence':    result = await memoryRelationshipIntelligence(userId, input); break;
+      // PART 6 — Content
+      case 'generate_email_sequence':             result = await generateEmailSequence(userId, input); break;
+      case 'generate_proposal_documents':         result = await generateProposalDocuments(userId, input, context); break;
+      case 'generate_client_reports':             result = await generateClientReports(userId, input, context); break;
+      case 'generate_sow_documents':              result = await generateSowDocuments(userId, input); break;
+      case 'generate_internal_documentation':     result = await generateInternalDocumentation(userId, input, context); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -8085,6 +8230,301 @@ async function notionGenerateWeeklySummaries(userId: string, input: any, context
     content,
   }, context);
   return { output: created.output };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 6 — Content generation tools
+// ════════════════════════════════════════════════════════════════════════════
+
+const EMAIL_SEQUENCE_PROMPT = `Generate an email follow-up sequence in the user's voice. Each email is concise (3-6 sentences), personalized, and builds on the previous step.
+Output ONLY JSON: { "emails": [ { "dayOffset": <number>, "subject": "<subject>", "body": "<plain text body>" }, ... ] }
+No markdown, no preface.`;
+
+async function generateEmailSequence(userId: string, input: any): Promise<ToolResult> {
+  const recipientContext = (input?.recipientContext || '').trim();
+  const goal = (input?.goal || '').trim();
+  const dayOffsets: number[] = Array.isArray(input?.dayOffsets) ? input.dayOffsets : [1, 3, 7, 10, 14];
+  if (!goal) return failureResult('goal is required (what the sequence should achieve).', 'validation_error');
+
+  const userInput = [
+    `Goal: ${goal}`,
+    recipientContext ? `Recipient context: ${recipientContext}` : '',
+    `Send schedule (days from start): ${dayOffsets.join(', ')}`,
+    'Generate one email per day offset.',
+  ].filter(Boolean).join('\n');
+
+  const r = await callLLM(
+    [{ role: 'system', content: EMAIL_SEQUENCE_PROMPT }, { role: 'user', content: userInput }],
+    [], { maxTokens: 2500, temperature: 0.4 },
+  );
+  const raw = getText(r.content).trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return failureResult('Could not extract sequence JSON.', 'internal_error');
+  try {
+    const parsed = JSON.parse(m[0]);
+    return { output: JSON.stringify(parsed, null, 2) };
+  } catch (e: any) {
+    return failureResult(`Sequence JSON parse failed: ${e.message}`, 'internal_error');
+  }
+}
+
+const PROPOSAL_PROMPT = `Generate a professional proposal in markdown. Structure:
+# <Proposal title>
+## Executive summary
+## Scope of work
+## Deliverables
+## Timeline
+## Pricing
+## Terms
+## Next steps
+
+Be specific. No bracketed placeholders. If pricing details aren't provided, mark "TBD" explicitly rather than inventing numbers.`;
+
+async function generateProposalDocuments(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const clientName = (input?.clientName || '').trim();
+  const requirements = (input?.requirements || '').trim();
+  const pricing = (input?.pricing || '').trim();
+  const timeline = (input?.timeline || '').trim();
+  if (!clientName) return failureResult('clientName is required.', 'validation_error');
+  if (!requirements) return failureResult('requirements is required.', 'validation_error');
+
+  const userInput = [
+    `Client: ${clientName}`,
+    `Requirements:\n${requirements}`,
+    pricing ? `Pricing:\n${pricing}` : 'Pricing: (mark as TBD)',
+    timeline ? `Timeline:\n${timeline}` : 'Timeline: (mark as TBD)',
+  ].join('\n\n');
+
+  const r = await callLLM(
+    [{ role: 'system', content: PROPOSAL_PROMPT }, { role: 'user', content: userInput }],
+    [], { maxTokens: 3000, temperature: 0.3 },
+  );
+  const markdown = getText(r.content).trim();
+
+  return {
+    output: `Proposal generated for ${clientName}. Length: ${markdown.length} chars. Use open_canvas to display, or save to Notion via create_notion_page.`,
+    canvasData: {
+      title: `Proposal — ${clientName}`,
+      type: 'report',
+      markdown,
+    },
+  };
+}
+
+const CLIENT_REPORT_PROMPT = `Generate a client-specific monthly report in markdown. Structure:
+# <Client name> — <Month Year> report
+## Summary (one paragraph)
+## Activity
+- emails exchanged
+- meetings held
+- deliverables shipped
+## Progress on goals
+## Next month's plan
+## Recommendations
+
+Be specific. Pull metrics from the data provided. Do not invent numbers.`;
+
+async function generateClientReports(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const clientName = (input?.clientName || '').trim();
+  const monthLabel = (input?.monthLabel || new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })).trim();
+  const clientEmail = (input?.clientEmail || '').trim();
+  if (!clientName) return failureResult('clientName is required.', 'validation_error');
+
+  // Aggregate client-specific data
+  const sections: string[] = [];
+  if (clientEmail) {
+    try {
+      const recent = await searchGmail(userId, { query: `(from:${clientEmail} OR to:${clientEmail}) newer_than:30d`, maxResults: 15 });
+      if (recent.success !== false) sections.push(`### Recent emails (30 days):\n${recent.output.slice(0, 2500)}`);
+    } catch { /* skip */ }
+  }
+  try {
+    const { searchMemoriesRaw } = await import('./memory');
+    const items = await searchMemoriesRaw(userId, clientName, 10);
+    if (items.length) sections.push(`### Memory context:\n${items.map(i => `- ${i.text}`).join('\n')}`);
+  } catch { /* skip */ }
+
+  const userInput = [
+    `Client: ${clientName}`,
+    `Period: ${monthLabel}`,
+    '',
+    ...sections,
+  ].join('\n');
+
+  const r = await callLLM(
+    [{ role: 'system', content: CLIENT_REPORT_PROMPT }, { role: 'user', content: userInput }],
+    [], { maxTokens: 2500, temperature: 0.3 },
+  );
+  const markdown = getText(r.content).trim();
+
+  return {
+    output: `Client report generated for ${clientName} — ${monthLabel}.`,
+    canvasData: {
+      title: `${clientName} — ${monthLabel} report`,
+      type: 'report',
+      markdown,
+    },
+  };
+}
+
+const SOW_PROMPT = `Generate a Statement of Work in markdown. Structure:
+# Statement of Work — <project>
+## 1. Project overview
+## 2. Scope of work (bullet list of deliverables)
+## 3. Timeline & milestones
+## 4. Pricing & payment terms
+## 5. Acceptance criteria
+## 6. Out of scope
+## 7. Terms
+
+Be specific. Extract dates, dollar amounts, and deliverables from the source content. No placeholders.`;
+
+async function generateSowDocuments(userId: string, input: any): Promise<ToolResult> {
+  const projectName = (input?.projectName || '').trim();
+  const sourceContent = (input?.sourceContent || '').trim();
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds : [];
+  if (!projectName) return failureResult('projectName is required.', 'validation_error');
+
+  let combinedSource = sourceContent;
+  if (!combinedSource && threadIds.length) {
+    const bulk = await gmailBulkReadThreads(userId, { threadIds: threadIds.slice(0, 5) });
+    if (bulk.success !== false) combinedSource = bulk.output;
+  }
+  if (!combinedSource) return failureResult('Either sourceContent or threadIds must be provided.', 'validation_error');
+
+  const r = await callLLM(
+    [{ role: 'system', content: SOW_PROMPT }, { role: 'user', content: `Project: ${projectName}\n\nNegotiation source:\n${combinedSource.slice(0, 12000)}` }],
+    [], { maxTokens: 3500, temperature: 0.3 },
+  );
+  const markdown = getText(r.content).trim();
+  return {
+    output: `SOW generated for ${projectName}. ${markdown.length} chars.`,
+    canvasData: {
+      title: `SOW — ${projectName}`,
+      type: 'report',
+      markdown,
+    },
+  };
+}
+
+async function generateInternalDocumentation(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const topic = (input?.topic || '').trim();
+  const sourceContent = (input?.sourceContent || '').trim();
+  if (!topic) return failureResult('topic is required.', 'validation_error');
+  if (!sourceContent) return failureResult('sourceContent is required.', 'validation_error');
+
+  const r = await callLLM(
+    [
+      { role: 'system', content: 'Generate a how-to / runbook in markdown for an internal team wiki. Structure: # <topic> · ## When to use · ## Steps (numbered) · ## Edge cases · ## Related. Be specific. No placeholders.' },
+      { role: 'user', content: `Topic: ${topic}\n\nSource:\n${sourceContent.slice(0, 8000)}` },
+    ],
+    [], { maxTokens: 2500, temperature: 0.3 },
+  );
+  const markdown = getText(r.content).trim();
+  // Save to Notion in internal-docs DB
+  const created = await createNotionPage(userId, {
+    title: `Runbook: ${topic}`,
+    databaseHint: 'internal_docs',
+    content: markdown,
+  }, context);
+  return { output: created.output };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 5 — Memory autonomy tools
+// ════════════════════════════════════════════════════════════════════════════
+
+async function memoryUnlimitedScan(userId: string, input: any): Promise<ToolResult> {
+  const queries: string[] = Array.isArray(input?.queries) ? input.queries.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!queries.length) return failureResult('queries is required (non-empty array of search strings).', 'validation_error');
+  const perQueryLimit = Math.max(1, Math.min(20, Number(input?.perQueryLimit) || 10));
+
+  const { searchMemoriesRaw } = await import('./memory');
+  const out: Record<string, any[]> = {};
+  for (const q of queries.slice(0, 20)) {
+    try {
+      const items = await searchMemoriesRaw(userId, q, perQueryLimit);
+      out[q] = items;
+    } catch {
+      out[q] = [];
+    }
+  }
+  return { output: JSON.stringify(out, null, 2) };
+}
+
+async function memoryBulkSaveLearning(userId: string, input: any): Promise<ToolResult> {
+  const items: any[] = Array.isArray(input?.items) ? input.items : [];
+  if (!items.length) return failureResult('items is required (array of { content, tags? }).', 'validation_error');
+
+  const { saveMemory } = await import('./memory');
+  const slice = items.slice(0, 100);
+  let saved = 0;
+  let failed = 0;
+  await Promise.all(slice.map(async (item) => {
+    try {
+      const content = String(item.content || '').trim();
+      if (!content) { failed++; return; }
+      const tags = Array.isArray(item.tags) ? item.tags : [];
+      await saveMemory(userId, content, tags);
+      saved++;
+    } catch { failed++; }
+  }));
+  return { output: `Saved ${saved}/${slice.length} memory entries${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+async function memoryRelationshipIntelligence(userId: string, input: any): Promise<ToolResult> {
+  const contactEmail = (input?.contactEmail || '').trim().toLowerCase();
+  if (!contactEmail) return failureResult('contactEmail is required.', 'validation_error');
+
+  // Aggregate signals: persisted contact row, memory search for [RELATIONSHIP],
+  // recent sent/received emails to estimate response patterns.
+  const sections: any = {
+    contactEmail,
+    metrics: {} as any,
+    memoryContext: [] as any[],
+    riskFlags: [] as string[],
+  };
+
+  // Persisted relationship row
+  try {
+    const profileResp = await memoryGetContactProfile(userId, { contactEmail });
+    if (profileResp.success !== false) {
+      sections.persistedProfile = profileResp.output.slice(0, 1500);
+    }
+  } catch { /* skip */ }
+
+  // Memory items
+  try {
+    const { searchMemoriesRaw } = await import('./memory');
+    const items = await searchMemoriesRaw(userId, contactEmail, 10);
+    sections.memoryContext = items.map(i => ({ text: i.text, when: i.timestamp, tags: i.tags }));
+  } catch { /* skip */ }
+
+  // Response-time pattern: sent-to-them then received-from-them in same thread.
+  // Cheap heuristic: count of threads, last contact, average gap.
+  try {
+    const sentToThem = await searchGmail(userId, { query: `to:${contactEmail}`, maxResults: 10 });
+    const fromThem = await searchGmail(userId, { query: `from:${contactEmail}`, maxResults: 10 });
+    const sentCount = (sentToThem.output.match(/\[ID:/g) || []).length;
+    const recvCount = (fromThem.output.match(/\[ID:/g) || []).length;
+    sections.metrics.emailsSent = sentCount;
+    sections.metrics.emailsReceived = recvCount;
+    sections.metrics.totalExchanges = sentCount + recvCount;
+    sections.metrics.replyRatio = sentCount > 0 ? Math.round((recvCount / sentCount) * 100) / 100 : null;
+
+    // Risk: lots of outbound, no inbound → ghosted
+    if (sentCount >= 3 && recvCount === 0) sections.riskFlags.push('No replies received — likely ghosted.');
+    // Risk: outbound > 2x inbound
+    if (sentCount > recvCount * 2 + 2) sections.riskFlags.push('Lopsided exchange — they reply less than half as often.');
+  } catch { /* skip */ }
+
+  // Tag the relationship
+  let tier: 'cold' | 'warm' | 'hot' = 'cold';
+  if (sections.metrics.totalExchanges >= 10) tier = 'hot';
+  else if (sections.metrics.totalExchanges >= 3) tier = 'warm';
+  sections.relationshipTier = tier;
+
+  return { output: JSON.stringify(sections, null, 2) };
 }
 
 // ════════════════════════════════════════════════════════════════════════════
