@@ -1135,15 +1135,13 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'create_scheduled_agent',
     description:
-      'Register a persistent background agent. This tool runs as a THREE-STAGE flow:\n' +
-      '  Stage 1 (no _creationStage): writes a markdown spec to canvas + asks the user to Confirm or Edit. ' +
-      'You must pass spec_markdown with the full agent specification document.\n' +
-      '  Stage 2 (_creationStage: "plan"): shows a PlanPreviewCard of what the agent will do every run. ' +
-      'Called automatically after the user confirms the spec — you should NOT need to call this stage manually.\n' +
-      '  Stage 3 (_planApproved: true): actually inserts the agent row into the database.\n' +
-      'Output: confirmation text + canvasData. The user moves between stages via Confirm/Edit/Execute buttons in the UI — ' +
-      'you do not need to call this tool more than once per stage transition.\n' +
-      'Errors (success:false): validation_error (missing name/task/cron, bad cron format, missing spec_markdown in stage 1), migration_missing, agent_create_failed.',
+      'Register a persistent background agent. Two-stage flow:\n' +
+      '  Stage 1 (first call, no _planApproved): pass spec_markdown with the full agent specification. ' +
+      'Renders the spec in canvas + a "Confirm spec / Edit" card. No DB write yet.\n' +
+      '  Stage 2 (_planApproved: true): the UI sends this automatically when the user clicks Confirm spec. ' +
+      'Inserts the agent into the database and returns the live-agent card.\n' +
+      'You only call this tool ONCE — the UI handles the Stage 2 invocation. Do NOT call it again yourself.\n' +
+      'Errors (success:false): validation_error (missing name/task/cron, bad cron format, missing spec_markdown), migration_missing, agent_create_failed.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1155,8 +1153,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         skip_confirmations: { type: 'boolean', description: 'If true, the agent acts (sends/publishes) without asking for approval. Default false.' },
         expires_at: { type: 'string', description: 'Optional ISO date (YYYY-MM-DD) after which the agent auto-pauses. Omit for no expiry.' },
         spec_markdown: { type: 'string', description: 'STAGE 1 ONLY — the full agent specification markdown to show in canvas. Must include H1 title, "## 1. Agent Objective", "## 2. Operational Logic", "## 3. Schedule & Delivery", "## 4. Expected Output". Required on the first call.' },
-        _creationStage: { type: 'string', enum: ['plan'], description: 'Internal — set to "plan" by the UI after the user confirms the spec. Never set this yourself on the first call.' },
-        _planApproved: { type: 'boolean', description: 'Internal — set to true by the UI after the user approves the run-time plan. Never set this yourself.' },
+        _planApproved: { type: 'boolean', description: 'Internal — set to true by the UI after the user clicks Confirm spec. Never set this yourself; the UI handles it.' },
       },
       required: ['name', 'task_description', 'cron_schedule'],
     },
@@ -4896,9 +4893,7 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
     }
 
     return {
-      output:
-        `Here's the spec for **${agentName}**. Review it in the canvas, then click Confirm to continue, or Edit if you want to adjust it.\n\n` +
-        `INTERNAL: Do NOT call create_scheduled_agent again. Wait for the user to click Confirm — the UI will send the next message automatically.`,
+      output: `Here's the spec for **${agentName}**. Review it in the canvas, then click Confirm to create the agent.`,
       canvasData: {
         title: agentName,
         type: 'agent_spec_confirm',
@@ -4913,37 +4908,9 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
     };
   }
 
-  // ── STAGE 2 — Run-time plan preview ────────────────────────────────────────
-  // User clicked "Confirm spec" → UI sent a message asking for the plan stage.
-  // Show the PlanPreviewCard with what the agent will do every run.
-  if (
-    context.conversationId &&
-    input._creationStage === 'plan' &&
-    !input._planApproved
-  ) {
-    const agentPlan = buildAgentRunPlan(input);
-    return {
-      output:
-        `Spec confirmed. Here's what **${agentName}** will do every time it runs. ` +
-        `Click Execute plan to register it, or Edit plan to adjust the steps.\n\n` +
-        `INTERNAL: Do NOT call create_scheduled_agent again. Wait for the user to approve the plan.`,
-      canvasData: {
-        title: `Agent Plan: ${agentName}`,
-        type: 'agent_plan_preview',
-        markdown: '',
-        pageMeta: {
-          agentName,
-          taskDescription,
-          cronSchedule: cron,
-          outputChannel,
-          agentPlan,
-          agentParams,
-        } as any,
-      },
-      requiresConfirmation: true,
-    };
-  }
-  // ── End spec/plan preview stages ────────────────────────────────────────────
+  // ── End spec confirmation stage ─────────────────────────────────────────────
+  // (The plan-preview middle stage was removed — one confirmation is enough.
+  //  After the user clicks Confirm spec, the agent is created directly.)
 
   // ── Integration gate ────────────────────────────────────────────────────────
   const required = detectRequiredIntegrations(input.task_description, input.output_channel || 'gmail');

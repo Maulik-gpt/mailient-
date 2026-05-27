@@ -1573,7 +1573,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          finalText = textContent;
+          // Final safety net: if retries exhausted and the text is STILL
+          // step-listing or tool-salad, drop it. A clean empty close beats
+          // showing the user "Done — completed Running create scheduled agent".
+          if (isStepListingResponse(textContent, totalToolCalls > 0)) {
+            log('warn', 'step_listing_text_dropped_after_retries', { preview: textContent.slice(0, 120) });
+            finalText = '';
+          } else {
+            finalText = textContent;
+          }
           break;
         }
 
@@ -1581,16 +1589,22 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           if (isPlanMode) {
             finalText = 'I was unable to generate a plan. Please try again with a more specific request.';
           } else {
-            // Build a natural recap from what actually happened rather than a
-            // canned line, so the close never feels mechanical.
-            const okTools = [...new Set(outcomes.filter(o => o.ok).map(o => o.tool.replace(/_/g, ' ')))];
-            if (okTools.length > 0) {
-              const list = okTools.length === 1
-                ? okTools[0]
-                : `${okTools.slice(0, -1).join(', ')} and ${okTools[okTools.length - 1]}`;
-              finalText = `Done — I handled ${list} for you. Let me know if you'd like any changes.`;
+            // When the LLM produced no usable text but tools ran successfully,
+            // we used to emit "Done — I handled X, Y and Z for you" — a tool-
+            // name salad that looked like hallucination to users. Now: if the
+            // tools rendered their own canvas/card (which is the usual case
+            // for write tools), emit an EMPTY message so the chat stream
+            // shows just the card with no filler text above it. The card is
+            // self-explanatory.
+            const failedCount = outcomes.filter(o => !o.ok).length;
+            const succeededCount = outcomes.filter(o => o.ok).length;
+            if (canvasContent || succeededCount > 0) {
+              // Card already rendered — no chat text needed.
+              finalText = '';
+            } else if (failedCount > 0 && succeededCount === 0) {
+              finalText = 'I hit an error and couldn\'t complete that. Tell me a bit more about what you need and I\'ll try again.';
             } else {
-              finalText = 'I wasn\'t able to complete that this time. Tell me a bit more and I\'ll take another run at it.';
+              finalText = '';
             }
           }
         }
@@ -1620,7 +1634,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           const titleMatch = finalText.match(/^#\s+(.+)$/m);
           const planTitle = titleMatch ? titleMatch[1].trim() : 'Plan';
           emit('plan', { title: planTitle, markdown: finalText });
-        } else {
+        } else if (finalText.trim() || canvasContent) {
+          // Only emit a message if there's actually something to show. Empty
+          // finalText with no canvas would render as a blank chat bubble.
           emit('message', { content: finalText, canvasContent: canvasContent || undefined });
         }
 

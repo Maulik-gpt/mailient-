@@ -5491,23 +5491,26 @@ export default function ChatInterface({
                                                   : m
                                               ));
                                               if (currentConversationId) {
-                                                const planMsg = [
-                                                  `Spec approved for "${sc.agentName}". Continue to the run-time plan stage.`,
-                                                  `Call create_scheduled_agent with these exact parameters AND _creationStage: "plan":`,
+                                                // Single confirmation → directly create the agent.
+                                                // No plan-preview middle stage. The UI passes _planApproved:true
+                                                // so the tool bypasses the spec-confirm gate and inserts the row.
+                                                const createMsg = [
+                                                  `Spec approved for "${sc.agentName}". Create the agent now.`,
+                                                  `Call create_scheduled_agent with these exact parameters AND _planApproved: true:`,
                                                   `- name: "${p.name || sc.agentName}"`,
                                                   `- task_description: "${p.task_description || ''}"`,
                                                   `- cron_schedule: "${p.cron_schedule || '0 7 * * *'}"`,
                                                   `- output_channel: "${p.output_channel || 'gmail'}"`,
                                                   ...(p.slack_channel ? [`- slack_channel: "${p.slack_channel}"`] : []),
                                                   `- skip_confirmations: ${p.skip_confirmations ?? false}`,
-                                                  `- _creationStage: "plan"`,
+                                                  `- _planApproved: true`,
                                                 ].join('\n');
-                                                processAIMessage(planMsg, currentConversationId, false, [], { isPlanMode: false });
+                                                processAIMessage(createMsg, currentConversationId, false, [], { isPlanMode: false });
                                               }
                                             }}
                                             className="flex-1 py-2 rounded-xl text-[13px] font-bold transition-all bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_12px_rgba(99,102,241,0.2)]"
                                           >
-                                            Confirm spec
+                                            Confirm
                                           </button>
                                           <button
                                             onClick={() => {
