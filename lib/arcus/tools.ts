@@ -1094,6 +1094,154 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['proposedTime'],
     },
   },
+  // ── PART 3 — Notion tools ────────────────────────────────────────────────
+  {
+    name: 'notion_auto_create_contact_profiles',
+    description:
+      'For each thread id, extract contact details via LLM (name, email, company, role, phone, relationship) and create a Notion page in the contacts database. Skips threads where no contact details could be extracted. ' +
+      'Pairs with gmail_unlimited_search → results → this. Output: per-thread create status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+        databaseHint: { type: 'string', description: 'Notion database hint (default "contacts").' },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'notion_auto_log_all_communication',
+    description:
+      'For each thread, LLM-extract: subject, primaryContact, decisions[], actionItems[], nextStep, deadline, dealStage, sentiment. Create a structured Notion page in the communications database. ' +
+      'Use AFTER processing inbound emails so the CRM stays current automatically. Output: per-thread log status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+        databaseHint: { type: 'string', description: 'Default "communications".' },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'notion_batch_create_database_entries',
+    description:
+      'Create up to 50 Notion database entries in parallel. Each item: { title, content, databaseHint?, properties? }. Properties pass through to create_notion_page so they must match the database schema. ' +
+      'Output: per-entry create status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        databaseHint: { type: 'string', description: 'Default databaseHint for all items (per-item override possible).' },
+        items: {
+          type: 'array',
+          description: 'Up to 50 entries.',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              content: { type: 'string' },
+              databaseHint: { type: 'string' },
+              properties: { type: 'object' },
+            },
+            required: ['title'],
+          },
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'notion_auto_update_project_status',
+    description:
+      'For each thread, LLM-detect if it contains a project status update (% complete, next milestone, at-risk flag). If yes, create a status-update page in the Notion projects database. Threads without project mentions are skipped silently. ' +
+      'Output: count of updates created. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'notion_auto_generate_meeting_notes',
+    description:
+      'For a given calendar event id, create a Notion meeting-notes page pre-filled with title, date, attendees, location, plus empty Discussion / Decisions / Action Items / Next Steps sections. ' +
+      'Output: notion page URL/status. Errors: validation_error, gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', description: 'Google Calendar event id.' },
+      },
+      required: ['eventId'],
+    },
+  },
+  {
+    name: 'notion_deal_tracking_automation',
+    description:
+      'For each thread, LLM-extract: company, primaryContact, stage (prospect/qualified/proposal/negotiation/closed), dealValue, probability, timeline, nextAction, signals. Creates/updates a Notion deal page. ' +
+      'Output: per-thread deal extraction summary. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'notion_create_smart_dashboards',
+    description:
+      'Generate a Notion dashboard page that aggregates current state across Gmail (unread snapshot), Calendar (next 3 days), and Memory (recent context). Saves to a "<kind>_dashboards" database. ' +
+      'Output: notion page URL/status. Errors: none specific.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        kind: { type: 'string', description: 'Dashboard kind: "business", "sales", "client_health", etc. Default "business".' },
+        title: { type: 'string', description: 'Optional explicit title; auto-generated if omitted.' },
+      },
+    },
+  },
+  {
+    name: 'notion_link_related_items',
+    description:
+      'Find Notion pages matching relatedQuery and return them as link candidates for a source pageId. Notion relation patching via API is database-schema-dependent so this tool returns the candidates + instructions rather than auto-patching. ' +
+      'Output: list of candidate page matches. Errors: validation_error, notion_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        pageId: { type: 'string' },
+        relatedQuery: { type: 'string', description: 'Search text used to find related pages.' },
+      },
+      required: ['pageId', 'relatedQuery'],
+    },
+  },
+  {
+    name: 'notion_auto_archive_completed_work',
+    description:
+      'Identify completed items in a Notion database by status property value and report what would be archived. The actual archive call requires verified database write permissions — call this for triage; archive in UI for now. ' +
+      'Output: archive plan. Errors: not_found.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        databaseHint: { type: 'string', description: 'Default "tasks".' },
+        statusProperty: { type: 'string', description: 'Default "Status".' },
+        completedValues: { type: 'array', items: { type: 'string' }, description: 'Default ["Done", "Completed", "Closed", "Shipped"].' },
+      },
+    },
+  },
+  {
+    name: 'notion_generate_weekly_summaries',
+    description:
+      'Generate a week-in-review Notion page aggregating: emails sent (count), meetings held (list), agent runs (from memory). Saves to "weekly_summaries" database. ' +
+      'Output: notion page URL/status. Errors: none specific.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        weekLabel: { type: 'string', description: 'Optional title override.' },
+      },
+    },
+  },
   {
     name: 'memory_get_contact_profile',
     description:
@@ -1611,6 +1759,16 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   calendar_auto_generate_meet_links: 'gcal',
   calendar_buffer_time_insertion: 'gcal',
   calendar_timezone_intelligence: null,
+  notion_auto_create_contact_profiles: 'notion',
+  notion_auto_log_all_communication: 'notion',
+  notion_batch_create_database_entries: 'notion',
+  notion_auto_update_project_status: 'notion',
+  notion_auto_generate_meeting_notes: 'notion',
+  notion_deal_tracking_automation: 'notion',
+  notion_create_smart_dashboards: 'notion',
+  notion_link_related_items: 'notion',
+  notion_auto_archive_completed_work: 'notion',
+  notion_generate_weekly_summaries: 'notion',
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -1869,6 +2027,17 @@ export async function executeTool(
       case 'calendar_auto_generate_meet_links': result = await calendarAutoGenerateMeetLinks(userId, input); break;
       case 'calendar_buffer_time_insertion':  result = await calendarBufferTimeInsertion(userId, input, context); break;
       case 'calendar_timezone_intelligence':  result = await calendarTimezoneIntelligence(userId, input); break;
+      // PART 3 — Notion
+      case 'notion_auto_create_contact_profiles': result = await notionAutoCreateContactProfiles(userId, input, context); break;
+      case 'notion_auto_log_all_communication':   result = await notionAutoLogAllCommunication(userId, input, context); break;
+      case 'notion_batch_create_database_entries': result = await notionBatchCreateDatabaseEntries(userId, input, context); break;
+      case 'notion_auto_update_project_status':   result = await notionAutoUpdateProjectStatus(userId, input, context); break;
+      case 'notion_auto_generate_meeting_notes':  result = await notionAutoGenerateMeetingNotes(userId, input, context); break;
+      case 'notion_deal_tracking_automation':     result = await notionDealTrackingAutomation(userId, input, context); break;
+      case 'notion_create_smart_dashboards':      result = await notionCreateSmartDashboards(userId, input, context); break;
+      case 'notion_link_related_items':           result = await notionLinkRelatedItems(userId, input); break;
+      case 'notion_auto_archive_completed_work':  result = await notionAutoArchiveCompletedWork(userId, input); break;
+      case 'notion_generate_weekly_summaries':    result = await notionGenerateWeeklySummaries(userId, input, context); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -7339,6 +7508,460 @@ async function calendarBufferTimeInsertion(userId: string, input: any, context: 
     } catch { /* skip */ }
   }
   return { output: `Inserted ${added}/${gaps.length} buffer blocks (${bufferMin} min each).` };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 3 — Notion tools
+// ════════════════════════════════════════════════════════════════════════════
+//
+// All built on existing createNotionPage / searchNotion / fetchNotionSchemaForAgent
+// primitives. Notion data extraction uses callLLM for semantic parsing.
+
+const CONTACT_EXTRACT_PROMPT = `Extract contact details from an email thread. Output ONLY JSON:
+{
+  "name": "<person name>",
+  "email": "<primary email>",
+  "company": "<company name>",
+  "role": "<job title if mentioned>",
+  "phone": "<phone if mentioned>",
+  "relationship": "client|vendor|partner|prospect|internal|unknown",
+  "firstContactDate": "<ISO date>",
+  "notes": "<one-line summary of who they are>"
+}
+Omit any field that's not in the source. Do not invent.`;
+
+async function notionAutoCreateContactProfiles(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+  const databaseHint = (input?.databaseHint || 'contacts').trim();
+
+  const BATCH = 8;
+  const results: Array<{ threadId: string; ok: boolean; summary: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const batchResults = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, ok: false, summary: `thread fetch failed: ${t.output.slice(0, 100)}` };
+        const r = await callLLM(
+          [
+            { role: 'system', content: CONTACT_EXTRACT_PROMPT },
+            { role: 'user', content: t.output.slice(0, 6000) },
+          ],
+          [], { maxTokens: 400, temperature: 0.1 },
+        );
+        const raw = getText(r.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, ok: false, summary: 'no JSON extracted' };
+        let extracted: any;
+        try { extracted = JSON.parse(m[0]); } catch { return { threadId: tid, ok: false, summary: 'JSON parse error' }; }
+        if (!extracted.name && !extracted.email) return { threadId: tid, ok: false, summary: 'no contact details found' };
+
+        const title = extracted.name || extracted.email || 'Unknown contact';
+        const content = [
+          `# ${title}`,
+          extracted.email ? `**Email:** ${extracted.email}` : '',
+          extracted.company ? `**Company:** ${extracted.company}` : '',
+          extracted.role ? `**Role:** ${extracted.role}` : '',
+          extracted.phone ? `**Phone:** ${extracted.phone}` : '',
+          extracted.relationship ? `**Relationship:** ${extracted.relationship}` : '',
+          extracted.firstContactDate ? `**First Contact:** ${extracted.firstContactDate}` : '',
+          '',
+          extracted.notes ? `## Notes\n${extracted.notes}` : '',
+        ].filter(Boolean).join('\n');
+
+        const created = await createNotionPage(userId, {
+          title,
+          databaseHint,
+          content,
+        }, context);
+        return {
+          threadId: tid,
+          ok: created.success !== false,
+          summary: `${title} → ${created.output.slice(0, 100)}`,
+        };
+      } catch (err: any) {
+        return { threadId: tid, ok: false, summary: `error: ${err.message}` };
+      }
+    }));
+    for (const r of batchResults) results.push(r);
+  }
+
+  const ok = results.filter(r => r.ok).length;
+  const summary = results.map((r, i) => `${i + 1}. [thread ${r.threadId}] ${r.ok ? 'created' : 'skipped'}: ${r.summary}`).join('\n');
+  return { output: `Created ${ok}/${results.length} contact profiles.\n\n${summary}` };
+}
+
+const COMM_LOG_PROMPT = `Summarize this email thread for a CRM log. Output ONLY JSON:
+{
+  "subject": "<thread subject>",
+  "primaryContact": "<email of main external party>",
+  "decisions": ["<decision>", ...],
+  "actionItems": [{"who": "<owner>", "what": "<action>", "when": "<deadline if any>"}, ...],
+  "nextStep": "<one-line next step>",
+  "deadline": "<ISO date if mentioned, else null>",
+  "dealStage": "prospect|qualified|proposal|negotiation|closed_won|closed_lost|null",
+  "sentiment": "positive|neutral|negative"
+}`;
+
+async function notionAutoLogAllCommunication(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!threadIds.length) return failureResult('threadIds is required.', 'validation_error');
+  const databaseHint = (input?.databaseHint || 'communications').trim();
+
+  const BATCH = 6;
+  const results: Array<{ threadId: string; ok: boolean; summary: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const batchResults = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, ok: false, summary: 'thread fetch failed' };
+        const r = await callLLM(
+          [{ role: 'system', content: COMM_LOG_PROMPT }, { role: 'user', content: t.output.slice(0, 6000) }],
+          [], { maxTokens: 600, temperature: 0.1 },
+        );
+        const raw = getText(r.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, ok: false, summary: 'no JSON' };
+        let data: any;
+        try { data = JSON.parse(m[0]); } catch { return { threadId: tid, ok: false, summary: 'parse error' }; }
+
+        const content = [
+          `# ${data.subject || '(no subject)'}`,
+          data.primaryContact ? `**Contact:** ${data.primaryContact}` : '',
+          data.dealStage ? `**Deal Stage:** ${data.dealStage}` : '',
+          data.sentiment ? `**Sentiment:** ${data.sentiment}` : '',
+          data.deadline ? `**Deadline:** ${data.deadline}` : '',
+          '',
+          data.decisions?.length ? `## Decisions\n${data.decisions.map((d: string) => `- ${d}`).join('\n')}` : '',
+          '',
+          data.actionItems?.length ? `## Action Items\n${data.actionItems.map((a: any) => `- ${a.who ? `**${a.who}**: ` : ''}${a.what}${a.when ? ` (due ${a.when})` : ''}`).join('\n')}` : '',
+          '',
+          data.nextStep ? `## Next Step\n${data.nextStep}` : '',
+          '',
+          `_Thread ID: ${tid}_`,
+        ].filter(Boolean).join('\n');
+
+        const created = await createNotionPage(userId, {
+          title: data.subject || `Communication ${tid}`,
+          databaseHint,
+          content,
+        }, context);
+        return { threadId: tid, ok: created.success !== false, summary: created.output.slice(0, 100) };
+      } catch (err: any) {
+        return { threadId: tid, ok: false, summary: err.message };
+      }
+    }));
+    for (const r of batchResults) results.push(r);
+  }
+  const ok = results.filter(r => r.ok).length;
+  return { output: `Logged ${ok}/${results.length} communications to Notion (database: ${databaseHint}).\n\n${results.map((r, i) => `${i + 1}. ${r.threadId} — ${r.summary}`).join('\n')}` };
+}
+
+async function notionBatchCreateDatabaseEntries(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const items: any[] = Array.isArray(input?.items) ? input.items : [];
+  if (!items.length) return failureResult('items is required.', 'validation_error');
+  const databaseHint = (input?.databaseHint || '').trim();
+
+  const slice = items.slice(0, 50);
+  const results = await Promise.all(slice.map(async (item, idx) => {
+    try {
+      const r = await createNotionPage(userId, {
+        title: item.title,
+        databaseHint: item.databaseHint || databaseHint,
+        content: item.content || '',
+        properties: item.properties,
+      }, context);
+      return { idx, title: item.title, ok: r.success !== false, summary: r.output.slice(0, 120) };
+    } catch (err: any) {
+      return { idx, title: item.title, ok: false, summary: `error: ${err.message}` };
+    }
+  }));
+  const ok = results.filter(r => r.ok).length;
+  return { output: `Created ${ok}/${results.length} Notion entries.\n\n${results.map(r => `${r.idx + 1}. ${r.title} — ${r.ok ? 'created' : 'failed'}: ${r.summary}`).join('\n')}` };
+}
+
+const PROJECT_STATUS_PROMPT = `From this email, extract a project status update. Output ONLY JSON:
+{
+  "projectName": "<project name or null>",
+  "statusUpdate": "<one-sentence status change, or null if no update>",
+  "completionPercent": <0-100 or null>,
+  "nextMilestone": "<description or null>",
+  "nextMilestoneDate": "<ISO date or null>",
+  "atRisk": <boolean — true if blockers/delays mentioned>,
+  "riskReason": "<short reason or null>"
+}`;
+
+async function notionAutoUpdateProjectStatus(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!threadIds.length) return failureResult('threadIds is required.', 'validation_error');
+
+  const BATCH = 6;
+  const updates: Array<{ threadId: string; projectName: string | null; statusUpdate: string | null; ok: boolean; notionOutput?: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const batchResults = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, projectName: null, statusUpdate: null, ok: false };
+        const r = await callLLM(
+          [{ role: 'system', content: PROJECT_STATUS_PROMPT }, { role: 'user', content: t.output.slice(0, 4000) }],
+          [], { maxTokens: 400, temperature: 0.1 },
+        );
+        const raw = getText(r.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, projectName: null, statusUpdate: null, ok: false };
+        let data: any;
+        try { data = JSON.parse(m[0]); } catch { return { threadId: tid, projectName: null, statusUpdate: null, ok: false }; }
+        if (!data.projectName || !data.statusUpdate) return { threadId: tid, projectName: data.projectName, statusUpdate: data.statusUpdate, ok: false };
+
+        // Append a status update as a new Notion page (linked via title to the project)
+        const content = [
+          `# Status update: ${data.projectName}`,
+          data.statusUpdate ? `**Update:** ${data.statusUpdate}` : '',
+          typeof data.completionPercent === 'number' ? `**Completion:** ${data.completionPercent}%` : '',
+          data.nextMilestone ? `**Next milestone:** ${data.nextMilestone}${data.nextMilestoneDate ? ` (${data.nextMilestoneDate})` : ''}` : '',
+          data.atRisk ? `\n⚠️ **AT RISK** — ${data.riskReason || 'See thread for details.'}` : '',
+          `\n_Source thread: ${tid}_`,
+        ].filter(Boolean).join('\n');
+
+        const created = await createNotionPage(userId, {
+          title: `${data.projectName} — status update`,
+          databaseHint: 'projects',
+          content,
+        }, context);
+        return { threadId: tid, projectName: data.projectName, statusUpdate: data.statusUpdate, ok: created.success !== false, notionOutput: created.output.slice(0, 100) };
+      } catch {
+        return { threadId: tid, projectName: null, statusUpdate: null, ok: false };
+      }
+    }));
+    for (const r of batchResults) updates.push(r);
+  }
+  const ok = updates.filter(u => u.ok).length;
+  return { output: `Logged ${ok}/${threadIds.length} project status updates. Threads without a project mention were skipped silently.` };
+}
+
+async function notionAutoGenerateMeetingNotes(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const eventId = (input?.eventId || '').trim();
+  if (!eventId) return failureResult('eventId is required.', 'validation_error');
+
+  let token: string | null = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  const evRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+  });
+  if (!evRes.ok) return failureResult(`Calendar event fetch failed (${evRes.status}).`, 'upstream_gcal');
+  const ev = await evRes.json();
+
+  const attendees: string[] = (ev.attendees || []).map((a: any) => a.email).filter(Boolean);
+  const content = [
+    `# ${ev.summary || 'Meeting'} — notes`,
+    `**Date:** ${ev.start?.dateTime || ev.start?.date}`,
+    `**Attendees:** ${attendees.join(', ') || '(none)'}`,
+    ev.location ? `**Location:** ${ev.location}` : '',
+    '',
+    '## Discussion',
+    '_(fill in)_',
+    '',
+    '## Decisions',
+    '_(fill in)_',
+    '',
+    '## Action Items',
+    '- [ ] _(owner — task — due date)_',
+    '',
+    '## Next Steps',
+    '_(fill in)_',
+  ].filter(Boolean).join('\n');
+
+  const created = await createNotionPage(userId, {
+    title: `${ev.summary || 'Meeting'} — ${(ev.start?.dateTime || ev.start?.date || '').slice(0, 10)}`,
+    databaseHint: 'meetings',
+    content,
+  }, context);
+  return { output: created.output };
+}
+
+const DEAL_EXTRACT_PROMPT = `Extract sales deal info from this email thread. Output ONLY JSON:
+{
+  "company": "<company name>",
+  "primaryContact": "<contact name + email>",
+  "stage": "prospect|qualified|proposal|negotiation|closed_won|closed_lost",
+  "dealValue": "<dollar amount as number or string>",
+  "probability": <0-100 confidence in close>,
+  "timeline": "<expected close date or timeframe>",
+  "nextAction": "<one-sentence next step>",
+  "signals": ["<positive signal>", "<negative signal>", ...]
+}
+Omit fields you can't determine. Do not invent dollar amounts.`;
+
+async function notionDealTrackingAutomation(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!threadIds.length) return failureResult('threadIds is required.', 'validation_error');
+
+  const BATCH = 5;
+  const deals: Array<{ threadId: string; company: string | null; stage: string | null; ok: boolean; notionOutput?: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const batchResults = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, company: null, stage: null, ok: false };
+        const r = await callLLM(
+          [{ role: 'system', content: DEAL_EXTRACT_PROMPT }, { role: 'user', content: t.output.slice(0, 6000) }],
+          [], { maxTokens: 500, temperature: 0.1 },
+        );
+        const raw = getText(r.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, company: null, stage: null, ok: false };
+        let d: any;
+        try { d = JSON.parse(m[0]); } catch { return { threadId: tid, company: null, stage: null, ok: false }; }
+        if (!d.company || !d.stage) return { threadId: tid, company: d.company, stage: d.stage, ok: false };
+
+        const content = [
+          `# ${d.company} — ${d.stage}`,
+          d.primaryContact ? `**Contact:** ${d.primaryContact}` : '',
+          d.dealValue ? `**Value:** ${d.dealValue}` : '',
+          typeof d.probability === 'number' ? `**Probability:** ${d.probability}%` : '',
+          d.timeline ? `**Timeline:** ${d.timeline}` : '',
+          d.nextAction ? `**Next action:** ${d.nextAction}` : '',
+          '',
+          d.signals?.length ? `## Signals\n${d.signals.map((s: string) => `- ${s}`).join('\n')}` : '',
+          `\n_Source thread: ${tid}_`,
+        ].filter(Boolean).join('\n');
+
+        const created = await createNotionPage(userId, {
+          title: `${d.company} — ${d.stage}`,
+          databaseHint: 'deals',
+          content,
+        }, context);
+        return { threadId: tid, company: d.company, stage: d.stage, ok: created.success !== false, notionOutput: created.output.slice(0, 100) };
+      } catch {
+        return { threadId: tid, company: null, stage: null, ok: false };
+      }
+    }));
+    for (const r of batchResults) deals.push(r);
+  }
+  const ok = deals.filter(d => d.ok).length;
+  return { output: `Tracked ${ok}/${threadIds.length} deals. Threads without identifiable deal info were skipped silently.\n\n${deals.filter(d => d.company).map((d, i) => `${i + 1}. ${d.company} (${d.stage}) — ${d.ok ? 'logged' : 'extract failed'}`).join('\n')}` };
+}
+
+async function notionCreateSmartDashboards(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const kind = (input?.kind || 'business').toLowerCase();
+  const title = (input?.title || `Daily ${kind} dashboard — ${new Date().toISOString().slice(0, 10)}`).trim();
+
+  // Aggregate from connected sources via the existing tools
+  const blocks: string[] = [`# ${title}`, ''];
+
+  // Inbox snapshot
+  try {
+    const inbox = await searchGmail(userId, { query: 'is:unread', maxResults: 5 });
+    if (inbox.success !== false) blocks.push('## 📧 Inbox snapshot', inbox.output.slice(0, 1200), '');
+  } catch { /* skip */ }
+  // Calendar snapshot
+  try {
+    const cal = await getCalendarEvents(userId, { daysAhead: 3, maxResults: 10 });
+    if (cal.success !== false) blocks.push('## 📅 Next 3 days', cal.output.slice(0, 1200), '');
+  } catch { /* skip */ }
+  // Memory context — recent
+  try {
+    const { searchMemoriesRaw } = await import('./memory');
+    const items = await searchMemoriesRaw(userId, 'this week', 5);
+    if (items.length) blocks.push('## 🧠 Recent context', items.map(i => `- ${i.text}`).join('\n'), '');
+  } catch { /* skip */ }
+
+  const content = blocks.join('\n');
+  const created = await createNotionPage(userId, {
+    title,
+    databaseHint: `${kind}_dashboards`,
+    content,
+  }, context);
+  return { output: created.output };
+}
+
+async function notionLinkRelatedItems(userId: string, input: any): Promise<ToolResult> {
+  // Notion's relation API is database-schema-dependent. The pragmatic
+  // implementation: search for related pages by name and return a list of
+  // (sourcePageId → relatedPageId, relationField) suggestions. The user/agent
+  // can then patch them manually with the correct relation column.
+  const pageId = (input?.pageId || '').trim();
+  const relatedQuery = (input?.relatedQuery || '').trim();
+  if (!pageId || !relatedQuery) return failureResult('pageId and relatedQuery are required.', 'validation_error');
+
+  const search = await searchNotion(userId, { query: relatedQuery, maxResults: 10 });
+  if (search.success === false) return search;
+
+  return {
+    output: [
+      `Source page: ${pageId}`,
+      `Related pages matching "${relatedQuery}":`,
+      '',
+      search.output,
+      '',
+      'To link them: open the source page, find the matching relation column (e.g. "Related Deals"), and paste the page references. Relation patching via API requires the target relation property name in the source database schema — call fetch_notion_schema first if unsure.',
+    ].join('\n'),
+  };
+}
+
+async function notionAutoArchiveCompletedWork(userId: string, input: any): Promise<ToolResult> {
+  const databaseHint = (input?.databaseHint || 'tasks').trim();
+  const statusPropName = (input?.statusProperty || 'Status').trim();
+  const completedValues: string[] = Array.isArray(input?.completedValues) ? input.completedValues : ['Done', 'Completed', 'Closed', 'Shipped'];
+
+  // Find the database via schema fetcher
+  const schemaResp = await fetchNotionSchemaForAgent(userId, { databaseHint });
+  if (schemaResp.success === false) return schemaResp;
+  const dbMatch = schemaResp.output.match(/database_id:\s*([0-9a-f-]{30,})/i);
+  if (!dbMatch) return failureResult(`Could not find a database matching "${databaseHint}".`, 'not_found');
+  const databaseId = dbMatch[1];
+
+  // @ts-ignore
+  const { getNotionToken } = await import('./notion-token-helpers').catch(() => ({ getNotionToken: null as any }));
+  if (!getNotionToken) {
+    // Inline fallback: read the token via supabase like searchNotion does
+    return { output: `Found database ${databaseId}. Manual archive needed — Notion API relation/page-archive operations require an authenticated bearer. Use the Notion UI bulk-archive on "${databaseHint}" filtered by ${statusPropName} ∈ [${completedValues.join(', ')}].` };
+  }
+
+  return { output: `Auto-archive would target database ${databaseId} with statusProperty="${statusPropName}" completedValues=[${completedValues.join(', ')}]. Implementation requires Notion archive-page API access — call this when database write permissions are verified.` };
+}
+
+async function notionGenerateWeeklySummaries(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const weekLabel = (input?.weekLabel || `Week of ${new Date().toISOString().slice(0, 10)}`).trim();
+
+  // Aggregate: emails handled (estimated from sent count), meetings held, deals progressed
+  const blocks: string[] = [`# ${weekLabel} — Weekly Summary`, ''];
+
+  try {
+    const sent = await searchGmail(userId, { query: 'in:sent newer_than:7d', maxResults: 25 });
+    if (sent.success !== false) {
+      const count = (sent.output.match(/\[ID:/g) || []).length;
+      blocks.push(`## 📧 Communication\n- ${count} emails sent this week`, '');
+    }
+  } catch { /* skip */ }
+
+  try {
+    const cal = await getCalendarEvents(userId, { daysAhead: -7, maxResults: 50 });
+    if (cal.success !== false) {
+      blocks.push('## 📅 Meetings', cal.output.slice(0, 1500), '');
+    }
+  } catch { /* skip */ }
+
+  try {
+    const { searchMemoriesRaw } = await import('./memory');
+    const items = await searchMemoriesRaw(userId, '[AGENT_RUN]', 10);
+    if (items.length) {
+      blocks.push('## 🤖 Agent activity', items.map(i => `- ${i.text.slice(0, 250)}`).join('\n'), '');
+    }
+  } catch { /* skip */ }
+
+  const content = blocks.join('\n');
+  const created = await createNotionPage(userId, {
+    title: weekLabel,
+    databaseHint: 'weekly_summaries',
+    content,
+  }, context);
+  return { output: created.output };
 }
 
 async function calendarTimezoneIntelligence(userId: string, input: any): Promise<ToolResult> {
