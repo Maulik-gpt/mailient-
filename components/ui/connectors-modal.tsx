@@ -92,9 +92,24 @@ export const BrandIcons = {
 // Definitive list of supported connectors (Phase 4 canonical)
 export const SUPPORTED_APPS = [
   {
+    id: 'gmail',
+    name: 'Gmail',
+    icon: BrandIcons.Gmail,
+    color: '#EA4335',
+    type: 'MCP',
+    author: 'Google',
+    uuid: 'gm-gmail-9a8b-7c6d-5e4f-3g2h1i0j9k8l',
+    website: 'https://mail.google.com',
+    documentation: 'https://developers.google.com/gmail/api',
+    privacyPolicy: 'https://policies.google.com/privacy',
+    description: 'Gmail is the core integration. Without it Arcus cannot search your inbox, draft replies, send mail, label, or archive — every other workflow that touches email depends on this.',
+    details: 'Connect Gmail to let Arcus read your threads, draft replies in your voice, manage labels, archive cleanly, and send approved emails. Requires the four Gmail scopes (read / compose / send / modify) the agent depends on — completing the sign-in grants all four in one consent screen.',
+    smartPrompt: "Search my inbox for any urgent emails from the last 24 hours and summarize them.",
+  },
+  {
     id: 'google_calendar',
-    name: 'Google Calendar', 
-    icon: BrandIcons.GoogleCalendar, 
+    name: 'Google Calendar',
+    icon: BrandIcons.GoogleCalendar,
     color: '#4285F4',
     type: 'MCP',
     author: 'Google',
