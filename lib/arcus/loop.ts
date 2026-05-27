@@ -162,6 +162,43 @@ function extractLastToolResults(messages: any[], maxResults = 3): string {
 // mechanical. This converts them into a plain-English explanation plus a
 // concrete alternative the model can act on or relay.
 
+/**
+ * Convert a tool name to a plain-English bulk noun for progress lines
+ * ("Creating 17 <label> now"). Defaults to tool-name with underscores
+ * replaced by spaces when the tool isn't in the known list.
+ */
+function humanizeBulkLabel(tool: string): string {
+  switch (tool) {
+    case 'draft_reply':
+    case 'draft_cold_email':
+      return 'personalized drafts';
+    case 'send_email':
+      return 'emails';
+    case 'create_notion_page':
+    case 'notion_create_task':
+      return 'Notion pages';
+    case 'schedule_meeting':
+      return 'meetings';
+    case 'send_slack_message':
+    case 'slack_send_dm':
+      return 'Slack messages';
+    case 'gmail_apply_label':
+      return 'labels';
+    case 'gmail_archive_thread':
+      return 'archives';
+    case 'read_email':
+    case 'gmail_read_thread':
+      return 'threads';
+    case 'search_gmail':
+      return 'searches';
+    case 'remember_about_contact':
+    case 'memory_save':
+      return 'memory entries';
+    default:
+      return `${tool.replace(/_/g, ' ')} calls`;
+  }
+}
+
 function humanizeError(tool: string, raw: string): string {
   const e = (raw || '').toLowerCase();
   const friendlyTool = tool.replace(/_/g, ' ');
@@ -614,6 +651,30 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const batch = executableTools.slice(0, slotsLeft);
               totalToolCalls += batch.length;
 
+              // ── PART 8 #1 — bulk progress streaming ──────────────────────────
+              // When the LLM batches ≥3 calls of the same write/draft tool in
+              // one assistant turn, treat it as a bulk operation and stream
+              // incremental progress events the UI can render as a live block.
+              // Parallel execution stays — progress is just a side-channel
+              // counter that increments as each Promise resolves.
+              const toolCounts = new Map<string, number>();
+              for (const tc of batch) toolCounts.set(tc.name, (toolCounts.get(tc.name) || 0) + 1);
+              const progressTrackers = new Map<string, { current: number; total: number; nextMilestone: number; label: string }>();
+              for (const [name, total] of toolCounts) {
+                if (total >= 3) {
+                  const label = humanizeBulkLabel(name);
+                  emit('progress', { phase: 'start', current: 0, total, label, tool: name, iteration });
+                  // Update at quarter-completion checkpoints — for 17 items that's
+                  // 4 updates total (at items 4, 8, 12, 16). Avoids 17-update spam.
+                  progressTrackers.set(name, {
+                    current: 0,
+                    total,
+                    nextMilestone: Math.max(1, Math.floor(total / 4)),
+                    label,
+                  });
+                }
+              }
+
               // Each parallel execution returns a typed result so we can process
               // sequentially after without losing tc context on rejection.
               type ParallelOutcome =
@@ -651,10 +712,33 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     }
 
                     logAudit({ userId, runId, toolName: tc.name, inputSummary: JSON.stringify(tc.input).slice(0, 500), outputSummary: result.output.slice(0, 500), durationMs: Date.now() - toolStart, success: true, iteration });
+                    // Bulk progress increment — emit at quarter milestones plus
+                    // a final 'complete' when the last item lands. Soft-failures
+                    // (success:false) still count toward progress since they
+                    // represent a completed attempt, not a hung Promise.
+                    const tracker = progressTrackers.get(tc.name);
+                    if (tracker) {
+                      tracker.current++;
+                      if (tracker.current === tracker.total) {
+                        emit('progress', { phase: 'complete', current: tracker.total, total: tracker.total, label: tracker.label, tool: tc.name, iteration });
+                      } else if (tracker.current >= tracker.nextMilestone) {
+                        emit('progress', { phase: 'update', current: tracker.current, total: tracker.total, label: tracker.label, tool: tc.name, iteration });
+                        tracker.nextMilestone = Math.min(tracker.total - 1, tracker.current + Math.max(1, Math.floor(tracker.total / 4)));
+                      }
+                    }
                     return { ok: true, tc, result, extraArchiveCount };
                   } catch (err: any) {
                     const errorMsg = err?.message ?? 'Unknown error';
                     logAudit({ userId, runId, toolName: tc.name, inputSummary: JSON.stringify(tc.input).slice(0, 500), durationMs: Date.now() - toolStart, success: false, errorMessage: errorMsg, iteration });
+                    // Thrown failures still count toward bulk completion so the
+                    // progress bar doesn't stall on errors.
+                    const tracker = progressTrackers.get(tc.name);
+                    if (tracker) {
+                      tracker.current++;
+                      if (tracker.current === tracker.total) {
+                        emit('progress', { phase: 'complete', current: tracker.total, total: tracker.total, label: tracker.label, tool: tc.name, iteration });
+                      }
+                    }
                     return { ok: false, tc, error: humanizeError(tc.name, errorMsg) };
                   }
                 })

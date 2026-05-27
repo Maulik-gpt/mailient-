@@ -517,6 +517,14 @@ interface AgentMessage {
     requiresRetry?: boolean; // Phase 1: Whether retry is required
     liveThinking?: string;
     thinkingComplete?: boolean;
+    /**
+     * PART 8 #1 — accumulating live-progress lines for bulk operations.
+     * Each new SSE 'progress' event appends one line ("Creating 17 drafts now",
+     * "Got 11 of 17 created. Finishing the remaining 6 now.", "All 17 drafts
+     * created. Displaying them now."). Rendered as a single stacked block on
+     * the assistant message above the rest of the content.
+     */
+    progressLines?: string[];
     draftReply?: {
       content: string;
       recipientEmail: string;
@@ -2165,6 +2173,31 @@ export default function ChatInterface({
                   return { ...m, meta: { ...(m.meta || {}), taskList: currentTaskList! } };
                 }));
               }
+              break;
+            }
+
+            case 'progress': {
+              // PART 8 #1 — bulk-operation live progress. The loop emits
+              // start / update / complete phases when ≥3 same-tool calls fire
+              // in one batch. We render the phases as stacked lines in a
+              // single live block at the top of the assistant message.
+              const phase = (data.phase || 'update') as 'start' | 'update' | 'complete';
+              const current = typeof data.current === 'number' ? data.current : 0;
+              const total = typeof data.total === 'number' ? data.total : 0;
+              const label = typeof data.label === 'string' ? data.label : 'items';
+              const line =
+                phase === 'start'
+                  ? `Creating ${total} ${label} now.`
+                  : phase === 'complete'
+                    ? `All ${total} ${label} created. Displaying them now.`
+                    : `Got ${current} of ${total} created. Finishing the remaining ${Math.max(0, total - current)} now.`;
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                const prev = ((m as AgentMessage).meta?.progressLines || []) as string[];
+                // Skip if identical to the last line (network races can repeat)
+                if (prev.length && prev[prev.length - 1] === line) return m;
+                return { ...m, meta: { ...(m.meta || {}), progressLines: [...prev, line] } };
+              }));
               break;
             }
 
@@ -4715,6 +4748,31 @@ export default function ChatInterface({
                                           </motion.div>
                                         )}
                                       </AnimatePresence>
+                                    )}
+
+                                    {/* PART 8 #1 — Live progress block. Renders the stacked
+                                        progress lines as a single in-place updating block above
+                                        the rest of the assistant's cards. Hidden when there are
+                                        no lines yet so we don't show an empty container. */}
+                                    {msg.role === 'assistant' && Array.isArray((msg as AgentMessage).meta?.progressLines) && ((msg as AgentMessage).meta!.progressLines!.length > 0) && (
+                                      <div className="mt-2 mb-3 flex flex-col gap-1.5 text-[13.5px] leading-relaxed text-zinc-300 dark:text-white/85">
+                                        {(msg as AgentMessage).meta!.progressLines!.map((line, i, arr) => {
+                                          const isLast = i === arr.length - 1;
+                                          const isComplete = isLast && /^All\s+\d+/.test(line);
+                                          return (
+                                            <div
+                                              key={i}
+                                              className={cn(
+                                                'transition-opacity duration-300',
+                                                isLast ? 'opacity-100' : 'opacity-55',
+                                                isComplete && 'text-emerald-400/95 font-medium',
+                                              )}
+                                            >
+                                              {line}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     )}
 
                                     {/* Confirmation card — shown when AI needs user approval before a major action */}
