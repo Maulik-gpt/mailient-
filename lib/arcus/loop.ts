@@ -450,6 +450,97 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           return;
         }
 
+        // ── PART 11 — Hard intercept: agent-creation requests ──────────────
+        // When the user asks to CREATE / SET UP / SCHEDULE a recurring agent,
+        // the LLM has historically emitted a plan paragraph + "Should I
+        // proceed?" instead of calling create_scheduled_agent. System-prompt
+        // rules alone weren't enough. So we bypass the entire normal flow and
+        // force a tool call to create_scheduled_agent Stage 1 with only that
+        // schema available + forceToolCall: true.
+        //
+        // The detector is conservative — it ignores follow-up messages in an
+        // already-in-progress creation flow (spec approved, plan approved).
+        const AGENT_CREATION_INTENT = /\b(create|set ?up|schedule|build|make|register)\b.{0,60}\b(scheduled|recurring|background|cron|daily|weekly|hourly|monthly|automated?)?\s*(agent|bot|automation|workflow|cron\s*job)\b/i;
+        const isAgentCreationFollowup =
+          userMessage.trim().startsWith('Spec approved for ') ||
+          userMessage.trim().startsWith('Create the scheduled agent now.') ||
+          userMessage.trim().startsWith('Create agent ') ||
+          userMessage.trim().startsWith('Execute these steps in order:');
+
+        const looksLikeAgentCreation =
+          !isPlanMode &&
+          !isBackgroundAgent &&
+          !isAgentCreationFollowup &&
+          AGENT_CREATION_INTENT.test(userMessage);
+
+        if (looksLikeAgentCreation) {
+          emit('thinking', { status: 'Drafting the agent spec…' });
+
+          // The LLM gets ONLY the create_scheduled_agent schema and is forced
+          // to emit a tool call. This makes it physically impossible to emit
+          // a plan paragraph instead.
+          const createAgentSchema = TOOL_SCHEMAS.find(s => s.name === 'create_scheduled_agent');
+          if (!createAgentSchema) {
+            log('error', 'create_scheduled_agent schema missing — falling through to default loop');
+          } else {
+            const intercept = await callLLM(
+              [
+                { role: 'system', content: systemPrompt },
+                {
+                  role: 'system',
+                  content:
+                    'AGENT CREATION INTERCEPT: The user has asked to create a scheduled background agent. ' +
+                    'Your ONLY allowed action this turn is to call create_scheduled_agent ONCE with all required fields including spec_markdown. ' +
+                    'Do NOT write any text. Do NOT call open_canvas. Do NOT call any read tool (search_gmail, gmail_get_profile, get_calendar_events, etc.). ' +
+                    'spec_markdown must contain a full specification document: a "# <Agent Name>" H1, then "## 1. Agent Objective", "## 2. Operational Logic", "## 3. Schedule & Delivery", "## 4. Expected Output". ' +
+                    'No bracketed placeholders. Be specific about what the agent will read, write, and deliver. ' +
+                    'If the user gave you the name, schedule, and delivery channel — use them verbatim. ' +
+                    'If something is genuinely missing, set the field to a reasonable default rather than asking — the spec stage shows the user everything and they can edit before confirming.',
+                },
+                ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
+                { role: 'user', content: userMessage },
+              ],
+              [createAgentSchema],
+              { forceToolCall: true, maxTokens: 4000, temperature: 0.2 },
+            );
+
+            const interceptToolCalls = getToolCalls(intercept.content);
+            const createCall = interceptToolCalls.find(tc => tc.name === 'create_scheduled_agent');
+            if (createCall) {
+              log('info', 'agent_creation_intercept_success', { name: createCall.input?.name });
+              emit('tool_call', { tool: 'create_scheduled_agent', params: createCall.input, iteration: 0 });
+              try {
+                const result = await executeTool(
+                  'create_scheduled_agent',
+                  createCall.input,
+                  userId,
+                  {
+                    conversationId,
+                    toolHistory: [],
+                    isBackgroundAgent,
+                    skipConfirmations,
+                    runId,
+                    agentId,
+                    runState: 'PLANNING' as const,
+                  },
+                );
+                emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
+                if (result.canvasData) emit('canvas', result.canvasData);
+                emit('message', { content: result.output });
+                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
+                controller.close();
+                return;
+              } catch (err: any) {
+                log('error', 'agent_creation_intercept_execution_failed', { error: err.message });
+                emit('error', { message: `Couldn't create the agent: ${err.message}` });
+                controller.close();
+                return;
+              }
+            }
+            log('warn', 'agent_creation_intercept_no_tool_call — falling through to default loop');
+          }
+        }
+
         // ── PART 10: Auto-detect plan-first tasks ───────────────────────────
         // Patterns that indicate irreversible or multi-step actions that benefit
         // from an explicit approval step before execution.
