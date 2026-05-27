@@ -1319,11 +1319,24 @@ export interface ToolContext {
    * fail open with a warning logged.
    */
   toolHistory?: ToolHistoryEntry[];
-  
+
   isBackgroundAgent?: boolean;
   skipConfirmations?: boolean;
   runId?: string;
   agentId?: string;
+
+  /**
+   * FIX 1 — State machine at tool level.
+   * The loop passes the current run phase so write tools can enforce
+   * "no writes without prior approval" even when the session-state DB is
+   * unreachable (the consumeApproval gate fails-open in that scenario).
+   * PLANNING  → read-only; writes always blocked.
+   * CONFIRMING → waiting on user; writes still blocked.
+   * EXECUTING  → user approved; writes allowed.
+   * REPORTING  → writes blocked (run is wrapping up).
+   * Omitted for background-agent runs (they use skipConfirmations instead).
+   */
+  runState?: 'PLANNING' | 'CONFIRMING' | 'EXECUTING' | 'REPORTING';
 }
 
 /**
@@ -2285,6 +2298,18 @@ async function draftColdEmail(userId: string, input: any): Promise<ToolResult> {
 }
 
 async function sendEmail(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // FIX 1 — State machine at tool level (belt-and-braces over consumeApproval).
+  // If runState is PLANNING or CONFIRMING, writes are unconditionally blocked
+  // regardless of whether the session-state DB is reachable. This catches the
+  // edge case where consumeApproval fails open (DB unreachable) AND the LLM
+  // skipped request_confirmation entirely.
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to send email — current state is ${context.runState}. Call request_confirmation first with { To: "${input.to || ''}", Subject: "${input.subject || ''}" }, wait for the user to click Confirm (state will become EXECUTING), then retry send_email.`,
+      'confirmation_required',
+    );
+  }
+
   // Executor-level confirmation gate. The system prompt tells the LLM to call
   // request_confirmation first, but prompt rules drift — the gate here makes
   // it non-negotiable. consumeApproval fails open if the migration isn't
@@ -2383,6 +2408,14 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
 }
 
 async function scheduleMeeting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // FIX 1 — State machine gate (belt-and-braces, see sendEmail).
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to schedule — current state is ${context.runState}. Call request_confirmation first with the meeting details, wait for the user to click Confirm (state will become EXECUTING), then retry schedule_meeting.`,
+      'confirmation_required',
+    );
+  }
+
   // PART 4 Rule 3 — Never invent availability. The LLM must have checked the
   // calendar before proposing a time. Accepts either get_calendar_events or
   // calendar_get_availability earlier in the same run; notion_get_calendar_events
@@ -2949,6 +2982,14 @@ async function fetchNotionDbSchema(
 // ── createNotionPage ────────────────────────────────────────────────────────────
 
 async function createNotionPage(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // FIX 1 — State machine gate (belt-and-braces, see sendEmail).
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to create Notion page — current state is ${context.runState}. Call request_confirmation first with { Database: "${input.database || ''}", Title: "${input.title || ''}" }, wait for the user to click Confirm (state will become EXECUTING), then retry create_notion_page.`,
+      'confirmation_required',
+    );
+  }
+
   if (context.conversationId) {
     const targetKey = normalizeTargetKey('create_notion_page', input);
     const { approved, failedOpen } = await consumeApproval({
@@ -4379,6 +4420,14 @@ async function slackSendDm(userId: string, input: any, context: ToolContext = {}
   const text = (input?.text || '').trim();
   if (!targetUserId) return failureResult('userId is required (use slack_find_user to resolve).', 'validation_error');
   if (!text) return failureResult('text is required.', 'validation_error');
+
+  // FIX 1 — State machine gate (belt-and-braces, see sendEmail).
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to send Slack DM — current state is ${context.runState}. Call request_confirmation first with action "Send Slack DM" and details { User: "${targetUserId}" }, wait for the user to click Confirm (state will become EXECUTING), then retry slack_send_dm.`,
+      'confirmation_required',
+    );
+  }
 
   if (context.conversationId) {
     const targetKey = normalizeTargetKey('send_slack_dm', input);

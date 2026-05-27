@@ -87,6 +87,7 @@ If skip_confirmations was FALSE: "No links — this was a proposal run. Enable s
 ---
 Sent by Arcus for Mailient • mailient.xyz
 Run completed: [current UTC timestamp]
+Next run: [next scheduled run time, e.g. "Tomorrow at 8:00 AM" or "In 24 hours" — derive from agent schedule if known, otherwise omit this line]
 
 **VOICE & TONE (NON-NEGOTIABLE):**
 - First person from Arcus: "I drafted 6 replies" not "6 replies were drafted."

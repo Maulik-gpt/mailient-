@@ -301,14 +301,6 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // (schedule_meeting requires a preceding calendar fetch) can verify the
   // LLM actually fetched ground truth before acting.
   const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
-  const buildToolContext = () => ({
-    conversationId,
-    toolHistory: [...toolHistory],
-    isBackgroundAgent,
-    skipConfirmations,
-    runId,
-    agentId,
-  });
 
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations, isBackgroundAgent);
   const toolCallLimit =
@@ -512,6 +504,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         // the gate is open. Cheap heuristic; the real gate is consumeApproval.
         const looksLikeApproval = /^(yes|y|yep|yeah|go ahead|confirmed|confirm|please proceed|do it|send it|proceed)\b/i.test(userMessage.trim());
         if (looksLikeApproval) transitionState('EXECUTING', 'user_message_looks_like_approval');
+
+        // FIX 1 — buildToolContext is defined here (inside start()) so it can
+        // close over `runState`, which is a let-mutable declared above. The
+        // arrow function re-reads runState on every call, so write tools always
+        // see the current phase — not a stale snapshot from construction time.
+        const buildToolContext = () => ({
+          conversationId,
+          toolHistory: [...toolHistory],
+          isBackgroundAgent,
+          skipConfirmations,
+          runId,
+          agentId,
+          runState: runState as 'PLANNING' | 'CONFIRMING' | 'EXECUTING' | 'REPORTING',
+        });
 
         // ── Context Switching Elimination: Unified context sweep ───────────
         // For broad tasks ("morning brief", "prepare for tomorrow", "what did I miss"),
@@ -893,12 +899,22 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 // acknowledgement instruction breaks that loop.
                 if (result.success === false) {
                   const code = result.errorCode || 'tool_failed';
+                  // FIX 2 — enforce exact user-facing acknowledgement format.
+                  // The LLM MUST say "I couldn't [action] because [reason].
+                  // Would you like me to [alternative]?" before doing anything
+                  // else. Generic "I'll try a different approach" without naming
+                  // the failure is not acceptable.
+                  const friendlyAction = tc.name.replace(/_/g, ' ');
                   const failureMsg =
                     `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
-                    `You MUST handle this failure explicitly. Do not pretend it succeeded. ` +
-                    `Either (a) tell the user exactly what failed in one sentence and what they should do, ` +
-                    `or (b) try a documented alternative tool if one exists. ` +
-                    `Never fabricate the data this tool would have returned.`;
+                    `MANDATORY RESPONSE FORMAT — use this exact structure in your next message:\n` +
+                    `"I couldn't ${friendlyAction} because [plain-English reason from the error above]. Would you like me to [specific alternative action]?"\n\n` +
+                    `Rules:\n` +
+                    `- Name the exact action that failed (not a generic "that step").\n` +
+                    `- State the reason in plain English — no error codes, no technical jargon.\n` +
+                    `- Offer one concrete alternative (retry, use a different tool, skip this step, ask the user to reconnect).\n` +
+                    `- Do NOT continue the task, call more tools, or fabricate data from this tool.\n` +
+                    `- Do NOT say "I'll try a different approach" without first acknowledging the failure to the user.`;
                   log('warn', `tool_result soft_fail`, { tool: tc.name, code, output: result.output.slice(0, 200) });
                   emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
                   outcomes.push({ tool: tc.name, ok: false, error: result.output });
