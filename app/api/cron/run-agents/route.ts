@@ -96,88 +96,110 @@ export async function GET(request: NextRequest) {
     }),
   );
 
+  // ── Pre-flight pass ──────────────────────────────────────────────────────
+  // Walk every active agent ONCE and classify it:
+  //   - expired → pause and skip
+  //   - stuck-locked → either recover or skip
+  //   - not due this tick → skip silently
+  //   - due → add to the parallel run batch
+  // No cron-time math inside the parallel batch — the schedule decision
+  // happens once, here.
+  const readyToRun: any[] = [];
   for (const agent of agents) {
-    try {
-      // Expiry: stop (and deactivate) agents past their expiry date.
-      if (agent.expires_at) {
-        const expiryEnd = new Date(`${agent.expires_at}T23:59:59Z`).getTime();
-        if (now.getTime() > expiryEnd) {
-          if (agent.status !== 'paused') {
-            await supabase.from('arcus_agents').update({ status: 'paused' }).eq('id', agent.id);
-            results.push(`Expired (paused): ${agent.name}`);
-          }
-          continue;
+    if (agent.expires_at) {
+      const expiryEnd = new Date(`${agent.expires_at}T23:59:59Z`).getTime();
+      if (now.getTime() > expiryEnd) {
+        if (agent.status !== 'paused') {
+          await supabase.from('arcus_agents').update({ status: 'paused' }).eq('id', agent.id);
+          results.push(`Expired (paused): ${agent.name}`);
         }
-      }
-
-      // Stuck-lock recovery: a 'running' row is either a genuinely in-flight
-      // run (skip it) or a crashed/timed-out run that never reset its status
-      // (older than STALE_LOCK_MIN — let it run again so it isn't lost forever).
-      if (agent.status === 'running') {
-        const startedMinAgo = agent.last_run_at
-          ? (now.getTime() - new Date(agent.last_run_at).getTime()) / 60000
-          : Infinity;
-        if (startedMinAgo < STALE_LOCK_MIN) continue;
-        results.push(`Recovering stuck agent: ${agent.name}`);
-      }
-
-      const userTz = tzMap[agent.user_id] || 'UTC';
-      if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
-
-      // Stop launching new agents once there isn't enough time left to run
-      // one and still deliver its report within this function invocation.
-      const remaining = timeLeftMs() - DELIVERY_RESERVE_MS;
-      if (remaining < 12_000) {
-        results.push(`Deferred (out of time this tick): ${agent.name}`);
         continue;
       }
-
-      ran++;
-      results.push(`Running: ${agent.name} (${agent.user_id})`);
-
-      await supabase.from('arcus_agents').update({ status: 'running' }).eq('id', agent.id);
-
-      // Dynamic tool-call budget: give the agent as many calls as it can
-      // fit in the remaining wall-clock time. Rule of thumb: each tool call
-      // costs ~2.5 s on average (LLM round-trip + API call), so we derive a
-      // soft cap from the time budget rather than an arbitrary fixed number.
-      // Floor at 20 so short-lived ticks still do meaningful work, cap at 80
-      // so a single greedy agent can't starve the next agent in the same tick.
-      const derivedToolCalls = Math.min(80, Math.max(20, Math.floor(remaining / 2500)));
-      const report = await runAgentTask(agent, {
-        maxToolCalls: derivedToolCalls,
-        deadlineMs: remaining,
-      });
-
-      // Check if this run queued any actions for user approval
-      const runHasPending = await hasPendingActions(agent.id);
-
-      // Always deliver email via Resend — regardless of output_channel setting.
-      // Resend is cheap (3k/month free) and email is the universal fallback.
-      await sendEmailReport(agent.user_id, agent.name, report, runHasPending);
-
-      // Always attempt Slack if the user has Slack connected or a bot token exists.
-      // Use the configured slack_channel if set; otherwise DM the user directly.
-      await sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending);
-
-      await supabase
-        .from('arcus_agents')
-        .update({
-          status: 'active',
-          last_run_at: now.toISOString(),
-          last_report_summary: report.slice(0, 500),
-        })
-        .eq('id', agent.id);
-
-    } catch (err: any) {
-      console.error(`[Cron] Agent ${agent.name} failed:`, err.message);
-      await supabase
-        .from('arcus_agents')
-        .update({ status: 'active', last_run_at: now.toISOString(), last_report_summary: `Error: ${err.message}` })
-        .eq('id', agent.id);
-      try { await sendErrorNotification(agent, err.message); } catch { /* non-critical */ }
     }
+
+    if (agent.status === 'running') {
+      const startedMinAgo = agent.last_run_at
+        ? (now.getTime() - new Date(agent.last_run_at).getTime()) / 60000
+        : Infinity;
+      if (startedMinAgo < STALE_LOCK_MIN) continue;
+      results.push(`Recovering stuck agent: ${agent.name}`);
+    }
+
+    const userTz = tzMap[agent.user_id] || 'UTC';
+    if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
+    readyToRun.push(agent);
   }
+
+  if (readyToRun.length === 0) {
+    return NextResponse.json({ message: 'No agents due this tick.', ran: 0, results });
+  }
+
+  // ── Parallel run ─────────────────────────────────────────────────────────
+  // All due agents run concurrently within the same wall-clock budget. Each
+  // gets the SAME deadlineMs (function ends at the same time for everyone)
+  // and an equal share of the tool-call ceiling so one greedy agent can't
+  // starve another in the same tick.
+  const sharedBudget = timeLeftMs() - DELIVERY_RESERVE_MS;
+  if (sharedBudget < 12_000) {
+    results.push(`Skipped ${readyToRun.length} agent(s) — insufficient budget this tick.`);
+    return NextResponse.json({ message: 'Insufficient budget.', ran: 0, results });
+  }
+
+  // Per-agent tool-call ceiling: derived from per-agent share of remaining
+  // wall-clock time. Two agents running in parallel each get ~half the calls
+  // a single agent would get, because they're competing for the same LLM
+  // throughput. Floor at 20, cap at 80.
+  const perAgentSlice = sharedBudget / readyToRun.length;
+  const perAgentToolCalls = Math.min(80, Math.max(20, Math.floor(perAgentSlice / 2500)));
+
+  // Mark all as 'running' up front so the next tick doesn't double-launch
+  // any of them if this function takes longer than the cron interval.
+  await Promise.all(
+    readyToRun.map(a =>
+      supabase.from('arcus_agents').update({ status: 'running' }).eq('id', a.id),
+    ),
+  );
+
+  const runResults = await Promise.allSettled(
+    readyToRun.map(async (agent) => {
+      results.push(`Running: ${agent.name} (${agent.user_id})`);
+      try {
+        const report = await runAgentTask(agent, {
+          maxToolCalls: perAgentToolCalls,
+          deadlineMs: sharedBudget,
+        });
+
+        const runHasPending = await hasPendingActions(agent.id);
+
+        // Delivery (email + Slack) in parallel per agent
+        await Promise.allSettled([
+          sendEmailReport(agent.user_id, agent.name, report, runHasPending),
+          sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
+        ]);
+
+        await supabase
+          .from('arcus_agents')
+          .update({
+            status: 'active',
+            last_run_at: now.toISOString(),
+            last_report_summary: report.slice(0, 500),
+          })
+          .eq('id', agent.id);
+
+        return agent.name;
+      } catch (err: any) {
+        console.error(`[Cron] Agent ${agent.name} failed:`, err.message);
+        await supabase
+          .from('arcus_agents')
+          .update({ status: 'active', last_run_at: now.toISOString(), last_report_summary: `Error: ${err.message}` })
+          .eq('id', agent.id);
+        try { await sendErrorNotification(agent, err.message); } catch { /* non-critical */ }
+        throw err;
+      }
+    }),
+  );
+
+  ran = runResults.filter(r => r.status === 'fulfilled').length;
 
   return NextResponse.json({ message: `Ran ${ran} agents.`, results });
 }

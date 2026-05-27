@@ -721,6 +721,69 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'build_worklist',
+    description:
+      'Background-agent helper. Scans the inbox with a query and returns a filtered, tiered worklist of email threads that are actually worth processing this run. ' +
+      'Filters out newsletters and promos. Skips threads the previous agent run already processed (looked up from memory by agentName). Skips threads currently claimed by other agents. ' +
+      'Tiers: 1 = known client, 2 = revenue signal (contract/invoice/proposal/pricing), 3 = scheduling, 4 = other. Output is sorted by tier ascending. ' +
+      'Use this BEFORE iterating through emails one-by-one — it cuts a 200-email inbox to ~30 items and prevents re-processing. ' +
+      'Output: JSON array of {id, label, tier, signal} OR "No new items." Errors (success:false): validation_error, gmail_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agentName: { type: 'string', description: 'Stable name of the calling agent — used to look up its previous run history.' },
+        gmailQuery: { type: 'string', description: 'Gmail search query, e.g. "is:unread newer_than:1d" or "from:@client.com".' },
+        maxResults: { type: 'number', description: 'Max results to scan (default 50, ceiling 100).' },
+        clientDomains: { type: 'array', items: { type: 'string' }, description: 'Optional list of known client domains for tier-1 promotion, e.g. ["bigco.com","acme.io"].' },
+      },
+      required: ['agentName', 'gmailQuery'],
+    },
+  },
+  {
+    name: 'claim_worklist_items',
+    description:
+      'Background-agent helper. Records that the calling agent intends to process these item ids (Gmail thread ids, etc.) — written to a shared scratchpad with a 10-minute TTL. ' +
+      'Other agents that call build_worklist will see these ids as "claimed by others" and skip them. Call IMMEDIATELY after build_worklist, before doing any actual work, so parallel agents do not duplicate. ' +
+      'Output: "Claimed N items." Errors (success:false): validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agentId: { type: 'string', description: 'UUID of the calling agent (from agent context).' },
+        agentName: { type: 'string', description: 'Human-readable agent name.' },
+        itemIds: { type: 'array', items: { type: 'string' }, description: 'Item ids being claimed.' },
+      },
+      required: ['agentId', 'agentName', 'itemIds'],
+    },
+  },
+  {
+    name: 'check_draft_quality',
+    description:
+      'Self-correction helper. Scores a draft email body for generic filler ("I hope this finds you well", "looking forward to hearing from you", "synergies", etc.). ' +
+      'Use AFTER calling draft_reply or draft_cold_email but BEFORE send_email — if the score is too high, re-draft with more specifics. ' +
+      'Output: JSON {score (0-100), flagged: [{phrase, reason}], shouldRedraft (boolean — true at score >= 35)}. Errors (success:false): validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        draftBody: { type: 'string', description: 'The full draft email body to check.' },
+      },
+      required: ['draftBody'],
+    },
+  },
+  {
+    name: 'record_processed_items',
+    description:
+      'Background-agent helper. Persists the ids of items this run processed so the NEXT run can deduplicate. Call ONCE near the end of the run, before writing the report. ' +
+      'Output: "Recorded N processed items for next-run dedup." Errors (success:false): validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agentName: { type: 'string', description: 'Stable name of the calling agent.' },
+        itemIds: { type: 'array', items: { type: 'string' }, description: 'Item ids that were processed this run.' },
+      },
+      required: ['agentName', 'itemIds'],
+    },
+  },
+  {
     name: 'memory_get_contact_profile',
     description:
       'Aggregate everything Arcus knows about one contact: the persisted relationship row (notes / tags / email count / last contact) PLUS Supermemory items mentioning their email or name. ' +
@@ -1210,6 +1273,10 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   memory_search: null,
   memory_save: null,
   memory_get_contact_profile: null,
+  build_worklist: 'gmail',
+  claim_worklist_items: null,
+  check_draft_quality: null,
+  record_processed_items: null,
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -1443,6 +1510,10 @@ export async function executeTool(
       case 'memory_search':         result = await memorySearchTool(userId, input); break;
       case 'memory_save':           result = await memorySaveTool(userId, input); break;
       case 'memory_get_contact_profile': result = await memoryGetContactProfile(userId, input); break;
+      case 'build_worklist':        result = await buildWorklistTool(userId, input); break;
+      case 'claim_worklist_items':  result = await claimWorklistItemsTool(userId, input); break;
+      case 'check_draft_quality':   result = checkDraftQualityTool(input); break;
+      case 'record_processed_items': result = await recordProcessedItemsTool(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -5874,4 +5945,101 @@ async function reportSendSlack(userId: string, input: any, context: ToolContext 
   if (!postData.ok) return failureResult(`Slack error: ${postData.error || 'unknown'}.`, 'upstream_slack');
 
   return { output: `Sent report to DM-to-self. ts: ${postData.ts}.` };
+}
+
+// ── Autonomy tools — filter at source, claim, self-check, dedup ───────────────
+
+async function buildWorklistTool(userId: string, input: any): Promise<ToolResult> {
+  const agentName = (input?.agentName || '').trim();
+  const gmailQuery = (input?.gmailQuery || '').trim();
+  if (!agentName) return failureResult('agentName is required.', 'validation_error');
+  if (!gmailQuery) return failureResult('gmailQuery is required.', 'validation_error');
+
+  const maxResults = Math.max(1, Math.min(100, Number(input?.maxResults) || 50));
+  const clientDomains = new Set<string>(
+    Array.isArray(input?.clientDomains)
+      ? input.clientDomains.map((d: any) => String(d).toLowerCase().trim()).filter(Boolean)
+      : [],
+  );
+
+  const {
+    buildWorklist,
+    loadPreviouslyProcessedIds,
+    readActiveClaims,
+    scoreEmailLine,
+  } = await import('./autonomy');
+
+  // 1. Scan inbox
+  const rawSearch = await searchGmail(userId, { query: gmailQuery, maxResults });
+  if (rawSearch.success === false) return rawSearch;
+
+  // 2. Parse lines and pull thread ids
+  const lines = rawSearch.output.split('\n').filter(l => l.trim());
+  const scored: any[] = [];
+  for (const line of lines) {
+    const idMatch = line.match(/(?:thread(?:Id)?[:=]\s*|^|\s)([0-9a-f]{12,20})\b/i);
+    const threadId = idMatch?.[1] || '';
+    if (!threadId) continue;
+    const item = scoreEmailLine(line, threadId, clientDomains);
+    if (item) scored.push(item);
+  }
+
+  // 3. Dedup against prior runs + other agents
+  const [previouslyProcessed, claimedByOthers] = await Promise.all([
+    loadPreviouslyProcessedIds(userId, agentName),
+    readActiveClaims(userId),
+  ]);
+
+  const worklist = buildWorklist(scored, {
+    previouslyProcessedIds: previouslyProcessed,
+    claimedByOthers,
+  });
+
+  if (!worklist.length) {
+    return { output: 'No new items. (All matching threads were processed in a previous run or claimed by another agent.)' };
+  }
+
+  return {
+    output: JSON.stringify(worklist.slice(0, 50), null, 2),
+  };
+}
+
+async function claimWorklistItemsTool(userId: string, input: any): Promise<ToolResult> {
+  const agentId = (input?.agentId || '').trim();
+  const agentName = (input?.agentName || '').trim();
+  const itemIds: string[] = Array.isArray(input?.itemIds)
+    ? input.itemIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!agentId) return failureResult('agentId is required.', 'validation_error');
+  if (!agentName) return failureResult('agentName is required.', 'validation_error');
+  if (!itemIds.length) return { output: 'Claimed 0 items.' };
+
+  const { writeClaim } = await import('./autonomy');
+  await writeClaim(userId, agentId, agentName, itemIds);
+  return { output: `Claimed ${itemIds.length} item${itemIds.length === 1 ? '' : 's'} for ${agentName}.` };
+}
+
+function checkDraftQualityTool(input: any): ToolResult {
+  const draftBody = (input?.draftBody || '').trim();
+  if (!draftBody) return failureResult('draftBody is required.', 'validation_error');
+
+  // Synchronous — no Supabase or HTTP work. Detector is regex-only.
+  // We need the import lazy to avoid loading autonomy.ts in unrelated codepaths.
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { detectGenericFiller } = require('./autonomy');
+  const result = detectGenericFiller(draftBody);
+  return { output: JSON.stringify(result, null, 2) };
+}
+
+async function recordProcessedItemsTool(userId: string, input: any): Promise<ToolResult> {
+  const agentName = (input?.agentName || '').trim();
+  const itemIds: string[] = Array.isArray(input?.itemIds)
+    ? input.itemIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!agentName) return failureResult('agentName is required.', 'validation_error');
+  if (!itemIds.length) return { output: 'Recorded 0 processed items.' };
+
+  const { recordProcessedIds } = await import('./autonomy');
+  await recordProcessedIds(userId, agentName, itemIds);
+  return { output: `Recorded ${itemIds.length} processed item${itemIds.length === 1 ? '' : 's'} for next-run dedup.` };
 }

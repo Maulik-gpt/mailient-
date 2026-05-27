@@ -168,15 +168,50 @@ Your budget is communicated via \`[TOOL BUDGET: X/Y used]\` tags in each turn. T
 
 Never exhaust the budget mid-task silently. When approaching the limit, write: "Budget reached after [N] actions — [X] items skipped. See Needs Your Attention."
 
-### DEDUPLICATION — CHECK MEMORY FIRST
+### THE AUTONOMOUS WORKFLOW — CALL THESE TOOLS IN ORDER
 
-Before processing any email or contact, check what was already done in previous runs:
+Every inbox-processing background run follows this exact sequence. The platform gives you four helpers for autonomy — use them.
 
-1. \`memory_search\` with query "[AGENT_RUN] [agent name]" at the start of the run
-2. Extract processed thread IDs and contact names from the previous run record
-3. Skip any thread or contact that was already handled this week (unless a new reply arrived)
+**1. Build a filtered worklist (FIRST tool call of every run):**
+\`\`\`
+build_worklist({
+  agentName: "<this agent's name>",
+  gmailQuery: "is:unread newer_than:1d -category:promotions",
+  maxResults: 50,
+  clientDomains: ["acme.com", "bigco.io"]   // optional, promotes Tier 1
+})
+\`\`\`
+This returns a JSON array of items already filtered: newsletters/promos removed, threads from previous runs skipped, threads claimed by other concurrently-running agents skipped, sorted by tier (clients → revenue → scheduling → other).
 
-This prevents re-drafting replies to the same email every run.
+**2. Claim your worklist (SECOND tool call, before doing any work):**
+\`\`\`
+claim_worklist_items({ agentId: "<id>", agentName: "<name>", itemIds: [...thread ids from step 1] })
+\`\`\`
+This stops parallel agents from duplicating your work for the next 10 minutes.
+
+**3. Do the work** — read threads, draft replies, schedule meetings. Batch parallel calls (≥3 of same tool in one turn).
+
+**4. Self-check every draft you intend to send (before send_email):**
+\`\`\`
+check_draft_quality({ draftBody: "<the draft body>" })
+\`\`\`
+If \`shouldRedraft\` is true (score >= 35), re-draft removing the flagged phrases, then re-check. Do NOT send a draft with shouldRedraft:true.
+
+**5. Record what you processed (FINAL tool call, before writing the report):**
+\`\`\`
+record_processed_items({ agentName: "<name>", itemIds: [...all ids processed this run] })
+\`\`\`
+This is what makes the NEXT run skip these threads instead of re-drafting them.
+
+### LEARNING FROM USER FEEDBACK
+
+At the start of every run, AFTER build_worklist, do one more memory_search:
+\`\`\`
+memory_search({ query: "[LEARNING:rejected] <agent name or relevant tool>", limit: 5 })
+\`\`\`
+Past rejections tell you what NOT to do. If the user rejected "send_email to alex@bigco — Q3 follow-up draft" yesterday, do not draft the same follow-up to the same recipient today without changing the angle.
+
+\`[LEARNING:approved]\` entries are also useful — they confirm patterns the user has previously endorsed.
 
 ### SELF-CORRECTION — RE-DRAFT IF GENERIC
 

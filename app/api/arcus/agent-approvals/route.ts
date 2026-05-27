@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth as nextAuth } from '@/lib/auth.js';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { executeTool } from '../../../../lib/arcus/tools';
+import { recordLearningEvent } from '../../../../lib/arcus/autonomy';
 
 // @ts-ignore
 const auth: any = nextAuth;
@@ -105,10 +106,11 @@ export async function POST(request: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  // Fetch the action — verify it belongs to this user and is still pending
+  // Fetch the action — verify it belongs to this user and is still pending.
+  // Join arcus_agents to pull the agent name for the learning-loop record.
   const { data: action, error: fetchErr } = await supabase
     .from('arcus_agent_pending_actions')
-    .select('*')
+    .select('*, arcus_agents!inner ( name )')
     .eq('id', actionId)
     .eq('user_id', email.toLowerCase())
     .eq('status', 'pending')
@@ -122,12 +124,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Action not found, already resolved, or does not belong to you.' }, { status: 404 });
   }
 
+  const agentName = (action as any).arcus_agents?.name as string | undefined;
+
   // ── Reject path ──────────────────────────────────────────────────────────
   if (decision === 'reject') {
     await supabase
       .from('arcus_agent_pending_actions')
       .update({ status: 'rejected', resolved_at: new Date().toISOString() })
       .eq('id', actionId);
+
+    // Learning loop: persist the rejection so future runs can pattern-match
+    // against this user's past corrections. Fire-and-forget — never blocks.
+    recordLearningEvent({
+      userId: action.user_id,
+      agentId: action.agent_id,
+      agentName,
+      toolName: action.tool_name,
+      toolInput: action.tool_input || {},
+      decision: 'rejected',
+    }).catch(() => {});
+
     return NextResponse.json({ success: true, message: 'Action rejected.' });
   }
 
@@ -146,6 +162,17 @@ export async function POST(request: NextRequest) {
       .from('arcus_agent_pending_actions')
       .update({ status: 'approved', resolved_at: new Date().toISOString() })
       .eq('id', actionId);
+
+    // Learning loop: persist the approval. Future runs reading the same
+    // recipient/target will see a positive precedent.
+    recordLearningEvent({
+      userId: action.user_id,
+      agentId: action.agent_id,
+      agentName,
+      toolName: action.tool_name,
+      toolInput: action.tool_input || {},
+      decision: 'approved',
+    }).catch(() => {});
 
     const label = TOOL_LABELS[action.tool_name] || action.tool_name;
     return NextResponse.json({
