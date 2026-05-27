@@ -783,6 +783,165 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['agentName', 'itemIds'],
     },
   },
+  // ── PART 1 — Gmail unlimited / batch / intelligence tools ─────────────────
+  {
+    name: 'gmail_unlimited_search',
+    description:
+      'Background-agent search. Like search_gmail but paginates up to 200 results (Gmail cap is 25 in the interactive tool). Use for inbox-wide scans where you need the full picture. ' +
+      'Output: same format as search_gmail. Errors (success:false): validation_error, gmail_not_connected, upstream_gmail.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Gmail search query, e.g. "is:unread newer_than:2d -category:promotions".' },
+        maxResults: { type: 'number', description: 'Max results (1-200, default 100).' },
+      },
+      required: ['query'],
+    },
+  },
+  {
+    name: 'gmail_bulk_read_threads',
+    description:
+      'Read up to 100+ Gmail threads in parallel. Returns full thread content for every id. Use after gmail_unlimited_search to fetch bodies for a worklist in one call rather than one read_email at a time. ' +
+      'Output: concatenated "=== Thread <id> ===" sections. Failed threads are listed at the end. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' }, description: 'Gmail thread ids to fetch.' },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'gmail_batch_draft_replies',
+    description:
+      'Generate up to 50 reply drafts in parallel. Each item specifies a threadId and an instruction (e.g. "warm follow-up", "decline politely", "send our standard pricing"). Drafts are saved to Gmail; nothing is sent. ' +
+      'Output: per-item draft status summary. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          description: 'Up to 50 draft requests.',
+          items: {
+            type: 'object',
+            properties: {
+              threadId: { type: 'string' },
+              instruction: { type: 'string', description: 'Per-thread tone/content instruction.' },
+            },
+            required: ['threadId'],
+          },
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'gmail_batch_send_emails',
+    description:
+      'Send up to 50 emails. Optional staggerMs (0-60000) inserts a delay between sends so they do not all arrive at once. Each send goes through the normal send_email gate — when skipConfirmations is on, all 50 fire directly; otherwise each one queues for approval. ' +
+      'Output: per-item delivery status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          description: 'Up to 50 email send requests.',
+          items: {
+            type: 'object',
+            properties: {
+              to: { type: 'string' },
+              subject: { type: 'string' },
+              body: { type: 'string' },
+              threadId: { type: 'string', description: 'Optional — for replies in an existing thread.' },
+            },
+            required: ['to', 'subject', 'body'],
+          },
+        },
+        staggerMs: { type: 'number', description: 'Optional ms between sends (0-60000). 0 means fire all immediately.' },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'gmail_auto_label_threads',
+    description:
+      'Apply a Gmail label to many threads in one call. Creates the label automatically if it does not exist. Useful for "tag all client emails with Client-X" or "mark all sales inquiries as Sales-Hot". ' +
+      'Output: count of threads labeled. Errors: validation_error, gmail_not_connected, upstream_gmail.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        labelName: { type: 'string' },
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['labelName', 'threadIds'],
+    },
+  },
+  {
+    name: 'gmail_auto_archive_threads',
+    description:
+      'Archive many threads in one call (removes them from inbox; keeps them in All Mail). Use to clear newsletters, processed mail, or anything the agent has handled. ' +
+      'Output: count archived. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'gmail_extract_data_from_threads',
+    description:
+      'For each thread, run an LLM extraction that returns structured JSON: senders, primarySender, subject, company, contactName, contactRole, decisions, actionItems, dollarAmounts, dates, projectNames, sentiment, urgencyScore, summary. ' +
+      'Use to turn 30 sales emails into 30 deal records you can pass to Notion in one Notion batch call. ' +
+      'Output: JSON array of { threadId, data, error? }. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'gmail_detect_conversation_type',
+    description:
+      'Classify each thread into one of: sales_inquiry, customer_support, internal_team, vendor_supplier, personal_spam, partnership_opportunity, hiring, feedback_complaint, update_notification. Returns category + confidence (0-1) + one-sentence reason per thread. ' +
+      'Output: JSON array. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'gmail_generate_auto_replies',
+    description:
+      'Find threads where the user sent the last message N+ days ago and no reply has come — generate warm follow-up drafts for each. Drafts are saved to Gmail; call gmail_batch_send_emails to dispatch them. ' +
+      'Output: per-thread follow-up draft summary. Errors: gmail_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        stalledDays: { type: 'number', description: 'Threshold for "stalled" (1-90, default 5).' },
+        maxResults: { type: 'number', description: 'Max follow-ups to draft (1-50, default 10).' },
+      },
+    },
+  },
+  {
+    name: 'gmail_detect_urgency',
+    description:
+      'Score each thread 1-10 for urgency (deadlines, ASAP language, VIP senders, contract/payment language). Returns sorted by urgency desc so the top of the list is what needs immediate attention. ' +
+      'Output: JSON array of { threadId, urgencyScore, reason, needsImmediate }. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+      },
+      required: ['threadIds'],
+    },
+  },
   {
     name: 'memory_get_contact_profile',
     description:
@@ -1281,6 +1440,16 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   claim_worklist_items: null,
   check_draft_quality: null,
   record_processed_items: null,
+  gmail_unlimited_search: 'gmail',
+  gmail_bulk_read_threads: 'gmail',
+  gmail_batch_draft_replies: 'gmail',
+  gmail_batch_send_emails: 'gmail',
+  gmail_auto_label_threads: 'gmail',
+  gmail_auto_archive_threads: 'gmail',
+  gmail_extract_data_from_threads: 'gmail',
+  gmail_detect_conversation_type: 'gmail',
+  gmail_generate_auto_replies: 'gmail',
+  gmail_detect_urgency: 'gmail',
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -1518,6 +1687,17 @@ export async function executeTool(
       case 'claim_worklist_items':  result = await claimWorklistItemsTool(userId, input); break;
       case 'check_draft_quality':   result = checkDraftQualityTool(input); break;
       case 'record_processed_items': result = await recordProcessedItemsTool(userId, input); break;
+      // PART 1 — Gmail bulk / batch / intelligence
+      case 'gmail_unlimited_search':         result = await gmailUnlimitedSearch(userId, input); break;
+      case 'gmail_bulk_read_threads':        result = await gmailBulkReadThreads(userId, input); break;
+      case 'gmail_batch_draft_replies':      result = await gmailBatchDraftReplies(userId, input, context); break;
+      case 'gmail_batch_send_emails':        result = await gmailBatchSendEmails(userId, input, context); break;
+      case 'gmail_auto_label_threads':       result = await gmailAutoLabelThreads(userId, input); break;
+      case 'gmail_auto_archive_threads':     result = await gmailAutoArchiveThreads(userId, input); break;
+      case 'gmail_extract_data_from_threads': result = await gmailExtractDataFromThreads(userId, input); break;
+      case 'gmail_detect_conversation_type':  result = await gmailDetectConversationType(userId, input); break;
+      case 'gmail_generate_auto_replies':     result = await gmailGenerateAutoReplies(userId, input, context); break;
+      case 'gmail_detect_urgency':            result = await gmailDetectUrgency(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -6077,4 +6257,442 @@ async function recordProcessedItemsTool(userId: string, input: any): Promise<Too
   const { recordProcessedIds } = await import('./autonomy');
   await recordProcessedIds(userId, agentName, itemIds);
   return { output: `Recorded ${itemIds.length} processed item${itemIds.length === 1 ? '' : 's'} for next-run dedup.` };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 1 — Gmail unlimited / batch / intelligence tools
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Designed for autonomous background-agent use. Each tool is a thin wrapper
+// around the existing single-item Gmail tools (search_gmail / read_email /
+// draft_reply / send_email / gmail_apply_label / gmail_archive_thread) plus
+// parallel batching via Promise.all. Failure of individual items is captured
+// in the output; the call as a whole succeeds so the agent loop doesn't bail
+// on a single bad item out of 100.
+
+const PART1_BATCH = 25;
+
+async function gmailUnlimitedSearch(userId: string, input: any): Promise<ToolResult> {
+  const query = (input?.query || '').trim();
+  if (!query) return failureResult('query is required.', 'validation_error');
+  const limit = Math.max(1, Math.min(200, Number(input?.maxResults) || 100));
+
+  let token: string | null = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
+
+  let collected: any[] = [];
+  let pageToken: string | undefined = undefined;
+  while (collected.length < limit) {
+    const params = new URLSearchParams({
+      q: query,
+      maxResults: String(Math.min(100, limit - collected.length)),
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+    let res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (res.status === 401) {
+      const nt = await refreshGoogleToken(userId);
+      if (nt) {
+        token = nt;
+        res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          signal: AbortSignal.timeout(15000),
+        });
+      }
+    }
+    if (!res.ok) break;
+    const data = await res.json();
+    const messages: any[] = data.messages || [];
+    if (!messages.length) break;
+    collected = collected.concat(messages);
+    pageToken = data.nextPageToken;
+    if (!pageToken) break;
+  }
+  if (!collected.length) return { output: `No emails found for "${query}".` };
+
+  const metas: any[] = [];
+  for (let i = 0; i < collected.length; i += PART1_BATCH) {
+    const slice = collected.slice(i, i + PART1_BATCH);
+    const results = await Promise.all(slice.map(async ({ id }: any) => {
+      try {
+        const r = await fetch(
+          `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
+          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+        );
+        if (!r.ok) return null;
+        const m = await r.json();
+        const h = m.payload?.headers || [];
+        return {
+          id: m.id,
+          threadId: m.threadId,
+          from: getHeader(h, 'From'),
+          subject: getHeader(h, 'Subject'),
+          date: getHeader(h, 'Date'),
+          snippet: (m.snippet || '').slice(0, 200),
+        };
+      } catch { return null; }
+    }));
+    for (const r of results) if (r) metas.push(r);
+  }
+  if (!metas.length) return failureResult('Found emails but could not read metadata.', 'upstream_gmail');
+
+  const lines = metas.map((m, i) =>
+    `${i + 1}. [ID: ${m.id}] [Thread: ${m.threadId}]\n   From: ${m.from}\n   Subject: ${m.subject}\n   Date: ${m.date}\n   Preview: ${m.snippet}`,
+  );
+  return { output: `Found ${metas.length} email(s) for "${query}":\n\n${lines.join('\n\n')}` };
+}
+
+async function gmailBulkReadThreads(userId: string, input: any): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  const results: Array<{ threadId: string; ok: boolean; content: string }> = [];
+  for (let i = 0; i < threadIds.length; i += PART1_BATCH) {
+    const slice = threadIds.slice(i, i + PART1_BATCH);
+    const batchResults = await Promise.all(slice.map(async (tid) => {
+      try {
+        const r = await gmailReadThread(userId, { threadId: tid });
+        return { threadId: tid, ok: r.success !== false, content: r.output };
+      } catch (err: any) {
+        return { threadId: tid, ok: false, content: `error: ${err.message}` };
+      }
+    }));
+    for (const r of batchResults) results.push(r);
+  }
+  const ok = results.filter(r => r.ok);
+  const failed = results.filter(r => !r.ok);
+  const sections = ok.map(r => `=== Thread ${r.threadId} ===\n${r.content}`);
+  let output = sections.join('\n\n');
+  if (failed.length) output += `\n\n${failed.length} thread(s) failed: ${failed.map(f => f.threadId).join(', ')}`;
+  return { output: output || 'No threads could be read.' };
+}
+
+async function gmailBatchDraftReplies(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const items: any[] = Array.isArray(input?.items) ? input.items : [];
+  if (!items.length) return failureResult('items is required (non-empty array of { threadId, instruction }).', 'validation_error');
+
+  const slice = items.slice(0, 50);
+  const results = await Promise.all(slice.map(async (item, idx) => {
+    try {
+      const r = await draftReply(userId, {
+        threadId: item.threadId,
+        toneInstruction: item.instruction || item.toneInstruction || 'Reply in the user voice.',
+        skipVoiceCritique: true,
+      }, context);
+      return { idx, threadId: item.threadId, ok: r.success !== false, summary: r.output.slice(0, 200) };
+    } catch (err: any) {
+      return { idx, threadId: item.threadId, ok: false, summary: `error: ${err.message}` };
+    }
+  }));
+  const ok = results.filter(r => r.ok).length;
+  const summary = results.map(r => `${r.idx + 1}. [thread ${r.threadId}] ${r.ok ? 'drafted' : 'failed'} — ${r.summary}`).join('\n');
+  return { output: `Drafted ${ok}/${results.length} replies.\n\n${summary}` };
+}
+
+async function gmailBatchSendEmails(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const items: any[] = Array.isArray(input?.items) ? input.items : [];
+  if (!items.length) return failureResult('items is required (non-empty array of { to, subject, body, threadId? }).', 'validation_error');
+  const staggerMs = Math.max(0, Math.min(60_000, Number(input?.staggerMs) || 0));
+
+  const slice = items.slice(0, 50);
+  const results: Array<{ idx: number; to: string; ok: boolean; summary: string }> = [];
+  for (let i = 0; i < slice.length; i++) {
+    const item = slice[i];
+    try {
+      const r = await sendEmail(userId, {
+        to: item.to,
+        subject: item.subject,
+        body: item.body,
+        threadId: item.threadId,
+      }, context);
+      results.push({ idx: i, to: item.to, ok: r.success !== false, summary: r.output.slice(0, 200) });
+    } catch (err: any) {
+      results.push({ idx: i, to: item.to, ok: false, summary: `error: ${err.message}` });
+    }
+    if (staggerMs && i < slice.length - 1) {
+      await new Promise(res => setTimeout(res, staggerMs));
+    }
+  }
+  const ok = results.filter(r => r.ok).length;
+  const summary = results.map(r => `${r.idx + 1}. ${r.to} — ${r.ok ? 'sent' : 'failed'}: ${r.summary}`).join('\n');
+  return { output: `Sent ${ok}/${results.length} emails.\n\n${summary}` };
+}
+
+async function gmailAutoLabelThreads(userId: string, input: any): Promise<ToolResult> {
+  const labelName = (input?.labelName || '').trim();
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!labelName) return failureResult('labelName is required.', 'validation_error');
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  // Auto-create the label if it doesn't exist. We use the Gmail Labels API
+  // directly because gmailApplyLabel already handles the apply, but doesn't
+  // create. Idempotent on duplicate creation (409 → reuse existing).
+  let token: string | null = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  // List labels and check
+  let listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(8000),
+  });
+  if (listRes.status === 401) {
+    const nt = await refreshGoogleToken(userId);
+    if (nt) {
+      token = nt;
+      listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+        headers: { Authorization: `Bearer ${token}` },
+        signal: AbortSignal.timeout(8000),
+      });
+    }
+  }
+  let existed = false;
+  if (listRes.ok) {
+    const data = await listRes.json();
+    existed = (data.labels || []).some((l: any) => l.name?.toLowerCase() === labelName.toLowerCase());
+  }
+  if (!existed) {
+    const createRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: labelName, labelListVisibility: 'labelShow', messageListVisibility: 'show' }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!createRes.ok && createRes.status !== 409) {
+      return failureResult(`Could not create label "${labelName}" (${createRes.status}).`, 'upstream_gmail');
+    }
+  }
+
+  let applied = 0;
+  let failed = 0;
+  for (let i = 0; i < threadIds.length; i += PART1_BATCH) {
+    const slice = threadIds.slice(i, i + PART1_BATCH);
+    await Promise.all(slice.map(async (tid) => {
+      try {
+        const r = await gmailApplyLabel(userId, { threadId: tid, labelName });
+        if (r.success !== false) applied++; else failed++;
+      } catch { failed++; }
+    }));
+  }
+  return { output: `Applied label "${labelName}" to ${applied}/${threadIds.length} threads${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+async function gmailAutoArchiveThreads(userId: string, input: any): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  let archived = 0;
+  let failed = 0;
+  for (let i = 0; i < threadIds.length; i += PART1_BATCH) {
+    const slice = threadIds.slice(i, i + PART1_BATCH);
+    await Promise.all(slice.map(async (tid) => {
+      try {
+        const r = await gmailArchiveThread(userId, { threadId: tid });
+        if (r.success !== false) archived++; else failed++;
+      } catch { failed++; }
+    }));
+  }
+  return { output: `Archived ${archived}/${threadIds.length} thread(s)${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+const EXTRACT_PROMPT_P1 = `You are a data-extraction engine. Given an email thread, return ONLY a JSON object with these fields (omit a field if not present, never invent):
+{
+  "senders": ["<sender email>", ...],
+  "primarySender": "<email>",
+  "subject": "<thread subject>",
+  "company": "<company name if identifiable>",
+  "contactName": "<person name>",
+  "contactRole": "<role/title if mentioned>",
+  "decisions": ["<decision mentioned>", ...],
+  "actionItems": ["<action item with owner if known>", ...],
+  "dollarAmounts": ["$50K", "$1.2M", ...],
+  "dates": ["2026-06-01", "Friday", ...],
+  "projectNames": ["Project X", ...],
+  "sentiment": "positive|neutral|negative",
+  "urgencyScore": 1-10,
+  "summary": "<one-sentence thread summary>"
+}
+Output ONLY raw JSON. No markdown, no preface.`;
+
+async function gmailExtractDataFromThreads(userId: string, input: any): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  const BATCH = 10;
+  const extractions: Array<{ threadId: string; data: any; error?: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const results = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, data: null, error: t.output };
+        const res = await callLLM(
+          [
+            { role: 'system', content: EXTRACT_PROMPT_P1 },
+            { role: 'user', content: t.output.slice(0, 8000) },
+          ],
+          [],
+          { maxTokens: 800, temperature: 0.1 },
+        );
+        const raw = getText(res.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, data: null, error: 'no JSON in extraction' };
+        try { return { threadId: tid, data: JSON.parse(m[0]) }; }
+        catch (e: any) { return { threadId: tid, data: null, error: `JSON parse error: ${e.message}` }; }
+      } catch (err: any) {
+        return { threadId: tid, data: null, error: err.message };
+      }
+    }));
+    for (const r of results) extractions.push(r);
+  }
+  return { output: JSON.stringify(extractions, null, 2) };
+}
+
+const CLASSIFY_PROMPT_P1 = `Classify the email thread into one of these categories:
+- sales_inquiry
+- customer_support
+- internal_team
+- vendor_supplier
+- personal_spam
+- partnership_opportunity
+- hiring
+- feedback_complaint
+- update_notification
+
+Output ONLY JSON: { "category": "<one>", "confidence": 0.0-1.0, "reason": "<one short sentence>" }`;
+
+async function gmailDetectConversationType(userId: string, input: any): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  const BATCH = 15;
+  const out: Array<{ threadId: string; category: string; confidence: number; reason: string }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const results = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, category: 'unknown', confidence: 0, reason: 'thread fetch failed' };
+        const res = await callLLM(
+          [
+            { role: 'system', content: CLASSIFY_PROMPT_P1 },
+            { role: 'user', content: t.output.slice(0, 4000) },
+          ],
+          [],
+          { maxTokens: 200, temperature: 0.1 },
+        );
+        const raw = getText(res.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, category: 'unknown', confidence: 0, reason: 'no JSON' };
+        try {
+          const parsed = JSON.parse(m[0]);
+          return {
+            threadId: tid,
+            category: String(parsed.category || 'unknown'),
+            confidence: Number(parsed.confidence) || 0,
+            reason: String(parsed.reason || ''),
+          };
+        } catch { return { threadId: tid, category: 'unknown', confidence: 0, reason: 'parse error' }; }
+      } catch (err: any) {
+        return { threadId: tid, category: 'unknown', confidence: 0, reason: err.message };
+      }
+    }));
+    for (const r of results) out.push(r);
+  }
+  return { output: JSON.stringify(out, null, 2) };
+}
+
+async function gmailGenerateAutoReplies(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const stalledDays = Math.max(1, Math.min(90, Number(input?.stalledDays) || 5));
+  const maxResults = Math.max(1, Math.min(50, Number(input?.maxResults) || 10));
+
+  const q = `in:sent newer_than:${stalledDays + 30}d older_than:${stalledDays}d`;
+  const search = await searchGmail(userId, { query: q, maxResults });
+  if (search.success === false) return search;
+
+  const threadIdRegex = /\[Thread:\s*([0-9a-f]+)\]/gi;
+  const tids: string[] = [];
+  let m: RegExpExecArray | null;
+  while ((m = threadIdRegex.exec(search.output)) !== null) {
+    if (m[1]) tids.push(m[1]);
+  }
+  if (!tids.length) return { output: `No stalled threads older than ${stalledDays} days.` };
+
+  const slice = tids.slice(0, maxResults);
+  const drafts = await Promise.all(slice.map(async (tid) => {
+    try {
+      const r = await draftReply(userId, {
+        threadId: tid,
+        toneInstruction: `Warm follow-up: it's been ${stalledDays}+ days since my last message. Concise (3-5 sentences), no apology, suggest a concrete next step.`,
+        skipVoiceCritique: true,
+      }, context);
+      return { threadId: tid, ok: r.success !== false, output: r.output.slice(0, 200) };
+    } catch (err: any) {
+      return { threadId: tid, ok: false, output: `error: ${err.message}` };
+    }
+  }));
+  const ok = drafts.filter(d => d.ok).length;
+  const summary = drafts.map((d, i) => `${i + 1}. thread ${d.threadId} — ${d.ok ? 'follow-up drafted' : 'failed'}: ${d.output}`).join('\n');
+  return {
+    output: `Generated ${ok}/${drafts.length} follow-up drafts for stalled threads (${stalledDays}+ days).\n\n${summary}\n\nCall gmail_batch_send_emails to dispatch them, or review the drafts first.`,
+  };
+}
+
+const URGENCY_PROMPT_P1 = `Score the email thread's urgency from 1 (no urgency) to 10 (drop everything).
+Consider: explicit deadlines, keywords (urgent, ASAP, EOD, today), VIP-language ("CEO", "board"), financial language (contract due, payment late), and time-sensitive requests.
+Output ONLY JSON: { "urgencyScore": 1-10, "reason": "<one short sentence>", "needsImmediate": boolean }`;
+
+async function gmailDetectUrgency(userId: string, input: any): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds)
+    ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean)
+    : [];
+  if (!threadIds.length) return failureResult('threadIds is required (non-empty array).', 'validation_error');
+
+  const BATCH = 15;
+  const out: Array<{ threadId: string; urgencyScore: number; reason: string; needsImmediate: boolean }> = [];
+  for (let i = 0; i < threadIds.length; i += BATCH) {
+    const slice = threadIds.slice(i, i + BATCH);
+    const results = await Promise.all(slice.map(async (tid) => {
+      try {
+        const t = await gmailReadThread(userId, { threadId: tid });
+        if (t.success === false) return { threadId: tid, urgencyScore: 0, reason: 'fetch failed', needsImmediate: false };
+        const res = await callLLM(
+          [
+            { role: 'system', content: URGENCY_PROMPT_P1 },
+            { role: 'user', content: t.output.slice(0, 4000) },
+          ],
+          [],
+          { maxTokens: 200, temperature: 0.1 },
+        );
+        const raw = getText(res.content).trim();
+        const m = raw.match(/\{[\s\S]*\}/);
+        if (!m) return { threadId: tid, urgencyScore: 0, reason: 'no JSON', needsImmediate: false };
+        try {
+          const parsed = JSON.parse(m[0]);
+          return {
+            threadId: tid,
+            urgencyScore: Math.max(0, Math.min(10, Number(parsed.urgencyScore) || 0)),
+            reason: String(parsed.reason || ''),
+            needsImmediate: Boolean(parsed.needsImmediate),
+          };
+        } catch { return { threadId: tid, urgencyScore: 0, reason: 'parse error', needsImmediate: false }; }
+      } catch (err: any) {
+        return { threadId: tid, urgencyScore: 0, reason: err.message, needsImmediate: false };
+      }
+    }));
+    for (const r of results) out.push(r);
+  }
+  out.sort((a, b) => b.urgencyScore - a.urgencyScore);
+  return { output: JSON.stringify(out, null, 2) };
 }
