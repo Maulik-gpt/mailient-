@@ -45,6 +45,7 @@ import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
 import { processGmailResults, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
 import { invalidateGmailScope } from './gmail-scope';
 import { getSupabaseAdmin } from '../supabase.js';
+import { buildExecutionPlan, planToHint, checkPrerequisites } from './orchestrator';
 import type { LLMMessage } from './engine';
 
 // ── Audit logging — fire-and-forget, never blocks the loop ────────────────────
@@ -418,6 +419,38 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           return;
         }
 
+        // ── PART 9: Build execution plan ────────────────────────────────────
+        // Build the dependency-ordered execution plan BEFORE the first LLM call.
+        // The plan is injected as a hint at the end of the messages array so the
+        // LLM always sees the intended tool sequence and doesn't re-order it.
+        // Null plan = no orchestration needed (conversational message, plan mode).
+        const executionPlan = buildExecutionPlan(
+          userMessage,
+          connectedIntegrations,
+          isPlanMode,
+        );
+
+        if (executionPlan) {
+          log('info', 'orchestration_plan', {
+            intent: executionPlan.intent,
+            steps: executionPlan.steps.length,
+            missingIntegrations: executionPlan.missingIntegrations,
+            estimatedCalls: executionPlan.estimatedCalls,
+          });
+          emit('orchestration_plan', {
+            intent: executionPlan.intent,
+            steps: executionPlan.steps.map(s => ({
+              label: s.label,
+              tools: s.tools,
+              parallel: s.parallel,
+              isWrite: s.isWrite,
+              requiredIntegration: s.requiredIntegration,
+            })),
+            missingIntegrations: executionPlan.missingIntegrations,
+            estimatedCalls: executionPlan.estimatedCalls,
+          });
+        }
+
         // ── Pre-loop: generate task list ────────────────────────────────────
         const planModeInstruction = isPlanMode
           ? `\n\n[PLAN MODE — STRICT]\nYou are in plan creation mode. Your only output must be a well-structured markdown plan document.\nRules:\n- Do NOT execute any actions or call any tools\n- Do NOT use agent-style language ("I'll now...", "Let me...", "I've completed...")\n- Write the plan entirely in future tense ("Step 1: Search...", "Step 2: Analyse...")\n- Structure the plan with: ## Objective, ## Steps (numbered), ## Expected Output, ## Time estimate\n- Be specific: name the exact tools/APIs/searches that would be used\n- The user should be able to hand this plan to someone else and have it executed exactly`
@@ -428,6 +461,18 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
           { role: 'user', content: userMessage },
         ];
+
+        // Inject orchestration hint as the final user message so it's the last
+        // thing the LLM reads before generating tool calls.
+        if (executionPlan && !isPlanMode) {
+          const hint = planToHint(executionPlan, toolCallLimit);
+          // Append to the last user message (the userMessage we just pushed) rather
+          // than a new message — keeps the role alternation clean.
+          const lastMsg = messages[messages.length - 1] as any;
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content = `${lastMsg.content}\n\n${hint}`;
+          }
+        }
 
         let totalToolCalls = 0;
         let nudgeCount = 0;
@@ -654,12 +699,55 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             const executableTools = toolCalls.filter(tc => tc.name !== 'ask_user');
             const slotsLeft = toolCallLimit - totalToolCalls;
 
-            if (overDeadline || slotsLeft <= 0) {
-              emit('thinking', {
-                status: overDeadline
-                  ? 'Time budget reached — finalising the report…'
-                  : 'Reached tool call limit. Summarising…',
-              });
+            // ── PART 9: Budget-aware task queue ──────────────────────────────
+            // When the orchestration plan knows how many more calls remain AND
+            // the budget is too tight to complete even one more plan step, stop
+            // scheduling new tool calls and fall through to the final-response
+            // path. This prevents the loop from starting a step it can't finish
+            // (e.g. kicking off search_gmail with only 1 slot left when the
+            // next step also needs read_email + draft_reply).
+            // The threshold: if slotsLeft < the plan's minimum estimated remaining
+            // calls (total_plan_calls − already_run), emit a partial_completion
+            // event so the UI can show the user what was skipped and why.
+            const planMinRemaining = (() => {
+              if (!executionPlan) return 0;
+              // Count plan tools already dispatched
+              const dispatchedNames = new Set(toolHistory.map(t => t.name));
+              const remaining = executionPlan.steps
+                .filter(s => !s.tools.every(t => dispatchedNames.has(t)))
+                .reduce((n, s) => n + (s.parallel ? 1 : s.tools.length), 0);
+              return remaining;
+            })();
+
+            const budgetTooTight =
+              executionPlan !== null &&
+              planMinRemaining > 0 &&
+              slotsLeft > 0 &&
+              slotsLeft < planMinRemaining &&
+              slotsLeft < 3; // only cut early when truly tight
+
+            if (overDeadline || slotsLeft <= 0 || budgetTooTight) {
+              const reason = overDeadline
+                ? 'Time budget reached — finalising the report…'
+                : budgetTooTight
+                  ? `Budget tight (${slotsLeft} slots, ~${planMinRemaining} needed) — wrapping up…`
+                  : 'Reached tool call limit. Summarising…';
+              emit('thinking', { status: reason });
+
+              // Emit partial completion if the plan had steps we couldn't reach
+              if ((budgetTooTight || slotsLeft <= 0) && executionPlan && planMinRemaining > 0) {
+                const dispatchedNames = new Set(toolHistory.map(t => t.name));
+                const skippedSteps = executionPlan.steps
+                  .filter(s => !s.tools.every(t => dispatchedNames.has(t)))
+                  .map(s => s.label);
+                if (skippedSteps.length > 0) {
+                  emit('partial_completion', {
+                    completed: toolHistory.filter(t => t.success).map(t => t.name),
+                    skipped: skippedSteps,
+                    reason: `Tool call budget (${toolCallLimit}) reached before all plan steps could run.`,
+                  });
+                }
+              }
             } else {
               const batch = executableTools.slice(0, slotsLeft);
               totalToolCalls += batch.length;
@@ -700,6 +788,31 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   emit('tool_call', { tool: tc.name, params: tc.input, iteration });
                   const toolStart = Date.now();
                   try {
+                    // ── PART 9: Prerequisite gate ─────────────────────────────
+                    // Check dependency graph before dispatching. If a write tool
+                    // is called without its required read, surface an advisory
+                    // failure that the LLM sees as a tool_result — it then calls
+                    // the missing prereq before retrying the write. This is
+                    // non-blocking (returns a soft-failure, not a thrown error)
+                    // so it doesn't stall parallel siblings.
+                    const completedToolNames = toolHistory
+                      .filter(t => t.success)
+                      .map(t => t.name);
+                    // Also count tools already run in this batch (earlier in the
+                    // parallelOutcomes array that haven't been committed to
+                    // toolHistory yet). We use batch-local tracking for this:
+                    // — currently only toolHistory is available here because
+                    // parallelOutcomes resolves after all Promises; the code-level
+                    // gate in tools.ts catches same-turn ordering violations.
+                    const prereqViolation = checkPrerequisites(tc.name, completedToolNames);
+                    if (prereqViolation) {
+                      log('warn', 'orchestration_prereq_violation', { tool: tc.name, completedTools: completedToolNames });
+                      // Return as a soft-failure so the LLM gets a clear nudge
+                      // to run the missing prereq first. Not thrown — parallel
+                      // siblings continue unaffected.
+                      return { ok: false, tc, error: prereqViolation } satisfies ParallelOutcome;
+                    }
+
                     // Newsletter layer 1: filter at query source
                     let inputToUse = tc.input;
                     if (

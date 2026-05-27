@@ -630,6 +630,25 @@ interface AgentMessage {
       waitingForUser?: boolean;
       dismissed?: boolean;
     };
+    /** PART 9 — orchestration plan emitted before the first tool call */
+    orchestrationPlan?: {
+      intent: string;
+      steps: Array<{
+        label: string;
+        tools: string[];
+        parallel: boolean;
+        isWrite: boolean;
+        requiredIntegration: string | null;
+      }>;
+      missingIntegrations: string[];
+      estimatedCalls: { min: number; max: number };
+    };
+    /** PART 9 — emitted when budget runs out before all plan steps complete */
+    partialCompletion?: {
+      completed: string[];
+      skipped: string[];
+      reason: string;
+    };
   };
 }
 
@@ -1146,6 +1165,209 @@ function ArcusErrorCard({
           )}
           {showReconnect ? 'Try again' : 'Retry'}
         </button>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─── PART 9: Orchestration Plan Card ──────────────────────────────────────────
+// Shows the dependency-ordered execution plan Arcus built before calling tools.
+// Collapsed by default when running; expands on click to show all steps + tools.
+// Each step marks itself parallel/write/unavailable with a small badge.
+function OrchestrationPlanCard({
+  plan,
+  isRunning,
+}: {
+  plan: {
+    intent: string;
+    steps: Array<{
+      label: string;
+      tools: string[];
+      parallel: boolean;
+      isWrite: boolean;
+      requiredIntegration: string | null;
+    }>;
+    missingIntegrations: string[];
+    estimatedCalls: { min: number; max: number };
+  };
+  isRunning: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  const writeSteps = plan.steps.filter(s => s.isWrite).length;
+  const unavailableSteps = plan.steps.filter(
+    s => s.requiredIntegration && plan.missingIntegrations.includes(s.requiredIntegration),
+  ).length;
+  const parallelSteps = plan.steps.filter(s => s.parallel && s.tools.length > 1).length;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+      className="mt-2 rounded-2xl border border-arcus-border bg-arcus-elevated overflow-hidden w-full max-w-lg"
+    >
+      {/* Header row — always visible */}
+      <button
+        onClick={() => setExpanded(e => !e)}
+        className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.03] transition-colors"
+      >
+        {/* Animated dot: pulsing when running, static when done */}
+        <div className="flex-shrink-0 relative">
+          <div className={cn(
+            'w-2 h-2 rounded-full',
+            isRunning ? 'bg-indigo-400' : 'bg-arcus-fg-muted',
+          )} />
+          {isRunning && (
+            <div className="absolute inset-0 rounded-full bg-indigo-400 animate-ping opacity-40" />
+          )}
+        </div>
+
+        {/* Intent summary */}
+        <div className="flex-1 min-w-0">
+          <p className="text-[12px] font-semibold text-white/80 truncate">{plan.intent}</p>
+          <p className="text-[11px] text-white/35 mt-0.5">
+            {plan.steps.length} steps
+            {parallelSteps > 0 && ` · ${parallelSteps} parallel`}
+            {writeSteps > 0 && ` · ${writeSteps} write`}
+            {unavailableSteps > 0 && ` · ${unavailableSteps} unavailable`}
+            {' · '}~{plan.estimatedCalls.min}–{plan.estimatedCalls.max} tool calls
+          </p>
+        </div>
+
+        {/* Expand chevron */}
+        <svg
+          className={cn('w-3.5 h-3.5 text-white/30 flex-shrink-0 transition-transform duration-200', expanded && 'rotate-180')}
+          viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      {/* Expanded steps */}
+      <AnimatePresence>
+        {expanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.18, ease: 'easeOut' }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-3 pt-0 flex flex-col gap-2">
+              {/* Connector line + steps */}
+              <div className="relative pl-4 flex flex-col gap-0">
+                {/* Vertical guide line */}
+                <div className="absolute left-[5px] top-3 bottom-3 w-px bg-arcus-border" />
+
+                {plan.steps.map((step, i) => {
+                  const isUnavailable = step.requiredIntegration &&
+                    plan.missingIntegrations.includes(step.requiredIntegration);
+
+                  return (
+                    <div key={i} className="flex items-start gap-3 py-1.5">
+                      {/* Node dot */}
+                      <div className={cn(
+                        'flex-shrink-0 w-2.5 h-2.5 rounded-full border mt-1 -ml-4 z-10',
+                        isUnavailable
+                          ? 'bg-white/10 border-white/20'
+                          : step.isWrite
+                            ? 'bg-amber-500/60 border-amber-500/80'
+                            : 'bg-arcus-fg-muted border-arcus-border',
+                      )} />
+
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className={cn(
+                            'text-[12px] font-medium leading-tight',
+                            isUnavailable ? 'text-white/30 line-through' : 'text-white/75',
+                          )}>
+                            {step.label}
+                          </span>
+                          {step.parallel && step.tools.length > 1 && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-indigo-400/80 bg-indigo-500/10 border border-indigo-500/20 px-1.5 py-0.5 rounded-full">
+                              parallel
+                            </span>
+                          )}
+                          {step.isWrite && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-amber-400/80 bg-amber-500/10 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                              write
+                            </span>
+                          )}
+                          {isUnavailable && (
+                            <span className="text-[9px] font-bold uppercase tracking-wide text-white/30 bg-white/5 border border-white/10 px-1.5 py-0.5 rounded-full">
+                              not connected
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10px] text-white/25 mt-0.5 font-mono">
+                          {step.tools.join(' · ')}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Missing integrations warning */}
+              {plan.missingIntegrations.length > 0 && (
+                <div className="flex items-start gap-2 bg-amber-500/[0.06] border border-amber-500/20 rounded-xl px-3 py-2 mt-1">
+                  <svg className="w-3 h-3 text-amber-400 flex-shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+                  </svg>
+                  <p className="text-[11px] text-amber-400/80">
+                    {plan.missingIntegrations.join(', ')} not connected — those steps will be skipped.
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+// ─── PART 9: Partial Completion Card ──────────────────────────────────────────
+// Shown when the tool-call budget ran out before all planned steps could run.
+// Distinct from PartialFailureCard (which is tool errors) — this is clean
+// budget exhaustion: some steps were simply not reached.
+function PartialCompletionCard({
+  skipped,
+  reason,
+}: {
+  completed: string[]; // kept in type for future use; completed tools shown in ThinkingLayer
+  skipped: string[];
+  reason: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ type: 'spring', damping: 24, stiffness: 260 }}
+      className="mt-3 rounded-2xl overflow-hidden border border-arcus-border bg-arcus-elevated"
+    >
+      {/* Skipped steps */}
+      <div className="px-4 py-3">
+        <div className="flex items-center gap-2 mb-2">
+          <svg className="w-3.5 h-3.5 text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest">Steps not reached</p>
+        </div>
+        <div className="flex flex-col gap-1">
+          {skipped.map((s, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className="w-1 h-1 rounded-full bg-white/20 flex-shrink-0" />
+              <span className="text-[12px] text-white/45">{s}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Reason footer */}
+      <div className="px-4 py-2 border-t border-arcus-border bg-white/[0.02]">
+        <p className="text-[11px] text-white/30">{reason}</p>
       </div>
     </motion.div>
   );
@@ -2798,6 +3020,53 @@ export default function ChatInterface({
                   },
                 };
               }));
+              break;
+            }
+
+            case 'orchestration_plan': {
+              // PART 9 — execution plan built before first tool call.
+              // Stored on message meta; rendered as a collapsible plan card
+              // that shows the user what Arcus intends to do and in what order.
+              if (data.steps?.length) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      orchestrationPlan: {
+                        intent: data.intent || '',
+                        steps: data.steps || [],
+                        missingIntegrations: data.missingIntegrations || [],
+                        estimatedCalls: data.estimatedCalls || { min: 1, max: 5 },
+                      },
+                    },
+                  };
+                }));
+              }
+              break;
+            }
+
+            case 'partial_completion': {
+              // PART 9 — budget ran out before all plan steps could run.
+              // Different from partial_failure (which is tool errors) — this is
+              // a clean budget exhaustion where some steps were simply skipped.
+              if (data.skipped?.length) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      partialCompletion: {
+                        completed: data.completed || [],
+                        skipped: data.skipped || [],
+                        reason: data.reason || 'Tool call budget reached.',
+                      },
+                    },
+                  };
+                }));
+              }
               break;
             }
 
@@ -4565,6 +4834,24 @@ export default function ChatInterface({
                                          isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
                                          isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
                                          hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
+                                       />
+                                     )}
+
+                                     {/* PART 9 — Orchestration plan card: shown when the plan has ≥2 steps */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.orchestrationPlan &&
+                                      (msg as AgentMessage).meta!.orchestrationPlan!.steps.length >= 2 && (
+                                       <OrchestrationPlanCard
+                                         plan={(msg as AgentMessage).meta!.orchestrationPlan!}
+                                         isRunning={(msg as AgentMessage).meta?.isStreaming === true}
+                                       />
+                                     )}
+
+                                     {/* PART 9 — Partial completion card: budget ran out before all steps ran */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.partialCompletion && (
+                                       <PartialCompletionCard
+                                         completed={(msg as AgentMessage).meta!.partialCompletion!.completed}
+                                         skipped={(msg as AgentMessage).meta!.partialCompletion!.skipped}
+                                         reason={(msg as AgentMessage).meta!.partialCompletion!.reason}
                                        />
                                      )}
 
