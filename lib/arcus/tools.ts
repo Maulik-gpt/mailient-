@@ -2314,7 +2314,32 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
   if (input.body) learnFromSentEmail(userId, input.body, input.subject || '');
   // Feature 4: Update contact memory on every send
   if (input.to) touchContact(userId, input.to, input.recipientName || '');
-  return { output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}` };
+
+  // PART 8 #2 — emit an action-card so the UI renders a green "Email sent!"
+  // entry with a "View thread" deeplink instead of a plain text line. Each
+  // send produces its own card; bulk sends stack as a list of cards.
+  const threadIdForUrl = input.threadId || sent.threadId || '';
+  const viewUrl = threadIdForUrl
+    ? `https://mail.google.com/mail/u/0/#inbox/${threadIdForUrl}`
+    : `https://mail.google.com/mail/u/0/#sent`;
+  const recipientName = input.recipientName || (typeof input.to === 'string' ? input.to.split('@')[0] : '');
+
+  return {
+    output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}`,
+    canvasData: {
+      title: input.subject || '(no subject)',
+      type: 'email_sent',
+      markdown: '',
+      pageMeta: {
+        url: viewUrl,
+        messageId: sent.id,
+        threadId: threadIdForUrl,
+        to: input.to,
+        recipientName,
+        subject: input.subject || '',
+      } as any,
+    },
+  };
 }
 
 async function scheduleMeeting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {

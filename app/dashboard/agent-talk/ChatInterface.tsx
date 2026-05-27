@@ -548,15 +548,37 @@ interface AgentMessage {
       failed: { tool: string; error: string }[];
       question: string;
     };
+    /** Single action card kept for backwards compat — new flows use actionResults. */
     actionResult?: {
-      type: 'notion_page' | 'calendar_event';
+      type: 'notion_page' | 'calendar_event' | 'email_sent';
       title: string;
       url?: string;
       meetLink?: string;
       startTime?: string;
       attendees?: string[];
       contentPreview?: string;
+      recipientName?: string;
+      verbLabel?: string;
     };
+    /**
+     * PART 8 #2 — stacked action cards for bulk operations.
+     * Each successful send_email / create_notion_page / schedule_meeting
+     * pushes its card here; the UI renders them as a vertical list.
+     * actionResult (singular, above) stays populated with the most-recent
+     * entry for backwards compat with code that reads .actionResult, but
+     * the render path prefers actionResults when both exist.
+     */
+    actionResults?: Array<{
+      type: 'notion_page' | 'calendar_event' | 'email_sent';
+      title: string;
+      url?: string;
+      meetLink?: string;
+      startTime?: string;
+      attendees?: string[];
+      contentPreview?: string;
+      recipientName?: string;
+      verbLabel?: string;
+    }>;
     scheduledAgent?: ScheduledAgentData;
     integrationRequired?: IntegrationRequiredData;
     confirmationData?: ConfirmationData;
@@ -2304,26 +2326,38 @@ export default function ChatInterface({
                 break;
               }
 
-              // ── Action result cards (Notion page, Calendar event) ────────────
+              // ── Action result cards (Notion page, Calendar event, Email sent) ───
               // These get a rich inline card rather than opening the canvas panel.
-              const isActionCard = cv.type === 'notion_page' || cv.type === 'calendar_event';
+              // PART 8 #2 — Each card appends to actionResults so bulk operations
+              // (e.g. 12 send_email tool calls in one run) stack as a vertical list
+              // instead of last-write-wins replacing the previous card.
+              const isActionCard =
+                cv.type === 'notion_page' ||
+                cv.type === 'calendar_event' ||
+                cv.type === 'email_sent';
               if (isActionCard && cv.pageMeta) {
-                currentActionResult = {
+                const pm = cv.pageMeta as any;
+                const nextCard = {
                   type: cv.type,
                   title: cv.title,
-                  url: cv.pageMeta.url,
-                  meetLink: cv.pageMeta.meetLink,
-                  startTime: cv.pageMeta.startTime,
-                  attendees: cv.pageMeta.attendees,
-                  contentPreview: cv.pageMeta.contentPreview,
+                  url: pm.url,
+                  meetLink: pm.meetLink,
+                  startTime: pm.startTime,
+                  attendees: pm.attendees,
+                  contentPreview: pm.contentPreview,
+                  recipientName: pm.recipientName,
+                  verbLabel: pm.verbLabel,
                 };
+                currentActionResult = nextCard;
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  const prevList = ((m as AgentMessage).meta?.actionResults || []) as any[];
                   return {
                     ...m,
                     meta: {
                       ...(m.meta || {}),
-                      actionResult: currentActionResult,
+                      actionResult: nextCard,
+                      actionResults: [...prevList, nextCard],
                     },
                   };
                 }));
@@ -4848,10 +4882,28 @@ export default function ChatInterface({
                                     )}
 
                                     {/* Action Result Card — shown after Notion page created or meeting scheduled */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.actionResult && !(msg as AgentMessage).meta?.isStreaming && (
-                                      <ActionResultCard
-                                        data={(msg as AgentMessage).meta!.actionResult!}
-                                      />
+                                    {/* PART 8 #2 — stacked action result cards. When actionResults
+                                        is populated (bulk operations push every card into the
+                                        array), render the full list. Falls back to the legacy
+                                        single actionResult for older flows that haven't migrated. */}
+                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.isStreaming && (
+                                      (() => {
+                                        const list = (msg as AgentMessage).meta?.actionResults;
+                                        if (Array.isArray(list) && list.length > 0) {
+                                          return (
+                                            <div className="mt-1 flex flex-col gap-0">
+                                              {list.map((card, i) => (
+                                                <ActionResultCard key={`${card.url || card.title}-${i}`} data={card as any} />
+                                              ))}
+                                            </div>
+                                          );
+                                        }
+                                        const single = (msg as AgentMessage).meta?.actionResult;
+                                        if (single) {
+                                          return <ActionResultCard data={single} />;
+                                        }
+                                        return null;
+                                      })()
                                     )}
 
                                     {/* Draft Reply Box — appears below message when a Gmail draft is ready */}

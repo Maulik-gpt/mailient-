@@ -1,7 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { ExternalLink, Video, Calendar, FileText, Undo2 } from 'lucide-react';
+import { ExternalLink, Video, Calendar, FileText, Undo2, CheckCircle2 } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 // ── Notion page preview thumbnail ──────────────────────────────────────────────
 
@@ -48,13 +49,17 @@ function CalendarPreview({ title, startTime }: { title: string; startTime?: stri
 // ── Main card ─────────────────────────────────────────────────────────────────
 
 export interface ActionResultData {
-  type: 'notion_page' | 'calendar_event';
+  type: 'notion_page' | 'calendar_event' | 'email_sent';
   title: string;
   url?: string;
   meetLink?: string;
   startTime?: string;
   attendees?: string[];
   contentPreview?: string;
+  /** For email_sent: recipient display name shown in the pill label */
+  recipientName?: string;
+  /** For email_sent: short verb label override */
+  verbLabel?: string;
 }
 
 interface ActionResultCardProps {
@@ -63,6 +68,46 @@ interface ActionResultCardProps {
 }
 
 export function ActionResultCard({ data, onUndo }: ActionResultCardProps) {
+  // PART 8 #2 — compact "Email sent!" pill. Bulk send screenshots show
+  // ~12 of these stacked vertically, so this variant deliberately stays
+  // small (single row, no thumbnail, no metadata block) while the
+  // Notion/Calendar variants keep their richer thumbnail layout.
+  if (data.type === 'email_sent') {
+    const label = data.verbLabel || 'Email sent!';
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+        className="mt-1.5 flex items-center justify-between gap-3 px-4 py-3 bg-zinc-50 dark:bg-white/[0.04] border border-zinc-200 dark:border-white/8 rounded-2xl"
+      >
+        <div className="flex items-center gap-2.5 min-w-0">
+          <CheckCircle2 className="w-4 h-4 text-emerald-500 dark:text-emerald-400 flex-shrink-0" />
+          <span className="text-[13.5px] font-medium text-zinc-900 dark:text-white/85 truncate">
+            {label}
+            {data.recipientName && (
+              <span className="text-zinc-500 dark:text-white/45 font-normal"> — {data.recipientName}</span>
+            )}
+          </span>
+        </div>
+        {data.url && (
+          <a
+            href={data.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'flex-shrink-0 px-3 py-1.5 text-[12px] font-semibold rounded-lg transition-all active:scale-95',
+              'text-zinc-700 dark:text-white/70 hover:text-zinc-900 dark:hover:text-white',
+              'hover:bg-zinc-100 dark:hover:bg-white/8',
+            )}
+          >
+            View thread
+          </a>
+        )}
+      </motion.div>
+    );
+  }
+
   const isNotion = data.type === 'notion_page';
   const isCalendar = data.type === 'calendar_event';
 
