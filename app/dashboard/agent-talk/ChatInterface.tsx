@@ -5411,21 +5411,28 @@ export default function ChatInterface({
                                       <PlanPreviewCard
                                         plan={(msg as AgentMessage).meta!.agentPlanPreview!.agentPlan as PlanPreviewData}
                                         onExecute={() => {
-                                          const params = (msg as AgentMessage).meta!.agentPlanPreview!.agentParams;
-                                          const name = (msg as AgentMessage).meta!.agentPlanPreview!.agentName;
+                                          const preview = (msg as AgentMessage).meta!.agentPlanPreview!;
+                                          const p = preview.agentParams || {};
                                           setMessages(prev => prev.map(m =>
                                             m.id === msg.id && m.type === 'agent'
                                               ? { ...m, meta: { ...(m as AgentMessage).meta, agentPlanPreview: undefined } }
                                               : m
                                           ));
                                           if (currentConversationId) {
-                                            processAIMessage(
-                                              `Create agent ${name} - plan approved`,
-                                              currentConversationId,
-                                              false,
-                                              [],
-                                              { isPlanMode: false },
-                                            );
+                                            // Pass all original params + _planApproved:true so the tool
+                                            // skips the preview gate on this second call.
+                                            const approvalMsg = [
+                                              `Create the scheduled agent now. The user has reviewed and approved the plan.`,
+                                              `Call create_scheduled_agent with these exact parameters:`,
+                                              `- name: "${p.name || preview.agentName}"`,
+                                              `- task_description: "${p.task_description || preview.taskDescription}"`,
+                                              `- cron_schedule: "${p.cron_schedule || preview.cronSchedule}"`,
+                                              `- output_channel: "${p.output_channel || preview.outputChannel}"`,
+                                              ...(p.slack_channel ? [`- slack_channel: "${p.slack_channel}"`] : []),
+                                              `- skip_confirmations: ${p.skip_confirmations ?? false}`,
+                                              `- _planApproved: true`,
+                                            ].join('\n');
+                                            processAIMessage(approvalMsg, currentConversationId, false, [], { isPlanMode: false });
                                           }
                                         }}
                                         onCancel={() => {

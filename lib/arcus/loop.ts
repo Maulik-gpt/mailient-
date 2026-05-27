@@ -446,12 +446,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         const isLargeTask = executionPlan !== null && executionPlan.estimatedCalls.min >= 3;
 
+        // Do not show plan-preview if the last assistant message already showed one
+        // (user is in the middle of approving/editing) — detect by checking history.
+        const lastAssistantHadPlanPreview = history.length >= 2 &&
+          history[history.length - 1]?.role === 'assistant' &&
+          /^I've built a plan|Execute these steps|Here's my plan/i.test(
+            history[history.length - 1]?.content?.slice(0, 60) || ''
+          );
+
         const needsPlanFirst =
           (isLargeTask || hasIrreversiblePattern) &&
           !isPlanMode &&
           !isBackgroundAgent &&
           !isPlanApproval &&
-          history.length === 0; // only on fresh tasks, not continuations
+          !lastAssistantHadPlanPreview;
 
         if (needsPlanFirst && executionPlan) {
           emit('thinking', { status: 'Building execution plan…' });
