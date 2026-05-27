@@ -15,6 +15,7 @@ import { LiveStepTracker } from './components/LiveStepTracker';
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
+import { DraftApprovalModal } from './components/DraftApprovalModal';
 import { ActionResultCard } from './components/ActionResultCard';
 import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
@@ -4906,9 +4907,12 @@ export default function ChatInterface({
                                       })()
                                     )}
 
-                                    {/* Draft Reply Box — appears below message when a Gmail draft is ready */}
+                                    {/* PART 8 #3 — Draft Approval Modal (full-screen overlay) replaces the
+                                        old inline DraftReplyBox for single-draft approvals. Two-click
+                                        send gate (Send Now -> "This cannot be undone" overlay -> Confirm
+                                        Send) plus dismiss-on-escape and dismiss-on-backdrop-click. */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.draftReply && !(msg as AgentMessage).meta?.isStreaming && (
-                                      <DraftReplyBox
+                                      <DraftApprovalModal
                                         isVisible={true}
                                         draftData={(msg as AgentMessage).meta!.draftReply!}
                                         onDismiss={() => {
@@ -4926,12 +4930,10 @@ export default function ChatInterface({
                                             const errJson = await res.json().catch(() => ({}));
                                             throw new Error(errJson.error || `Failed to send email (${res.status})`);
                                           }
-
-                                          // Dismiss the draft box
+                                          // Dismiss the modal
                                           setMessages(prev => prev.map(m =>
                                             m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, draftReply: undefined } } : m
                                           ));
-
                                           // Inject a confirmation message from Arcus
                                           const recipientName = (msg as AgentMessage).meta?.draftReply?.recipientName || recipientEmail.split('@')[0];
                                           const confirmId = Date.now() + 2;
@@ -4939,7 +4941,7 @@ export default function ChatInterface({
                                             id: confirmId,
                                             role: 'assistant' as const,
                                             type: 'agent' as const,
-                                            content: { text: `✅ Email sent to **${recipientName}**. They'll receive the message — including the meeting details and Google Meet link — in their inbox.`, list: [], footer: '' },
+                                            content: { text: `✅ Email sent to **${recipientName}**.`, list: [], footer: '' },
                                             time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
                                             meta: {},
                                           } as any]);
