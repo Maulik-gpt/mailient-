@@ -963,11 +963,53 @@ function CollapsibleSteps({
 }
 
 // ─── Arcus Error Card ──────────────────────────────────────────────────────────
-function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRetry: () => void }) {
+/**
+ * PART 8 #6 — Classify a raw error string into a severity bucket so the
+ * card can pick the right border color, icon, and primary action. Keeps
+ * the LLM- and route-side error messages from leaking through raw.
+ */
+type ArcusErrorKind = 'auth' | 'error' | 'warning';
+function classifyArcusError(message: string | undefined): ArcusErrorKind {
+  if (!message) return 'error';
+  const m = message.toLowerCase();
+  // Auth/scope problems → "Reconnect" action makes sense
+  if (
+    m.includes('gmail_scope_missing') ||
+    m.includes('gcal_scope_missing') ||
+    m.includes('scope') ||
+    m.includes('reconnect') ||
+    m.includes('not connected') ||
+    m.includes('unauthorized') ||
+    m.includes('token expired') ||
+    m.includes('403')
+  ) return 'auth';
+  // Transient warnings → auto-retry already wired in for these
+  if (
+    m.includes('exhausted') ||
+    m.includes('timed out') ||
+    m.includes('timeout') ||
+    m.includes('rate limit') ||
+    m.includes('429')
+  ) return 'warning';
+  return 'error';
+}
+
+function ArcusErrorCard({
+  errorMessage,
+  onRetry,
+  onReconnect,
+}: {
+  errorMessage?: string;
+  onRetry: () => void;
+  /** When the error is an auth problem this opens the integrations modal. */
+  onReconnect?: () => void;
+}) {
   const [retrying, setRetrying] = useState(false);
 
+  const kind = classifyArcusError(errorMessage);
+
   // Auto-retry once after a short delay when models are rate-limited
-  const isExhausted = errorMessage?.toLowerCase().includes('exhausted') || errorMessage?.toLowerCase().includes('timed out');
+  const isExhausted = kind === 'warning';
   useEffect(() => {
     if (isExhausted && !retrying) {
       const t = setTimeout(() => {
@@ -976,6 +1018,7 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
       }, 3000);
       return () => clearTimeout(t);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRetry = () => {
@@ -983,52 +1026,127 @@ function ArcusErrorCard({ errorMessage, onRetry }: { errorMessage?: string; onRe
     onRetry();
   };
 
-  const subtitle = isExhausted
-    ? 'All models busy — retrying in 3 seconds…'
-    : errorMessage && errorMessage.length < 120
-      ? errorMessage
-      : 'Something went wrong. Please try again.';
+  const headline =
+    kind === 'auth'
+      ? "I can't reach that integration."
+      : kind === 'warning'
+        ? 'Arcus is taking a moment.'
+        : 'Arcus was unable to reply.';
+
+  const subtitle =
+    kind === 'warning' && isExhausted
+      ? 'All models busy — retrying in 3 seconds…'
+      : errorMessage && errorMessage.length < 240
+        ? errorMessage
+        : 'Something went wrong. Please try again.';
+
+  // Border + icon palette per kind
+  const palette = kind === 'auth'
+    ? {
+        border: 'border-amber-500/35',
+        bg: 'bg-amber-500/[0.04]',
+        iconBg: 'bg-amber-500/15 border-amber-500/30',
+        iconColor: 'text-amber-400',
+      }
+    : kind === 'warning'
+      ? {
+          border: 'border-white/15',
+          bg: 'bg-arcus-surface-hover',
+          iconBg: 'bg-arcus-elevated border-arcus-border',
+          iconColor: 'text-white/55',
+        }
+      : {
+          border: 'border-rose-500/35',
+          bg: 'bg-rose-500/[0.04]',
+          iconBg: 'bg-rose-500/15 border-rose-500/30',
+          iconColor: 'text-rose-400',
+        };
+
+  const Icon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={palette.iconColor}>
+      {kind === 'error' ? (
+        // X-in-circle for hard failures
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="15" y1="9" x2="9" y2="15" />
+          <line x1="9" y1="9" x2="15" y2="15" />
+        </>
+      ) : kind === 'auth' ? (
+        // Shield-style for auth
+        <>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <line x1="12" y1="9" x2="12" y2="13" />
+          <line x1="12" y1="17" x2="12.01" y2="17" />
+        </>
+      ) : (
+        // Warning circle for transient
+        <>
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </>
+      )}
+    </svg>
+  );
+
+  const showReconnect = kind === 'auth' && onReconnect;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 6, scale: 0.98 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', damping: 24, stiffness: 280 }}
-      className="flex items-center justify-between gap-4 px-4 py-3.5 rounded-2xl bg-arcus-surface-hover border border-arcus-border w-full max-w-md mt-1"
+      className={cn(
+        'flex items-center justify-between gap-4 px-4 py-3.5 rounded-2xl border w-full max-w-lg mt-1',
+        palette.border,
+        palette.bg,
+      )}
     >
-      <div className="flex items-start gap-3">
-        {/* Warning icon */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-full border border-arcus-border bg-arcus-elevated flex items-center justify-center mt-0.5">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white/50">
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
+      <div className="flex items-start gap-3 min-w-0">
+        <div className={cn(
+          'flex-shrink-0 w-8 h-8 rounded-full border flex items-center justify-center mt-0.5',
+          palette.iconBg,
+        )}>
+          <Icon />
         </div>
-        <div>
-          <p className="text-[13px] font-semibold text-white/80 leading-tight">Arcus was unable to reply.</p>
-          <p className="text-[12px] text-white/35 mt-0.5 leading-snug">{subtitle}</p>
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-white/85 leading-tight">{headline}</p>
+          <p className="text-[12px] text-white/45 mt-0.5 leading-snug break-words">{subtitle}</p>
         </div>
       </div>
 
-      {/* Retry button */}
-      <button
-        onClick={handleRetry}
-        disabled={retrying}
-        className="flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-black text-[12px] font-semibold hover:bg-white/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
-      >
-        {retrying ? (
-          <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-            <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
-          </svg>
-        ) : (
-          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
-            <path d="M3 3v5h5" />
-          </svg>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {showReconnect && (
+          <button
+            onClick={onReconnect}
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 text-white text-[12px] font-semibold hover:bg-amber-400 transition-all shadow-sm"
+          >
+            Reconnect
+          </button>
         )}
-        Retry
-      </button>
+        <button
+          onClick={handleRetry}
+          disabled={retrying}
+          className={cn(
+            'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
+            showReconnect
+              ? 'border border-white/12 text-white/75 hover:text-white hover:bg-white/8'
+              : 'bg-white text-black hover:bg-white/90',
+          )}
+        >
+          {retrying ? (
+            <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <path d="M21 12a9 9 0 11-6.219-8.56" strokeLinecap="round" />
+            </svg>
+          ) : (
+            <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
+              <path d="M3 3v5h5" />
+            </svg>
+          )}
+          {showReconnect ? 'Try again' : 'Retry'}
+        </button>
+      </div>
     </motion.div>
   );
 }
@@ -4890,10 +5008,15 @@ export default function ChatInterface({
                                       />
                                     )}
 
-                                    {/* Error card — replaces message when AI fails */}
+                                    {/* PART 8 #6 — Severity-aware error card. Auth errors get an amber
+                                        border, shield icon, and a "Reconnect" button that opens the
+                                        integrations modal. Hard failures get a rose border + X-in-circle.
+                                        Transient (rate-limit / timeout) keeps the neutral palette and
+                                        auto-retries after 3s. */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.hasError && (
                                       <ArcusErrorCard
                                         errorMessage={(msg as AgentMessage).meta?.errorMessage}
+                                        onReconnect={() => setIsIntegrationsModalOpen(true)}
                                         onRetry={() => {
                                           // Find the last user message before this one
                                           const msgIdx = messages.findIndex(m => m.id === msg.id);
