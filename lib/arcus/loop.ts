@@ -81,7 +81,19 @@ function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<strin
   else console.log(line);
 }
 
+/**
+ * Hard cap on tool calls per run.
+ * Background agents (isBackgroundAgent=true) bypass this via the
+ * maxToolCalls loop option — see toolCallLimit calculation below.
+ * Interactive chat sessions are capped at 20 to keep responses snappy.
+ */
 export const MAX_TOOL_CALLS = 20;
+/**
+ * Raised cap for background / cron agents. 100 lets a scheduling agent
+ * process a full inbox (50 threads × 2 calls each) without hitting the
+ * wall mid-run. The Vercel deadlineMs budget is the real constraint.
+ */
+export const MAX_TOOL_CALLS_BACKGROUND = 100;
 const MAX_NUDGES = 3;
 
 // ── Pattern guards ─────────────────────────────────────────────────────────────
@@ -303,10 +315,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
 
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations, isBackgroundAgent);
+  // Background agents get the raised limit so they can handle large inboxes
+  // without hitting the wall mid-run. Interactive sessions stay at 20 so
+  // the LLM doesn't burn budget on exploratory calls.
+  const hardCap = isBackgroundAgent ? MAX_TOOL_CALLS_BACKGROUND : MAX_TOOL_CALLS;
   const toolCallLimit =
     typeof maxToolCalls === 'number' && maxToolCalls > 0
-      ? Math.min(maxToolCalls, MAX_TOOL_CALLS)
-      : MAX_TOOL_CALLS;
+      ? Math.min(maxToolCalls, hardCap)
+      : hardCap;
   const runId = crypto.randomUUID();
   const startedAt = Date.now();
   const deadlineAt =

@@ -35,73 +35,81 @@ async function getVoiceProfilePromptBlock(userId: string): Promise<string> {
 export const REPORT_FORMAT_SUFFIX = `
 
 ---
-REPORT REQUIREMENTS — MANDATORY STRUCTURE
+EXECUTIVE BRIEFING REQUIREMENTS — MANDATORY STRUCTURE
 
 CRITICAL: Output ONLY the final markdown report. No internal reasoning, no conversational filler before or after. The report IS your entire output.
 CRITICAL: Even if 0 actions were taken, produce the full structure. Do not abbreviate.
 
-**SECTION 1 — ONE-LINE SUMMARY (first line, no heading)**
-The very first line of the report is a single sentence that tells the user everything in 3 seconds:
-- "Processed 23 emails, drafted 6 replies, archived 12, flagged 5 for review."
-- "Booked 3 meetings, sent 3 confirmation emails, updated 3 Notion pages."
-- "Scanned inbox, found 0 unanswered client emails, nothing needed."
-This line is used as the email subject and the Slack header. The user knows the outcome before reading anything else.
+**OPENING LINE — mandatory first line, no heading:**
+One sentence. Tells the user everything in 3 seconds. This becomes the email subject and the Slack header.
+Examples:
+- "Processed 31 emails, drafted 8 replies, booked 2 meetings, logged 5 contacts to Notion."
+- "Scanned inbox and calendar — 3 revenue opportunities identified, 2 meetings booked, 14 newsletters archived."
+- "No new client emails; calendar clear for tomorrow; nothing required."
 
-**FULL STRUCTURE — use exactly this order:**
+**FULL EXECUTIVE BRIEFING STRUCTURE — use exactly this order:**
 
-[One-line summary]
+[One-line opening]
 
 # [Agent Name] — Run Report
 
-## What I Did
-Use a **table** when 4+ actions were taken:
+## 💰 Revenue & Opportunities
+Only include if there are revenue signals (contracts, proposals, invoices, deals, renewals, pricing questions).
+Use a table with: | Contact | Subject | Signal | Action Taken | Link |
+If nothing found: omit this section entirely.
+
+## 🤝 Client & Relationship Updates
+Emails and actions involving existing clients or important relationships.
+Table format: | Contact | Thread | Summary | Action Taken | Link |
+If nothing found: omit this section entirely.
+
+## ⚙️ Operations
+Everything executed: drafts, meetings, Notion logs, Slack messages, labels applied, threads archived.
+Table (4+ items) or bullet list (2–3 items):
 | Action | Details | Link |
 |--------|---------|------|
-| Drafted reply | To: Priya Sharma, Re: Q3 proposal | [Open draft](link) |
-| Booked meeting | Tuesday 3pm with Priya | [View event](link) |
+| Drafted reply | To: Priya Sharma, Re: Q3 proposal | [Open draft](url) |
+| Booked meeting | Tuesday 3pm with James — Google Meet | [View event](url) |
+If skip_confirmations is FALSE: write "Would have [action]" framing throughout.
+If 0 actions: "No operations executed this run."
 
-Use a **bullet list** when 2–3 actions:
-- **Drafted reply** — To: Priya Sharma, Re: Q3 proposal — [Open draft](link)
-- **Booked meeting** — Tuesday 3pm with Priya — [View event](link)
+## ⚠️ Needs Your Attention
+ONLY include if something could not be completed, requires a decision, or hit an error.
+- "Priya's email mentions a pricing change I can't confirm from context — review the draft before sending."
+- "Couldn't find a free slot for James this week. Draft written but time is unspecified."
+- "Notion create failed — content saved as text in the Links section instead."
+If nothing needs attention: **OMIT THIS SECTION ENTIRELY.**
 
-If 0 actions: "No actions were required during this run."
-If skip_confirmations is FALSE: write "would have" framing — "Would have drafted a reply to Priya about Q3 pricing."
-
-## Needs Your Attention
-ONLY include this section if something could not be completed, required a decision, or hit an error. Examples:
-- "Priya's email mentioned a pricing question I couldn't answer from context. Review the draft before sending."
-- "Couldn't find a free calendar slot for James this week. The draft suggests a call but leaves the time unspecified."
-- "Tried to create a Notion page but the CRM database schema has changed. Content saved as text below."
-If nothing needs attention, **OMIT THIS SECTION ENTIRELY**. Do not write "Nothing needs your attention" as filler.
-
-## Links
-Direct links to every artifact created:
-- 📧 Gmail drafts/threads
-- 📅 Calendar events
-- 📝 Notion pages
-- 💬 Slack messages
-
-If no links: "No links produced this run."
-If skip_confirmations was FALSE: "No links — this was a proposal run. Enable skip_confirmations to execute."
+## 🔗 All Links
+Every artifact created this run:
+- 📧 Gmail drafts — [Draft: Re: Q3 Proposal to Priya](url)
+- 📅 Calendar events — [Meeting: Tuesday 3pm with James](url)
+- 📝 Notion pages — [Contact log: Priya Sharma](url)
+- 💬 Slack messages — [#client-updates: weekly briefing](url)
+If no links: "No artifacts created this run."
+If skip_confirmations was FALSE: "No artifacts — proposal run only. Enable skip_confirmations to execute."
 
 ---
 Sent by Arcus for Mailient • mailient.xyz
-Run completed: [current UTC timestamp]
-Next run: [next scheduled run time, e.g. "Tomorrow at 8:00 AM" or "In 24 hours" — derive from agent schedule if known, otherwise omit this line]
+Run completed: [INSERT_CURRENT_UTC_TIMESTAMP]
+Next run: [derive from agent's cron schedule — e.g. "Tomorrow at 9:00 AM" or "Monday at 8:00 AM". If schedule unknown, omit this line.]
 
 **VOICE & TONE (NON-NEGOTIABLE):**
 - First person from Arcus: "I drafted 6 replies" not "6 replies were drafted."
-- Confident, not boastful: "Processed 23 emails" not "Successfully processed 23 emails." The word "successfully" is filler.
-- Specific: "Drafted reply to Priya Sharma about Q3 pricing" not "Drafted email reply."
-- Never apologize unless something genuinely failed. "I couldn't book the meeting because your calendar had no free slots" is fine. "I'm sorry I couldn't book the meeting" is unnecessary.
-- NEVER say "I hope this helps" or "Let me know if you need anything else." The report is a work log, not a customer service email.
-- Write as a CONFIRMED WORK LOG. Past tense. Every action noted. Every link included. If the tool told you an action was "queued for user approval", say "Queued reply to Priya" instead of "Sent reply to Priya".
+- Confident and direct: "Processed 23 emails" not "Successfully processed 23 emails." The word "successfully" is filler. So is "pleased to" and "happy to."
+- Specific always: "Drafted reply to Priya Sharma about Q3 pricing" not "Drafted email reply."
+- Never apologize unless something genuinely failed. "I couldn't book the meeting because your calendar had no free slots" is honest. "I'm sorry I couldn't book the meeting" is unnecessary.
+- NEVER say "I hope this helps" or "Let me know if you need anything else." This is a work log, not customer service.
+- NEVER start a section with "In summary," "To summarize," "In conclusion," or any filler phrase.
+- Write as a CONFIRMED WORK LOG. Past tense. Every action noted. Every link included.
+- If the tool told you an action was "queued for user approval," say "Queued reply to Priya" instead of "Sent reply to Priya."
 
 **FORMAT RULES:**
 - Rich markdown always. Tables for 4+ items, bullet lists for 2–3.
 - **Bold** for names, email subjects, key numbers.
-- Targeted emoji for section headers only (📧 📅 📝 ⚠️ ❌). Never overuse — one per item max.
-- Never deliver a plain paragraph as a report. Never wrap in a code block.`;
+- Section emojis as shown (💰 🤝 ⚙️ ⚠️ 🔗). One per section header. Never inside tables.
+- Never deliver a plain paragraph as a report. Never wrap in a code block.
+- Omit empty sections entirely — a report with only ⚙️ Operations and 🔗 Links is better than one with empty Revenue and Client sections.`;
 
 
 export interface AgentRunBudget {
@@ -154,11 +162,17 @@ export async function buildAgentLoopArgs(
     agentTaskDescription: taskDescription,
   });
 
+  // Stamp the current UTC time into the report footer at call time (not module-load time)
+  const reportSuffix = REPORT_FORMAT_SUFFIX.replace(
+    '[INSERT_CURRENT_UTC_TIMESTAMP]',
+    new Date().toUTCString(),
+  );
+
   return {
     userId,
     systemPrompt,
     history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
-    userMessage: taskDescription + REPORT_FORMAT_SUFFIX,
+    userMessage: taskDescription + reportSuffix,
     connectedIntegrations,
     maxToolCalls: budget.maxToolCalls,
     deadlineMs: budget.deadlineMs,

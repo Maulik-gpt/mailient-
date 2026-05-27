@@ -137,8 +137,15 @@ export async function GET(request: NextRequest) {
 
       await supabase.from('arcus_agents').update({ status: 'running' }).eq('id', agent.id);
 
+      // Dynamic tool-call budget: give the agent as many calls as it can
+      // fit in the remaining wall-clock time. Rule of thumb: each tool call
+      // costs ~2.5 s on average (LLM round-trip + API call), so we derive a
+      // soft cap from the time budget rather than an arbitrary fixed number.
+      // Floor at 20 so short-lived ticks still do meaningful work, cap at 80
+      // so a single greedy agent can't starve the next agent in the same tick.
+      const derivedToolCalls = Math.min(80, Math.max(20, Math.floor(remaining / 2500)));
       const report = await runAgentTask(agent, {
-        maxToolCalls: 10,
+        maxToolCalls: derivedToolCalls,
         deadlineMs: remaining,
       });
 
