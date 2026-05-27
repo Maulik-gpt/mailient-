@@ -411,6 +411,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           return;
         }
 
+        // ── PART 10: Auto-detect plan-first tasks ───────────────────────────
+        // Patterns that indicate irreversible or multi-step actions that benefit
+        // from an explicit approval step before execution.
+        const PLAN_FIRST_EMAIL_PATTERN = /\b(send|shoot|fire off)\b.{0,50}\b(email|mail|message)\b/i;
+        const PLAN_FIRST_MEETING_PATTERN = /\b(book|schedule|create|add)\b.{0,30}\b(meeting|event|call)\b/i;
+        const PLAN_FIRST_SLACK_PATTERN = /\b(post|send|message|ping)\b.{0,30}\b(slack|channel)\b/i;
+        const PLAN_FIRST_APPROVAL_PATTERN = /^(yes|proceed|execute|go ahead|run it|do it|execute these steps)/i;
+
+        const isPlanApproval = PLAN_FIRST_APPROVAL_PATTERN.test(userMessage.trim()) ||
+          userMessage.trim().startsWith('Execute these steps in order:');
+
         // ── PART 9: Build execution plan ────────────────────────────────────
         // Build the dependency-ordered execution plan BEFORE the first LLM call.
         // The plan is injected as a hint at the end of the messages array so the
@@ -421,6 +432,67 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           connectedIntegrations,
           isPlanMode,
         );
+
+        // ── PART 10: plan_preview — gate irreversible/complex tasks ─────────
+        // Auto-show a structured plan preview for tasks that:
+        //   (a) involve 3+ tool calls, OR contain irreversible action patterns
+        //   (b) are NOT already in plan mode
+        //   (c) are NOT a background agent run
+        //   (d) are NOT a follow-up approval / continuation
+        const hasIrreversiblePattern =
+          PLAN_FIRST_EMAIL_PATTERN.test(userMessage) ||
+          PLAN_FIRST_MEETING_PATTERN.test(userMessage) ||
+          PLAN_FIRST_SLACK_PATTERN.test(userMessage);
+
+        const isLargeTask = executionPlan !== null && executionPlan.estimatedCalls.min >= 3;
+
+        const needsPlanFirst =
+          (isLargeTask || hasIrreversiblePattern) &&
+          !isPlanMode &&
+          !isBackgroundAgent &&
+          !isPlanApproval &&
+          history.length === 0; // only on fresh tasks, not continuations
+
+        if (needsPlanFirst && executionPlan) {
+          emit('thinking', { status: 'Building execution plan…' });
+
+          // Generate a specific human-readable description via a focused LLM call
+          const stepSummary = executionPlan.steps
+            .map((s, i) => `${i + 1}. ${s.label} (${s.tools.join(', ')})`)
+            .join('\n');
+          const descRes = await callLLM(
+            [
+              {
+                role: 'system',
+                content: 'You describe execution plans in plain English. Be specific. Name exact tools and data. 2-3 sentences max.',
+              },
+              {
+                role: 'user',
+                content: `User asked: "${userMessage}"\n\nPlanned steps:\n${stepSummary}\n\nDescribe exactly what you will do in 2-3 sentences. Name every data source, every action, every output.`,
+              },
+            ],
+            [],
+            { maxTokens: 200, temperature: 0.1 },
+          );
+          const specificDescription = sanitizeModelText(getText(descRes.content)).trim();
+
+          emit('plan_preview', {
+            intent: executionPlan.intent,
+            steps: executionPlan.steps.map(s => ({
+              label: s.label,
+              tools: s.tools,
+              parallel: s.parallel,
+              isWrite: s.isWrite,
+              requiredIntegration: s.requiredIntegration,
+            })),
+            missingIntegrations: executionPlan.missingIntegrations,
+            estimatedCalls: executionPlan.estimatedCalls,
+            specificDescription: specificDescription || `I will execute ${executionPlan.steps.length} steps to complete your request.`,
+          });
+          emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
+          controller.close();
+          return;
+        }
 
         if (executionPlan) {
           log('info', 'orchestration_plan', {
@@ -466,6 +538,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           }
         }
 
+        // ── PART 10 Fix 7: Agent plan approved — inject _planApproved ────────
+        // When the user sends "Create agent X - plan approved", the LLM must
+        // call create_scheduled_agent with _planApproved: true in the input.
+        const isAgentPlanApproval = /^Create agent .+ - plan approved$/i.test(userMessage.trim());
+        if (isAgentPlanApproval) {
+          const lastMsg = messages[messages.length - 1] as any;
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content = `${lastMsg.content}\n\n[AGENT PLAN APPROVED] The user has approved the agent plan. Call create_scheduled_agent NOW with the parameters from context AND include "_planApproved: true" in the input parameters. Do not show another plan preview.`;
+          }
+        }
+
         let totalToolCalls = 0;
         let nudgeCount = 0;
         let stepListingRetryCount = 0; // counter: allows up to 2 forced retries before giving up
@@ -476,6 +559,26 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let archivedCount = 0;
         const outcomes: ToolOutcome[] = [];
         let forceNextToolCall = false;
+
+        // ── PART 10 Fix 5: Parse approved plan steps ─────────────────────────
+        // When the user approves a plan_preview, the ChatInterface sends a
+        // structured message starting with "Execute these steps in order:".
+        // Parse the step→tool mapping to create a gate for the tool dispatch loop.
+        let approvedPlanTools: Set<string> | null = null;
+        if (userMessage.trim().startsWith('Execute these steps in order:')) {
+          approvedPlanTools = new Set<string>();
+          const lines = userMessage.split('\n');
+          for (const line of lines) {
+            // Format: "1. [label] → tools: [tool1, tool2]"
+            const match = line.match(/→\s*tools?:\s*(.+)/i);
+            if (match) {
+              const toolNames = match[1].split(',').map(t => t.trim()).filter(Boolean);
+              for (const tn of toolNames) approvedPlanTools.add(tn);
+            }
+          }
+          // If parsing yielded nothing, don't gate (fallback: allow all)
+          if (approvedPlanTools.size === 0) approvedPlanTools = null;
+        }
 
         // ── Agent state machine (RC3) ──────────────────────────────────────
         // Four phases the run can be in:
@@ -794,6 +897,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   emit('tool_call', { tool: tc.name, params: tc.input, iteration });
                   const toolStart = Date.now();
                   try {
+                    // ── PART 10 Fix 5: Plan gate ──────────────────────────────
+                    // When the user approved a specific plan, only tools in that
+                    // plan are allowed. Refusal is returned as a tool_result so
+                    // the LLM sees it as a hard stop, not a silent skip.
+                    if (approvedPlanTools !== null && !approvedPlanTools.has(tc.name)) {
+                      const allowedList = [...approvedPlanTools].join(', ');
+                      const gateMsg = `[PLAN GATE] Tool '${tc.name}' is not in the approved plan. Only call tools from the approved plan: ${allowedList}. Stop and report what you've done so far.`;
+                      log('warn', 'plan_gate_rejected', { tool: tc.name, allowed: allowedList });
+                      return { ok: false, tc, error: gateMsg } satisfies ParallelOutcome;
+                    }
+
                     // ── PART 9: Prerequisite gate ─────────────────────────────
                     // Check dependency graph before dispatching. If a write tool
                     // is called without its required read, surface an advisory
@@ -885,6 +999,25 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   emit('tool_result', { tool: tc.name, success: false, summary: friendly, iteration });
                   outcomes.push({ tool: tc.name, ok: false, error: friendly });
                   toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: friendly });
+
+                  // ── PART 10 Fix 5: plan_step_failed ────────────────────────
+                  // When a plan was approved and a step fails, emit an event so
+                  // the UI can show a "Skip and continue, or stop?" card.
+                  if (approvedPlanTools !== null && executionPlan) {
+                    const dispatchedSoFar = new Set(toolHistory.map(t => t.name));
+                    dispatchedSoFar.add(tc.name); // include the failed tool
+                    const remainingSteps = executionPlan.steps
+                      .filter(s => !s.tools.every(t => dispatchedSoFar.has(t)))
+                      .map(s => s.label);
+                    if (remainingSteps.length > 0) {
+                      emit('plan_step_failed', {
+                        failedStep: executionPlan.steps.find(s => s.tools.includes(tc.name))?.label || tc.name,
+                        failedTool: tc.name,
+                        reason: friendly.slice(0, 300),
+                        remainingSteps,
+                      });
+                    }
+                  }
                   continue;
                 }
 

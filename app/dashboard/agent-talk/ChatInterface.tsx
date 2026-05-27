@@ -22,6 +22,7 @@ import { ScheduledAgentCard, type ScheduledAgentData } from './components/Schedu
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
 import { ConfirmationCard, type ConfirmationData } from './components/ConfirmationCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
+import { PlanPreviewCard, type PlanPreviewData, type PlanPreviewStep } from './components/PlanPreviewCard';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
 import PlanArtifactCard from './components/PlanArtifactCard';
@@ -642,12 +643,37 @@ interface AgentMessage {
       }>;
       missingIntegrations: string[];
       estimatedCalls: { min: number; max: number };
+      stepStatuses?: Record<number, 'pending' | 'running' | 'completed' | 'failed'>;
     };
     /** PART 9 — emitted when budget runs out before all plan steps complete */
     partialCompletion?: {
       completed: string[];
       skipped: string[];
       reason: string;
+    };
+    /** PART 10 — auto-detected plan preview for complex/irreversible tasks */
+    planPreview?: {
+      intent: string;
+      steps: PlanPreviewStep[];
+      missingIntegrations: string[];
+      estimatedCalls: { min: number; max: number };
+      specificDescription: string;
+    };
+    /** PART 10 Fix 5 — a plan step failed during approved-plan execution */
+    planStepFailed?: {
+      failedStep: string;
+      failedTool: string;
+      reason: string;
+      remainingSteps: string[];
+    };
+    /** PART 10 Fix 7 — agent plan preview before creating a scheduled agent */
+    agentPlanPreview?: {
+      agentName: string;
+      taskDescription: string;
+      cronSchedule: string;
+      outputChannel: string;
+      agentPlan: PlanPreviewData;
+      agentParams: Record<string, any>;
     };
   };
 }
@@ -1189,6 +1215,7 @@ function OrchestrationPlanCard({
     }>;
     missingIntegrations: string[];
     estimatedCalls: { min: number; max: number };
+    stepStatuses?: Record<number, 'pending' | 'running' | 'completed' | 'failed'>;
   };
   isRunning: boolean;
 }) {
@@ -1263,18 +1290,32 @@ function OrchestrationPlanCard({
                 {plan.steps.map((step, i) => {
                   const isUnavailable = step.requiredIntegration &&
                     plan.missingIntegrations.includes(step.requiredIntegration);
+                  const stepStatus = plan.stepStatuses?.[i] ?? 'pending';
 
                   return (
                     <div key={i} className="flex items-start gap-3 py-1.5">
-                      {/* Node dot */}
-                      <div className={cn(
-                        'flex-shrink-0 w-2.5 h-2.5 rounded-full border mt-1 -ml-4 z-10',
-                        isUnavailable
-                          ? 'bg-white/10 border-white/20'
-                          : step.isWrite
-                            ? 'bg-amber-500/60 border-amber-500/80'
-                            : 'bg-arcus-fg-muted border-arcus-border',
-                      )} />
+                      {/* Node dot / status indicator */}
+                      <div className="flex-shrink-0 w-2.5 h-2.5 mt-1 -ml-4 z-10 relative flex items-center justify-center">
+                        {stepStatus === 'completed' ? (
+                          <span className="text-[9px] text-emerald-400 font-bold leading-none">✓</span>
+                        ) : stepStatus === 'failed' ? (
+                          <span className="text-[9px] text-red-400 font-bold leading-none">×</span>
+                        ) : stepStatus === 'running' ? (
+                          <>
+                            <div className="w-2.5 h-2.5 rounded-full bg-blue-400 animate-pulse" />
+                            <div className="absolute inset-0 rounded-full bg-blue-400 animate-ping opacity-30" />
+                          </>
+                        ) : (
+                          <div className={cn(
+                            'w-2.5 h-2.5 rounded-full border',
+                            isUnavailable
+                              ? 'bg-white/10 border-white/20'
+                              : step.isWrite
+                                ? 'bg-amber-500/60 border-amber-500/80'
+                                : 'bg-arcus-fg-muted border-arcus-border',
+                          )} />
+                        )}
+                      </div>
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
@@ -2685,6 +2726,29 @@ export default function ChatInterface({
                 break;
               }
 
+              // ── Agent plan preview (Fix 7) ───────────────────────────────────
+              if (cv.type === 'agent_plan_preview' && cv.pageMeta) {
+                const pm = cv.pageMeta as any;
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      agentPlanPreview: {
+                        agentName: pm.agentName || cv.title,
+                        taskDescription: pm.taskDescription || '',
+                        cronSchedule: pm.cronSchedule || '0 7 * * *',
+                        outputChannel: pm.outputChannel || 'gmail',
+                        agentPlan: pm.agentPlan,
+                        agentParams: pm.agentParams || {},
+                      },
+                    },
+                  };
+                }));
+                break;
+              }
+
               // ── Action result cards (Notion page, Calendar event, Email sent) ───
               // These get a rich inline card rather than opening the canvas panel.
               // PART 8 #2 — Each card appends to actionResults so bulk operations
@@ -2805,7 +2869,26 @@ export default function ChatInterface({
               setLiveActivityLine(activeLabel);
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), thinkingComplete: true, agentSteps: nextToolCallSteps } };
+                // PART 10 Fix 6: update orchestration plan stepStatuses — mark matching step as 'running'
+                const plan = (m as any).meta?.orchestrationPlan;
+                const updatedStatuses = plan?.stepStatuses ? { ...plan.stepStatuses } : undefined;
+                if (updatedStatuses && plan?.steps) {
+                  const planStepIdx = (plan.steps as any[]).findIndex((s: any) =>
+                    Array.isArray(s.tools) && s.tools.includes(data.tool)
+                  );
+                  if (planStepIdx >= 0 && updatedStatuses[planStepIdx] !== 'completed') {
+                    updatedStatuses[planStepIdx] = 'running';
+                  }
+                }
+                return {
+                  ...m,
+                  meta: {
+                    ...(m.meta || {}),
+                    thinkingComplete: true,
+                    agentSteps: nextToolCallSteps,
+                    ...(updatedStatuses && plan ? { orchestrationPlan: { ...plan, stepStatuses: updatedStatuses } } : {}),
+                  },
+                };
               }));
               break;
             }
@@ -2828,7 +2911,25 @@ export default function ChatInterface({
               setLiveActivityLine('');
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), agentSteps: nextResultSteps } };
+                // PART 10 Fix 6: update orchestration plan stepStatuses — mark matching step as completed/failed
+                const plan = (m as any).meta?.orchestrationPlan;
+                const updatedStatuses = plan?.stepStatuses ? { ...plan.stepStatuses } : undefined;
+                if (updatedStatuses && plan?.steps) {
+                  const planStepIdx = (plan.steps as any[]).findIndex((s: any) =>
+                    Array.isArray(s.tools) && s.tools.includes(data.tool)
+                  );
+                  if (planStepIdx >= 0) {
+                    updatedStatuses[planStepIdx] = toolSuccess ? 'completed' : 'failed';
+                  }
+                }
+                return {
+                  ...m,
+                  meta: {
+                    ...(m.meta || {}),
+                    agentSteps: nextResultSteps,
+                    ...(updatedStatuses && plan ? { orchestrationPlan: { ...plan, stepStatuses: updatedStatuses } } : {}),
+                  },
+                };
               }));
               break;
             }
@@ -3028,6 +3129,8 @@ export default function ChatInterface({
               // Stored on message meta; rendered as a collapsible plan card
               // that shows the user what Arcus intends to do and in what order.
               if (data.steps?.length) {
+                const initialStepStatuses: Record<number, 'pending' | 'running' | 'completed' | 'failed'> = {};
+                data.steps.forEach((_: any, i: number) => { initialStepStatuses[i] = 'pending'; });
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return {
@@ -3039,6 +3142,57 @@ export default function ChatInterface({
                         steps: data.steps || [],
                         missingIntegrations: data.missingIntegrations || [],
                         estimatedCalls: data.estimatedCalls || { min: 1, max: 5 },
+                        stepStatuses: initialStepStatuses,
+                      },
+                    },
+                  };
+                }));
+              }
+              break;
+            }
+
+            case 'plan_preview': {
+              // PART 10 — auto-detected plan preview for complex/irreversible tasks.
+              // Shown before execution so the user can approve, edit, or cancel.
+              if (data.steps?.length) {
+                hadPlanEvent = true;
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    content: { text: '', list: [], footer: '' },
+                    meta: {
+                      ...(m.meta || {}),
+                      isStreaming: false,
+                      planPreview: {
+                        intent: data.intent || '',
+                        steps: data.steps || [],
+                        missingIntegrations: data.missingIntegrations || [],
+                        estimatedCalls: data.estimatedCalls || { min: 1, max: 5 },
+                        specificDescription: data.specificDescription || '',
+                      },
+                    },
+                  };
+                }));
+              }
+              break;
+            }
+
+            case 'plan_step_failed': {
+              // PART 10 Fix 5 — a plan step failed mid-execution.
+              // Show a card asking the user to skip and continue, or stop.
+              if (data.failedTool) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      planStepFailed: {
+                        failedStep: data.failedStep || data.failedTool,
+                        failedTool: data.failedTool,
+                        reason: data.reason || '',
+                        remainingSteps: data.remainingSteps || [],
                       },
                     },
                   };
@@ -4990,6 +5144,84 @@ export default function ChatInterface({
                                       />
                                     )}
 
+                                    {/* PART 10: Plan Preview Card — auto-detected for complex/irreversible tasks */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planPreview && (
+                                      <PlanPreviewCard
+                                        plan={(msg as AgentMessage).meta!.planPreview! as PlanPreviewData}
+                                        onExecute={(steps: PlanPreviewStep[]) => {
+                                          // Mark card as executed
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planPreview: undefined } }
+                                              : m
+                                          ));
+                                          // Build structured execution message (Fix 4)
+                                          const stepLines = steps.map((s, i) =>
+                                            `${i + 1}. ${s.label} → tools: ${s.tools.join(', ')}`
+                                          ).join('\n');
+                                          const execMessage = `Execute these steps in order:\n${stepLines}\nCall request_confirmation before any write action. Report what you did at the end.`;
+                                          if (currentConversationId) {
+                                            processAIMessage(execMessage, currentConversationId, false, [], { isPlanMode: false });
+                                          }
+                                        }}
+                                        onCancel={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planPreview: undefined } }
+                                              : m
+                                          ));
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* PART 10 Fix 5: Plan Step Failed Card */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planStepFailed && (
+                                      <div className="mt-3 w-full rounded-[16px] border border-amber-500/20 bg-amber-500/[0.05] overflow-hidden">
+                                        <div className="px-4 py-3">
+                                          <p className="text-[13px] font-bold text-amber-400 mb-0.5">
+                                            Step failed: {(msg as AgentMessage).meta!.planStepFailed!.failedStep}
+                                          </p>
+                                          <p className="text-[12px] text-white/50 mb-3">
+                                            {(msg as AgentMessage).meta!.planStepFailed!.reason}
+                                          </p>
+                                          {(msg as AgentMessage).meta!.planStepFailed!.remainingSteps.length > 0 && (
+                                            <p className="text-[11px] text-white/35 mb-3">
+                                              Remaining: {(msg as AgentMessage).meta!.planStepFailed!.remainingSteps.join(', ')}
+                                            </p>
+                                          )}
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={() => {
+                                                setMessages(prev => prev.map(m =>
+                                                  m.id === msg.id && m.type === 'agent'
+                                                    ? { ...m, meta: { ...(m as AgentMessage).meta, planStepFailed: undefined } }
+                                                    : m
+                                                ));
+                                                if (currentConversationId) {
+                                                  processAIMessage('Skip the failed step and continue with the remaining plan steps.', currentConversationId, false, [], { isPlanMode: false });
+                                                }
+                                              }}
+                                              className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
+                                            >
+                                              Skip &amp; continue
+                                            </button>
+                                            <button
+                                              onClick={() => {
+                                                setMessages(prev => prev.map(m =>
+                                                  m.id === msg.id && m.type === 'agent'
+                                                    ? { ...m, meta: { ...(m as AgentMessage).meta, planStepFailed: undefined } }
+                                                    : m
+                                                ));
+                                              }}
+                                              className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-white/30 hover:text-white/60 transition-colors"
+                                            >
+                                              Stop
+                                            </button>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    )}
+
                                     {/* Phase 2: Canvas Expansion Prompt */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.canvasExpansion && (
                                       <div
@@ -5170,6 +5402,38 @@ export default function ChatInterface({
                                             setCanvasData((msg as AgentMessage).meta!.result!.canvasData);
                                             setIsCanvasOpen(true);
                                           }
+                                        }}
+                                      />
+                                    )}
+
+                                    {/* PART 10 Fix 7: Agent Plan Preview — shown before creating a scheduled agent */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentPlanPreview && (msg as AgentMessage).meta!.agentPlanPreview!.agentPlan && (
+                                      <PlanPreviewCard
+                                        plan={(msg as AgentMessage).meta!.agentPlanPreview!.agentPlan as PlanPreviewData}
+                                        onExecute={() => {
+                                          const params = (msg as AgentMessage).meta!.agentPlanPreview!.agentParams;
+                                          const name = (msg as AgentMessage).meta!.agentPlanPreview!.agentName;
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, agentPlanPreview: undefined } }
+                                              : m
+                                          ));
+                                          if (currentConversationId) {
+                                            processAIMessage(
+                                              `Create agent ${name} - plan approved`,
+                                              currentConversationId,
+                                              false,
+                                              [],
+                                              { isPlanMode: false },
+                                            );
+                                          }
+                                        }}
+                                        onCancel={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id && m.type === 'agent'
+                                              ? { ...m, meta: { ...(m as AgentMessage).meta, agentPlanPreview: undefined } }
+                                              : m
+                                          ));
                                         }}
                                       />
                                     )}

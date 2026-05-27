@@ -14,6 +14,7 @@ import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './in
 import { getConnectedIntegrations } from './system-prompt';
 import { callLLM, getText } from './engine';
 import type { ToolSchema } from './engine';
+import { buildExecutionPlan } from './orchestrator';
 import {
   recordPendingApproval,
   consumeApproval,
@@ -1430,7 +1431,7 @@ export async function executeTool(
       case 'slack_find_user':       result = await slackFindUser(userId, input); break;
       case 'slack_send_dm':         result = await slackSendDm(userId, input, context); break;
       case 'slack_get_channels':    result = await slackGetChannels(userId, input); break;
-      case 'create_scheduled_agent': result = await createScheduledAgent(userId, input); break;
+      case 'create_scheduled_agent': result = await createScheduledAgent(userId, input, context); break;
       case 'report_generate':       result = reportGenerate(input); break;
       case 'report_send_gmail':     result = await reportSendGmail(userId, input); break;
       case 'report_send_slack':     result = await reportSendSlack(userId, input, context); break;
@@ -4727,7 +4728,43 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   };
 }
 
-async function createScheduledAgent(userId: string, input: any): Promise<ToolResult> {
+/**
+ * Build a PlanPreviewData-shaped object describing what a scheduled agent
+ * will do each time it runs — used for Fix 7 agent plan preview.
+ */
+function buildAgentRunPlan(input: any) {
+  const taskDescription: string = input.task_description || 'Run scheduled task';
+  const outputChannel: string = input.output_channel || 'gmail';
+  const connectedIntegrations: string[] = []; // agents run with whatever is connected at runtime
+  const plan = buildExecutionPlan(taskDescription, connectedIntegrations, false);
+
+  if (plan) {
+    return {
+      intent: plan.intent,
+      steps: plan.steps.map(s => ({
+        label: s.label,
+        tools: s.tools,
+        parallel: s.parallel,
+        isWrite: s.isWrite,
+        requiredIntegration: s.requiredIntegration,
+      })),
+      missingIntegrations: plan.missingIntegrations,
+      estimatedCalls: plan.estimatedCalls,
+      specificDescription: `Each time this agent runs, it will: ${plan.steps.map(s => s.label).join(', ')}. Results will be delivered via ${outputChannel}.`,
+    };
+  }
+
+  // Fallback: minimal plan
+  return {
+    intent: taskDescription,
+    steps: [{ label: taskDescription, tools: ['(auto-selected at runtime)'], parallel: false, isWrite: false, requiredIntegration: null }],
+    missingIntegrations: [],
+    estimatedCalls: { min: 2, max: 6 },
+    specificDescription: `Each run: ${taskDescription}. Delivered via ${outputChannel}.`,
+  };
+}
+
+async function createScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
     return failureResult('Cannot create the agent — a name and a task description are both required.', 'validation_error');
   }
@@ -4735,6 +4772,39 @@ async function createScheduledAgent(userId: string, input: any): Promise<ToolRes
   if (cron.split(/\s+/).length !== 5) {
     return failureResult(`Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).`, 'validation_error');
   }
+
+  // ── PART 10 Fix 7: Agent plan preview gate ──────────────────────────────────
+  // In interactive sessions (conversationId set), show the user what the agent
+  // will do before actually creating it. Skip if already approved.
+  if (context.conversationId && !input._planApproved) {
+    const agentPlan = buildAgentRunPlan(input);
+    return {
+      output: `Before I create this agent, here's what it will do every time it runs. Approve the plan to create it.`,
+      canvasData: {
+        title: `Agent Plan: ${input.name.trim()}`,
+        type: 'agent_plan_preview',
+        markdown: '',
+        pageMeta: {
+          agentName: input.name.trim(),
+          taskDescription: input.task_description.trim(),
+          cronSchedule: cron,
+          outputChannel: input.output_channel || 'gmail',
+          agentPlan,
+          agentParams: {
+            name: input.name.trim(),
+            task_description: input.task_description.trim(),
+            cron_schedule: cron,
+            output_channel: input.output_channel || 'gmail',
+            slack_channel: input.slack_channel || null,
+            skip_confirmations: input.skip_confirmations ?? false,
+            expires_at: input.expires_at || null,
+          },
+        } as any,
+      },
+      requiresConfirmation: true,
+    };
+  }
+  // ── End agent plan preview gate ─────────────────────────────────────────────
 
   // ── Integration gate ────────────────────────────────────────────────────────
   const required = detectRequiredIntegrations(input.task_description, input.output_channel || 'gmail');

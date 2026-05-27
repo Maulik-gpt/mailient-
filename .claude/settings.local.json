@@ -5,7 +5,8 @@
       "Bash(node -e \"const d = require\\('docx'\\); console.log\\(['NumberValueElement','PageNumber','Header','Footer','NumberFormat'].filter\\(k => k in d\\).join\\(', '\\)\\); console.log\\('MISSING:', ['NumberValueElement','PageNumber','Header','Footer'].filter\\(k => !\\(k in d\\)\\).join\\(', '\\)\\)\")",
       "PowerShell(Set-Location \"c:\\\\Users\\\\hp\\\\Mailent\"; $out = npx tsc --noEmit --skipLibCheck 2>&1; $filtered = $out | Where-Object { $_ -match \"system-prompt|AskUser|loop|tools\\\\.ts\" }; if \\($filtered\\) { $filtered } else { Write-Host \"No errors in target files\" })",
       "Bash(git add *)",
-      "Bash(git commit -m ' *)"
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
