@@ -1242,6 +1242,116 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       },
     },
   },
+  // ── PART 4 — Slack tools ──────────────────────────────────────────────────
+  {
+    name: 'slack_post_daily_briefing',
+    description:
+      'Post a daily briefing to Slack with: unread email count, today\'s meeting count, stalled follow-up count. Posts as a DM to the user by default; pass channel="#name" for a channel post. ' +
+      'Output: send status. Errors: slack_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        channel: { type: 'string', description: 'Slack channel name or "dm" (default).' },
+      },
+    },
+  },
+  {
+    name: 'slack_real_time_urgent_alerts',
+    description:
+      'Score the given threads via gmail_detect_urgency and post a Slack alert if any cross urgencyThreshold (default 7). Pairs cleanly with build_worklist → gmail_detect_urgency → this. ' +
+      'Output: alert status or "no alert needed". Errors: validation_error, slack_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        threadIds: { type: 'array', items: { type: 'string' } },
+        channel: { type: 'string', description: 'Default "dm".' },
+        urgencyThreshold: { type: 'number', description: '1-10, default 7.' },
+      },
+      required: ['threadIds'],
+    },
+  },
+  {
+    name: 'slack_team_digest_weekly',
+    description:
+      'Post a weekly team digest to a Slack channel: emails sent, meetings held, agent runs this week. ' +
+      'Output: send status. Errors: slack_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        channel: { type: 'string', description: 'Default "#team-digest".' },
+      },
+    },
+  },
+  {
+    name: 'slack_deal_update_notifications',
+    description:
+      'Post one Slack message per deal-stage change (company, fromStage → toStage, value, nextAction). Useful when notion_deal_tracking_automation detects a stage change. ' +
+      'Output: per-update post status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        channel: { type: 'string', description: 'Default "#sales-pipeline".' },
+        updates: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              company: { type: 'string' },
+              fromStage: { type: 'string' },
+              toStage: { type: 'string' },
+              value: { type: 'string' },
+              nextAction: { type: 'string' },
+            },
+            required: ['company'],
+          },
+        },
+      },
+      required: ['updates'],
+    },
+  },
+  {
+    name: 'slack_task_assignment_notifications',
+    description:
+      'Post task assignment messages to a Slack channel — one per task. Each task: { description, owner?, deadline?, context?, notionUrl? }. ' +
+      'Output: per-task post status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        channel: { type: 'string', description: 'Target Slack channel.' },
+        tasks: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              description: { type: 'string' },
+              owner: { type: 'string' },
+              deadline: { type: 'string' },
+              context: { type: 'string' },
+              notionUrl: { type: 'string' },
+            },
+            required: ['description'],
+          },
+        },
+      },
+      required: ['channel', 'tasks'],
+    },
+  },
+  {
+    name: 'slack_approval_request_routing',
+    description:
+      'Post a structured approval request to Slack ("Action: X · Question: Y · Approve in dashboard"). Approvals route through the dashboard, not Slack-reply listening. ' +
+      'Output: send status. Errors: validation_error, slack_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        channel: { type: 'string', description: 'Default "dm".' },
+        actionDescription: { type: 'string', description: 'One-line description of the proposed action.' },
+        question: { type: 'string', description: 'The specific question for the user.' },
+        dashboardUrl: { type: 'string', description: 'Optional override of the approval dashboard URL.' },
+      },
+      required: ['actionDescription', 'question'],
+    },
+  },
   {
     name: 'memory_get_contact_profile',
     description:
@@ -1769,6 +1879,12 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   notion_link_related_items: 'notion',
   notion_auto_archive_completed_work: 'notion',
   notion_generate_weekly_summaries: 'notion',
+  slack_post_daily_briefing: 'slack',
+  slack_real_time_urgent_alerts: 'slack',
+  slack_team_digest_weekly: 'slack',
+  slack_deal_update_notifications: 'slack',
+  slack_task_assignment_notifications: 'slack',
+  slack_approval_request_routing: 'slack',
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -2038,6 +2154,13 @@ export async function executeTool(
       case 'notion_link_related_items':           result = await notionLinkRelatedItems(userId, input); break;
       case 'notion_auto_archive_completed_work':  result = await notionAutoArchiveCompletedWork(userId, input); break;
       case 'notion_generate_weekly_summaries':    result = await notionGenerateWeeklySummaries(userId, input, context); break;
+      // PART 4 — Slack
+      case 'slack_post_daily_briefing':           result = await slackPostDailyBriefing(userId, input, context); break;
+      case 'slack_real_time_urgent_alerts':       result = await slackRealTimeUrgentAlerts(userId, input, context); break;
+      case 'slack_team_digest_weekly':            result = await slackTeamDigestWeekly(userId, input, context); break;
+      case 'slack_deal_update_notifications':     result = await slackDealUpdateNotifications(userId, input, context); break;
+      case 'slack_task_assignment_notifications': result = await slackTaskAssignmentNotifications(userId, input, context); break;
+      case 'slack_approval_request_routing':      result = await slackApprovalRequestRouting(userId, input, context); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -7962,6 +8085,181 @@ async function notionGenerateWeeklySummaries(userId: string, input: any, context
     content,
   }, context);
   return { output: created.output };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 4 — Slack autonomy tools
+// ════════════════════════════════════════════════════════════════════════════
+//
+// Six of the eight spec tools. Blocked (not built):
+//   - slack_meeting_transcription_summaries (needs meeting recording source)
+//   - slack_bot_command_interface (needs a Slack Events API endpoint + a
+//     /arcus slash-command registered in the Slack app manifest — out of
+//     scope for the agent tool layer; belongs in app/api/slack/...).
+
+async function slackPostDailyBriefing(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const channel = (input?.channel || '').trim() || 'dm';
+
+  // Aggregate
+  const sections: string[] = [`*📋 Daily briefing — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}*`, ''];
+
+  try {
+    const inbox = await searchGmail(userId, { query: 'is:unread newer_than:1d', maxResults: 10 });
+    if (inbox.success !== false) {
+      const count = (inbox.output.match(/\[ID:/g) || []).length;
+      sections.push(`📧 *Inbox:* ${count} unread email(s)`);
+    }
+  } catch { /* skip */ }
+
+  try {
+    const cal = await getCalendarEvents(userId, { daysAhead: 1, maxResults: 10 });
+    if (cal.success !== false) {
+      const eventCount = (cal.output.match(/^\d+\./gm) || []).length;
+      sections.push(`📅 *Today's meetings:* ${eventCount}`);
+    }
+  } catch { /* skip */ }
+
+  try {
+    const followups = await searchGmail(userId, { query: 'in:sent older_than:5d newer_than:30d', maxResults: 5 });
+    if (followups.success !== false) {
+      const count = (followups.output.match(/\[ID:/g) || []).length;
+      if (count > 0) sections.push(`⏰ *Stalled follow-ups:* ${count} thread(s) older than 5 days`);
+    }
+  } catch { /* skip */ }
+
+  sections.push('', '_Sent by Arcus · mailient.xyz_');
+  const text = sections.join('\n');
+
+  const send = await sendSlackMessage(userId, { channel, text }, context);
+  return send;
+}
+
+async function slackRealTimeUrgentAlerts(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const threadIds: string[] = Array.isArray(input?.threadIds) ? input.threadIds.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  const channel = (input?.channel || '').trim() || 'dm';
+  const urgencyThreshold = Math.max(1, Math.min(10, Number(input?.urgencyThreshold) || 7));
+
+  if (!threadIds.length) return failureResult('threadIds is required.', 'validation_error');
+
+  // Reuse gmail_detect_urgency
+  const urgency = await gmailDetectUrgency(userId, { threadIds });
+  if (urgency.success === false) return urgency;
+
+  let scored: Array<{ threadId: string; urgencyScore: number; reason: string; needsImmediate: boolean }> = [];
+  try { scored = JSON.parse(urgency.output); } catch { return failureResult('Urgency parse failed.', 'internal_error'); }
+  const urgent = scored.filter(s => s.urgencyScore >= urgencyThreshold);
+  if (!urgent.length) return { output: `No threads scored ≥ ${urgencyThreshold}. No alert sent.` };
+
+  const blocks = urgent.map((u, i) => `${i + 1}. ⚠️ *Thread ${u.threadId}* — score ${u.urgencyScore}/10\n   ${u.reason}`).join('\n');
+  const text = [
+    `🚨 *${urgent.length} urgent thread(s) detected*`,
+    '',
+    blocks,
+    '',
+    '_Arcus background scan · review immediately._',
+  ].join('\n');
+
+  return await sendSlackMessage(userId, { channel, text }, context);
+}
+
+async function slackTeamDigestWeekly(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const channel = (input?.channel || '#team-digest').trim();
+
+  const sections: string[] = [`*📊 Weekly team digest — week of ${new Date().toISOString().slice(0, 10)}*`, ''];
+
+  try {
+    const sent = await searchGmail(userId, { query: 'in:sent newer_than:7d', maxResults: 25 });
+    if (sent.success !== false) {
+      const count = (sent.output.match(/\[ID:/g) || []).length;
+      sections.push(`📧 *Emails sent:* ${count}`);
+    }
+  } catch { /* skip */ }
+
+  try {
+    const cal = await getCalendarEvents(userId, { daysAhead: -7, maxResults: 50 });
+    if (cal.success !== false) {
+      const eventCount = (cal.output.match(/^\d+\./gm) || []).length;
+      sections.push(`📅 *Meetings held:* ${eventCount}`);
+    }
+  } catch { /* skip */ }
+
+  try {
+    const { searchMemoriesRaw } = await import('./memory');
+    const items = await searchMemoriesRaw(userId, '[AGENT_RUN]', 10);
+    if (items.length) sections.push(`🤖 *Agent runs:* ${items.length} background runs this week`);
+  } catch { /* skip */ }
+
+  sections.push('', '_Sent by Arcus · mailient.xyz_');
+  const text = sections.join('\n');
+
+  return await sendSlackMessage(userId, { channel, text }, context);
+}
+
+async function slackDealUpdateNotifications(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const channel = (input?.channel || '#sales-pipeline').trim();
+  const updates: any[] = Array.isArray(input?.updates) ? input.updates : [];
+  if (!updates.length) return failureResult('updates is required (array of { company, fromStage, toStage, value?, nextAction? }).', 'validation_error');
+
+  const slice = updates.slice(0, 25);
+  const results: Array<{ company: string; ok: boolean }> = [];
+  for (const u of slice) {
+    const text = [
+      `💰 *${u.company}*${u.value ? ` (${u.value})` : ''}`,
+      `${u.fromStage || '?'} → ${u.toStage || '?'}`,
+      u.nextAction ? `\nNext: ${u.nextAction}` : '',
+    ].filter(Boolean).join('\n');
+    const r = await sendSlackMessage(userId, { channel, text }, context);
+    results.push({ company: u.company, ok: r.success !== false });
+  }
+  const ok = results.filter(r => r.ok).length;
+  return { output: `Posted ${ok}/${results.length} deal updates to ${channel}.` };
+}
+
+async function slackTaskAssignmentNotifications(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const channel = (input?.channel || '').trim();
+  const tasks: any[] = Array.isArray(input?.tasks) ? input.tasks : [];
+  if (!channel) return failureResult('channel is required.', 'validation_error');
+  if (!tasks.length) return failureResult('tasks is required (array of { description, owner?, deadline?, context?, notionUrl? }).', 'validation_error');
+
+  const slice = tasks.slice(0, 25);
+  const results: Array<{ ok: boolean }> = [];
+  for (const t of slice) {
+    const text = [
+      `✅ *New task*${t.owner ? ` — for ${t.owner}` : ''}`,
+      `${t.description}`,
+      t.deadline ? `📅 Due: ${t.deadline}` : '',
+      t.context ? `_Context:_ ${t.context}` : '',
+      t.notionUrl ? `<${t.notionUrl}|Open in Notion>` : '',
+    ].filter(Boolean).join('\n');
+    const r = await sendSlackMessage(userId, { channel, text }, context);
+    results.push({ ok: r.success !== false });
+  }
+  const ok = results.filter(r => r.ok).length;
+  return { output: `Posted ${ok}/${results.length} task notifications to ${channel}.` };
+}
+
+async function slackApprovalRequestRouting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const channel = (input?.channel || 'dm').trim();
+  const question = (input?.question || '').trim();
+  const actionDescription = (input?.actionDescription || '').trim();
+  const dashboardUrl = (input?.dashboardUrl || 'https://mailient.xyz/dashboard?tab=agents&approve=pending').trim();
+  if (!question) return failureResult('question is required.', 'validation_error');
+  if (!actionDescription) return failureResult('actionDescription is required.', 'validation_error');
+
+  const text = [
+    `🤔 *Approval needed*`,
+    '',
+    `*Action:* ${actionDescription}`,
+    `*Question:* ${question}`,
+    '',
+    `Reply 👍 to approve or 👎 to reject. Or open the dashboard:`,
+    `<${dashboardUrl}|Approve / reject in dashboard>`,
+  ].join('\n');
+
+  // Send the request — the actual approval mechanism is dashboard-driven via
+  // arcus_agent_pending_actions, not Slack-reply-listening (which would need
+  // an Events API endpoint we don't run).
+  return await sendSlackMessage(userId, { channel, text }, context);
 }
 
 async function calendarTimezoneIntelligence(userId: string, input: any): Promise<ToolResult> {
