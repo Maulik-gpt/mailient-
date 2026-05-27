@@ -942,6 +942,158 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['threadIds'],
     },
   },
+  // ── PART 2 — Calendar tools ──────────────────────────────────────────────
+  {
+    name: 'calendar_unlimited_scan',
+    description:
+      'Read the entire calendar up to daysAhead (max 365). Optionally merges Notion Calendar entries. Returns one structured JSON with all events sorted chronologically: title, start, end, attendees, meetLink, location, organizer, optional flag. ' +
+      'Use this BEFORE proposing any meeting time or running conflict detection. Output: JSON. Errors: validation_error, gcal_not_connected, upstream_gcal.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: 'Window in days (1-365, default 30).' },
+        maxResults: { type: 'number', description: 'Max events (1-250, default 100).' },
+        includeNotionCalendar: { type: 'boolean', description: 'Default true — merges notion_get_calendar_events into the result.' },
+      },
+    },
+  },
+  {
+    name: 'calendar_batch_create_events',
+    description:
+      'Create up to 25 calendar events in one call. Each item: { title, startTime, endTime, attendees[], description?, addGoogleMeet? }. Pairs cleanly with gmail_extract_data_from_threads → batch schedule. ' +
+      'Each goes through schedule_meeting so the same skip_confirmations behavior applies. Output: per-item create status. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        items: {
+          type: 'array',
+          description: 'Up to 25 meeting requests.',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              startTime: { type: 'string', description: 'ISO 8601' },
+              endTime: { type: 'string', description: 'ISO 8601' },
+              attendees: { type: 'array', items: { type: 'string' } },
+              description: { type: 'string' },
+              addGoogleMeet: { type: 'boolean' },
+            },
+            required: ['title', 'startTime', 'endTime'],
+          },
+        },
+      },
+      required: ['items'],
+    },
+  },
+  {
+    name: 'calendar_auto_detect_conflicts',
+    description:
+      'Scan the calendar for: (1) existing-vs-existing overlaps, (2) back-to-back meetings with <10 min gap, (3) proposed-vs-existing conflicts for any proposedEvents passed in. ' +
+      'Use to triage scheduling-request floods before booking. Output: JSON conflict report. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: '1-60, default 7.' },
+        proposedEvents: {
+          type: 'array',
+          description: 'Optional list of { title, startTime, endTime } to check against existing schedule.',
+          items: {
+            type: 'object',
+            properties: {
+              title: { type: 'string' },
+              startTime: { type: 'string' },
+              endTime: { type: 'string' },
+            },
+            required: ['startTime', 'endTime'],
+          },
+        },
+      },
+    },
+  },
+  {
+    name: 'calendar_auto_decline_low_priority',
+    description:
+      'Identify and (optionally) decline low-priority meetings: marked optional by the inviter, or matching webinar/all-hands/info-session/optional/fyi patterns. Pass dryRun=false to actually send declines via GCal PATCH. Default is dryRun=true so the user can review first. ' +
+      'Output: JSON list of candidates with reasons, or "declined N/M" if dryRun=false. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: '1-30, default 7.' },
+        dryRun: { type: 'boolean', description: 'Default true. Set false to actually decline.' },
+      },
+    },
+  },
+  {
+    name: 'calendar_generate_free_time_blocks',
+    description:
+      'Find free slots ≥ minBlockHours and create "🎯 Focus Time" events in them — protecting the time from being scheduled over. Prefers morning blocks. Pass dryRun=true to preview without creating. ' +
+      'Output: count created or JSON preview. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: '1-14, default 5.' },
+        minBlockHours: { type: 'number', description: '1-8, default 2.' },
+        maxBlocksPerDay: { type: 'number', description: '1-4, default 1.' },
+        dryRun: { type: 'boolean', description: 'Default false (creates blocks).' },
+      },
+    },
+  },
+  {
+    name: 'calendar_meeting_prep_automation',
+    description:
+      'Generate one-page meeting prep docs for upcoming external meetings. For each meeting: pulls recent emails with attendees, queries memory for context, composes a "## Context · ## Recent Interactions · ## Talking Points · ## Watch For" markdown doc. Optionally saves each to Notion. ' +
+      'Output: JSON with per-meeting prep preview. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        eventId: { type: 'string', description: 'A specific event id to prep for. If omitted, scans all external meetings in the lookahead window.' },
+        lookaheadHours: { type: 'number', description: '1-72, default 24.' },
+        scanWindow: { type: 'boolean', description: 'Set true (with eventId omitted) to scan the whole window.' },
+        saveToNotion: { type: 'boolean', description: 'Default true — saves each prep doc to Notion meetings DB.' },
+      },
+    },
+  },
+  {
+    name: 'calendar_auto_generate_meet_links',
+    description:
+      'Find external meetings in the next daysAhead that have no Meet link, and add one to each (PATCH event with conferenceData.createRequest, sendUpdates=all so attendees get the updated invite). ' +
+      'Output: count added. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: '1-30, default 14.' },
+      },
+    },
+  },
+  {
+    name: 'calendar_buffer_time_insertion',
+    description:
+      'Insert "☕ Buffer" blocks between back-to-back meetings that have <bufferMinutes gap. Pass dryRun=false to actually create them. ' +
+      'Output: count of buffers inserted. Errors: gcal_not_connected.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        daysAhead: { type: 'number', description: '1-7, default 2.' },
+        bufferMinutes: { type: 'number', description: '5-60, default 15.' },
+        dryRun: { type: 'boolean', description: 'Default true.' },
+      },
+    },
+  },
+  {
+    name: 'calendar_timezone_intelligence',
+    description:
+      'Convert a proposed time across the user timezone + all attendee timezones, flag zones where the local hour is outside 8am-7pm, and return a suggestion if any zone is unreasonable. ' +
+      'Output: JSON with conversions + problemZones. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        proposedTime: { type: 'string', description: 'ISO 8601 timestamp.' },
+        userTimezone: { type: 'string', description: 'IANA timezone (e.g. "America/Los_Angeles"). Default "UTC".' },
+        attendeeTimezones: { type: 'array', items: { type: 'string' }, description: 'IANA timezones for each attendee.' },
+      },
+      required: ['proposedTime'],
+    },
+  },
   {
     name: 'memory_get_contact_profile',
     description:
@@ -1450,6 +1602,15 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   gmail_detect_conversation_type: 'gmail',
   gmail_generate_auto_replies: 'gmail',
   gmail_detect_urgency: 'gmail',
+  calendar_unlimited_scan: 'gcal',
+  calendar_batch_create_events: 'gcal',
+  calendar_auto_detect_conflicts: 'gcal',
+  calendar_auto_decline_low_priority: 'gcal',
+  calendar_generate_free_time_blocks: 'gcal',
+  calendar_meeting_prep_automation: 'gcal',
+  calendar_auto_generate_meet_links: 'gcal',
+  calendar_buffer_time_insertion: 'gcal',
+  calendar_timezone_intelligence: null,
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -1698,6 +1859,16 @@ export async function executeTool(
       case 'gmail_detect_conversation_type':  result = await gmailDetectConversationType(userId, input); break;
       case 'gmail_generate_auto_replies':     result = await gmailGenerateAutoReplies(userId, input, context); break;
       case 'gmail_detect_urgency':            result = await gmailDetectUrgency(userId, input); break;
+      // PART 2 — Calendar
+      case 'calendar_unlimited_scan':         result = await calendarUnlimitedScan(userId, input); break;
+      case 'calendar_batch_create_events':    result = await calendarBatchCreateEvents(userId, input, context); break;
+      case 'calendar_auto_detect_conflicts':  result = await calendarAutoDetectConflicts(userId, input); break;
+      case 'calendar_auto_decline_low_priority': result = await calendarAutoDeclineLowPriority(userId, input); break;
+      case 'calendar_generate_free_time_blocks': result = await calendarGenerateFreeTimeBlocks(userId, input, context); break;
+      case 'calendar_meeting_prep_automation': result = await calendarMeetingPrepAutomation(userId, input, context); break;
+      case 'calendar_auto_generate_meet_links': result = await calendarAutoGenerateMeetLinks(userId, input); break;
+      case 'calendar_buffer_time_insertion':  result = await calendarBufferTimeInsertion(userId, input, context); break;
+      case 'calendar_timezone_intelligence':  result = await calendarTimezoneIntelligence(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -6652,6 +6823,565 @@ async function gmailGenerateAutoReplies(userId: string, input: any, context: Too
 const URGENCY_PROMPT_P1 = `Score the email thread's urgency from 1 (no urgency) to 10 (drop everything).
 Consider: explicit deadlines, keywords (urgent, ASAP, EOD, today), VIP-language ("CEO", "board"), financial language (contract due, payment late), and time-sensitive requests.
 Output ONLY JSON: { "urgencyScore": 1-10, "reason": "<one short sentence>", "needsImmediate": boolean }`;
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 2 — Calendar tools
+// ════════════════════════════════════════════════════════════════════════════
+//
+// All built on top of the existing getCalendarEvents / calendarGetAvailability /
+// scheduleMeeting / notionGetCalendarEvents primitives. The blocked tool
+// calendar_meeting_summary_generation (needs meeting recordings/transcripts)
+// is intentionally not implemented.
+
+async function calendarUnlimitedScan(userId: string, input: any): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(365, Number(input?.daysAhead) || 30));
+  const max = Math.max(1, Math.min(250, Number(input?.maxResults) || 100));
+  const includeNotion = input?.includeNotionCalendar !== false;
+
+  // GCal: paginate up to max
+  let token: string | null = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  const now = new Date();
+  const end = new Date(now.getTime() + days * 86400000);
+  const params = new URLSearchParams({
+    timeMin: now.toISOString(),
+    timeMax: end.toISOString(),
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    maxResults: String(Math.min(250, max)),
+  });
+  const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
+  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  if (res.status === 401 || res.status === 403) {
+    const nt = await refreshGoogleToken(userId);
+    if (nt) { token = nt; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
+  if (!res.ok) return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
+  const data = await res.json();
+  const gcalEvents = (data.items || []).map((e: any) => ({
+    source: 'gcal',
+    id: e.id,
+    title: e.summary || '(no title)',
+    start: e.start?.dateTime || e.start?.date,
+    end: e.end?.dateTime || e.end?.date,
+    attendees: (e.attendees || []).map((a: any) => a.email),
+    meetLink: e.hangoutLink || e.conferenceData?.entryPoints?.find((p: any) => p.entryPointType === 'video')?.uri,
+    location: e.location,
+    organizer: e.organizer?.email,
+    optional: (e.attendees || []).find((a: any) => a.self)?.optional ?? false,
+  }));
+
+  // Notion calendar
+  let notionEvents: any[] = [];
+  if (includeNotion) {
+    try {
+      const n = await notionGetCalendarEvents(userId, { daysAhead: days, maxResults: 50 });
+      if (n.success !== false) {
+        // Parse output lines — format is human-readable; cheap heuristic extraction
+        const lines = n.output.split('\n');
+        for (const line of lines) {
+          const m = line.match(/^\s*[-•]\s*(.+?)\s+—\s+(.+)$/);
+          if (m) notionEvents.push({ source: 'notion', id: '', title: m[1].trim(), start: m[2].trim() });
+        }
+      }
+    } catch { /* notion not connected — silent */ }
+  }
+
+  const all = [...gcalEvents, ...notionEvents];
+  all.sort((a, b) => (a.start || '').localeCompare(b.start || ''));
+  return {
+    output: JSON.stringify({
+      windowDays: days,
+      totalEvents: all.length,
+      gcalCount: gcalEvents.length,
+      notionCount: notionEvents.length,
+      events: all,
+    }, null, 2),
+  };
+}
+
+async function calendarBatchCreateEvents(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const items: any[] = Array.isArray(input?.items) ? input.items : [];
+  if (!items.length) return failureResult('items is required (non-empty array of meeting requests).', 'validation_error');
+
+  const slice = items.slice(0, 25);
+  const results: Array<{ idx: number; title: string; ok: boolean; summary: string }> = [];
+  for (let i = 0; i < slice.length; i++) {
+    const item = slice[i];
+    try {
+      const r = await scheduleMeeting(userId, {
+        title: item.title,
+        startTime: item.startTime,
+        endTime: item.endTime,
+        attendees: item.attendees || [],
+        description: item.description || '',
+        addGoogleMeet: item.addGoogleMeet !== false,
+      }, context);
+      results.push({ idx: i, title: item.title || '(untitled)', ok: r.success !== false, summary: r.output.slice(0, 200) });
+    } catch (err: any) {
+      results.push({ idx: i, title: item.title || '(untitled)', ok: false, summary: `error: ${err.message}` });
+    }
+  }
+  const ok = results.filter(r => r.ok).length;
+  const summary = results.map(r => `${r.idx + 1}. ${r.title} — ${r.ok ? 'created' : 'failed'}: ${r.summary}`).join('\n');
+  return { output: `Created ${ok}/${results.length} events.\n\n${summary}` };
+}
+
+async function calendarAutoDetectConflicts(userId: string, input: any): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(60, Number(input?.daysAhead) || 7));
+  const proposed: Array<{ title?: string; startTime: string; endTime: string }> = Array.isArray(input?.proposedEvents) ? input.proposedEvents : [];
+
+  // Fetch existing events
+  const scan = await calendarUnlimitedScan(userId, { daysAhead: days, maxResults: 250, includeNotionCalendar: true });
+  if (scan.success === false) return scan;
+  let scanData: any;
+  try { scanData = JSON.parse(scan.output); } catch { return failureResult('Could not parse calendar scan output.', 'internal_error'); }
+  const existing: Array<{ title: string; start: string; end: string; attendees?: string[] }> = scanData.events || [];
+
+  const overlaps = (aStart: string, aEnd: string, bStart: string, bEnd: string): boolean => {
+    const as = new Date(aStart).getTime();
+    const ae = new Date(aEnd).getTime();
+    const bs = new Date(bStart).getTime();
+    const be = new Date(bEnd).getTime();
+    if (isNaN(as) || isNaN(ae) || isNaN(bs) || isNaN(be)) return false;
+    return as < be && bs < ae;
+  };
+
+  // Internal conflicts (existing-vs-existing)
+  const internal: Array<{ a: string; b: string; when: string }> = [];
+  for (let i = 0; i < existing.length; i++) {
+    for (let j = i + 1; j < existing.length; j++) {
+      const a = existing[i];
+      const b = existing[j];
+      if (!a.start || !a.end || !b.start || !b.end) continue;
+      if (overlaps(a.start, a.end, b.start, b.end)) {
+        internal.push({ a: a.title, b: b.title, when: a.start });
+      }
+    }
+  }
+
+  // Back-to-back (less than 10 min between events)
+  const backToBack: Array<{ first: string; second: string; gapMin: number }> = [];
+  const sorted = [...existing].filter(e => e.start && e.end).sort((a, b) => a.start.localeCompare(b.start));
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const endA = new Date(sorted[i].end).getTime();
+    const startB = new Date(sorted[i + 1].start).getTime();
+    if (isNaN(endA) || isNaN(startB)) continue;
+    const gap = (startB - endA) / 60000;
+    if (gap >= 0 && gap < 10) {
+      backToBack.push({ first: sorted[i].title, second: sorted[i + 1].title, gapMin: Math.round(gap) });
+    }
+  }
+
+  // Proposed-vs-existing conflicts
+  const proposedConflicts: Array<{ proposed: string; conflictsWith: string; when: string }> = [];
+  for (const p of proposed) {
+    if (!p.startTime || !p.endTime) continue;
+    for (const e of existing) {
+      if (!e.start || !e.end) continue;
+      if (overlaps(p.startTime, p.endTime, e.start, e.end)) {
+        proposedConflicts.push({ proposed: p.title || '(unnamed)', conflictsWith: e.title, when: p.startTime });
+      }
+    }
+  }
+
+  return {
+    output: JSON.stringify({
+      windowDays: days,
+      internalOverlaps: internal,
+      backToBackTight: backToBack,
+      proposedConflicts,
+      noConflicts: internal.length === 0 && proposedConflicts.length === 0,
+    }, null, 2),
+  };
+}
+
+async function calendarAutoDeclineLowPriority(userId: string, input: any): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(30, Number(input?.daysAhead) || 7));
+  const dryRun = input?.dryRun !== false; // default: dry run
+
+  const scan = await calendarUnlimitedScan(userId, { daysAhead: days, maxResults: 100 });
+  if (scan.success === false) return scan;
+  const scanData = JSON.parse(scan.output);
+  const events: any[] = scanData.events || [];
+
+  // Heuristic for "low priority": marked optional, or informational webinar
+  // patterns in title, or vendor demo without VIP attendees.
+  const LOW_PRIORITY_PATTERNS = /\b(webinar|info session|demo|all-?hands\s+(optional|opt-?in)|stand[- ]?up|sync(?:\s+\(optional\))?|optional|fyi)\b/i;
+  const candidates = events.filter(e => {
+    if (e.source !== 'gcal' || !e.id) return false;
+    if (e.optional) return true;
+    if (LOW_PRIORITY_PATTERNS.test(e.title || '')) return true;
+    return false;
+  });
+
+  if (!candidates.length) return { output: 'No low-priority meetings detected in the window.' };
+  if (dryRun) {
+    return {
+      output: JSON.stringify({
+        dryRun: true,
+        candidates: candidates.map(c => ({ id: c.id, title: c.title, start: c.start, reason: c.optional ? 'marked optional' : 'matches low-priority pattern' })),
+        toExecute: 'Set dryRun=false to actually decline these.',
+      }, null, 2),
+    };
+  }
+
+  let token: string | null = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  let declined = 0;
+  let failed = 0;
+  for (const c of candidates) {
+    try {
+      const patchUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${c.id}?sendUpdates=externalOnly`;
+      // Need to set attendees[self].responseStatus = 'declined'
+      const getRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${c.id}`, {
+        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+      });
+      if (!getRes.ok) { failed++; continue; }
+      const ev = await getRes.json();
+      const attendees = (ev.attendees || []).map((a: any) => a.self ? { ...a, responseStatus: 'declined' } : a);
+      const patchRes = await fetch(patchUrl, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ attendees }),
+        signal: AbortSignal.timeout(8000),
+      });
+      if (patchRes.ok) declined++; else failed++;
+    } catch { failed++; }
+  }
+  return { output: `Declined ${declined}/${candidates.length} low-priority meetings${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+async function calendarGenerateFreeTimeBlocks(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(14, Number(input?.daysAhead) || 5));
+  const minHours = Math.max(1, Math.min(8, Number(input?.minBlockHours) || 2));
+  const blocksPerDay = Math.max(1, Math.min(4, Number(input?.maxBlocksPerDay) || 1));
+
+  // Use freeBusy via calendarGetAvailability
+  const now = new Date();
+  const end = new Date(now.getTime() + days * 86400000);
+  const avail = await calendarGetAvailability(userId, {
+    startDate: now.toISOString(),
+    endDate: end.toISOString(),
+    minSlotMinutes: minHours * 60,
+  });
+  if (avail.success === false) return avail;
+
+  // Parse free slots heuristically from the availability output
+  // calendarGetAvailability emits "Free: <iso> – <iso>" lines
+  const FREE_LINE = /Free:\s*([0-9T:\-Z+\.]+)\s*[–-]\s*([0-9T:\-Z+\.]+)/g;
+  const freeSlots: Array<{ start: string; end: string; day: string }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = FREE_LINE.exec(avail.output)) !== null) {
+    const start = m[1];
+    const day = start.slice(0, 10);
+    freeSlots.push({ start, end: m[2], day });
+  }
+
+  // Pick top N slots per day
+  const byDay = new Map<string, Array<{ start: string; end: string }>>();
+  for (const s of freeSlots) {
+    if (!byDay.has(s.day)) byDay.set(s.day, []);
+    byDay.get(s.day)!.push(s);
+  }
+  const picks: Array<{ start: string; end: string }> = [];
+  for (const slots of byDay.values()) {
+    // Prefer morning blocks (start hour 8-11)
+    slots.sort((a, b) => {
+      const ah = new Date(a.start).getHours();
+      const bh = new Date(b.start).getHours();
+      const score = (h: number) => Math.abs(h - 9.5);
+      return score(ah) - score(bh);
+    });
+    for (const s of slots.slice(0, blocksPerDay)) picks.push(s);
+  }
+
+  if (!picks.length) return { output: 'No suitable free blocks of ' + minHours + 'h+ found.' };
+
+  const dryRun = input?.dryRun === true;
+  if (dryRun) {
+    return { output: JSON.stringify({ dryRun: true, picks }, null, 2) };
+  }
+
+  // Create the Focus blocks
+  let created = 0;
+  let failed = 0;
+  for (const p of picks) {
+    try {
+      const r = await scheduleMeeting(userId, {
+        title: '🎯 Focus Time',
+        startTime: p.start,
+        endTime: p.end,
+        attendees: [],
+        description: 'Auto-generated focus block. Decline meetings during this time when possible.',
+        addGoogleMeet: false,
+      }, context);
+      if (r.success !== false) created++; else failed++;
+    } catch { failed++; }
+  }
+  return { output: `Created ${created}/${picks.length} focus blocks${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+async function calendarMeetingPrepAutomation(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const eventId = (input?.eventId || '').trim();
+  const lookaheadHours = Math.max(1, Math.min(72, Number(input?.lookaheadHours) || 24));
+  if (!eventId && !input?.scanWindow) return failureResult('Either eventId or scanWindow=true is required.', 'validation_error');
+
+  let token: string | null = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  // Determine target events: either the named one, or all in lookahead window
+  let targets: any[] = [];
+  if (eventId) {
+    const getRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+    });
+    if (!getRes.ok) return failureResult(`Calendar event fetch failed (${getRes.status}).`, 'upstream_gcal');
+    targets = [await getRes.json()];
+  } else {
+    const now = new Date();
+    const end = new Date(now.getTime() + lookaheadHours * 3600000);
+    const params = new URLSearchParams({
+      timeMin: now.toISOString(),
+      timeMax: end.toISOString(),
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '20',
+    });
+    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
+    });
+    if (!res.ok) return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
+    const data = await res.json();
+    targets = (data.items || []).filter((e: any) => (e.attendees || []).some((a: any) => !a.self));
+  }
+
+  if (!targets.length) return { output: 'No external meetings found in the window — no prep needed.' };
+
+  const preps: Array<{ eventId: string; title: string; prep: string }> = [];
+  for (const ev of targets) {
+    const externalAttendees: string[] = (ev.attendees || []).filter((a: any) => !a.self && a.email).map((a: any) => a.email);
+    if (!externalAttendees.length) continue;
+
+    // Recent emails with each attendee
+    const emailContexts: string[] = [];
+    for (const email of externalAttendees.slice(0, 3)) {
+      try {
+        const s = await searchGmail(userId, { query: `from:${email} OR to:${email}`, maxResults: 5 });
+        if (s.success !== false) emailContexts.push(`### Recent emails with ${email}\n${s.output.slice(0, 1500)}`);
+      } catch { /* skip */ }
+    }
+
+    // Memory context
+    let memoryCtx = '';
+    try {
+      const { searchMemoriesRaw } = await import('./memory');
+      const items = await searchMemoriesRaw(userId, externalAttendees.join(' '), 5);
+      if (items.length) memoryCtx = '### Memory context\n' + items.map(i => `• ${i.text}`).join('\n');
+    } catch { /* skip */ }
+
+    // Compose prep via LLM
+    const prepInput = [
+      `Meeting: ${ev.summary || '(no title)'}`,
+      `When: ${ev.start?.dateTime || ev.start?.date}`,
+      `Attendees: ${externalAttendees.join(', ')}`,
+      `Description: ${ev.description || '(none)'}`,
+      '',
+      ...emailContexts,
+      '',
+      memoryCtx,
+    ].join('\n');
+    const prepRes = await callLLM(
+      [
+        {
+          role: 'system',
+          content: 'Generate a tight one-page meeting prep doc in markdown. Sections: ## Context · ## Recent Interactions · ## Talking Points · ## Watch For. Be specific. No filler. No bracketed placeholders.',
+        },
+        { role: 'user', content: prepInput },
+      ],
+      [],
+      { maxTokens: 1200, temperature: 0.3 },
+    );
+    preps.push({ eventId: ev.id, title: ev.summary || '(no title)', prep: getText(prepRes.content).trim() });
+  }
+
+  // Optionally save each to Notion + patch event description with a marker
+  const saveToNotion = input?.saveToNotion !== false;
+  const savedNotes: string[] = [];
+  if (saveToNotion) {
+    for (const p of preps) {
+      try {
+        const n = await createNotionPage(userId, {
+          title: `Meeting Prep: ${p.title}`,
+          databaseHint: 'meetings',
+          content: p.prep,
+        }, context);
+        if (n.success !== false) savedNotes.push(`${p.title}: saved to Notion`);
+      } catch { /* skip */ }
+    }
+  }
+
+  return {
+    output: JSON.stringify({
+      meetingsPrepped: preps.length,
+      preps: preps.map(p => ({ eventId: p.eventId, title: p.title, prepPreview: p.prep.slice(0, 400) })),
+      notion: savedNotes,
+    }, null, 2),
+  };
+}
+
+async function calendarAutoGenerateMeetLinks(userId: string, input: any): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(30, Number(input?.daysAhead) || 14));
+  let token: string | null = await getGcalToken(userId);
+  if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
+
+  const now = new Date();
+  const end = new Date(now.getTime() + days * 86400000);
+  const params = new URLSearchParams({
+    timeMin: now.toISOString(),
+    timeMax: end.toISOString(),
+    singleEvents: 'true',
+    orderBy: 'startTime',
+    maxResults: '100',
+  });
+  let listRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000),
+  });
+  if (listRes.status === 401) {
+    const nt = await refreshGoogleToken(userId);
+    if (nt) { token = nt; listRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+  }
+  if (!listRes.ok) return failureResult(`Calendar fetch failed (${listRes.status}).`, 'upstream_gcal');
+  const data = await listRes.json();
+  const events: any[] = data.items || [];
+
+  // Filter: external attendees + no existing Meet link
+  const candidates = events.filter(e => {
+    const hasExternal = (e.attendees || []).some((a: any) => !a.self && a.email);
+    const hasLink = !!(e.hangoutLink || e.conferenceData?.entryPoints?.length);
+    return hasExternal && !hasLink;
+  });
+
+  if (!candidates.length) return { output: 'All external meetings already have Meet links.' };
+
+  let added = 0;
+  let failed = 0;
+  for (const ev of candidates) {
+    try {
+      const patchRes = await fetch(
+        `https://www.googleapis.com/calendar/v3/calendars/primary/events/${ev.id}?conferenceDataVersion=1&sendUpdates=all`,
+        {
+          method: 'PATCH',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conferenceData: {
+              createRequest: {
+                requestId: `arcus-${ev.id}-${Date.now()}`,
+                conferenceSolutionKey: { type: 'hangoutsMeet' },
+              },
+            },
+          }),
+          signal: AbortSignal.timeout(10000),
+        },
+      );
+      if (patchRes.ok) added++; else failed++;
+    } catch { failed++; }
+  }
+  return { output: `Added Google Meet links to ${added}/${candidates.length} external meetings${failed ? ` (${failed} failed)` : ''}.` };
+}
+
+async function calendarBufferTimeInsertion(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const days = Math.max(1, Math.min(7, Number(input?.daysAhead) || 2));
+  const bufferMin = Math.max(5, Math.min(60, Number(input?.bufferMinutes) || 15));
+  const dryRun = input?.dryRun !== false;
+
+  const scan = await calendarUnlimitedScan(userId, { daysAhead: days, maxResults: 100, includeNotionCalendar: false });
+  if (scan.success === false) return scan;
+  const scanData = JSON.parse(scan.output);
+  const sorted = (scanData.events as any[])
+    .filter(e => e.source === 'gcal' && e.start && e.end)
+    .sort((a, b) => a.start.localeCompare(b.start));
+
+  const gaps: Array<{ afterTitle: string; bufferStart: string; bufferEnd: string }> = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const endA = new Date(sorted[i].end).getTime();
+    const startB = new Date(sorted[i + 1].start).getTime();
+    if (isNaN(endA) || isNaN(startB)) continue;
+    const gap = (startB - endA) / 60000;
+    if (gap > 0 && gap < bufferMin) {
+      gaps.push({
+        afterTitle: sorted[i].title,
+        bufferStart: new Date(endA).toISOString(),
+        bufferEnd: new Date(endA + bufferMin * 60000).toISOString(),
+      });
+    }
+  }
+
+  if (!gaps.length) return { output: 'No back-to-back meetings within the buffer window — schedule is already breathing.' };
+  if (dryRun) {
+    return { output: JSON.stringify({ dryRun: true, gapsFound: gaps.length, gaps }, null, 2) };
+  }
+
+  let added = 0;
+  for (const g of gaps) {
+    try {
+      const r = await scheduleMeeting(userId, {
+        title: '☕ Buffer',
+        startTime: g.bufferStart,
+        endTime: g.bufferEnd,
+        attendees: [],
+        description: `Auto-inserted ${bufferMin}-minute buffer after "${g.afterTitle}".`,
+        addGoogleMeet: false,
+      }, context);
+      if (r.success !== false) added++;
+    } catch { /* skip */ }
+  }
+  return { output: `Inserted ${added}/${gaps.length} buffer blocks (${bufferMin} min each).` };
+}
+
+async function calendarTimezoneIntelligence(userId: string, input: any): Promise<ToolResult> {
+  const proposedTime = (input?.proposedTime || '').trim();
+  const attendeeTimezones: string[] = Array.isArray(input?.attendeeTimezones) ? input.attendeeTimezones : [];
+  const userTimezone = (input?.userTimezone || '').trim() || 'UTC';
+  if (!proposedTime) return failureResult('proposedTime (ISO 8601) is required.', 'validation_error');
+
+  const proposed = new Date(proposedTime);
+  if (isNaN(proposed.getTime())) return failureResult('proposedTime must be a valid ISO 8601 timestamp.', 'validation_error');
+
+  const zones = [userTimezone, ...attendeeTimezones];
+  const conversions: Array<{ timezone: string; localTime: string; hour: number; isReasonable: boolean }> = [];
+  for (const tz of zones) {
+    try {
+      const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', minute: '2-digit', weekday: 'short', month: 'short', day: 'numeric', hour12: false });
+      const parts = fmt.formatToParts(proposed);
+      const hourPart = parts.find(p => p.type === 'hour');
+      const hour = hourPart ? parseInt(hourPart.value) : -1;
+      conversions.push({
+        timezone: tz,
+        localTime: fmt.format(proposed),
+        hour,
+        isReasonable: hour >= 8 && hour <= 19,
+      });
+    } catch {
+      conversions.push({ timezone: tz, localTime: '(invalid timezone)', hour: -1, isReasonable: false });
+    }
+  }
+
+  const unreasonable = conversions.filter(c => !c.isReasonable && c.hour >= 0);
+  return {
+    output: JSON.stringify({
+      proposedTimeUTC: proposed.toISOString(),
+      conversions,
+      reasonableForAll: unreasonable.length === 0,
+      problemZones: unreasonable.map(u => ({ timezone: u.timezone, localTime: u.localTime, reason: u.hour < 8 ? 'too early' : 'too late' })),
+      suggestion: unreasonable.length > 0
+        ? 'Consider shifting to a window where local time is 9am-6pm in all participant zones.'
+        : 'This time works for everyone.',
+    }, null, 2),
+  };
+}
 
 async function gmailDetectUrgency(userId: string, input: any): Promise<ToolResult> {
   const threadIds: string[] = Array.isArray(input?.threadIds)
