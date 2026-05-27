@@ -6,7 +6,9 @@
       "PowerShell(Set-Location \"c:\\\\Users\\\\hp\\\\Mailent\"; $out = npx tsc --noEmit --skipLibCheck 2>&1; $filtered = $out | Where-Object { $_ -match \"system-prompt|AskUser|loop|tools\\\\.ts\" }; if \\($filtered\\) { $filtered } else { Write-Host \"No errors in target files\" })",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(git commit -F .commit-msg.tmp)",
+      "PowerShell(git push origin main)"
     ]
   }
 }
