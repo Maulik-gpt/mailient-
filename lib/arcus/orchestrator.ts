@@ -103,7 +103,6 @@ const PREREQUISITES: Record<string, string[]> = {
   // Email write actions need thread content
   draft_reply:        ['gmail_read_thread', 'read_email'],
   send_email:         ['draft_reply', 'request_confirmation'],
-  gmail_save_draft:   ['draft_reply'],
 
   // Calendar writes need availability
   schedule_meeting:   ['calendar_get_availability', 'get_calendar_events', 'request_confirmation'],

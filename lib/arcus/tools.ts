@@ -3691,7 +3691,9 @@ async function getRecipientContext(userId: string, input: any): Promise<ToolResu
       .from('arcus_integrations')
       .select('access_token')
       .eq('user_id', userId)
-      .eq('provider', 'notion')
+      .in('provider', ['notion', 'notion_calendar'])
+      .order('created_at', { ascending: false })
+      .limit(1)
       .maybeSingle();
     if (notionInteg?.access_token) {
       const notionToken = decrypt(notionInteg.access_token);
@@ -5678,14 +5680,32 @@ async function reportSendSlack(userId: string, input: any, context: ToolContext 
   const requestedChannel = (input?.channel || '').trim();
   const isDmSelf = !requestedChannel || requestedChannel.toLowerCase() === 'dm' || requestedChannel.toLowerCase() === 'self';
 
-  // Channel posts go through send_slack_message — same approval gate flow as
-  // an LLM-initiated channel post. DM-to-self bypasses the gate (recipient =
-  // user themselves, same policy as report_send_gmail).
+  // Channel posts: for background agents delivering their own report, skip the
+  // approval gate entirely — the report is the output of the agent run and
+  // should always be delivered. For interactive (non-agent) sessions, the gate
+  // still applies so unexpected channel posts require user confirmation.
   if (!isDmSelf) {
-    // Delegate to sendSlackMessage so the executor-level approval gate
-    // applies. Pass the rendered markdown as text; Slack mrkdwn renders it
-    // reasonably. (Block-Kit formatting via blocks isn't exposed by
-    // send_slack_message, so channel posts render as a single text block.)
+    if (context.isBackgroundAgent) {
+      // Background agent report delivery — execute directly without queuing.
+      // The cron route also sends the report independently; this is a
+      // supplementary in-loop delivery that must not stall on approval.
+      const token = await getSlackToken(userId);
+      if (!token) return failureResult('Slack is not connected.', 'slack_not_connected');
+      const blocks = markdownToSlackBlocks(md);
+      const summaryPreview = extractReportSummary(md) || md.slice(0, 200);
+      const postRes = await fetch('https://slack.com/api/chat.postMessage', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: requestedChannel, blocks, text: summaryPreview }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (!postRes.ok) return failureResult(`Report post failed (${postRes.status}).`, 'upstream_slack');
+      const postData = await postRes.json();
+      if (!postData.ok) return failureResult(`Slack error: ${postData.error || 'unknown'}.`, 'upstream_slack');
+      return { output: `Sent report to #${requestedChannel}. ts: ${postData.ts}.` };
+    }
+    // Interactive session — delegate to sendSlackMessage so the executor-level
+    // approval gate applies (channel post is an unexpected write action).
     return sendSlackMessage(userId, { channel: requestedChannel, text: md }, context);
   }
 

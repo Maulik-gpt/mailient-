@@ -544,8 +544,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             );
           }
 
-          // Notion: recent activity
-          if (connectedIntegrations.includes('notion')) {
+          // Notion: recent activity (notion_calendar uses the same token)
+          if (connectedIntegrations.includes('notion') || connectedIntegrations.includes('notion_calendar')) {
             sweepPromises.push(
               executeTool('search_notion', { query: '', maxResults: 5 }, userId)
                 .then(r => { sweepResults.push(`## Recent Notion Pages\n${r.output}`); })
