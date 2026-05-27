@@ -451,6 +451,16 @@ export function sanitizeModelText(text: string): string {
   clean = clean.replace(/<\/[a-z_]+>/gi, m =>
     /^<\/(br|strong|em|b|i|u|p|div|span|h[1-6]|ul|ol|li|a|code|pre)>/i.test(m) ? m : '');
 
+  // Strip self-instructions that leaked from tool-result text into the chat
+  // message. Shape: a paragraph addressed to the LLM ("do not call X again",
+  // "wait for the user to click", "the UI will send the next message"). Never
+  // something a real assistant would say to the user. Targets paragraphs
+  // starting with IMPORTANT: / NOTE TO ASSISTANT: / INTERNAL: / SYSTEM: /
+  // REMINDER TO YOU: / TO THE AGENT: AND containing telltale self-talk.
+  const SELF_INSTRUCTION_PARAGRAPH =
+    /(?:^|\n)\s*(?:IMPORTANT|NOTE TO (?:THE )?ASSISTANT|INTERNAL|SYSTEM|REMINDER TO (?:YOU|SELF)|TO THE (?:AGENT|MODEL|LLM))\s*[:\-—][^\n]*(?:do\s+not\s+(?:call|emit|write|use|continue)|wait\s+for\s+the\s+user|the\s+ui\s+will|next\s+turn|on the next call|stop\s+(?:and|here)|never\s+(?:call|emit))[^\n]*(?:\n(?!\s*$)[^\n]*)*/gi;
+  clean = clean.replace(SELF_INSTRUCTION_PARAGRAPH, '');
+
   return clean.replace(/\n{3,}/g, '\n\n').trim();
 }
 

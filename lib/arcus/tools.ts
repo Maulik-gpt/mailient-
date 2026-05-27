@@ -4898,7 +4898,7 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
     return {
       output:
         `Here's the spec for **${agentName}**. Review it in the canvas, then click Confirm to continue, or Edit if you want to adjust it.\n\n` +
-        `IMPORTANT: Do NOT call create_scheduled_agent again. Wait for the user to click Confirm — the UI will send the next message automatically.`,
+        `INTERNAL: Do NOT call create_scheduled_agent again. Wait for the user to click Confirm — the UI will send the next message automatically.`,
       canvasData: {
         title: agentName,
         type: 'agent_spec_confirm',
@@ -4926,7 +4926,7 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       output:
         `Spec confirmed. Here's what **${agentName}** will do every time it runs. ` +
         `Click Execute plan to register it, or Edit plan to adjust the steps.\n\n` +
-        `IMPORTANT: Do NOT call create_scheduled_agent again. Wait for the user to approve the plan.`,
+        `INTERNAL: Do NOT call create_scheduled_agent again. Wait for the user to approve the plan.`,
       canvasData: {
         title: `Agent Plan: ${agentName}`,
         type: 'agent_plan_preview',
