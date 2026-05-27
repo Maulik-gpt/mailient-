@@ -124,7 +124,7 @@ export function ConnectorConnectModal({
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-[15px] text-black/5 dark:text-black/50 dark:text-white/50 leading-relaxed mb-8 max-w-sm mx-auto"
+              className="text-[15px] text-black/50 dark:text-white/50 leading-relaxed mb-8 max-w-sm mx-auto"
             >
               {provider.description}
             </motion.p>
@@ -199,7 +199,7 @@ export function ConnectorConnectModal({
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3 }}
               onClick={() => setShowDetails(!showDetails)}
-              className="mt-6 flex items-center justify-center gap-1 text-[14px] text-black/40 dark:text-white/40 hover:text-black/60 dark:text-white/60 transition-colors mx-auto"
+              className="mt-6 flex items-center justify-center gap-1 text-[14px] text-black/40 dark:text-white/40 hover:text-black/60 dark:hover:text-white/60 transition-colors mx-auto"
             >
               <span>Show Details</span>
               {showDetails ? (
@@ -226,7 +226,7 @@ export function ConnectorConnectModal({
                       {provider.scopes.map((scope, index) => (
                         <li key={index} className="flex items-start gap-2">
                           <Check className="w-4 h-4 text-black/40 dark:text-white/40 mt-0.5 shrink-0" />
-                          <span className="text-[13px] text-black/5 dark:text-black/50 dark:text-white/50">{scope}</span>
+                          <span className="text-[13px] text-black/50 dark:text-white/50">{scope}</span>
                         </li>
                       ))}
                     </ul>

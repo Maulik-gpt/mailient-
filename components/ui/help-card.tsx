@@ -80,7 +80,7 @@ export function HelpCard({ onClose }: HelpCardProps) {
                                 onClick={() => setActiveSection(section.id as any)}
                                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-300 ${
                                     activeSection === section.id 
-                                    ? '!bg-black dark:!bg-white !text-white dark:!text-black shadow-lg font-bold' 
+                                    ? 'bg-black text-white dark:bg-white dark:text-black shadow-lg font-bold' 
                                     : 'text-neutral-600 hover:text-black dark:text-neutral-400 dark:hover:text-white hover:bg-black/5 dark:bg-white/5'
                                 }`}
                             >
