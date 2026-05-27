@@ -273,6 +273,9 @@ export interface LoopOptions {
    * subsequent write. Omit for background-agent runs; the gate fails open.
    */
   conversationId?: string;
+  isBackgroundAgent?: boolean;
+  skipConfirmations?: boolean;
+  agentId?: string;
 }
 
 // ── Main loop ──────────────────────────────────────────────────────────────────
@@ -288,15 +291,25 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     maxToolCalls,
     deadlineMs,
     conversationId,
+    isBackgroundAgent,
+    skipConfirmations,
+    agentId,
   } = opts;
   // Tracks every successful tool call this run so PART 4 Rule 1 (draft_reply
   // requires a preceding read_email/gmail_read_thread) and Rule 3
   // (schedule_meeting requires a preceding calendar fetch) can verify the
   // LLM actually fetched ground truth before acting.
   const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
-  const buildToolContext = () => ({ conversationId, toolHistory: [...toolHistory] });
+  const buildToolContext = () => ({
+    conversationId,
+    toolHistory: [...toolHistory],
+    isBackgroundAgent,
+    skipConfirmations,
+    runId,
+    agentId,
+  });
 
-  const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations);
+  const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations, isBackgroundAgent);
   const toolCallLimit =
     typeof maxToolCalls === 'number' && maxToolCalls > 0
       ? Math.min(maxToolCalls, MAX_TOOL_CALLS)

@@ -43,7 +43,7 @@ const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] 
   },
   notion_calendar: {
     label: 'Notion Calendar',
-    tools: ['search_notion'],
+    tools: ['search_notion', 'notion_read_page', 'fetch_notion_schema', 'create_notion_page', 'notion_create_task', 'notion_get_calendar_events'],
   },
   slack: {
     label: 'Slack',
@@ -68,9 +68,9 @@ const ALWAYS_AVAILABLE = [
   'request_confirmation — pause before any write action; required before send_email, schedule_meeting, send_slack_message, create_notion_page.',
   'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous.',
   'create_scheduled_agent — register a cron-scheduled background agent.',
-  'report_generate — deterministic agent-run report template (one-line summary, What I Did, Needs Attention, Links). Use this instead of hand-writing report markdown.',
-  'report_send_gmail — email the rendered report to the user\'s own Gmail address (no gate; self-send).',
-  'report_send_slack — DM the rendered report to the user (Block Kit). Channel posts route through send_slack_message and require confirmation.',
+  'report_generate — professional 5-section report template (one-line summary, What I Did table/list, Needs Attention if any, Links with type-emoji, branded footer). Use instead of hand-writing report markdown.',
+  'report_send_gmail — email the report as styled HTML (dark header bar, bordered tables, branded footer). Subject auto-extracted from the one-line summary. Self-send only, no gate.',
+  'report_send_slack — DM the report as Block Kit (✅ header + emoji-prefixed sections + context footer). Channel posts route through send_slack_message and require confirmation.',
 ];
 
 export function buildSystemPrompt(opts: SystemPromptOptions): string {
@@ -79,7 +79,16 @@ export function buildSystemPrompt(opts: SystemPromptOptions): string {
   });
 
   const connected = opts.connectedIntegrations.filter(p => INTEGRATION_CAPABILITIES[p]);
-  const notConnected = ALL_INTEGRATION_KEYS.filter(p => !opts.connectedIntegrations.includes(p));
+  // notion and notion_calendar share the same Notion OAuth + tools.
+  // If either is connected, treat the other as implicitly connected too
+  // so the LLM doesn't refuse Notion tools.
+  const hasAnyNotion = connected.includes('notion') || connected.includes('notion_calendar');
+  const notConnected = ALL_INTEGRATION_KEYS.filter(p => {
+    if (opts.connectedIntegrations.includes(p)) return false;
+    // Skip the other Notion variant if one of them is connected
+    if (hasAnyNotion && (p === 'notion' || p === 'notion_calendar')) return false;
+    return true;
+  });
 
   // Tool inventory only — names, no behaviour prose. The schemas the LLM
   // receives alongside the prompt are the source of truth for what each tool
@@ -105,24 +114,22 @@ export function buildSystemPrompt(opts: SystemPromptOptions): string {
       : '## All integrations connected',
   ].join('\n');
 
-  // FIX 3: Clear, comprehensive background agent mode instructions
-  const agentContext = opts.isBackgroundAgent ? (opts.skipConfirmations ? `
+  // FIX 3: Unified background agent mode instructions (code-level interception handles skipping)
+  const agentContext = opts.isBackgroundAgent ? `
 
-## 🤖 Background Agent — AUTONOMOUS MODE (skip_confirmations = true)
+## 🤖 Background Agent Mode
 
-You are running as a fully autonomous background agent. No user is present. You MUST execute all actions directly.
+You are running as an autonomous background agent. No user is present. You MUST execute all actions directly (use \`send_email\`, \`schedule_meeting\`, \`send_slack_message\`, \`create_notion_page\`).
 
 **What this means:**
-- Call \`send_email\` directly — do NOT use \`draft_reply\` as a substitute
-- Call \`schedule_meeting\` directly — create every event
-- Call \`send_slack_message\` directly — post every message
-- Call \`create_notion_page\` directly — log everything
-- NEVER call \`request_confirmation\` — there is nobody to confirm
+- Call write tools directly — do NOT use \`draft_reply\` to simulate sending an email.
+- NEVER call \`request_confirmation\` — there is nobody to confirm.
+- If the user has disabled auto-execution, the system will automatically intercept your write calls, save them to a queue, and return a success message saying "Action queued for user approval."
+- Do not ask the user for permission in your text. You just do the work, and the infrastructure handles the gating.
 
-**Your report must be a WORK LOG — past tense, every action confirmed:**
-- "Sent reply to Priya re: Q3 proposal — Gmail link: [url]"
-- "Created meeting: Monday 3pm with John — GCal link: [url]"
-- "Posted to #daily-recap at 09:14 UTC"
+**Your report must be a WORK LOG:**
+- "Sent reply to Priya re: Q3 proposal — [url]" (or "Queued reply to Priya" if the tool told you it was queued).
+- "Created meeting: Monday 3pm with John — [url]"
 - Every action. Every link. Every timestamp.
 
 **FIX 4 — TOOL BUDGET (20 calls total):**
@@ -146,42 +153,7 @@ Every tool call must continue even if it fails. If any tool errors:
 - If Slack lookup fails: try sending to the channel name directly
 - If Gmail search returns nothing: note "No matching emails found" and continue
 The user ALWAYS receives a report. Even if everything failed, the report explains what went wrong and why.
-` : `
-
-## 🤖 Background Agent — PROPOSAL MODE (skip_confirmations = false)
-
-You are running as a background agent. No user is present to approve actions. You are in PROPOSAL MODE — your job is to research, plan, and describe exactly what you WOULD have done.
-
-**What this means:**
-- Use \`draft_reply\` to save email drafts — do NOT call \`send_email\`
-- Do NOT call \`schedule_meeting\` — describe the meeting you would have created instead
-- Do NOT call \`send_slack_message\` — describe the message you would have sent instead
-- \`create_notion_page\` is ALLOWED for logging/notes — it's non-destructive
-- NEVER call \`request_confirmation\` — there is nobody to confirm
-
-**Your report must be a DETAILED PROPOSAL — "would have" framing throughout:**
-- "Would have sent reply to Priya re: Q3 proposal — full draft: [preview the entire email body]"
-- "Would have created meeting: Monday 3pm with John Smith (john@co.com) — agenda: [full agenda]"
-- "Would have posted to #daily-recap: [full message text]"
-- Every proposed action named. Every email draft shown in full. Every meeting with proposed time, attendees, and agenda.
-- The user must be able to read this report and immediately flip skip_confirmations ON to have it all executed.
-
-**FIX 4 — TOOL BUDGET (20 calls total):**
-Structure your work in THREE phases:
-- Phase 1 — Planning (1–2 calls): search_gmail + get_calendar_events to understand scope
-- Phase 2 — Research (up to 15 calls): read threads, search Notion, check calendar — gather everything needed to write the proposal
-- Phase 3 — Closing (reserve 3 calls): final report writing
-Work highest-value items first. If budget runs short, note what was deprioritized in the report.
-
-**FIX 7 — CALENDAR MERGING:**
-Before describing any scheduling decision, ALWAYS check BOTH:
-1. \`get_calendar_events\` — Google Calendar
-2. \`search_notion\` with query "calendar schedule" — Notion calendar blocks
-Merge into one timeline before proposing any meeting time.
-
-**FIX 6 — FAILURE HANDLING:**
-If any tool errors, note the exact error, continue with all remaining tasks, and include the failure in the "⚠️ Needs Your Attention" section. The user always receives a report.
-`) : '';
+` : '';
 
   // PART 6 — voice profile is INJECTED at the end of the prompt (not referenced),
   // so the last thing the LLM reads before responding is the user's writing

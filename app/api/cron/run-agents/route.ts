@@ -24,6 +24,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { runAgentTask } from '../../../../lib/arcus/run-agent';
+import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
@@ -141,13 +142,16 @@ export async function GET(request: NextRequest) {
         deadlineMs: remaining,
       });
 
+      // Check if this run queued any actions for user approval
+      const runHasPending = await hasPendingActions(agent.id);
+
       // Always deliver email via Resend — regardless of output_channel setting.
       // Resend is cheap (3k/month free) and email is the universal fallback.
-      await sendEmailReport(agent.user_id, agent.name, report);
+      await sendEmailReport(agent.user_id, agent.name, report, runHasPending);
 
       // Always attempt Slack if the user has Slack connected or a bot token exists.
       // Use the configured slack_channel if set; otherwise DM the user directly.
-      await sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report);
+      await sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending);
 
       await supabase
         .from('arcus_agents')
@@ -233,7 +237,7 @@ function matchCronField(field: string, value: number, _min: number, _max: number
 // Email — Resend API
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function sendEmailReport(toEmail: string, agentName: string, report: string): Promise<void> {
+async function sendEmailReport(toEmail: string, agentName: string, report: string, hasPending: boolean = false): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     console.warn('[Cron] RESEND_API_KEY not set — skipping email delivery.');
@@ -248,7 +252,7 @@ async function sendEmailReport(toEmail: string, agentName: string, report: strin
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
     const subject = `${agentName} — Your Arcus Report for ${date}`;
-    const html = buildReportHtml(agentName, date, report);
+    const html = buildReportHtml(agentName, date, report, hasPending);
 
     const { error } = await resend.emails.send({
       from: RESEND_FROM,
@@ -416,9 +420,35 @@ function markdownToHtml(markdown: string): string {
 // Beautiful HTML email template (light theme)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function buildReportHtml(agentName: string, date: string, report: string): string {
+function buildReportHtml(agentName: string, date: string, report: string, hasPending: boolean = false): string {
   const body = markdownToHtml(report);
   const trackingId = Math.random().toString(36).substring(7).toUpperCase();
+
+  const ctaButton = hasPending
+    ? `<div style="text-align: center; margin-top: 35px;">
+          <a href="https://mailient.xyz/dashboard?tab=agents&approve=pending" 
+             style="background: #f59e0b; color: #000; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 800; font-size: 14px; display: inline-block; letter-spacing: -0.01em;">
+              ⚡ Approve Queued Actions
+          </a>
+          <div style="margin-top: 10px;">
+            <a href="https://mailient.xyz/dashboard" 
+               style="color: #888; text-decoration: underline; font-size: 12px;">
+                or view dashboard
+            </a>
+          </div>
+      </div>`
+    : `<div style="text-align: center; margin-top: 35px;">
+          <a href="https://mailient.xyz/dashboard" 
+             style="background: #000; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; font-size: 13px; display: inline-block;">
+              View Dashboard
+          </a>
+      </div>`;
+
+  const pendingBanner = hasPending
+    ? `<div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
+          ⏳ <strong>Actions awaiting your approval</strong> — This agent queued write actions (emails, meetings, etc.) that need your review before they execute.
+      </div>`
+    : '';
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -437,6 +467,8 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
           Arcus AI Report
       </h2>
       
+      ${pendingBanner}
+
       <div style="margin-bottom: 25px; background: #fcfcfc; padding: 20px; border-radius: 16px; border: 1px solid #f5f5f5;">
           <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
               <tr>
@@ -458,12 +490,7 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
           ${body}
       </div>
 
-      <div style="text-align: center; margin-top: 35px;">
-          <a href="https://mailient.xyz/dashboard" 
-             style="background: #000; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; font-size: 13px; display: inline-block;">
-              View Dashboard
-          </a>
-      </div>
+      ${ctaButton}
 
       <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top: 40px; font-size: 10px; color: #aaa; text-align: center; font-family: monospace; letter-spacing: 0.05em;">
           ARCUS AUTONOMOUS REPORT // AGENT: ${agentName.toUpperCase()} // ID: ${trackingId} // SECURE
@@ -477,7 +504,7 @@ function buildReportHtml(agentName: string, date: string, report: string): strin
 // Slack — rich Block Kit report
 // ─────────────────────────────────────────────────────────────────────────────
 
-async function sendSlackReport(userId: string, channel: string | null, agentName: string, report: string): Promise<void> {
+async function sendSlackReport(userId: string, channel: string | null, agentName: string, report: string, hasPending: boolean = false): Promise<void> {
   try {
     // Platform-level bot token takes priority — no user token needed if configured.
     // Fall back to the user's own Slack OAuth token from arcus_integrations.
@@ -533,7 +560,7 @@ async function sendSlackReport(userId: string, channel: string | null, agentName
       weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
     });
 
-    const blocks = buildSlackBlocks(agentName, date, report);
+    const blocks = buildSlackBlocks(agentName, date, report, hasPending);
 
     const res = await fetch('https://slack.com/api/chat.postMessage', {
       method: 'POST',
@@ -553,7 +580,7 @@ async function sendSlackReport(userId: string, channel: string | null, agentName
   }
 }
 
-function buildSlackBlocks(agentName: string, date: string, report: string): any[] {
+function buildSlackBlocks(agentName: string, date: string, report: string, hasPending: boolean = false): any[] {
   const mrkdwn = markdownToSlackMrkdwn(report);
 
   // Split into sections of ≤3000 chars (Slack limit per block)
@@ -571,6 +598,19 @@ function buildSlackBlocks(agentName: string, date: string, report: string): any[
     remaining = remaining.slice(cut).trimStart();
   }
 
+  const pendingBlock = hasPending ? [
+    {
+      type: 'section',
+      text: { type: 'mrkdwn', text: ':hourglass_flowing_sand: *Actions awaiting your approval* — This agent queued write actions that need your review.' },
+      accessory: {
+        type: 'button',
+        text: { type: 'plain_text', text: '⚡ Approve Actions', emoji: true },
+        url: 'https://mailient.xyz/dashboard?tab=agents&approve=pending',
+        style: 'primary',
+      },
+    },
+  ] : [];
+
   const blocks: any[] = [
     // Header
     {
@@ -582,6 +622,7 @@ function buildSlackBlocks(agentName: string, date: string, report: string): any[
       elements: [{ type: 'mrkdwn', text: `🤖 *Arcus AI Report* · 📅 ${date}` }],
     },
     { type: 'divider' },
+    ...pendingBlock,
     // Body chunks
     ...chunks.map(chunk => ({
       type: 'section',

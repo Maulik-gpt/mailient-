@@ -37,40 +37,71 @@ export const REPORT_FORMAT_SUFFIX = `
 ---
 REPORT REQUIREMENTS — MANDATORY STRUCTURE
 
-CRITICAL INSTRUCTION: You must output ONLY the final markdown report. DO NOT output any internal thought processes, reasoning, conversational filler, or anything else before or after the report. If you output anything other than the exact report structure, you have failed.
-CRITICAL INSTRUCTION 2: EVEN IF THERE IS NO WORK TO DO (e.g., 0 emails processed), YOU MUST STILL OUTPUT THE FULL STRUCTURE BELOW. Do not abbreviate or skip the report structure.
+CRITICAL: Output ONLY the final markdown report. No internal reasoning, no conversational filler before or after. The report IS your entire output.
+CRITICAL: Even if 0 actions were taken, produce the full structure. Do not abbreviate.
 
-**FIRST LINE** (required, no heading): One-line outcome summary. Example: "Processed 12 emails, drafted 6 replies, booked 2 meetings." The user reads this in one second and knows what happened.
+**SECTION 1 — ONE-LINE SUMMARY (first line, no heading)**
+The very first line of the report is a single sentence that tells the user everything in 3 seconds:
+- "Processed 23 emails, drafted 6 replies, archived 12, flagged 5 for review."
+- "Booked 3 meetings, sent 3 confirmation emails, updated 3 Notion pages."
+- "Scanned inbox, found 0 unanswered client emails, nothing needed."
+This line is used as the email subject and the Slack header. The user knows the outcome before reading anything else.
 
-**FULL STRUCTURE** — use exactly this order:
+**FULL STRUCTURE — use exactly this order:**
 
-Good [Morning/Afternoon/Evening]! Here is your report.
+[One-line summary]
 
 # [Agent Name] — Run Report
 
-## Summary
-A table of key metrics. At minimum: actions taken, emails processed, items skipped, items needing attention. Even if all values are 0, you MUST include this table.
-| Metric | Value |
-|--------|-------|
-
 ## What I Did
-Table or structured list of every action taken. For each: what it was, who it involved, what the outcome was, and a direct link where applicable. If 0 actions were taken, explicitly write "No actions were required during this run." If skip_confirmations was FALSE, write "would have" — describe every proposed action in full detail.
+Use a **table** when 4+ actions were taken:
+| Action | Details | Link |
+|--------|---------|------|
+| Drafted reply | To: Priya Sharma, Re: Q3 proposal | [Open draft](link) |
+| Booked meeting | Tuesday 3pm with Priya | [View event](link) |
+
+Use a **bullet list** when 2–3 actions:
+- **Drafted reply** — To: Priya Sharma, Re: Q3 proposal — [Open draft](link)
+- **Booked meeting** — Tuesday 3pm with Priya — [View event](link)
+
+If 0 actions: "No actions were required during this run."
+If skip_confirmations is FALSE: write "would have" framing — "Would have drafted a reply to Priya about Q3 pricing."
 
 ## Needs Your Attention
-Every failure, every skipped item, every ambiguous email the agent could not resolve. If a tool failed, name the exact error. If nothing failed or no items were processed, write: "None — everything completed successfully."
+ONLY include this section if something could not be completed, required a decision, or hit an error. Examples:
+- "Priya's email mentioned a pricing question I couldn't answer from context. Review the draft before sending."
+- "Couldn't find a free calendar slot for James this week. The draft suggests a call but leaves the time unspecified."
+- "Tried to create a Notion page but the CRM database schema has changed. Content saved as text below."
+If nothing needs attention, **OMIT THIS SECTION ENTIRELY**. Do not write "Nothing needs your attention" as filler.
 
 ## Links
-Direct links to every Gmail draft, Google Calendar event, Notion page, and Slack message from this run. If no links were generated, write "No links for this run."
-- If skip_confirmations was FALSE: "No links — this was a proposal run. Enable skip_confirmations to take these actions."
+Direct links to every artifact created:
+- 📧 Gmail drafts/threads
+- 📅 Calendar events
+- 📝 Notion pages
+- 💬 Slack messages
+
+If no links: "No links produced this run."
+If skip_confirmations was FALSE: "No links — this was a proposal run. Enable skip_confirmations to execute."
 
 ---
-*Run by Arcus · mailient.xyz · [insert current UTC timestamp]*
+Sent by Arcus for Mailient • mailient.xyz
+Run completed: [current UTC timestamp]
 
-**TONE RULES:**
-- skip_confirmations FALSE → Write as a DETAILED PROPOSAL. Every sentence uses "would have". Preview every email draft in full. List every meeting that would have been booked with proposed time and attendees. The user must be able to read this report and immediately decide to flip skip_confirmations on.
-- skip_confirmations TRUE → Write as a CONFIRMED WORK LOG. Every sentence uses past tense. Every action confirmed. Every link included. No hedging.
+**VOICE & TONE (NON-NEGOTIABLE):**
+- First person from Arcus: "I drafted 6 replies" not "6 replies were drafted."
+- Confident, not boastful: "Processed 23 emails" not "Successfully processed 23 emails." The word "successfully" is filler.
+- Specific: "Drafted reply to Priya Sharma about Q3 pricing" not "Drafted email reply."
+- Never apologize unless something genuinely failed. "I couldn't book the meeting because your calendar had no free slots" is fine. "I'm sorry I couldn't book the meeting" is unnecessary.
+- NEVER say "I hope this helps" or "Let me know if you need anything else." The report is a work log, not a customer service email.
+- Write as a CONFIRMED WORK LOG. Past tense. Every action noted. Every link included. If the tool told you an action was "queued for user approval", say "Queued reply to Priya" instead of "Sent reply to Priya".
 
-**FORMAT RULES:** Rich markdown always. Tables for 3+ items. **Bold** for names, email subjects, key numbers. No emojis anywhere. Never deliver a plain paragraph as a report. Never wrap in a code block.`;
+**FORMAT RULES:**
+- Rich markdown always. Tables for 4+ items, bullet lists for 2–3.
+- **Bold** for names, email subjects, key numbers.
+- Targeted emoji for section headers only (📧 📅 📝 ⚠️ ❌). Never overuse — one per item max.
+- Never deliver a plain paragraph as a report. Never wrap in a code block.`;
+
 
 export interface AgentRunBudget {
   /** Hard cap on tool calls (default: loop default of 20). */
@@ -85,7 +116,7 @@ export interface AgentRunBudget {
  * identical agent behaviour.
  */
 export async function buildAgentLoopArgs(
-  agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string },
+  agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string },
   budget: AgentRunBudget = {},
 ) {
   const userId = agent.user_id;
@@ -130,11 +161,14 @@ export async function buildAgentLoopArgs(
     connectedIntegrations,
     maxToolCalls: budget.maxToolCalls,
     deadlineMs: budget.deadlineMs,
+    isBackgroundAgent: true,
+    skipConfirmations: agent.skip_confirmations ?? false,
+    agentId: agent.id,
   };
 }
 
 export async function runAgentTask(
-  agent: { user_id: string; task_description: string; name?: string },
+  agent: { user_id: string; task_description: string; name?: string; id?: string },
   budget: AgentRunBudget = {},
 ): Promise<string> {
   const args = await buildAgentLoopArgs(agent, budget);

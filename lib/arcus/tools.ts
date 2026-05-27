@@ -21,6 +21,7 @@ import {
   normalizeTargetKey,
   type ApprovalActionType,
 } from './session-state';
+import { queuePendingAction } from './agent-approvals';
 import { getCanvasState, setCanvasState } from './canvas-state';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
@@ -246,11 +247,14 @@ function gmailHttpFailure(status: number, contextLabel: string): ToolResult {
 async function getNotionToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
+    // Check both 'notion' and 'notion_calendar' — they share the same OAuth
+    // token but users may have connected only one of the two.
     const { data } = await supabase
       .from('arcus_integrations')
       .select('access_token')
       .eq('user_id', userId)
-      .eq('provider', 'notion')
+      .in('provider', ['notion', 'notion_calendar'])
+      .limit(1)
       .maybeSingle();
     if (data?.access_token) return decrypt(data.access_token);
     return null;
@@ -992,10 +996,15 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'report_generate',
     description:
-      'Render a structured agent-run report from a tool-call execution log. Deterministic templating (no LLM call) so reports always have the same shape: title, one-line summary, "What I Did" list, "Needs Your Attention" list (failures + skipped items), Links section (URLs extracted from outputs), and a footer with tool-call/failure counts. ' +
-      'Use this instead of hand-writing report markdown — keeps every background-agent report visually consistent. ' +
-      'Output: plain text containing the rendered markdown (the same string is returned as the LLM can quote it, send to gmail/slack via report_send_*, or render in canvas). ' +
-      'No failure path under normal use — empty executionLog still produces a valid report saying "Nothing was executed this run."',
+      'Render a structured agent-run report from a tool-call execution log. Deterministic templating (no LLM call) producing a professional 5-section markdown report: ' +
+      '(1) One-line summary as the very first line — human-readable action counts like "Drafted 6 replies, booked 2 meetings, archived 12 threads." ' +
+      '(2) "What I Did" section — table format (Action | Details | Link) when 4+ items, bullet list for fewer. Tool names are converted to human-readable labels. ' +
+      '(3) "Needs Your Attention" — only present when there are failures or skipped items. Omitted entirely when everything succeeded. ' +
+      '(4) "Links" — grouped direct links to every artifact created, with type-emoji prefixes (📧 📅 📝 💬). ' +
+      '(5) Branded footer: "Sent by Arcus for Mailient • mailient.xyz" with run timestamp and optional next-run time. ' +
+      'Use this instead of hand-writing report markdown — keeps every report visually consistent. ' +
+      'Output: plain text containing the rendered markdown. Pass it to report_send_gmail or report_send_slack for delivery. ' +
+      'No failure path — empty executionLog still produces a valid report.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1016,7 +1025,8 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
           },
         },
         skippedItems: { type: 'array', items: { type: 'string' }, description: 'Items the agent deliberately did not handle this run (e.g. "12 newsletters not archived — user has not approved bulk archive").' },
-        summaryLine: { type: 'string', description: 'Optional one-line summary. If omitted, derived from executionLog counts.' },
+        summaryLine: { type: 'string', description: 'Optional one-line summary override. If omitted, derived from executionLog with human-readable action names.' },
+        nextRunTime: { type: 'string', description: 'Optional human-readable next run time for recurring agents (e.g. "Tomorrow at 9:00 AM"). Appears in footer.' },
       },
       required: ['agentName', 'executionLog'],
     },
@@ -1024,15 +1034,18 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'report_send_gmail',
     description:
-      'Send an agent-run report to the user\'s OWN Gmail address as a formatted HTML email. ' +
+      'Send an agent-run report to the user\'s OWN Gmail address as a professional HTML email. ' +
+      'The markdown is converted to a styled HTML email with dark header bar (ARCUS branding), bordered tables with alternating rows, ' +
+      'styled links, and a branded footer. Looks like it came from a professional service, not a script. ' +
+      'Subject line: if not provided, auto-extracted from the report\'s one-line summary (first line before any heading). ' +
       'Self-send only (recipient = the authed user) so no request_confirmation gate. ' +
       'Output: "Sent report to <email>. Gmail Message ID: <id>." ' +
       'Errors (success:false): gmail_not_connected, validation_error, send_failed.',
     input_schema: {
       type: 'object',
       properties: {
-        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled).' },
-        subject: { type: 'string', description: 'Email subject. Default "Arcus agent report — <date>".' },
+        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled). Tables, lists, headings, and links are all rendered as styled HTML.' },
+        subject: { type: 'string', description: 'Email subject. If omitted, auto-extracted from the first line of the report markdown.' },
       },
       required: ['reportMarkdown'],
     },
@@ -1040,13 +1053,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'report_send_slack',
     description:
-      'Post an agent-run report to Slack. Default destination is a DM to the user themselves (no gate). When `channel` is set to a public/private channel, routes through send_slack_message and therefore requires a prior request_confirmation. ' +
+      'Post an agent-run report to Slack using Block Kit for professional formatting. ' +
+      'Header block with ✅ emoji + one-line summary, dividers between sections, emoji-prefixed action blocks ' +
+      '(📧 email, 📅 calendar, 📝 Notion, ⚠️ attention items), tables rendered as structured mrkdwn, and a context footer with timestamp. ' +
+      'Default destination is a DM to the user themselves (no gate). When `channel` is set to a public/private channel, routes through send_slack_message and requires a prior request_confirmation. ' +
       'Output: "Sent report to <dm|channel>. ts: <message_ts>." ' +
       'Errors (success:false): slack_not_connected, confirmation_required (when channel set without approval), upstream_slack.',
     input_schema: {
       type: 'object',
       properties: {
-        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled).' },
+        reportMarkdown: { type: 'string', description: 'Markdown body (from report_generate or hand-rolled). Tables and lists are converted to structured Block Kit sections.' },
         channel: { type: 'string', description: 'Optional Slack channel name. Omit (or pass "dm") to DM the user themselves with no confirmation gate.' },
       },
       required: ['reportMarkdown'],
@@ -1201,12 +1217,20 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
  * Returns only the tool schemas the user can actually use,
  * based on which integrations they have connected.
  * Tools with no required integration are always included.
+ *
+ * notion_calendar is treated as equivalent to notion — both share the
+ * same Notion OAuth token and the same API tools.
  */
-export function getAvailableTools(connectedIntegrations: string[]): ToolSchema[] {
+export function getAvailableTools(connectedIntegrations: string[], isBackgroundAgent: boolean = false): ToolSchema[] {
   const connected = new Set(connectedIntegrations);
+  // If either notion or notion_calendar is connected, all Notion tools are available.
+  const hasNotion = connected.has('notion') || connected.has('notion_calendar');
   return TOOL_SCHEMAS.filter(schema => {
+    if (isBackgroundAgent && schema.name === 'request_confirmation') return false;
     const required = TOOL_INTEGRATION_MAP[schema.name];
-    return required === null || connected.has(required);
+    if (required === null) return true;
+    if (required === 'notion') return hasNotion;
+    return connected.has(required);
   });
 }
 
@@ -1295,6 +1319,11 @@ export interface ToolContext {
    * fail open with a warning logged.
    */
   toolHistory?: ToolHistoryEntry[];
+  
+  isBackgroundAgent?: boolean;
+  skipConfirmations?: boolean;
+  runId?: string;
+  agentId?: string;
 }
 
 /**
@@ -2276,6 +2305,17 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
     }
   }
 
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'send_email',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
+  }
+
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
@@ -2370,6 +2410,17 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
         'confirmation_required',
       );
     }
+  }
+
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'schedule_meeting',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
   }
 
   let token = await getGcalToken(userId);
@@ -2640,6 +2691,17 @@ async function calendarCancelEvent(userId: string, input: any, context: ToolCont
     }
   }
 
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'calendar_cancel_event',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
+  }
+
   let token = await getGcalToken(userId);
   if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
 
@@ -2901,6 +2963,17 @@ async function createNotionPage(userId: string, input: any, context: ToolContext
         'confirmation_required',
       );
     }
+  }
+
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'create_notion_page',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
   }
 
   const token = await getNotionToken(userId);
@@ -4172,6 +4245,17 @@ async function sendSlackMessage(userId: string, input: any, context: ToolContext
     }
   }
 
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'send_slack_message',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
+  }
+
   const token = await getSlackToken(userId);
   if (!token) return failureResult('Slack is not connected. Ask the user to connect Slack in Settings → Integrations.', 'slack_not_connected');
 
@@ -4308,6 +4392,17 @@ async function slackSendDm(userId: string, input: any, context: ToolContext = {}
         'confirmation_required',
       );
     }
+  }
+
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'slack_send_dm',
+      toolInput: input,
+    });
+    return { output: `Action queued for user approval.` };
   }
 
   const token = await getSlackToken(userId);
@@ -4885,8 +4980,9 @@ async function digestNewsletters(userId: string, input: any): Promise<ToolResult
 
 // ══════════════════════════════════════════════════════════════════════════════
 // Reporting tools — structured agent-run report generator + Gmail / Slack
-// senders. The generator is deterministic templating so every report has the
-// same shape; the senders convert the markdown to HTML / Slack mrkdwn.
+// senders. The generator is deterministic templating so every report has a
+// professional, consistent shape; the senders convert the markdown to
+// HTML (Gmail) or Slack Block Kit.
 // ══════════════════════════════════════════════════════════════════════════════
 
 interface ExecutionLogEntry {
@@ -4899,21 +4995,154 @@ interface ExecutionLogEntry {
 
 const URL_RE = /https?:\/\/[^\s"<>)]+/g;
 
+/**
+ * Human-readable action labels for tool names.
+ * Used in report summaries and "What I Did" tables so the user never sees
+ * raw tool identifiers like "draft_reply" or "schedule_meeting".
+ */
+const TOOL_FRIENDLY_NAMES: Record<string, string> = {
+  search_gmail: 'Searched inbox',
+  read_email: 'Read email',
+  gmail_read_thread: 'Read thread',
+  gmail_get_labels: 'Fetched labels',
+  gmail_apply_label: 'Applied label',
+  gmail_archive_thread: 'Archived thread',
+  gmail_get_profile: 'Fetched Gmail profile',
+  get_sent_emails: 'Read sent mail',
+  draft_reply: 'Drafted reply',
+  draft_cold_email: 'Drafted email',
+  draft_review: 'Reviewed draft',
+  send_email: 'Sent email',
+  schedule_meeting: 'Booked meeting',
+  get_calendar_events: 'Checked calendar',
+  calendar_get_availability: 'Checked availability',
+  calendar_cancel_event: 'Cancelled event',
+  search_notion: 'Searched Notion',
+  fetch_notion_schema: 'Read Notion schema',
+  create_notion_page: 'Created Notion page',
+  notion_read_page: 'Read Notion page',
+  notion_create_task: 'Created task',
+  notion_get_calendar_events: 'Fetched Notion calendar',
+  send_slack_message: 'Sent Slack message',
+  slack_find_user: 'Found Slack user',
+  slack_send_dm: 'Sent Slack DM',
+  slack_get_channels: 'Listed Slack channels',
+  check_followups: 'Checked follow-ups',
+  digest_newsletters: 'Digested newsletters',
+  get_recipient_context: 'Fetched recipient context',
+  get_contact_context: 'Fetched contact context',
+  remember_about_contact: 'Saved contact note',
+  memory_search: 'Searched memory',
+  memory_save: 'Saved to memory',
+  memory_get_contact_profile: 'Fetched contact profile',
+  web_search: 'Searched the web',
+  web_search_instant: 'Quick fact check',
+  open_canvas: 'Opened canvas',
+  update_canvas: 'Updated canvas',
+  report_generate: 'Generated report',
+  report_send_gmail: 'Emailed report',
+  report_send_slack: 'Sent report to Slack',
+};
+
+/** Pluralisable action labels for the one-line summary. */
+const TOOL_SUMMARY_VERBS: Record<string, [string, string]> = {
+  // [singular, plural] — used as "drafted 1 reply" / "drafted 3 replies"
+  draft_reply: ['drafted %n reply', 'drafted %n replies'],
+  draft_cold_email: ['drafted %n email', 'drafted %n emails'],
+  send_email: ['sent %n email', 'sent %n emails'],
+  schedule_meeting: ['booked %n meeting', 'booked %n meetings'],
+  create_notion_page: ['created %n Notion page', 'created %n Notion pages'],
+  notion_create_task: ['created %n task', 'created %n tasks'],
+  send_slack_message: ['sent %n Slack message', 'sent %n Slack messages'],
+  slack_send_dm: ['sent %n Slack DM', 'sent %n Slack DMs'],
+  gmail_archive_thread: ['archived %n thread', 'archived %n threads'],
+  gmail_apply_label: ['labelled %n thread', 'labelled %n threads'],
+  search_gmail: ['searched %n inbox query', 'searched %n inbox queries'],
+  read_email: ['read %n email', 'read %n emails'],
+  gmail_read_thread: ['read %n thread', 'read %n threads'],
+  check_followups: ['checked follow-ups', 'checked follow-ups'],
+  digest_newsletters: ['digested newsletters', 'digested newsletters'],
+  calendar_cancel_event: ['cancelled %n event', 'cancelled %n events'],
+};
+
+function friendlyToolName(tool: string): string {
+  return TOOL_FRIENDLY_NAMES[tool] || tool.replace(/_/g, ' ');
+}
+
 function deriveSummaryLine(log: ExecutionLogEntry[]): string {
   if (!log.length) return 'Nothing was executed this run.';
   const ok = log.filter((e) => e.success).length;
   const fail = log.length - ok;
+
+  // Count occurrences of each tool
   const counts = new Map<string, number>();
   for (const e of log) {
     if (!e.success) continue;
     counts.set(e.tool, (counts.get(e.tool) || 0) + 1);
   }
+
+  // Build human-readable parts. Prioritise write-actions first so the summary
+  // leads with the most impactful work.
+  const writePriority = ['send_email', 'draft_reply', 'draft_cold_email', 'schedule_meeting',
+    'create_notion_page', 'notion_create_task', 'send_slack_message', 'slack_send_dm',
+    'gmail_archive_thread', 'gmail_apply_label', 'calendar_cancel_event',
+    'check_followups', 'digest_newsletters'];
+  const readPriority = ['search_gmail', 'read_email', 'gmail_read_thread',
+    'get_calendar_events', 'search_notion', 'notion_read_page'];
+
   const parts: string[] = [];
-  for (const [tool, n] of counts) {
-    parts.push(`${n} × ${tool}`);
+  const used = new Set<string>();
+
+  // Write actions first
+  for (const tool of writePriority) {
+    const n = counts.get(tool);
+    if (!n) continue;
+    used.add(tool);
+    const verbs = TOOL_SUMMARY_VERBS[tool];
+    if (verbs) {
+      parts.push((n === 1 ? verbs[0] : verbs[1]).replace('%n', String(n)));
+    } else {
+      parts.push(`${friendlyToolName(tool).toLowerCase()} (${n})`);
+    }
   }
-  const failNote = fail ? `, ${fail} failure${fail === 1 ? '' : 's'}` : '';
-  return parts.length ? `Ran ${ok} step${ok === 1 ? '' : 's'} (${parts.join(', ')})${failNote}.` : `Ran ${ok} step${ok === 1 ? '' : 's'}${failNote}.`;
+
+  // Aggregate read actions into a single "processed N emails/items" if no
+  // write actions are available to lead with.
+  if (!parts.length) {
+    let readCount = 0;
+    for (const tool of readPriority) {
+      const n = counts.get(tool);
+      if (n) { readCount += n; used.add(tool); }
+    }
+    if (readCount) parts.push(`processed ${readCount} item${readCount === 1 ? '' : 's'}`);
+  }
+
+  // Any remaining tools
+  for (const [tool, n] of counts) {
+    if (used.has(tool)) continue;
+    const verbs = TOOL_SUMMARY_VERBS[tool];
+    if (verbs) {
+      parts.push((n === 1 ? verbs[0] : verbs[1]).replace('%n', String(n)));
+    } else {
+      parts.push(`${friendlyToolName(tool).toLowerCase()} (${n})`);
+    }
+  }
+
+  const failNote = fail ? `, flagged ${fail} for review` : '';
+  if (!parts.length) return `Ran ${ok} step${ok === 1 ? '' : 's'}${failNote}.`;
+
+  // Capitalise the first word
+  const joined = parts.join(', ') + failNote + '.';
+  return joined.charAt(0).toUpperCase() + joined.slice(1);
+}
+
+/** Detect link type from URL for grouping in the Links section. */
+function classifyLink(url: string): string {
+  if (/gmail\.googleapis\.com|mail\.google\.com|gmail:\/\//.test(url)) return '📧';
+  if (/calendar\.google\.com|calendar:\/\//.test(url)) return '📅';
+  if (/notion\.so|notion:\/\//.test(url)) return '📝';
+  if (/slack\.com|slack:\/\//.test(url)) return '💬';
+  return '🔗';
 }
 
 function reportGenerate(input: any): ToolResult {
@@ -4938,56 +5167,90 @@ function reportGenerate(input: any): ToolResult {
     }
   }
 
+  // ── Section 1: One-line summary ──
   const lines: string[] = [
-    `# ${agentName} — Run report`,
+    summaryLine,
     '',
-    `*${summaryLine}*`,
+    `# ${agentName} — Run Report`,
     '',
-    '## What I did',
   ];
 
+  // ── Section 2: What I Did ──
+  lines.push('## What I Did');
+  lines.push('');
+
   if (succeeded.length) {
-    for (const e of succeeded) {
-      const summary = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 280);
-      lines.push(`- **${e.tool}** — ${summary || 'ok'}`);
+    if (succeeded.length >= 4) {
+      // Table format for 4+ items
+      lines.push('| Action | Details | Link |');
+      lines.push('|--------|---------|------|');
+      for (const e of succeeded) {
+        const action = friendlyToolName(e.tool);
+        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 200).replace(/\|/g, '\\|');
+        const entryLinks = Array.isArray(e.links) && e.links.length
+          ? e.links.map((u) => `[Open](${u})`).join(', ')
+          : '—';
+        lines.push(`| ${action} | ${details || '—'} | ${entryLinks} |`);
+      }
+    } else {
+      // Bullet list for 2–3 items
+      for (const e of succeeded) {
+        const action = friendlyToolName(e.tool);
+        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+        const entryLinks = Array.isArray(e.links) && e.links.length
+          ? ' — ' + e.links.map((u) => `[Open](${u})`).join(', ')
+          : '';
+        lines.push(`- **${action}** — ${details || 'completed'}${entryLinks}`);
+      }
     }
   } else {
-    lines.push('- (nothing completed this run)');
+    lines.push('No actions were taken this run.');
   }
 
-  lines.push('', '## Needs your attention');
+  // ── Section 3: Needs Your Attention (omitted when empty) ──
   if (failed.length || skipped.length) {
+    lines.push('', '## Needs Your Attention');
+    lines.push('');
     for (const e of failed) {
+      const action = friendlyToolName(e.tool);
       const why = (e.error || e.summary || 'unknown error').replace(/\s+/g, ' ').trim().slice(0, 280);
-      lines.push(`- ❌ **${e.tool}** — ${why}`);
+      lines.push(`- ⚠️ **${action}** — ${why}`);
     }
     for (const s of skipped) {
-      lines.push(`- ⏸ ${s}`);
+      lines.push(`- ⏸️ ${s}`);
+    }
+  }
+
+  // ── Section 4: Links ──
+  lines.push('', '## Links');
+  lines.push('');
+  if (linkSet.size) {
+    for (const url of linkSet) {
+      const emoji = classifyLink(url);
+      lines.push(`- ${emoji} ${url}`);
     }
   } else {
-    lines.push('- Nothing pending — everything ran cleanly.');
+    lines.push('No links produced this run.');
   }
 
-  lines.push('', '## Links');
-  if (linkSet.size) {
-    for (const url of linkSet) lines.push(`- ${url}`);
-  } else {
-    lines.push('- (no links produced this run)');
-  }
-
+  // ── Section 5: Footer ──
+  const runTimeStr = runTs.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  const nextRun = input?.nextRunTime ? String(input.nextRunTime).trim() : '';
   lines.push(
     '',
     '---',
-    `*Generated ${runTs.toISOString()}. ${log.length} tool call${log.length === 1 ? '' : 's'}, ${failed.length} failure${failed.length === 1 ? '' : 's'}, ${skipped.length} skipped.*`,
+    `Sent by Arcus for Mailient • mailient.xyz`,
+    `Run completed: ${runTimeStr}`,
   );
+  if (nextRun) lines.push(`Next run: ${nextRun}`);
 
   return { output: lines.join('\n') };
 }
 
-// ── markdown → basic HTML for report_send_gmail ───────────────────────────────
-// Lightweight by design — handles only the markdown shapes reportGenerate
-// emits (headings, lists, bold, links, em, hr, paragraphs). Anything richer
-// (tables, fenced code, images) renders as plain paragraphs.
+// ── markdown → professional HTML for report_send_gmail ────────────────────────
+// Handles headings, lists, bold, italic, links, tables (pipe-delimited),
+// horizontal rules, and paragraphs. Reports should look like they came from
+// a professional service, not a script.
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -5003,9 +5266,18 @@ function inlineMd(text: string): string {
   s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color:#2563eb;text-decoration:underline;">$1</a>');
   s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
   s = s.replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>');
-  // Bare urls
+  // Bare urls (not already wrapped in <a>)
   s = s.replace(/(^|[\s(])((https?:\/\/[^\s"<>)]+))/g, '$1<a href="$2" style="color:#2563eb;text-decoration:underline;">$2</a>');
   return s;
+}
+
+/** Parse pipe-delimited markdown table rows into cell arrays. */
+function parseTableRow(line: string): string[] {
+  return line.split('|').map(c => c.trim()).filter((_, i, arr) => i > 0 && i < arr.length - 1);
+}
+
+function isTableSeparator(line: string): boolean {
+  return /^\|[\s:|-]+\|$/.test(line.trim());
 }
 
 function markdownToHtml(md: string): string {
@@ -5019,7 +5291,7 @@ function markdownToHtml(md: string): string {
     if (!line.trim()) { i++; continue; }
 
     if (line.trim() === '---') {
-      blocks.push('<hr style="border:none;border-top:1px solid #e5e7eb;margin:24px 0;">');
+      blocks.push('<hr style="border:none;border-top:1px solid #e5e7eb;margin:28px 0;">');
       i++;
       continue;
     }
@@ -5027,9 +5299,45 @@ function markdownToHtml(md: string): string {
     const hMatch = line.match(/^(#{1,6})\s+(.+)$/);
     if (hMatch) {
       const level = hMatch[1].length;
-      const fontSize = [24, 20, 17, 15, 14, 13][level - 1];
-      blocks.push(`<h${level} style="font-size:${fontSize}px;margin:18px 0 8px;font-weight:700;color:#111;">${inlineMd(hMatch[2])}</h${level}>`);
+      const fontSize = [26, 20, 17, 15, 14, 13][level - 1];
+      const marginTop = level === 1 ? '0' : '24px';
+      const color = level <= 2 ? '#111' : '#333';
+      blocks.push(`<h${level} style="font-size:${fontSize}px;margin:${marginTop} 0 10px;font-weight:700;color:${color};line-height:1.3;">${inlineMd(hMatch[2])}</h${level}>`);
       i++;
+      continue;
+    }
+
+    // ── Markdown table ──
+    // Detect: header row (| ... | ... |), separator row (|---|---|), then data rows
+    if (/^\|.+\|$/.test(line.trim()) && i + 1 < lines.length && isTableSeparator(lines[i + 1])) {
+      const headerCells = parseTableRow(line);
+      i += 2; // skip header + separator
+      const dataRows: string[][] = [];
+      while (i < lines.length && /^\|.+\|$/.test(lines[i].trim())) {
+        dataRows.push(parseTableRow(lines[i]));
+        i++;
+      }
+      const thStyle = 'padding:10px 14px;text-align:left;font-weight:600;color:#111;border-bottom:2px solid #e5e7eb;font-size:13px;text-transform:uppercase;letter-spacing:0.3px;';
+      const tdStyle = 'padding:10px 14px;color:#333;border-bottom:1px solid #f0f0f0;font-size:14px;';
+      const tdAltBg = 'background:#fafafa;';
+
+      let tableHtml = '<table style="width:100%;border-collapse:collapse;margin:12px 0 20px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden;">';
+      tableHtml += '<thead><tr style="background:#f8f9fa;">';
+      for (const cell of headerCells) {
+        tableHtml += `<th style="${thStyle}">${inlineMd(cell)}</th>`;
+      }
+      tableHtml += '</tr></thead><tbody>';
+      for (let r = 0; r < dataRows.length; r++) {
+        const bg = r % 2 === 1 ? ` style="${tdAltBg}"` : '';
+        tableHtml += `<tr${bg}>`;
+        for (let c = 0; c < headerCells.length; c++) {
+          const cellText = dataRows[r][c] || '';
+          tableHtml += `<td style="${tdStyle}">${inlineMd(cellText)}</td>`;
+        }
+        tableHtml += '</tr>';
+      }
+      tableHtml += '</tbody></table>';
+      blocks.push(tableHtml);
       continue;
     }
 
@@ -5040,7 +5348,7 @@ function markdownToHtml(md: string): string {
         items.push(inlineMd(lines[i].replace(/^\s*-\s+/, '')));
         i++;
       }
-      blocks.push(`<ul style="margin:8px 0 14px;padding-left:22px;color:#111;">${items.map((it) => `<li style="margin:4px 0;">${it}</li>`).join('')}</ul>`);
+      blocks.push(`<ul style="margin:8px 0 16px;padding-left:22px;color:#333;">${items.map((it) => `<li style="margin:6px 0;line-height:1.55;">${it}</li>`).join('')}</ul>`);
       continue;
     }
 
@@ -5051,21 +5359,38 @@ function markdownToHtml(md: string): string {
         items.push(inlineMd(lines[i].replace(/^\s*\d+\.\s+/, '')));
         i++;
       }
-      blocks.push(`<ol style="margin:8px 0 14px;padding-left:22px;color:#111;">${items.map((it) => `<li style="margin:4px 0;">${it}</li>`).join('')}</ol>`);
+      blocks.push(`<ol style="margin:8px 0 16px;padding-left:22px;color:#333;">${items.map((it) => `<li style="margin:6px 0;line-height:1.55;">${it}</li>`).join('')}</ol>`);
       continue;
     }
 
     // Paragraph — gather contiguous non-empty, non-special lines
     const para: string[] = [line];
     i++;
-    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\s*-\s|\s*\d+\.\s|---$)/.test(lines[i])) {
+    while (i < lines.length && lines[i].trim() && !/^(#{1,6}\s|\s*-\s|\s*\d+\.\s|---$|\|.+\|$)/.test(lines[i])) {
       para.push(lines[i]);
       i++;
     }
-    blocks.push(`<p style="margin:8px 0 14px;color:#111;line-height:1.55;">${inlineMd(para.join(' '))}</p>`);
+    blocks.push(`<p style="margin:8px 0 14px;color:#333;line-height:1.6;font-size:14px;">${inlineMd(para.join(' '))}</p>`);
   }
 
   return blocks.join('\n');
+}
+
+/**
+ * Extract the one-line summary from report markdown.
+ * The report format puts the summary as the very first non-empty line,
+ * before the H1 heading.
+ */
+function extractReportSummary(md: string): string {
+  const lines = md.split(/\r?\n/);
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('#')) break; // hit a heading — no summary line
+    // Return the first non-empty, non-heading line
+    return trimmed.replace(/\*\*/g, '').replace(/\*/g, '').slice(0, 150);
+  }
+  return '';
 }
 
 async function reportSendGmail(userId: string, input: any): Promise<ToolResult> {
@@ -5085,10 +5410,37 @@ async function reportSendGmail(userId: string, input: any): Promise<ToolResult> 
   const to = profile.emailAddress as string;
   if (!to) return failureResult('Gmail profile returned no email address.', 'upstream_gmail');
 
+  // Subject: use explicit subject, or extract the one-line summary from the
+  // report markdown, or fall back to a date-based default.
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const subject = (input?.subject && String(input.subject).trim()) || `Arcus agent report — ${today}`;
+  const autoSubject = extractReportSummary(md);
+  const subject = (input?.subject && String(input.subject).trim())
+    || (autoSubject ? `Arcus: ${autoSubject}` : `Arcus agent report — ${today}`);
 
-  const htmlBody = `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif;font-size:14px;color:#111;max-width:680px;margin:0 auto;padding:24px;">${markdownToHtml(md)}</body></html>`;
+  // Professional HTML email template
+  const bodyContent = markdownToHtml(md);
+  const htmlBody = [
+    '<!DOCTYPE html><html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"></head>',
+    '<body style="margin:0;padding:0;background:#f4f4f7;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Helvetica,Arial,sans-serif;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f7;"><tr><td align="center" style="padding:32px 16px;">',
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.06);">',
+    // Header bar
+    '<tr><td style="background:#111;padding:20px 32px;">',
+    '<span style="color:#fff;font-size:15px;font-weight:700;letter-spacing:0.5px;">ARCUS</span>',
+    '<span style="color:rgba(255,255,255,0.5);font-size:12px;margin-left:8px;">for Mailient</span>',
+    '</td></tr>',
+    // Body
+    '<tr><td style="padding:32px 32px 24px;font-size:14px;color:#333;line-height:1.6;">',
+    bodyContent,
+    '</td></tr>',
+    // Footer
+    '<tr><td style="padding:16px 32px 24px;border-top:1px solid #f0f0f0;">',
+    '<p style="margin:0;font-size:12px;color:#999;line-height:1.5;">',
+    'Sent by <strong style="color:#666;">Arcus</strong> for Mailient &bull; <a href="https://mailient.xyz" style="color:#2563eb;text-decoration:none;">mailient.xyz</a>',
+    '</p></td></tr>',
+    '</table>',
+    '</td></tr></table></body></html>',
+  ].join('');
 
   // Build RFC 2822 multipart/alternative so clients with HTML disabled still
   // see the markdown plain text.
@@ -5144,44 +5496,177 @@ async function reportSendGmail(userId: string, input: any): Promise<ToolResult> 
 }
 
 // ── markdown → Slack Block Kit ────────────────────────────────────────────────
-// Slack accepts mrkdwn natively (uses single * for bold, _ for italic).
-// We translate the markdown into a small set of blocks: header, section,
-// divider. Reports stay readable in the Slack preview without losing
-// structure.
+// Reports use structured blocks: header with emoji + one-line summary,
+// dividers between sections, emoji-prefixed action blocks, and a context
+// footer. Slack doesn't support tables natively, so pipe-delimited tables
+// are rendered as formatted mrkdwn text with bold labels.
+
+/** Detect action emoji for a Slack section based on the content. */
+function slackActionEmoji(text: string): string {
+  const lower = text.toLowerCase();
+  if (/draft|email|inbox|gmail|reply|sent/.test(lower)) return '📧';
+  if (/calendar|meeting|event|booked|schedule/.test(lower)) return '📅';
+  if (/notion|page|task|database/.test(lower)) return '📝';
+  if (/slack|message|dm|channel/.test(lower)) return '💬';
+  if (/⚠️|attention|couldn't|could not|failed|error/.test(lower)) return '⚠️';
+  if (/❌/.test(text)) return '❌';
+  if (/search|web|memory|fact/.test(lower)) return '🔍';
+  return '✅';
+}
+
+/** Convert markdown inline to Slack mrkdwn inline. */
+function mdToSlackInline(text: string): string {
+  let s = text;
+  // **bold** → *bold*
+  s = s.replace(/\*\*([^*]+)\*\*/g, '*$1*');
+  // [text](url) → <url|text>
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<$2|$1>');
+  return s;
+}
+
 function markdownToSlackBlocks(md: string): any[] {
   const blocks: any[] = [];
   const lines = md.split(/\r?\n/);
+
+  // Extract the one-line summary (first non-empty, non-heading line)
+  let summaryLine = '';
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('#')) break;
+    summaryLine = trimmed.replace(/\*\*/g, '').replace(/\*/g, '');
+    break;
+  }
+
+  // Header with the summary
+  if (summaryLine) {
+    blocks.push({
+      type: 'header',
+      text: { type: 'plain_text', text: `✅ ${summaryLine}`.slice(0, 150), emoji: true },
+    });
+    blocks.push({ type: 'divider' });
+  }
+
   let buffer: string[] = [];
+  let inTable = false;
+  let tableRows: string[][] = [];
+  let tableHeaders: string[] = [];
+
   const flushSection = () => {
     const text = buffer.join('\n').trim();
     buffer = [];
     if (!text) return;
-    // Convert markdown **bold** to Slack *bold*, [text](url) to <url|text>
-    let slackText = text;
-    slackText = slackText.replace(/\*\*([^*]+)\*\*/g, '*$1*');
-    slackText = slackText.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<$2|$1>');
+    const slackText = mdToSlackInline(text);
     // Slack section text limit is 3000 chars — chunk if needed
     const CHUNK = 2900;
-    for (let i = 0; i < slackText.length; i += CHUNK) {
-      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: slackText.slice(i, i + CHUNK) } });
+    for (let ci = 0; ci < slackText.length; ci += CHUNK) {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: slackText.slice(ci, ci + CHUNK) } });
     }
   };
-  for (const raw of lines) {
+
+  const flushTable = () => {
+    if (!tableHeaders.length && !tableRows.length) return;
+    // Render each table row as a compact mrkdwn line
+    const rowTexts: string[] = [];
+    for (const row of tableRows) {
+      const parts = tableHeaders.map((h, idx) => `*${mdToSlackInline(h)}:* ${mdToSlackInline(row[idx] || '—')}`);
+      const emoji = slackActionEmoji(row.join(' '));
+      rowTexts.push(`${emoji} ${parts.join(' • ')}`);
+    }
+    const text = rowTexts.join('\n\n');
+    const CHUNK = 2900;
+    for (let ci = 0; ci < text.length; ci += CHUNK) {
+      blocks.push({ type: 'section', text: { type: 'mrkdwn', text: text.slice(ci, ci + CHUNK) } });
+    }
+    tableHeaders = [];
+    tableRows = [];
+    inTable = false;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
     const line = raw.trimEnd();
-    if (line.trim() === '---') {
+    const trimmed = line.trim();
+
+    // Skip the summary line (already in header)
+    if (i === 0 && trimmed === summaryLine.trim()) continue;
+
+    if (trimmed === '---') {
       flushSection();
+      flushTable();
       blocks.push({ type: 'divider' });
       continue;
     }
-    const hMatch = line.match(/^(#{1,3})\s+(.+)$/);
+
+    // Heading → Slack header block
+    const hMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
     if (hMatch) {
       flushSection();
+      flushTable();
       blocks.push({ type: 'header', text: { type: 'plain_text', text: hMatch[2].slice(0, 150), emoji: true } });
       continue;
     }
+
+    // Table detection: pipe-delimited rows
+    if (/^\|.+\|$/.test(trimmed) && !inTable) {
+      flushSection();
+      // Parse header
+      tableHeaders = trimmed.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1);
+      // Next line should be separator — skip it
+      if (i + 1 < lines.length && /^\|[\s:|-]+\|$/.test(lines[i + 1].trim())) {
+        i++;
+      }
+      inTable = true;
+      continue;
+    }
+    if (inTable && /^\|.+\|$/.test(trimmed)) {
+      tableRows.push(trimmed.split('|').map(c => c.trim()).filter((_, idx, arr) => idx > 0 && idx < arr.length - 1));
+      continue;
+    }
+    if (inTable) {
+      flushTable();
+    }
+
+    // Bullet items — render with action emoji
+    if (/^\s*-\s+/.test(line)) {
+      flushSection();
+      const items: string[] = [];
+      while (i < lines.length && /^\s*-\s+/.test(lines[i])) {
+        const itemText = lines[i].replace(/^\s*-\s+/, '');
+        const emoji = slackActionEmoji(itemText);
+        items.push(`${emoji} ${mdToSlackInline(itemText)}`);
+        i++;
+      }
+      i--; // compensate for outer loop increment
+      const text = items.join('\n');
+      const CHUNK = 2900;
+      for (let ci = 0; ci < text.length; ci += CHUNK) {
+        blocks.push({ type: 'section', text: { type: 'mrkdwn', text: text.slice(ci, ci + CHUNK) } });
+      }
+      continue;
+    }
+
+    // Footer lines (after ---) → context block
+    if (blocks.length > 0 && blocks[blocks.length - 1]?.type === 'divider' &&
+      (/^Sent by Arcus/i.test(trimmed) || /^Run completed:/i.test(trimmed) || /^Next run:/i.test(trimmed))) {
+      // Gather all footer lines
+      const footerLines: string[] = [trimmed];
+      while (i + 1 < lines.length && lines[i + 1].trim() && !/^#/.test(lines[i + 1].trim())) {
+        i++;
+        footerLines.push(lines[i].trim());
+      }
+      blocks.push({
+        type: 'context',
+        elements: [{ type: 'mrkdwn', text: footerLines.join(' · ') }],
+      });
+      continue;
+    }
+
     buffer.push(line);
   }
   flushSection();
+  flushTable();
+
   // Slack rejects messages with more than 50 blocks — trim
   return blocks.slice(0, 50);
 }
@@ -5231,13 +5716,17 @@ async function reportSendSlack(userId: string, input: any, context: ToolContext 
 
   // 2) Post with Block Kit
   const blocks = markdownToSlackBlocks(md);
+
+  // Use the summary line as notification preview text
+  const summaryPreview = extractReportSummary(md) || md.slice(0, 200);
+
   const postRes = await fetch('https://slack.com/api/chat.postMessage', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       channel: dmChannel,
       blocks,
-      text: md.slice(0, 200), // fallback for notification previews
+      text: summaryPreview, // fallback for notification previews
     }),
     signal: AbortSignal.timeout(10000),
   });

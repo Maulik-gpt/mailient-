@@ -37,7 +37,13 @@ function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]
   const ALL_KNOWN = Object.keys(INTEGRATION_LABELS);
 
   const connected = connectedIntegrations.filter(k => INTEGRATION_LABELS[k]);
-  const notConnected = ALL_KNOWN.filter(k => !connected.includes(k));
+  // notion and notion_calendar share OAuth — if either is connected, don't list the other as missing
+  const hasAnyNotion = connected.some(k => k === 'notion' || k === 'notion_calendar');
+  const notConnected = ALL_KNOWN.filter(k => {
+    if (connected.includes(k)) return false;
+    if (hasAnyNotion && (k === 'notion' || k === 'notion_calendar')) return false;
+    return true;
+  });
 
   const alwaysAvailable = ['Web Search (built-in)', 'Canvas document viewer (built-in)'];
   const connectedLabels = connected.map(k => INTEGRATION_LABELS[k]);
