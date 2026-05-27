@@ -30,6 +30,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Send, X, Edit3, Save, AlertTriangle, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { RichTextEditor } from './RichTextEditor';
 
 export interface DraftApprovalData {
   content: string;
@@ -228,15 +229,12 @@ export function DraftApprovalModal({
               )}
             </div>
 
-            {/* Body — clean formatted preview OR editable textarea (rich-text comes in PART 8 #4) */}
+            {/* Body — clean formatted preview OR rich-text editor (PART 8 #4) */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {viewMode === 'editing' ? (
-                <textarea
+                <RichTextEditor
                   value={editedContent}
-                  onChange={(e) => setEditedContent(e.target.value)}
-                  className="w-full min-h-[280px] bg-[#0F0F0F] border border-white/8 focus:border-white/15 rounded-2xl p-4 text-white/90 text-[14px] leading-[1.65] resize-none focus:outline-none transition-colors placeholder:text-white/30 font-sans"
-                  placeholder="Type your message…"
-                  autoFocus
+                  onChange={(plain) => setEditedContent(plain)}
                 />
               ) : (
                 <div className="text-white/90 text-[14px] leading-[1.7] whitespace-pre-wrap font-sans selection:bg-blue-500/30">
