@@ -16,6 +16,7 @@ import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
 import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
 import { DraftApprovalModal } from './components/DraftApprovalModal';
+import { DraftGalleryCard, type DraftGalleryItem } from './components/DraftGalleryCard';
 import { ActionResultCard } from './components/ActionResultCard';
 import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
@@ -539,6 +540,23 @@ interface AgentMessage {
       /** One-line critique surfaced under the score badge when score < 70. */
       voiceCritique?: string;
     };
+    /**
+     * PART 8 #5 — accumulating array of all email_draft canvases produced in
+     * this assistant turn. When length >= 2 the render block shows the
+     * DraftGalleryCard instead of the single-draft modal. Single drafts
+     * still populate draftReply (above) for backwards compat with the modal.
+     */
+    draftReplies?: Array<{
+      content: string;
+      recipientEmail: string;
+      recipientName: string;
+      senderName: string;
+      subject: string;
+      threadId?: string;
+      gmailDraftId?: string;
+      voiceScore?: number;
+      voiceCritique?: string;
+    }>;
     planCard?: PlanCardData;
     planIntro?: string;
     hasError?: boolean;
@@ -2392,6 +2410,15 @@ export default function ChatInterface({
                       }
                     : undefined;
                   if (draftReply) currentDraftReply = draftReply;
+
+                  // PART 8 #5 — accumulate every draft this turn into draftReplies
+                  // so the render block can swap to the gallery layout at 2+.
+                  // Last-write-wins on draftReply (legacy single-draft path) is kept
+                  // for backwards compat with the modal render code.
+                  const prevDraftReplies: any[] = (m.meta?.draftReplies as any[]) || [];
+                  const draftReplies = draftReply
+                    ? [...prevDraftReplies, draftReply]
+                    : prevDraftReplies;
                   currentCanvasResult = {
                     type: cv.type || 'notes',
                     title: cv.title || 'Action Results Summary',
@@ -2407,6 +2434,7 @@ export default function ChatInterface({
                     meta: {
                       ...(m.meta || {}),
                       ...(draftReply ? { draftReply } : {}),
+                      ...(draftReplies.length > 0 ? { draftReplies } : {}),
                       result: currentCanvasResult,
                     },
                   };
@@ -4907,11 +4935,55 @@ export default function ChatInterface({
                                       })()
                                     )}
 
+                                    {/* PART 8 #5 — Bulk gallery for 2+ drafts. Multiple email_draft
+                                        canvases this turn => render one DraftGalleryCard instead of
+                                        cycling through modal-per-draft (unusable past ~3). User picks
+                                        which to send via checkboxes, then confirms once. Unselected
+                                        drafts stay in Gmail Drafts. */}
+                                    {msg.role === 'assistant' && Array.isArray((msg as AgentMessage).meta?.draftReplies) && ((msg as AgentMessage).meta!.draftReplies!.length >= 2) && !(msg as AgentMessage).meta?.isStreaming && (
+                                      <DraftGalleryCard
+                                        drafts={((msg as AgentMessage).meta!.draftReplies!.map((d, i): DraftGalleryItem => ({
+                                          id: d.gmailDraftId || `${d.recipientEmail}-${i}`,
+                                          recipientName: d.recipientName,
+                                          recipientEmail: d.recipientEmail,
+                                          subject: d.subject,
+                                          body: d.content,
+                                          threadId: d.threadId,
+                                          gmailDraftId: d.gmailDraftId,
+                                          voiceScore: d.voiceScore,
+                                        })))}
+                                        onSendOne={async (item) => {
+                                          const res = await fetch('/api/dashboard/agent-talk/send-email', {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                              to: item.recipientEmail,
+                                              subject: item.subject,
+                                              content: item.body,
+                                              threadId: item.threadId,
+                                              gmailDraftId: item.gmailDraftId,
+                                            }),
+                                          });
+                                          if (!res.ok) {
+                                            const errJson = await res.json().catch(() => ({}));
+                                            throw new Error(errJson.error || `Failed (${res.status})`);
+                                          }
+                                        }}
+                                        onDismiss={() => {
+                                          setMessages(prev => prev.map(m =>
+                                            m.id === msg.id ? { ...m, meta: { ...(m as AgentMessage).meta, draftReply: undefined, draftReplies: undefined } } : m
+                                          ));
+                                        }}
+                                      />
+                                    )}
+
                                     {/* PART 8 #3 — Draft Approval Modal (full-screen overlay) replaces the
-                                        old inline DraftReplyBox for single-draft approvals. Two-click
-                                        send gate (Send Now -> "This cannot be undone" overlay -> Confirm
-                                        Send) plus dismiss-on-escape and dismiss-on-backdrop-click. */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.draftReply && !(msg as AgentMessage).meta?.isStreaming && (
+                                        old inline DraftReplyBox for SINGLE-draft approvals only. When
+                                        draftReplies.length >= 2 the gallery (above) renders instead. */}
+                                    {msg.role === 'assistant'
+                                      && (msg as AgentMessage).meta?.draftReply
+                                      && (!Array.isArray((msg as AgentMessage).meta?.draftReplies) || ((msg as AgentMessage).meta!.draftReplies!.length < 2))
+                                      && !(msg as AgentMessage).meta?.isStreaming && (
                                       <DraftApprovalModal
                                         isVisible={true}
                                         draftData={(msg as AgentMessage).meta!.draftReply!}
