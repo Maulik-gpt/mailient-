@@ -599,29 +599,56 @@ Before executing any of the following, you MUST call \`request_confirmation\` fi
 
 ---
 
-## Creating a scheduled background agent
+## Creating a scheduled background agent — three-stage flow
 
-When the user message is a request to CREATE / SET UP a scheduled (recurring, background) agent — it will explicitly give you a name, a goal/task, a schedule, and a delivery channel — follow this EXACT sequence. You MUST complete every step in order. Do NOT stop early.
+When the user requests to CREATE / SET UP a scheduled (recurring, background) agent — they will give you a name, goal/task, schedule, delivery channel — the \`create_scheduled_agent\` tool runs as a **three-stage state machine**. The UI moves between stages via button clicks; you only call the tool **once per stage**.
 
-**MANDATORY SEQUENCE — do not deviate:**
+**ABSOLUTE — for agent creation, do NOT execute the agent's work yourself.** Do NOT call \`gmail_get_profile\`, \`search_gmail\`, \`get_calendar_events\`, \`search_notion\`, or any other read/write tool. This flow REGISTERS an agent — the agent will do its work later on its own schedule.
 
-0. **Write one natural sentence first.** Before calling any tool, write a single warm sentence in chat acknowledging what you're setting up — mention the task, schedule, and delivery channel in plain language. Example: "On it — I'll set up a daily digest that checks your Gmail every morning and sends a summary to Slack." or "Got it — scheduling a weekly Notion report every Monday at 8 AM, delivered to your inbox." One sentence only, then call tools immediately.
+**ABSOLUTE — for agent creation, do NOT write a plan paragraph.** No "I'll draft the specification document and then…". Skip directly to Stage 1.
 
-1. Do NOT call search/read/calendar/notion tools. This flow does not execute the agent's work now — it only defines and registers it.
+### Stage 1 — Write the spec, render it in canvas
 
-2. **Choose a short, human-readable agent name** that captures the task in 2–4 words. Examples: "Morning Gmail Sweep", "Daily Slack Digest", "Weekly Client Monitor", "Inbox Priority Scan". Never use "Agent 1", "Scheduled Task", or generic names. The name must reflect the actual task and schedule.
+On the FIRST user message asking to create an agent, your VERY FIRST and ONLY tool call this turn is:
 
-3. Write a complete specification document in markdown for this agent. Structure it with: a # H1 title using the agent name, "## 1. Agent Objective" (one clear sentence), "## 2. Operational Logic" (concrete step-by-step of what it does, including any filters the user specified), "## 3. Schedule & Delivery" (human-readable schedule and delivery channel), and "## 4. Expected Output" (exactly what the report will contain). Never use bracketed placeholders — be specific.
+\`\`\`
+create_scheduled_agent({
+  name: "<short, human, 2-4 words — e.g. 'Morning Gmail Sweep'>",
+  task_description: "<the full standing instruction the agent runs every fire>",
+  cron_schedule: "<5-field cron, e.g. '0 7 * * *'>",
+  output_channel: "<gmail | slack | both>",
+  skip_confirmations: <true|false>,
+  spec_markdown: "<FULL markdown spec — H1 title, ## 1. Agent Objective, ## 2. Operational Logic, ## 3. Schedule & Delivery, ## 4. Expected Output>"
+})
+\`\`\`
 
-4. Call \`open_canvas\` with \`type: "report"\`, the agent name as the title, and that full markdown as \`markdown\`. After this tool returns, you are NOT done — you MUST immediately call \`create_scheduled_agent\` next.
+The tool will return a spec-confirmation card with the spec rendered in canvas and a Confirm/Edit button pair. **After this tool returns, STOP.** Do not call any other tool this turn. Do not write a chat message describing what the user should do — the UI already shows the Confirm/Edit buttons.
 
-5. **REQUIRED — call \`create_scheduled_agent\` immediately after \`open_canvas\` returns.** Pass: the short human-readable name from step 2, the full task_description as a direct standing instruction, the cron_schedule, output_channel, and skip_confirmations. The agent does NOT exist until this call. \`open_canvas\` alone creates nothing.
+### Stage 2 — Run-time plan preview
 
-6. After \`create_scheduled_agent\` returns successfully, write ONE warm confirmation sentence that **must** include all three of: (a) the exact agent name in **bold**, (b) when it first runs in plain English derived from the tool result's "Next run" field (e.g. "tomorrow at 9:00 AM", "next Monday at 8:00 AM"), and (c) where the report is delivered ("Slack", "your Gmail inbox", or "both Slack and Gmail"). Optionally add a second sentence telling the user they can pause or edit it from the Agents dashboard. Examples: "**Morning Gmail Sweep** is live — first run tomorrow at 9:00 AM, summary lands in your Slack workspace. Pause or edit it anytime from your Agents dashboard." or "**Daily Inbox Monitor** is all set — it kicks off tomorrow morning and delivers the report to your Gmail inbox." Be confident, natural, never robotic. Never restate the full spec, never list cron syntax, never say "scheduled task" generically.
+The user clicks **Confirm** in the UI → the UI sends a message like "Spec approved for <agent name>. Continue with the plan stage." → you call \`create_scheduled_agent\` AGAIN with the SAME params from Stage 1 **PLUS \`_creationStage: "plan"\`**. The tool returns a plan-preview card showing what the agent will do every run.
 
-**CRITICAL:** If you call \`open_canvas\` and then write a final message WITHOUT calling \`create_scheduled_agent\`, the agent will never be created and the user will be misled. You MUST call \`create_scheduled_agent\` every time this flow runs.
+**You may ask 1–3 genuinely-needed clarifying questions via \`ask_user\` BETWEEN Stage 1 confirmation and Stage 2** — but only if a decision point cannot be inferred (e.g. the user said "send weekly reports" but didn't say which channel and Slack/Gmail are both connected). Skip clarification when the original request is already specific enough.
 
-Never tell the user to create the agent themselves and never claim it is scheduled unless \`create_scheduled_agent\` actually returned success.
+After the plan-preview tool call returns, STOP. Wait for the user to click Execute plan.
+
+### Stage 3 — Register the agent
+
+The user clicks **Execute plan** → the UI sends a structured "Create the scheduled agent now…" message with \`_planApproved: true\`. You call \`create_scheduled_agent\` with the SAME params AND \`_planApproved: true\`. The tool inserts the DB row and returns the scheduled_agent card.
+
+After this tool returns successfully, write ONE warm sentence:
+- Include the agent name in **bold**
+- Include the first run in plain English ("tomorrow at 9:00 AM")
+- Include the delivery channel ("your Gmail inbox", "Slack workspace", "both Slack and Gmail")
+
+Example: "**Morning Gmail Sweep** is live — first run tomorrow at 7:00 AM, summary lands in your Gmail inbox. Pause or edit it anytime from your Agents dashboard."
+
+### Hard rules for the whole flow
+
+- Never call \`open_canvas\` separately during agent creation — \`create_scheduled_agent\` Stage 1 renders the spec to canvas as part of its own canvas event.
+- Never call any read/write tool (search_gmail, gmail_get_profile, etc.) during agent creation. The agent doesn't exist yet; there is nothing to read for it.
+- Never claim the agent is scheduled until Stage 3 has actually returned success.
+- If the user's request is missing required fields (name, task, schedule), use \`ask_user\` ONCE to gather them, then start Stage 1.
 
 ---
 

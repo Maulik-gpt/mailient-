@@ -1135,11 +1135,15 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'create_scheduled_agent',
     description:
-      'Register a persistent background agent that runs on a cron schedule via Vercel Cron. ' +
-      'Insert the row IMMEDIATELY after writing the spec to canvas — the agent is live the moment this returns. ' +
-      'Output: confirmation text + canvasData (type "scheduled_agent") with the next run time. ' +
-      'Errors (success:false): validation_error (missing name/task/cron, bad cron format), migration_missing, agent_create_failed. ' +
-      'If required integrations aren\'t connected, returns success:true with canvasData.type "integration_required" and asks the user to connect them.',
+      'Register a persistent background agent. This tool runs as a THREE-STAGE flow:\n' +
+      '  Stage 1 (no _creationStage): writes a markdown spec to canvas + asks the user to Confirm or Edit. ' +
+      'You must pass spec_markdown with the full agent specification document.\n' +
+      '  Stage 2 (_creationStage: "plan"): shows a PlanPreviewCard of what the agent will do every run. ' +
+      'Called automatically after the user confirms the spec — you should NOT need to call this stage manually.\n' +
+      '  Stage 3 (_planApproved: true): actually inserts the agent row into the database.\n' +
+      'Output: confirmation text + canvasData. The user moves between stages via Confirm/Edit/Execute buttons in the UI — ' +
+      'you do not need to call this tool more than once per stage transition.\n' +
+      'Errors (success:false): validation_error (missing name/task/cron, bad cron format, missing spec_markdown in stage 1), migration_missing, agent_create_failed.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1150,6 +1154,9 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         slack_channel: { type: 'string', description: 'Slack channel name (only if output_channel is slack or both).' },
         skip_confirmations: { type: 'boolean', description: 'If true, the agent acts (sends/publishes) without asking for approval. Default false.' },
         expires_at: { type: 'string', description: 'Optional ISO date (YYYY-MM-DD) after which the agent auto-pauses. Omit for no expiry.' },
+        spec_markdown: { type: 'string', description: 'STAGE 1 ONLY — the full agent specification markdown to show in canvas. Must include H1 title, "## 1. Agent Objective", "## 2. Operational Logic", "## 3. Schedule & Delivery", "## 4. Expected Output". Required on the first call.' },
+        _creationStage: { type: 'string', enum: ['plan'], description: 'Internal — set to "plan" by the UI after the user confirms the spec. Never set this yourself on the first call.' },
+        _planApproved: { type: 'boolean', description: 'Internal — set to true by the UI after the user approves the run-time plan. Never set this yourself.' },
       },
       required: ['name', 'task_description', 'cron_schedule'],
     },
@@ -4844,38 +4851,99 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
     return failureResult(`Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).`, 'validation_error');
   }
 
-  // ── PART 10 Fix 7: Agent plan preview gate ──────────────────────────────────
-  // In interactive sessions (conversationId set), show the user what the agent
-  // will do before actually creating it. Skip if already approved.
-  if (context.conversationId && !input._planApproved) {
-    const agentPlan = buildAgentRunPlan(input);
+  const agentName = input.name.trim();
+  const taskDescription = input.task_description.trim();
+  const outputChannel = input.output_channel || 'gmail';
+  const agentParams = {
+    name: agentName,
+    task_description: taskDescription,
+    cron_schedule: cron,
+    output_channel: outputChannel,
+    slack_channel: input.slack_channel || null,
+    skip_confirmations: input.skip_confirmations ?? false,
+    expires_at: input.expires_at || null,
+  };
+
+  // ── STAGE 1 — Spec confirmation ────────────────────────────────────────────
+  // First call from an interactive session: render the spec to canvas and ask
+  // the user to Confirm or Edit. No DB write, no plan card yet.
+  // skip_confirmations: true in the inputs bypasses this stage too (the agent
+  // owner already opted in to autonomy at the call site).
+  if (
+    context.conversationId &&
+    !input._creationStage &&
+    !input._planApproved
+  ) {
+    const specMarkdown = (input.spec_markdown || '').trim();
+    if (!specMarkdown) {
+      return failureResult(
+        'Cannot show the agent spec — spec_markdown is required on the first call. ' +
+        'Write the full specification document (H1 title, ## 1. Agent Objective, ## 2. Operational Logic, ' +
+        '## 3. Schedule & Delivery, ## 4. Expected Output) and pass it in spec_markdown, then call this tool again.',
+        'validation_error',
+      );
+    }
+
+    // Persist the spec to canvas state so update_canvas / inspection can read it later.
+    if (context.conversationId) {
+      await setCanvasState({
+        conversationId: context.conversationId,
+        userId,
+        title: agentName,
+        type: 'agent_spec',
+        markdown: specMarkdown,
+      });
+    }
+
     return {
-      output: `Before I create this agent, here's what it will do every time it runs. Approve the plan to create it.`,
+      output:
+        `Here's the spec for **${agentName}**. Review it in the canvas, then click Confirm to continue, or Edit if you want to adjust it.\n\n` +
+        `IMPORTANT: Do NOT call create_scheduled_agent again. Wait for the user to click Confirm — the UI will send the next message automatically.`,
       canvasData: {
-        title: `Agent Plan: ${input.name.trim()}`,
-        type: 'agent_plan_preview',
-        markdown: '',
+        title: agentName,
+        type: 'agent_spec_confirm',
+        markdown: specMarkdown,
         pageMeta: {
-          agentName: input.name.trim(),
-          taskDescription: input.task_description.trim(),
-          cronSchedule: cron,
-          outputChannel: input.output_channel || 'gmail',
-          agentPlan,
-          agentParams: {
-            name: input.name.trim(),
-            task_description: input.task_description.trim(),
-            cron_schedule: cron,
-            output_channel: input.output_channel || 'gmail',
-            slack_channel: input.slack_channel || null,
-            skip_confirmations: input.skip_confirmations ?? false,
-            expires_at: input.expires_at || null,
-          },
+          agentName,
+          stage: 'spec_confirm',
+          agentParams,
         } as any,
       },
       requiresConfirmation: true,
     };
   }
-  // ── End agent plan preview gate ─────────────────────────────────────────────
+
+  // ── STAGE 2 — Run-time plan preview ────────────────────────────────────────
+  // User clicked "Confirm spec" → UI sent a message asking for the plan stage.
+  // Show the PlanPreviewCard with what the agent will do every run.
+  if (
+    context.conversationId &&
+    input._creationStage === 'plan' &&
+    !input._planApproved
+  ) {
+    const agentPlan = buildAgentRunPlan(input);
+    return {
+      output:
+        `Spec confirmed. Here's what **${agentName}** will do every time it runs. ` +
+        `Click Execute plan to register it, or Edit plan to adjust the steps.\n\n` +
+        `IMPORTANT: Do NOT call create_scheduled_agent again. Wait for the user to approve the plan.`,
+      canvasData: {
+        title: `Agent Plan: ${agentName}`,
+        type: 'agent_plan_preview',
+        markdown: '',
+        pageMeta: {
+          agentName,
+          taskDescription,
+          cronSchedule: cron,
+          outputChannel,
+          agentPlan,
+          agentParams,
+        } as any,
+      },
+      requiresConfirmation: true,
+    };
+  }
+  // ── End spec/plan preview stages ────────────────────────────────────────────
 
   // ── Integration gate ────────────────────────────────────────────────────────
   const required = detectRequiredIntegrations(input.task_description, input.output_channel || 'gmail');

@@ -126,9 +126,27 @@ function hasPlaceholders(text: string): boolean {
 }
 
 // Detects step-listing responses: LLM lists what tools it ran instead of answering the question.
-// Patterns: "Done — completed Searched inbox for...", "Done — I handled search gmail...",
-// or any response whose first sentence is just a tool recap with no substantive content.
-const STEP_LIST_PATTERN = /^(done\s*[—–-]\s*(completed|i handled|i ran|executed|performed)\s+(?:searched|search|read|fetch|check|look|scan|get)|done\s*[—–-]\s*(?:searched\s+inbox|read\s+email|fetch|checked\s+calendar)|i\s+(?:searched|read|fetched|checked|scanned)\s+(?:the\s+)?(?:inbox|gmail|calendar|notion|slack)\s+(?:for|and)\b)/i;
+// Three shapes we catch:
+//   (a) "Done — completed Searched inbox for..." — verb-then-tool
+//   (b) "Done — completed Completed gmail get profile" — double-completion + tool name
+//   (c) "Done — completed gmail get profile, Running create scheduled agent" — tool-name salad
+//   (d) "I searched the inbox and..." — first-person narration of what was searched
+const STEP_LIST_PATTERN = /^(done\s*[—–-]\s*(completed|i handled|i ran|executed|performed|opened|running|finished)\s+((completed|opened|running|finished)\s+)?(?:searched|search|read|fetch|check|look|scan|get|gmail|calendar|notion|slack|create|update|draft|send|schedule|run)|done\s*[—–-]\s*(?:searched\s+inbox|read\s+email|fetch|checked\s+calendar)|i\s+(?:searched|read|fetched|checked|scanned)\s+(?:the\s+)?(?:inbox|gmail|calendar|notion|slack)\s+(?:for|and)\b)/i;
+
+// "Tool-name salad" detector — sentences whose nouns/verbs are dominated by underscored
+// tool names ("gmail_get_profile", "create_scheduled_agent", "open_canvas").
+// If a short response is mostly tool-name salad with no substantive English, it's a step list.
+function isToolNameSalad(text: string): boolean {
+  const t = text.trim();
+  if (t.length > 500) return false;
+  // Look for two or more bare tool-shaped phrases: lowercase verb + space + lowercase noun
+  // ("gmail get profile", "create scheduled agent", "open canvas", "search gmail")
+  const toolPhraseCount = (t.match(/\b(gmail|calendar|notion|slack|canvas|scheduled|drafted?|sent?|read)\s+(get|create|open|update|send|run|read|search|apply|archive|find)(?:\s+\w+)?/gi) || []).length;
+  if (toolPhraseCount < 2) return false;
+  // ...AND no substantive content words
+  const hasSubstance = /\b(because|since|so that|found|says|reads|wrote|subject|from|to|body|threadId removed|meeting|event|time|date|reason|error|missing|no \w+ found|drafted (?:a|the) reply (?:to|about))\b/i.test(t);
+  return !hasSubstance;
+}
 
 // A step-listing response has short length with no real info, or starts with a step recap
 // and the whole body is just a comma-separated list of tool actions.
@@ -137,11 +155,16 @@ function isStepListingResponse(text: string, toolsWereCalled: boolean): boolean 
   const t = text.trim();
   if (!t || t.length > 1200) return false; // Long responses likely have real content
   if (STEP_LIST_PATTERN.test(t)) return true;
+  if (isToolNameSalad(t)) return true;
   // Catch the pattern: "Done — I handled X, Y and Z for you." with only tool names
   if (/^done\s*[—–-]/i.test(t) && /\bfor you\b/i.test(t) && t.length < 300) {
     // Check if the text is primarily a list of actions/tool names
     const hasRealContent = /\b(found|says|email|subject|from|body|content|result|message|reply|thread|schedule|event|meeting|note|page|slack|notion)\b/i.test(t);
     if (!hasRealContent) return true;
+  }
+  // "Waiting for your approval" / "waiting on approval" without any substance
+  if (/^done\s*[—–-]/i.test(t) && /\bwaiting\s+(for|on)\s+(your\s+)?approval/i.test(t) && t.length < 250) {
+    return true;
   }
   return false;
 }

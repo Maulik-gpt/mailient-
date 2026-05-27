@@ -675,6 +675,12 @@ interface AgentMessage {
       agentPlan: PlanPreviewData;
       agentParams: Record<string, any>;
     };
+    /** Stage-1 spec confirmation — shown after create_scheduled_agent first call */
+    agentSpecConfirm?: {
+      agentName: string;
+      specMarkdown: string;
+      agentParams: Record<string, any>;
+    };
   };
 }
 
@@ -2722,6 +2728,38 @@ export default function ChatInterface({
                 setMessages(msgs => msgs.map(m => {
                   if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                   return { ...m, meta: { ...(m.meta || {}), confirmationData } };
+                }));
+                break;
+              }
+
+              // ── Agent spec confirmation (Stage 1) ────────────────────────────
+              // Emitted by create_scheduled_agent Stage 1. Renders the spec
+              // inside the canvas panel AND shows a chat-side card with
+              // Confirm/Edit buttons. User clicks Confirm → frontend sends a
+              // structured message that re-invokes the tool with _creationStage: "plan".
+              if (cv.type === 'agent_spec_confirm' && cv.pageMeta) {
+                const pm = cv.pageMeta as any;
+                // Auto-open the canvas panel with the spec
+                setCanvasData({
+                  title: cv.title || pm.agentName,
+                  type: 'report',
+                  raw: cv.markdown || '',
+                  content: cv.markdown || '',
+                } as any);
+                setIsCanvasOpen(true);
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      agentSpecConfirm: {
+                        agentName: pm.agentName || cv.title,
+                        specMarkdown: cv.markdown || '',
+                        agentParams: pm.agentParams || {},
+                      },
+                    },
+                  };
                 }));
                 break;
               }
@@ -5404,6 +5442,96 @@ export default function ChatInterface({
                                           }
                                         }}
                                       />
+                                    )}
+
+                                    {/* Agent Spec Confirmation (Stage 1) — shown before plan preview */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSpecConfirm && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+                                        className={cn(
+                                          'mt-3 w-full rounded-[20px] border overflow-hidden',
+                                          isDark
+                                            ? 'bg-white/[0.04] border-white/[0.09] shadow-[0_4px_24px_rgba(0,0,0,0.3)]'
+                                            : 'bg-white border-black/[0.09] shadow-sm',
+                                        )}
+                                      >
+                                        <div className={cn(
+                                          'flex items-center gap-2.5 px-4 py-3 border-b',
+                                          isDark ? 'border-white/[0.07]' : 'border-black/[0.06]',
+                                        )}>
+                                          <span className="text-base">📋</span>
+                                          <span className={cn(
+                                            'text-[13px] font-bold',
+                                            isDark ? 'text-white/90' : 'text-neutral-900',
+                                          )}>
+                                            Review the spec
+                                          </span>
+                                        </div>
+                                        <div className="px-4 py-3">
+                                          <p className={cn(
+                                            'text-[13px] leading-relaxed',
+                                            isDark ? 'text-white/65' : 'text-neutral-600',
+                                          )}>
+                                            The full specification for <strong>{(msg as AgentMessage).meta!.agentSpecConfirm!.agentName}</strong> is open in the canvas. Confirm to continue to the run-time plan, or edit the canvas first.
+                                          </p>
+                                        </div>
+                                        <div className={cn(
+                                          'flex items-center gap-2.5 px-4 py-3 border-t',
+                                          isDark ? 'border-white/[0.06]' : 'border-black/[0.05]',
+                                        )}>
+                                          <button
+                                            onClick={() => {
+                                              const sc = (msg as AgentMessage).meta!.agentSpecConfirm!;
+                                              const p = sc.agentParams || {};
+                                              setMessages(prev => prev.map(m =>
+                                                m.id === msg.id && m.type === 'agent'
+                                                  ? { ...m, meta: { ...(m as AgentMessage).meta, agentSpecConfirm: undefined } }
+                                                  : m
+                                              ));
+                                              if (currentConversationId) {
+                                                const planMsg = [
+                                                  `Spec approved for "${sc.agentName}". Continue to the run-time plan stage.`,
+                                                  `Call create_scheduled_agent with these exact parameters AND _creationStage: "plan":`,
+                                                  `- name: "${p.name || sc.agentName}"`,
+                                                  `- task_description: "${p.task_description || ''}"`,
+                                                  `- cron_schedule: "${p.cron_schedule || '0 7 * * *'}"`,
+                                                  `- output_channel: "${p.output_channel || 'gmail'}"`,
+                                                  ...(p.slack_channel ? [`- slack_channel: "${p.slack_channel}"`] : []),
+                                                  `- skip_confirmations: ${p.skip_confirmations ?? false}`,
+                                                  `- _creationStage: "plan"`,
+                                                ].join('\n');
+                                                processAIMessage(planMsg, currentConversationId, false, [], { isPlanMode: false });
+                                              }
+                                            }}
+                                            className="flex-1 py-2 rounded-xl text-[13px] font-bold transition-all bg-indigo-500 hover:bg-indigo-400 text-white shadow-[0_0_12px_rgba(99,102,241,0.2)]"
+                                          >
+                                            Confirm spec
+                                          </button>
+                                          <button
+                                            onClick={() => {
+                                              // Just open canvas — user edits inline, then clicks Confirm spec
+                                              const sc = (msg as AgentMessage).meta!.agentSpecConfirm!;
+                                              setCanvasData({
+                                                title: sc.agentName,
+                                                type: 'report',
+                                                raw: sc.specMarkdown,
+                                                content: sc.specMarkdown,
+                                              } as any);
+                                              setIsCanvasOpen(true);
+                                            }}
+                                            className={cn(
+                                              'px-4 py-2 rounded-xl text-[13px] font-medium border transition-all',
+                                              isDark
+                                                ? 'border-white/[0.12] text-white/60 hover:bg-white/[0.05]'
+                                                : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50',
+                                            )}
+                                          >
+                                            Edit in canvas
+                                          </button>
+                                        </div>
+                                      </motion.div>
                                     )}
 
                                     {/* PART 10 Fix 7: Agent Plan Preview — shown before creating a scheduled agent */}
