@@ -29,39 +29,26 @@ export interface SystemPromptOptions {
 }
 
 /**
- * Tool inventory by integration. RC1: the system prompt only names tools; the
- * full schema (description, inputs, output shape, error codes) lives in the
- * tool definition the LLM receives alongside the prompt. Describing tool
- * behaviour in prose here is what caused the LLM to pattern-match narration
- * ("Searching inbox…") instead of actually calling the tool.
+ * Tool inventory by integration. F4.3 — Auto-derived from the canonical
+ * TOOL_INTEGRATION_MAP at module load. Adding a new tool to that map
+ * automatically makes it visible to the LLM in the capability listing here;
+ * no parallel list to maintain.
+ *
+ * RC1: the system prompt only names tools; the full schema (description,
+ * inputs, output shape, error codes) lives in the tool definition the LLM
+ * receives alongside the prompt. Describing tool behaviour in prose here is
+ * what caused the LLM to pattern-match narration ("Searching inbox…") instead
+ * of actually calling the tool.
  */
-const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] }> = {
-  gmail: {
-    label: 'Gmail',
-    tools: [
-      'search_gmail', 'read_email', 'gmail_read_thread', 'get_sent_emails',
-      'draft_reply', 'draft_cold_email', 'draft_review', 'send_email',
-      'gmail_get_labels', 'gmail_apply_label', 'gmail_archive_thread', 'gmail_get_profile',
-      'check_followups', 'digest_newsletters',
-    ],
-  },
-  gcal: {
-    label: 'Google Calendar',
-    tools: ['get_calendar_events', 'calendar_get_availability', 'schedule_meeting', 'calendar_cancel_event'],
-  },
-  notion: {
-    label: 'Notion',
-    tools: ['search_notion', 'notion_read_page', 'fetch_notion_schema', 'create_notion_page', 'notion_create_task', 'notion_get_calendar_events'],
-  },
-  notion_calendar: {
-    label: 'Notion Calendar',
-    tools: ['search_notion', 'notion_read_page', 'fetch_notion_schema', 'create_notion_page', 'notion_create_task', 'notion_get_calendar_events'],
-  },
-  slack: {
-    label: 'Slack',
-    tools: ['send_slack_message', 'slack_find_user', 'slack_send_dm', 'slack_get_channels'],
-  },
-};
+import { INTEGRATION_LABELS, toolsForIntegration } from './tool-integration-map';
+
+const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] }> =
+  Object.fromEntries(
+    Object.entries(INTEGRATION_LABELS).map(([key, label]) => [
+      key,
+      { label, tools: toolsForIntegration(key) },
+    ]),
+  );
 
 const ALL_INTEGRATION_KEYS = Object.keys(INTEGRATION_CAPABILITIES);
 
@@ -685,13 +672,13 @@ The schema for each tool tells you what it does, what it takes, and what it retu
 - **\`draft_reply\` is the soft-write path** — it saves a draft for review; \`send_email\` is the hard send and is gated by \`request_confirmation\`.
 - **\`digest_newsletters\`** — only when the user explicitly asks to clear or digest newsletters; do not auto-archive otherwise.
 
-${opts.skipConfirmations ? `## Confirmations are OFF for this session
+${(opts.skipConfirmations || opts.isBackgroundAgent) ? `## Confirmations are OFF for this session
 
-The user has set \`skip_confirmations: true\`. You have FULL autonomy:
+${opts.isBackgroundAgent ? 'You are a background agent. There is no user present to click Confirm — the infrastructure handles gating automatically.' : 'The user has set `skip_confirmations: true`. You have FULL autonomy:'}
 - Call \`send_email\`, \`schedule_meeting\`, \`send_slack_message\`, \`create_notion_page\` DIRECTLY. Execute the work.
 - **NEVER call \`request_confirmation\`.** There is nothing to confirm. Every confirmation card is a UX failure.
 - Do NOT write "should I proceed?" / "let me know if you'd like me to..." / "I'll go ahead and..." in chat. Just do it.
-- The state-machine guards in the executor are bypassed when skip_confirmations is on — call write tools at any time without a preceding gate.` : `## Confirmation required before major actions
+- The state-machine guards in the executor are bypassed in this mode — call write tools at any time without a preceding gate.` : `## Confirmation required before major actions
 
 Before executing any of the following, you MUST call \`request_confirmation\` first:
 - **\`send_email\`** — directly sending an email

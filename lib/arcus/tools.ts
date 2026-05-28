@@ -2030,7 +2030,17 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
 
 // ── Integration → tool mapping ─────────────────────────────────────────────────
 // null = always available (no integration needed)
-const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
+// F4.3 — The actual map lives in lib/arcus/tool-integration-map.ts so
+// system-prompt.ts can import it without creating a circular dep on this
+// 9000-line file. Re-export so other callers (loop, autonomy, etc) that
+// historically imported from './tools' still resolve.
+export { TOOL_INTEGRATION_MAP as _TOOL_INTEGRATION_MAP } from './tool-integration-map';
+import { TOOL_INTEGRATION_MAP } from './tool-integration-map';
+export { TOOL_INTEGRATION_MAP };
+
+// Legacy inline map kept temporarily for diff readability — UNUSED.
+// TODO: delete in a follow-up sweep once the extracted map is verified live.
+const _REMOVED_INLINE_INTEGRATION_MAP_DO_NOT_USE: Record<string, string | null> = {
   search_gmail: 'gmail',
   read_email: 'gmail',
   gmail_read_thread: 'gmail',

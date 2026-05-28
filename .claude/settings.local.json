@@ -8,7 +8,8 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "PowerShell(git commit -F .commit-msg.tmp)",
-      "PowerShell(git push origin main)"
+      "PowerShell(git push origin main)",
+      "PowerShell(git add -A)"
     ]
   }
 }

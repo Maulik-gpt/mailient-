@@ -131,9 +131,11 @@ If a tool was queued for approval (skip_confirmations was OFF): say "Queued — 
 If no artifacts were created this run, write: "No artifacts produced — this was a read-only scan." Do NOT pad with filler.
 
 ---
-Sent by Arcus for Mailient • mailient.xyz
+Sent by Arcus for Mailient • [mailient.xyz](https://mailient.xyz/dashboard?tab=agents)
 Run completed: [INSERT_CURRENT_UTC_TIMESTAMP]
 Next run: [derive from agent's cron schedule — e.g. "Tomorrow at 9:00 AM" or "Monday at 8:00 AM". If schedule unknown, omit this line.]
+
+[Edit this agent](https://mailient.xyz/dashboard?tab=agents&agentId=[INSERT_AGENT_ID]) · [Pause](https://mailient.xyz/dashboard?tab=agents&agentId=[INSERT_AGENT_ID]&action=pause) · [Run history](https://mailient.xyz/dashboard?tab=agents&agentId=[INSERT_AGENT_ID]&view=history)
 
 **VOICE & TONE (NON-NEGOTIABLE):**
 - First person from Arcus: "I drafted 6 replies" not "6 replies were drafted."
@@ -208,11 +210,13 @@ export async function buildAgentLoopArgs(
     agentTaskDescription: taskDescription,
   });
 
-  // Stamp the current UTC time into the report footer at call time (not module-load time)
-  const reportSuffix = REPORT_FORMAT_SUFFIX.replace(
-    '[INSERT_CURRENT_UTC_TIMESTAMP]',
-    new Date().toUTCString(),
-  );
+  // Stamp the current UTC time AND the agent id into the report footer at
+  // call time (not module-load time). F9.4 — every report now has deep-links
+  // to the agent's settings page for edit / pause / history.
+  const agentIdForFooter = agent.id || '';
+  const reportSuffix = REPORT_FORMAT_SUFFIX
+    .replace('[INSERT_CURRENT_UTC_TIMESTAMP]', new Date().toUTCString())
+    .replace(/\[INSERT_AGENT_ID\]/g, agentIdForFooter);
 
   return {
     userId,

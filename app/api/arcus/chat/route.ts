@@ -189,6 +189,13 @@ export async function POST(request: NextRequest) {
   // conservative — false positives create noise in the user's settings card.
   (async () => {
     try {
+      // F7.2 — Tightened patterns. The previous "always X" / "never X"
+      // matched everyday speech like "Always loved that movie" → saved as
+      // a behavioral rule. Now the always/never pattern REQUIRES an
+      // assistive-action verb after it (cc, bcc, include, notify, send,
+      // schedule, draft, use, sign, reply, archive, mention) so it only
+      // triggers on instructions to the AI, not casual prose.
+      const ASSISTIVE_VERBS = '(?:cc|bcc|include|add|attach|notify|alert|send|schedule|book|draft|use|sign|reply|respond|archive|label|tag|mention|file|forward|copy|set|prefer|treat|prioritize|skip|ignore|hide)';
       const REMEMBER_PATTERNS: Array<{ re: RegExp; group: number }> = [
         // "remember that <fact>", "remember <fact>"
         { re: /\bremember\s+(?:that\s+|this:\s*)?(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
@@ -198,8 +205,8 @@ export async function POST(request: NextRequest) {
         { re: /\b(?:save\s+(?:this\s+)?(?:to|in|as)\s+memory|note\s+for\s+(?:later|me))[:\s]+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
         // "from now on, <rule>"
         { re: /\bfrom\s+now\s+on[,:\s]+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
-        // "always <verb> ..." / "never <verb> ..." at start of message
-        { re: /^\s*(always|never)\s+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 0 },
+        // "always <assistive verb> ..." / "never <assistive verb> ..." at start of message
+        { re: new RegExp(`^\\s*(always|never)\\s+${ASSISTIVE_VERBS}\\s+(.{8,300}?)(?:[.!?]\\s*$|[.!?]\\s+\\w)`, 'i'), group: 0 },
       ];
       for (const { re, group } of REMEMBER_PATTERNS) {
         const m = message.match(re);
