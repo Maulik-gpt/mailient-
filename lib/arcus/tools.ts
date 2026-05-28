@@ -1242,6 +1242,109 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       },
     },
   },
+  // ── PART 8 — Orchestration / utility tools ────────────────────────────────
+  {
+    name: 'agent_task_queue_management',
+    description:
+      'Prioritize a free-form task list by tier (1=client/revenue, 2=qualified leads, 3=scheduling, 4=other) and group adjacent same-tool tasks into batches with a suggestion of which bulk tool to call. ' +
+      'Output: JSON with prioritized list + batch suggestions. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        tasks: {
+          type: 'array',
+          description: 'List of { tool?, description, ... } items to prioritize.',
+          items: { type: 'object' },
+        },
+      },
+      required: ['tasks'],
+    },
+  },
+  {
+    name: 'error_recovery_and_retries',
+    description:
+      'Retry-with-exponential-backoff wrapper for any tool. Specify toolName, toolInput, maxAttempts (1-5, default 3), initialBackoffMs (100-5000, default 1000). Stops on first success; reports the full attempt log on final failure. ' +
+      'Output: JSON with ok/finalAttempt/attempts. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        toolName: { type: 'string' },
+        toolInput: { type: 'object' },
+        maxAttempts: { type: 'number' },
+        initialBackoffMs: { type: 'number' },
+      },
+      required: ['toolName', 'toolInput'],
+    },
+  },
+  {
+    name: 'performance_monitoring_and_optimization',
+    description:
+      'Query arcus_audit_log for the user\'s recent tool-call stats: per-tool calls, success rate, avg duration, max duration. Flags bottlenecks (avg > 3s) and error-prone tools (success rate < 80% with 3+ calls). Returns a recommendation. ' +
+      'Output: JSON. Errors: upstream_db.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        days: { type: 'number', description: '1-30, default 7.' },
+      },
+    },
+  },
+  {
+    name: 'output_formatting_and_presentation',
+    description:
+      'Reformat raw content into a target format: briefing (executive markdown), report (structured markdown), slack-mrkdwn (Slack mrkdwn no tables), email-html (inline-styled HTML). Use at end of agent run to turn accumulated work into a deliverable. ' +
+      'Output: formatted string. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string' },
+        format: { type: 'string', enum: ['briefing', 'report', 'slack-mrkdwn', 'email-html'], description: 'Default "briefing".' },
+        title: { type: 'string' },
+      },
+      required: ['content'],
+    },
+  },
+  // ── PART 7 — Web & external research tools ────────────────────────────────
+  {
+    name: 'web_search_unlimited',
+    description:
+      'Run up to 20 web_search queries in parallel and return the union as { query: result } JSON. Use to cover multiple angles of one research target in a single call. ' +
+      'Output: JSON. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        queries: { type: 'array', items: { type: 'string' } },
+        perQueryLimit: { type: 'number', description: '1-15, default 5.' },
+      },
+      required: ['queries'],
+    },
+  },
+  {
+    name: 'company_intelligence_research',
+    description:
+      'Deep research on a company: runs 5 parallel web searches (overview, funding, leadership, recent news, competitors), then LLM-distills into a JSON profile (summary, industry, size, fundingStage, recentFunding, leadership, recentNews, competitors, signals). ' +
+      'Output: JSON. Errors: validation_error, no_results.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string' },
+      },
+      required: ['company'],
+    },
+  },
+  {
+    name: 'contact_research_and_verification',
+    description:
+      'Research a person via web search (LinkedIn API is not available, so this uses public results only). Returns JSON with verifiedEmail, title, company, profileUrl, background, confidence level. Also reports emailFormatOk for format-level validation. ' +
+      'Output: JSON. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        name: { type: 'string' },
+        company: { type: 'string' },
+        email: { type: 'string' },
+      },
+    },
+  },
   // ── PART 6 — Content generation tools ─────────────────────────────────────
   {
     name: 'generate_email_sequence',
@@ -2020,6 +2123,13 @@ const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   generate_client_reports: null,
   generate_sow_documents: null,
   generate_internal_documentation: 'notion',
+  web_search_unlimited: null,
+  company_intelligence_research: null,
+  contact_research_and_verification: null,
+  agent_task_queue_management: null,
+  error_recovery_and_retries: null,
+  performance_monitoring_and_optimization: null,
+  output_formatting_and_presentation: null,
   get_delegation_rules: null,
   create_delegation_rule: null,
 };
@@ -2306,6 +2416,15 @@ export async function executeTool(
       case 'generate_client_reports':             result = await generateClientReports(userId, input, context); break;
       case 'generate_sow_documents':              result = await generateSowDocuments(userId, input); break;
       case 'generate_internal_documentation':     result = await generateInternalDocumentation(userId, input, context); break;
+      // PART 7 — Research
+      case 'web_search_unlimited':                result = await webSearchUnlimited(userId, input); break;
+      case 'company_intelligence_research':       result = await companyIntelligenceResearch(userId, input); break;
+      case 'contact_research_and_verification':   result = await contactResearchAndVerification(userId, input); break;
+      // PART 8 — Orchestration
+      case 'agent_task_queue_management':         result = await agentTaskQueueManagement(userId, input); break;
+      case 'error_recovery_and_retries':          result = await errorRecoveryAndRetries(userId, input, context); break;
+      case 'performance_monitoring_and_optimization': result = await performanceMonitoringAndOptimization(userId, input); break;
+      case 'output_formatting_and_presentation':  result = await outputFormattingAndPresentation(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -8230,6 +8349,299 @@ async function notionGenerateWeeklySummaries(userId: string, input: any, context
     content,
   }, context);
   return { output: created.output };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 8 — Orchestration / utility tools
+// ════════════════════════════════════════════════════════════════════════════
+
+async function agentTaskQueueManagement(userId: string, input: any): Promise<ToolResult> {
+  // Returns the agent's recommended task ordering based on a simple priority
+  // model — Tier 1 client work first, Tier 2 revenue, Tier 3 scheduling, then
+  // anything else. Pairs with build_worklist (which already does Tier scoring)
+  // but is callable on a free-form list of tasks the LLM holds.
+  const tasks: any[] = Array.isArray(input?.tasks) ? input.tasks : [];
+  if (!tasks.length) return failureResult('tasks is required.', 'validation_error');
+
+  const KEYWORDS = {
+    1: /\b(client|contract|deal|signed|invoice|payment|revenue|proposal|sow|renewal|negotiat)\b/i,
+    2: /\b(prospect|qualified|inquir|lead|demo|pitch|pricing|quote)\b/i,
+    3: /\b(meeting|schedule|book|availability|calendar|invite|sync|call)\b/i,
+  };
+  const scored = tasks.map((t, idx) => {
+    const text = JSON.stringify(t);
+    let tier = 4;
+    if (KEYWORDS[1].test(text)) tier = 1;
+    else if (KEYWORDS[2].test(text)) tier = 2;
+    else if (KEYWORDS[3].test(text)) tier = 3;
+    return { originalIndex: idx, tier, task: t };
+  });
+  scored.sort((a, b) => a.tier - b.tier);
+
+  // Group adjacent same-tool tasks for batching hints
+  const batches: Array<{ tier: number; tasks: any[]; suggestion: string }> = [];
+  let cur: { tier: number; tasks: any[]; tool?: string } | null = null;
+  for (const s of scored) {
+    const tool = (s.task.tool || '').toLowerCase();
+    if (cur && cur.tier === s.tier && cur.tool === tool) {
+      cur.tasks.push(s.task);
+    } else {
+      if (cur) batches.push({ tier: cur.tier, tasks: cur.tasks, suggestion: cur.tool ? `Batch via ${cur.tool}` : 'Process sequentially' });
+      cur = { tier: s.tier, tasks: [s.task], tool };
+    }
+  }
+  if (cur) batches.push({ tier: cur.tier, tasks: cur.tasks, suggestion: cur.tool ? `Batch via ${cur.tool}` : 'Process sequentially' });
+
+  return { output: JSON.stringify({ totalTasks: tasks.length, prioritized: scored, batches }, null, 2) };
+}
+
+async function errorRecoveryAndRetries(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // Retry-with-backoff wrapper for any tool. The LLM provides the tool name,
+  // input, max attempts (default 3), and initial backoff ms (default 1000).
+  const toolName = (input?.toolName || '').trim();
+  const toolInput = input?.toolInput || {};
+  const maxAttempts = Math.max(1, Math.min(5, Number(input?.maxAttempts) || 3));
+  const initialBackoffMs = Math.max(100, Math.min(5000, Number(input?.initialBackoffMs) || 1000));
+  if (!toolName) return failureResult('toolName is required.', 'validation_error');
+
+  const attempts: Array<{ attempt: number; ok: boolean; output: string; backoffMsBefore?: number }> = [];
+  let backoff = initialBackoffMs;
+  for (let i = 0; i < maxAttempts; i++) {
+    if (i > 0) {
+      attempts[i - 1].backoffMsBefore = backoff;
+      await new Promise(r => setTimeout(r, backoff));
+      backoff *= 2;
+    }
+    try {
+      const r = await executeTool(toolName, toolInput, userId, context);
+      attempts.push({ attempt: i + 1, ok: r.success !== false, output: r.output.slice(0, 300) });
+      if (r.success !== false) {
+        return { output: JSON.stringify({ ok: true, finalAttempt: i + 1, attempts }, null, 2) };
+      }
+    } catch (err: any) {
+      attempts.push({ attempt: i + 1, ok: false, output: `threw: ${err.message}` });
+    }
+  }
+  return {
+    output: JSON.stringify({
+      ok: false,
+      finalAttempt: maxAttempts,
+      attempts,
+      escalate: 'All attempts failed. Surface the failure to the user with the first attempt\'s error message in plain English; do not silently retry beyond this.',
+    }, null, 2),
+  };
+}
+
+async function performanceMonitoringAndOptimization(userId: string, input: any): Promise<ToolResult> {
+  // Query the existing arcus_audit_log table for the agent's recent stats
+  const days = Math.max(1, Math.min(30, Number(input?.days) || 7));
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('arcus_audit_log')
+      .select('tool_name, success, duration_ms, created_at')
+      .eq('user_id', userId.toLowerCase())
+      .gte('created_at', since)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) return failureResult(`Audit log query failed: ${error.message}`, 'upstream_db');
+
+    const rows = data || [];
+    if (!rows.length) return { output: 'No audit log activity in the window.' };
+
+    // Aggregate
+    const byTool = new Map<string, { calls: number; ok: number; fail: number; totalMs: number; maxMs: number }>();
+    for (const r of rows) {
+      const name = r.tool_name as string;
+      if (!byTool.has(name)) byTool.set(name, { calls: 0, ok: 0, fail: 0, totalMs: 0, maxMs: 0 });
+      const stats = byTool.get(name)!;
+      stats.calls++;
+      if (r.success) stats.ok++; else stats.fail++;
+      const ms = Number(r.duration_ms) || 0;
+      stats.totalMs += ms;
+      if (ms > stats.maxMs) stats.maxMs = ms;
+    }
+    const report = [...byTool.entries()]
+      .map(([name, s]) => ({
+        tool: name,
+        calls: s.calls,
+        successRate: Math.round((s.ok / s.calls) * 100),
+        avgMs: Math.round(s.totalMs / s.calls),
+        maxMs: s.maxMs,
+      }))
+      .sort((a, b) => b.calls - a.calls);
+
+    const bottlenecks = report.filter(r => r.avgMs > 3000).map(r => `${r.tool} avg ${r.avgMs}ms`);
+    const errorProne = report.filter(r => r.successRate < 80 && r.calls >= 3).map(r => `${r.tool} ${r.successRate}%`);
+
+    return {
+      output: JSON.stringify({
+        windowDays: days,
+        totalCalls: rows.length,
+        perTool: report,
+        bottlenecks,
+        errorProneTools: errorProne,
+        recommendation: bottlenecks.length > 0 || errorProne.length > 0
+          ? 'Consider batching slow tools (Promise.all wrapper) or adding retries for error-prone tools.'
+          : 'No bottlenecks. Performance looks healthy.',
+      }, null, 2),
+    };
+  } catch (err: any) {
+    return failureResult(`Performance scan failed: ${err.message}`, 'internal_error');
+  }
+}
+
+async function outputFormattingAndPresentation(userId: string, input: any): Promise<ToolResult> {
+  // LLM-callable formatter. Takes a "raw" string (data dump) and a target
+  // format (briefing | report | slack-mrkdwn | email-html), returns the
+  // formatted output. The agent uses this at the end of a run to turn its
+  // accumulated work into a clean deliverable.
+  const content = (input?.content || '').trim();
+  const format = (input?.format || 'briefing').toLowerCase();
+  const title = (input?.title || '').trim();
+  if (!content) return failureResult('content is required.', 'validation_error');
+
+  const formatInstructions: Record<string, string> = {
+    briefing: 'Format as a concise executive briefing in markdown. Lead with a 1-line summary. Use tables for >3 items. Bold key numbers. No filler. Section emojis (💰 🤝 ⚙️ ⚠️ 🔗) at section headers only.',
+    report: 'Format as a structured report in markdown. Use H1 title, H2 sections. Tables for tabular data. Be specific. No filler. Insert a 1-line summary as the first paragraph.',
+    'slack-mrkdwn': 'Format as Slack mrkdwn: *bold* with single asterisks, _italic_ with underscores, no markdown headings (use *Section Name* on its own line instead). Targeted emojis. No tables (Slack mrkdwn does not support them; use bullet lists instead).',
+    'email-html': 'Format as a clean HTML email. Inline styles only. Bordered tables. Bold key metrics. No external CSS. No emojis in HTML attributes.',
+  };
+  const instruction = formatInstructions[format] || formatInstructions.briefing;
+
+  const r = await callLLM(
+    [
+      { role: 'system', content: `You are a formatter. ${instruction} Do not add information not present in the input.` },
+      { role: 'user', content: title ? `Title: ${title}\n\nContent:\n${content.slice(0, 10000)}` : content.slice(0, 10000) },
+    ],
+    [], { maxTokens: 3000, temperature: 0.2 },
+  );
+  return { output: getText(r.content).trim() };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PART 7 — Web & external research tools
+// ════════════════════════════════════════════════════════════════════════════
+
+async function webSearchUnlimited(userId: string, input: any): Promise<ToolResult> {
+  const queries: string[] = Array.isArray(input?.queries) ? input.queries.map((s: any) => String(s).trim()).filter(Boolean) : [];
+  if (!queries.length) return failureResult('queries is required (non-empty array).', 'validation_error');
+  const perQueryLimit = Math.max(1, Math.min(15, Number(input?.perQueryLimit) || 5));
+
+  const slice = queries.slice(0, 20);
+  const results = await Promise.all(slice.map(async (q) => {
+    try {
+      const r = await webSearch({ query: q, maxResults: perQueryLimit });
+      return { query: q, ok: r.success !== false, output: r.output.slice(0, 2500) };
+    } catch (err: any) {
+      return { query: q, ok: false, output: `error: ${err.message}` };
+    }
+  }));
+  return { output: JSON.stringify(results, null, 2) };
+}
+
+const COMPANY_RESEARCH_PROMPT = `Distill the search results into a company intelligence profile. Output ONLY JSON:
+{
+  "company": "<name>",
+  "summary": "<one-paragraph overview>",
+  "industry": "<industry>",
+  "size": "<headcount or revenue estimate>",
+  "fundingStage": "<seed/series A-D/public/private/unknown>",
+  "recentFunding": "<latest round if mentioned>",
+  "leadership": ["<name — title>", ...],
+  "recentNews": ["<headline + date>", ...],
+  "competitors": ["<competitor>", ...],
+  "signals": ["<positive signal>", "<negative signal>", ...]
+}
+Only include fields you have evidence for. Do not invent.`;
+
+async function companyIntelligenceResearch(userId: string, input: any): Promise<ToolResult> {
+  const company = (input?.company || '').trim();
+  if (!company) return failureResult('company is required.', 'validation_error');
+
+  const queries = [
+    `${company} company overview`,
+    `${company} funding raised`,
+    `${company} CEO leadership`,
+    `${company} news 2026`,
+    `${company} competitors`,
+  ];
+  const searches = await Promise.all(queries.map(async (q) => {
+    try {
+      const r = await webSearch({ query: q, maxResults: 5 });
+      return r.success !== false ? r.output.slice(0, 2000) : '';
+    } catch { return ''; }
+  }));
+  const corpus = searches.filter(Boolean).join('\n\n---\n\n');
+  if (!corpus) return failureResult('No web search results found.', 'no_results');
+
+  const r = await callLLM(
+    [{ role: 'system', content: COMPANY_RESEARCH_PROMPT }, { role: 'user', content: `Company: ${company}\n\nSearch results:\n${corpus}` }],
+    [], { maxTokens: 1500, temperature: 0.2 },
+  );
+  const raw = getText(r.content).trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return failureResult('Could not extract intelligence JSON.', 'internal_error');
+  try {
+    return { output: JSON.stringify(JSON.parse(m[0]), null, 2) };
+  } catch (e: any) {
+    return failureResult(`JSON parse failed: ${e.message}`, 'internal_error');
+  }
+}
+
+const CONTACT_VERIFY_PROMPT = `Given web search results about a person, return ONLY JSON:
+{
+  "name": "<name>",
+  "verifiedEmail": "<email if confirmed in results>",
+  "title": "<job title>",
+  "company": "<current company>",
+  "profileUrl": "<LinkedIn or other professional URL if found>",
+  "background": "<one-paragraph bio>",
+  "confidence": "high|medium|low",
+  "warnings": ["<any red flag>", ...]
+}
+LinkedIn API access is not available — this verification uses public web results only. Be conservative; set confidence "low" when evidence is thin.`;
+
+async function contactResearchAndVerification(userId: string, input: any): Promise<ToolResult> {
+  const name = (input?.name || '').trim();
+  const company = (input?.company || '').trim();
+  const email = (input?.email || '').trim();
+  if (!name && !email) return failureResult('Either name or email is required.', 'validation_error');
+
+  // 1. Basic email-format check
+  const emailFormatOk = email ? /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) : null;
+  // 2. Web search for the person
+  const queries = [
+    name && company ? `${name} ${company}` : null,
+    name ? `${name} LinkedIn` : null,
+    email ? `${email} site:linkedin.com` : null,
+    email ? email : null,
+  ].filter(Boolean) as string[];
+  const searches = await Promise.all(queries.slice(0, 5).map(async (q) => {
+    try {
+      const r = await webSearch({ query: q, maxResults: 5 });
+      return r.success !== false ? r.output.slice(0, 1500) : '';
+    } catch { return ''; }
+  }));
+  const corpus = searches.filter(Boolean).join('\n\n---\n\n');
+  if (!corpus) return { output: JSON.stringify({ name, email, emailFormatOk, confidence: 'low', warnings: ['No web search results found.'] }, null, 2) };
+
+  const r = await callLLM(
+    [{ role: 'system', content: CONTACT_VERIFY_PROMPT }, { role: 'user', content: `Subject: ${name || email}${company ? ` at ${company}` : ''}\n\nSearch results:\n${corpus}` }],
+    [], { maxTokens: 1200, temperature: 0.2 },
+  );
+  const raw = getText(r.content).trim();
+  const m = raw.match(/\{[\s\S]*\}/);
+  if (!m) return { output: JSON.stringify({ name, email, emailFormatOk, confidence: 'low', warnings: ['Could not parse verification output.'] }, null, 2) };
+  try {
+    const parsed = JSON.parse(m[0]);
+    parsed.emailFormatOk = emailFormatOk;
+    return { output: JSON.stringify(parsed, null, 2) };
+  } catch {
+    return { output: JSON.stringify({ name, email, emailFormatOk, confidence: 'low', warnings: ['JSON parse failed.'] }, null, 2) };
+  }
 }
 
 // ════════════════════════════════════════════════════════════════════════════
