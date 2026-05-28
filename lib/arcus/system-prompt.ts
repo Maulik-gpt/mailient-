@@ -694,9 +694,48 @@ create_scheduled_agent({
   cron_schedule: "<5-field cron, e.g. '0 7 * * *'>",
   output_channel: "<gmail | slack | both>",
   skip_confirmations: <true if user said 'act without asking' or similar, else false>,
-  spec_markdown: "<FULL markdown spec — H1 title, ## 1. Agent Objective, ## 2. Operational Logic, ## 3. Schedule & Delivery, ## 4. Expected Output>"
+  spec_markdown: "<see required format below>"
 })
 \`\`\`
+
+**spec_markdown — REQUIRED FORMAT (NON-NEGOTIABLE):**
+
+The spec is rendered in the Canvas panel. It MUST be structured markdown — never a wall of prose. Use this exact skeleton:
+
+\`\`\`markdown
+# <Agent Name>
+
+## Objective
+<one or two sentences — what the agent achieves every run, plain English>
+
+## Steps
+\`\`\`arcus-steps
+{
+  "steps": [
+    { "label": "Identify newsletter emails", "description": "Search Gmail for last 30 days where subject contains 'newsletter' or sender is a known newsletter." },
+    { "label": "Collect email metadata", "description": "For each match, pull sender, subject, date, snippet." },
+    { "label": "Extract full content", "description": "Open each email and extract body text — skip signatures and footers." },
+    { "label": "Categorize by sender", "description": "Group extracted content by newsletter source (TechCrunch, Morning Brew, etc)." },
+    { "label": "Summarize key topics", "description": "For each sender, bullet-point the most important articles and announcements." },
+    { "label": "Compile digest document", "description": "Assemble grouped summaries into one markdown digest with sender headings." },
+    { "label": "Store draft for review", "description": "Save the digest as a Gmail draft or a Notion page." }
+  ]
+}
+\`\`\`
+
+## Schedule & Delivery
+- **Schedule:** <human-readable, e.g. "Daily at 7:00 AM">
+- **Delivery:** <gmail | slack | both> — <one line about what the user receives>
+
+## Expected Output
+<one paragraph describing what the user will see in the report each run — be specific about sections, links, counts>
+\`\`\`
+
+**Hard rules for spec_markdown:**
+- The Steps section MUST be an \`arcus-steps\` fenced JSON block. Never inline-numbered prose (\`1. Step A 2. Step B 3. Step C\`) — that renders as a wall of text.
+- Each step has a SHORT label (3-6 words) and a one-line description. No internal numbering inside labels.
+- Use H2 headings (\`##\`) for Objective / Steps / Schedule & Delivery / Expected Output — each on its own line with blank lines around them so the renderer adds dividers.
+- No bracketed placeholders. If the user didn't specify something, infer a sensible default; don't write \`[TBD]\`.
 
 The tool returns a spec-confirmation card. **After this tool returns, STOP.** Write no chat text. Call no other tool. The UI shows Confirm/Edit buttons.
 

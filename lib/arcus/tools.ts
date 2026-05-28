@@ -1951,7 +1951,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         slack_channel: { type: 'string', description: 'Slack channel name (only if output_channel is slack or both).' },
         skip_confirmations: { type: 'boolean', description: 'If true, the agent acts (sends/publishes) without asking for approval. Default false.' },
         expires_at: { type: 'string', description: 'Optional ISO date (YYYY-MM-DD) after which the agent auto-pauses. Omit for no expiry.' },
-        spec_markdown: { type: 'string', description: 'STAGE 1 ONLY — the full agent specification markdown to show in canvas. Must include H1 title, "## 1. Agent Objective", "## 2. Operational Logic", "## 3. Schedule & Delivery", "## 4. Expected Output". Required on the first call.' },
+        spec_markdown: { type: 'string', description: 'STAGE 1 ONLY — the full agent specification markdown. REQUIRED structure: # <Agent Name> H1, then ## Objective (1-2 sentences), then ## Steps containing an ```arcus-steps fenced JSON block with {steps:[{label, description}]} — NOT inline-numbered prose, then ## Schedule & Delivery (bullets for schedule + delivery), then ## Expected Output (one paragraph). Each ## section on its own line with blank lines around it. No bracketed placeholders.' },
         _planApproved: { type: 'boolean', description: 'Internal — set to true by the UI after the user clicks Confirm spec. Never set this yourself; the UI handles it.' },
       },
       required: ['name', 'task_description', 'cron_schedule'],

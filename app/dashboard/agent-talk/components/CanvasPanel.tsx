@@ -887,6 +887,40 @@ function InteractiveChart({ data }: { data: ChartData }) {
 
 // ─── Beautiful markdown renderer ────────────────────────────────────────────────
 
+/**
+ * Defensive normalizer for LLM-authored markdown.
+ *
+ * Catches the most common rendering-breaker: numbered prose like
+ *   "1. **First** - desc 2. **Second** - desc 3. **Third** - desc"
+ * (all on one line) and reflows it into a real ordered list so ReactMarkdown
+ * + GFM render it as line items instead of one giant paragraph.
+ *
+ * Trigger: a single line that contains 3+ matches of `N. **Title**` or
+ * `N. Title:` where N >= 2. We split on those boundaries and emit one
+ * numbered line each. Conservative — runs only when the heuristic is sure.
+ */
+function normalizeInlineEnumeration(md: string): string {
+  if (!md) return md;
+  const lines = md.split('\n');
+  const out: string[] = [];
+  // Match boundaries like " 2. **Title**" or " 3. Title:" mid-line
+  const BOUNDARY = /\s+(\d+)\.\s+(?=\*\*|[A-Z][a-zA-Z ]{2,40}\s+[-—:])/g;
+  for (const raw of lines) {
+    // Only target lines that start with "1." or "1)" and contain 2+ later N.
+    if (!/^\s*1[.)]\s/.test(raw)) { out.push(raw); continue; }
+    const laterMatches = (raw.match(/\s+(\d+)\.\s+/g) || []).filter(m => {
+      const n = parseInt(m.trim());
+      return n >= 2;
+    });
+    if (laterMatches.length < 2) { out.push(raw); continue; }
+    // Split on the boundary while keeping the digits. Use a placeholder to
+    // simplify splitting without losing the leading "1." prefix.
+    const reflowed = raw.replace(BOUNDARY, '\n$1. ');
+    for (const piece of reflowed.split('\n')) out.push(piece);
+  }
+  return out.join('\n');
+}
+
 function MarkdownView({ content }: { content: string }) {
   if (!content) return (
     <div className="flex flex-col items-center justify-center py-20 opacity-30">
@@ -894,16 +928,18 @@ function MarkdownView({ content }: { content: string }) {
       <p className="text-[13px] text-arcus-fg-tertiary">No content</p>
     </div>
   );
+  // Apply defensive normalization before handing to ReactMarkdown
+  const normalized = normalizeInlineEnumeration(content);
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
         h1: ({ children }) => (
-          <h1 className="text-[22px] font-bold text-arcus-fg leading-tight mb-5 mt-2 tracking-tight">{children}</h1>
+          <h1 className="text-[22px] font-bold text-arcus-fg leading-tight mb-3 mt-2 tracking-tight pb-3 border-b border-arcus-border/60">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-[17px] font-semibold text-arcus-fg leading-snug mb-3 mt-6 tracking-tight">{children}</h2>
+          <h2 className="text-[17px] font-semibold text-arcus-fg leading-snug mb-3 mt-7 tracking-tight pb-2 border-b border-arcus-border/40">{children}</h2>
         ),
         h3: ({ children }) => (
           <h3 className="text-[14px] font-semibold text-arcus-fg-secondary leading-snug mb-2.5 mt-5">{children}</h3>
@@ -997,7 +1033,7 @@ function MarkdownView({ content }: { content: string }) {
         ),
       }}
     >
-      {content.replace(/<br\s*\/?>/gi, '\n')}
+      {normalized.replace(/<br\s*\/?>/gi, '\n')}
     </ReactMarkdown>
   );
 }
