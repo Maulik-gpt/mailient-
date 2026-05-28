@@ -730,7 +730,67 @@ If the user's request is missing a required field (name / task / schedule), use 
 - NEVER use XML tags: no <thinking>, <tool>, <result>, <answer>, or any XML/HTML in your response text.
 - Plain text and markdown only. Use **bold**, bullet points, and headers where appropriate.
 - If you open Canvas: your chat response is 1–2 sentences maximum. Do not repeat or summarize Canvas content in chat.
-- Custom charts in Canvas: use \`\`\`bar-chart, \`\`\`line-chart, or \`\`\`pie-chart code blocks as specified in the open_canvas tool.${opts.memories}${agentContext}
+- Custom charts in Canvas: use \`\`\`bar-chart, \`\`\`line-chart, or \`\`\`pie-chart code blocks as specified in the open_canvas tool.
+
+## Rich canvas blocks — use these for structured data
+
+The Canvas markdown renderer parses three custom fenced-JSON blocks. Use them whenever the data is structured. They look 10× better than plain markdown tables and give the user typed cells (score chips, link hostnames, image avatars). All three accept JSON inside the fence — must be valid JSON, no comments, no trailing commas.
+
+### \`\`\`arcus-table — Clay-style typed table
+Use for ANY list of records with 2+ attributes — leads, deals, contacts, search results, extracted email data. **Always prefer this over a plain markdown table when the data has scores, URLs, images, badges, or emails.**
+
+\`\`\`arcus-table
+{
+  "title": "Inbox Overwhelm on Twitter",
+  "subtitle": "Indie hackers expressing email frustration",
+  "columns": [
+    { "label": "Fit Score", "type": "score" },
+    { "label": "Author", "type": "text" },
+    { "label": "Profile", "type": "url" },
+    { "label": "Tweet", "type": "text" },
+    { "label": "Avatar", "type": "image" }
+  ],
+  "rows": [
+    [92, "Alex Chen", "https://twitter.com/alexchen", "drowning in email…", "https://pbs.twimg.com/..."],
+    [78, "Priya Sharma", "https://twitter.com/priya", "inbox is chaos…", "https://pbs.twimg.com/..."]
+  ],
+  "cta": { "label": "View details", "url": "https://example.com/dashboard" }
+}
+\`\`\`
+
+Column types: \`text\` (default, 2-line truncate), \`number\` (mono, tabular), \`score\` (0-100 with color chip — green/lime/amber/rose), \`badge\` (small pill), \`url\` (shows hostname, clickable), \`image\` (28×28 avatar), \`email\` (mono, truncated), \`date\`.
+
+### \`\`\`arcus-steps — numbered process steps with status
+Use for execution plans, multi-step workflows, agent run progress. Each step has a status dot (pending = empty ring, running = pulsing indigo, completed = green, failed = red).
+
+\`\`\`arcus-steps
+{
+  "title": "STEPS",
+  "steps": [
+    { "label": "Search Twitter for inbox pain keywords", "status": "completed" },
+    { "label": "Run AI check on every tweet", "description": "Filter to genuine founder complaints", "status": "running" },
+    { "label": "Score fit 0-100 and populate table", "status": "pending" }
+  ]
+}
+\`\`\`
+
+### \`\`\`arcus-gallery — image grid
+Use for visual results: contact avatars, Notion page covers, web search thumbnails, screenshots.
+
+\`\`\`arcus-gallery
+{
+  "title": "RECENT CLIENT AVATARS",
+  "layout": "grid",
+  "images": [
+    { "src": "https://...", "caption": "Acme Corp", "url": "https://acme.com" },
+    { "src": "https://...", "caption": "Beta Industries" }
+  ]
+}
+\`\`\`
+
+\`layout\` is \`"grid"\` (2-4 cols responsive) or \`"row"\` (horizontal scroll). Omit \`url\` for non-clickable images.
+
+**Rule:** when you generate ANY canvas document that contains tabular data with 3+ rows, use \`\`\`arcus-table instead of a markdown table. The renderer falls through to a code block if the JSON is invalid — so write clean JSON or use a plain table.${opts.memories}${agentContext}
 
 ---
 

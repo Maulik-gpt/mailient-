@@ -12,6 +12,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  ArcusTable, parseArcusTable,
+  ArcusSteps, parseArcusSteps,
+  ArcusGallery, parseArcusGallery,
+} from './CanvasBlocks';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -940,6 +945,20 @@ function MarkdownView({ content }: { content: string }) {
             if (parsed) {
               return <InteractiveChart data={parsed} />;
             }
+          }
+
+          // ── Arcus rich blocks ────────────────────────────────────────────
+          if (!inline && lang.includes('arcus-table')) {
+            const parsed = parseArcusTable(rawText);
+            if (parsed) return <ArcusTable data={parsed} />;
+          }
+          if (!inline && lang.includes('arcus-steps')) {
+            const parsed = parseArcusSteps(rawText);
+            if (parsed) return <ArcusSteps data={parsed} />;
+          }
+          if (!inline && lang.includes('arcus-gallery')) {
+            const parsed = parseArcusGallery(rawText);
+            if (parsed) return <ArcusGallery data={parsed} />;
           }
 
           return inline ? (
