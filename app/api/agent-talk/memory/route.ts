@@ -8,7 +8,12 @@ async function getSupabase() {
   return getSupabaseAdmin();
 }
 
-// ── Supermemory API helpers ────────────────────────────────────────────────────
+// ── Supermemory secondary-store helpers ──────────────────────────────────────
+//
+// arcus_memories (Supabase) is the SOURCE OF TRUTH. Supermemory mirrors
+// writes/deletes when configured so semantic recall stays in sync. The UI
+// reads from Supabase; the AI's mid-turn searchMemoriesRaw reads from both
+// (Supabase first, Supermemory for semantic fuzz-match).
 
 const SUPERMEMORY_BASE = 'https://api.supermemory.ai';
 
@@ -16,82 +21,23 @@ function getSupermemoryKey(): string | null {
   return process.env.SUPERMEMORY_API_KEY || process.env.DATAFAST_API_KEY || null;
 }
 
-async function fetchSupermemoryMemories(userId: string): Promise<any[]> {
+async function supermemoryWrite(userId: string, content: string, tags?: string[]): Promise<void> {
   const key = getSupermemoryKey();
-  if (!key) return [];
-
+  if (!key) return;
   try {
-    // Try v3 endpoint first
-    const res = await fetch(`${SUPERMEMORY_BASE}/v3/memories`, {
+    await fetch(`${SUPERMEMORY_BASE}/v3/memories`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ filters: { userId }, limit: 100 }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      return data.results || data.memories || data.data || [];
-    }
-
-    // Fallback: v3 search with broad query
-    const searchRes = await fetch(`${SUPERMEMORY_BASE}/v3/memories/search`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ q: '*', limit: 100, filters: { userId } }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (searchRes.ok) {
-      const data = await searchRes.json();
-      return data.results || data.memories || data.data || [];
-    }
-
-    // Fallback: v1 endpoint
-    const v1Res = await fetch(`${SUPERMEMORY_BASE}/v1/memory/search`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: '*', filter: { userId }, topK: 100 }),
-      signal: AbortSignal.timeout(8000),
-    });
-
-    if (v1Res.ok) {
-      const data = await v1Res.json();
-      return data.results || [];
-    }
-
-    return [];
-  } catch {
-    return [];
-  }
-}
-
-async function deleteSupermemoryMemory(memoryId: string): Promise<boolean> {
-  const key = getSupermemoryKey();
-  if (!key) return false;
-
-  try {
-    const res = await fetch(`${SUPERMEMORY_BASE}/v3/memories/${memoryId}`, {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${key}` },
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        content: content.slice(0, 2000),
+        metadata: { userId, tags: tags ?? [] },
+      }),
       signal: AbortSignal.timeout(5000),
     });
-    return res.ok;
-  } catch {
-    return false;
-  }
+  } catch { /* secondary store — never fail the primary write on this */ }
 }
 
-// ── GET /api/agent-talk/memory — list memories + status ────────────────────────
+// ── GET /api/agent-talk/memory — list memories from Supabase ────────────────
 
 export async function GET() {
   const session = await auth();
@@ -101,25 +47,32 @@ export async function GET() {
   const userId = session.user.email.toLowerCase();
 
   try {
-    // Get memory enabled flag
     const supabase = await getSupabase();
-    const { data } = await supabase
+
+    // Memory-enabled flag from user_profiles.preferences (unchanged behavior)
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('preferences')
       .ilike('user_id', userId)
       .maybeSingle();
+    const prefs = (profile?.preferences as Record<string, unknown>) || {};
+    const memoryEnabled = prefs.arcus_memory_enabled !== false;
 
-    const prefs = (data?.preferences as Record<string, unknown>) || {};
-    const memoryEnabled = prefs.arcus_memory_enabled !== false; // default true
+    // Memories — durable, paginated
+    const { data: rows } = await supabase
+      .from('arcus_memories')
+      .select('id, content, tags, source, created_at, updated_at')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(200);
 
-    // Fetch memories from Supermemory
-    const rawMemories = await fetchSupermemoryMemories(userId);
-
-    const memories = rawMemories.map((m: any) => ({
-      id: m.id || m._id || m.memory_id || Math.random().toString(36).slice(2),
-      content: m.content || m.text || m.memory || '',
-      createdAt: m.created_at || m.createdAt || m.timestamp || null,
-      metadata: m.metadata || {},
+    const memories = (rows || []).map((r: any) => ({
+      id: r.id,
+      content: r.content,
+      tags: Array.isArray(r.tags) ? r.tags : [],
+      source: r.source || 'ai',
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
     }));
 
     return NextResponse.json({ memories, memoryEnabled });
@@ -129,7 +82,11 @@ export async function GET() {
   }
 }
 
-// ── POST /api/agent-talk/memory — toggle memory on/off ─────────────────────────
+// ── POST /api/agent-talk/memory ─────────────────────────────────────────────
+//
+// Two modes:
+//   { memoryEnabled: boolean }          → toggle memory on/off
+//   { content: string, tags?: string[] } → add a new memory manually
 
 export async function POST(request: NextRequest) {
   const session = await auth();
@@ -138,55 +95,146 @@ export async function POST(request: NextRequest) {
   }
   const userId = session.user.email.toLowerCase();
 
-  try {
-    const body = await request.json();
-    const memoryEnabled = Boolean(body.memoryEnabled);
+  let body: any;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-    const supabase = await getSupabase();
+  const supabase = await getSupabase();
+
+  // Mode 1 — toggle flag
+  if (typeof body.memoryEnabled === 'boolean') {
+    const memoryEnabled = body.memoryEnabled;
     const { data: existing } = await supabase
       .from('user_profiles')
       .select('preferences')
       .ilike('user_id', userId)
       .maybeSingle();
-
     const existingPrefs = (existing?.preferences as Record<string, unknown>) || {};
     const updatedPrefs = { ...existingPrefs, arcus_memory_enabled: memoryEnabled };
-
     if (existing) {
-      await supabase
-        .from('user_profiles')
-        .update({ preferences: updatedPrefs })
-        .ilike('user_id', userId);
+      await supabase.from('user_profiles').update({ preferences: updatedPrefs }).ilike('user_id', userId);
     } else {
-      await supabase
-        .from('user_profiles')
-        .insert({ user_id: userId, preferences: updatedPrefs });
+      await supabase.from('user_profiles').insert({ user_id: userId, preferences: updatedPrefs });
     }
-
     return NextResponse.json({ success: true, memoryEnabled });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
   }
+
+  // Mode 2 — manual add
+  const content = (body.content || '').trim();
+  if (!content) {
+    return NextResponse.json({ error: 'content is required' }, { status: 400 });
+  }
+  const tags = Array.isArray(body.tags) ? body.tags.filter((t: any) => typeof t === 'string').slice(0, 10) : [];
+
+  const { data: inserted, error } = await supabase
+    .from('arcus_memories')
+    .insert({
+      user_id: userId,
+      content: content.slice(0, 2000),
+      tags,
+      source: 'user',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  // Mirror to Supermemory if configured (best-effort)
+  supermemoryWrite(userId, content, tags).catch(() => {});
+
+  return NextResponse.json({
+    success: true,
+    memory: {
+      id: inserted.id,
+      content: inserted.content,
+      tags: inserted.tags,
+      source: inserted.source,
+      createdAt: inserted.created_at,
+      updatedAt: inserted.updated_at,
+    },
+  });
 }
 
-// ── DELETE /api/agent-talk/memory — delete a single memory ─────────────────────
+// ── PUT /api/agent-talk/memory — edit a memory ──────────────────────────────
+
+export async function PUT(request: NextRequest) {
+  const session = await auth();
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const userId = session.user.email.toLowerCase();
+
+  let body: any;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+
+  const memoryId = body.memoryId;
+  const content = typeof body.content === 'string' ? body.content.trim() : null;
+  const tags = Array.isArray(body.tags) ? body.tags.filter((t: any) => typeof t === 'string').slice(0, 10) : null;
+
+  if (!memoryId) return NextResponse.json({ error: 'memoryId required' }, { status: 400 });
+  if (content === null && tags === null) {
+    return NextResponse.json({ error: 'Provide content and/or tags to update' }, { status: 400 });
+  }
+
+  const supabase = await getSupabase();
+  const update: Record<string, any> = { updated_at: new Date().toISOString() };
+  if (content !== null) update.content = content.slice(0, 2000);
+  if (tags !== null) update.tags = tags;
+
+  const { data, error } = await supabase
+    .from('arcus_memories')
+    .update(update)
+    .eq('id', memoryId)
+    .eq('user_id', userId)
+    .select()
+    .single();
+
+  if (error || !data) {
+    return NextResponse.json({ error: error?.message || 'Memory not found' }, { status: 404 });
+  }
+
+  return NextResponse.json({
+    success: true,
+    memory: {
+      id: data.id,
+      content: data.content,
+      tags: data.tags,
+      source: data.source,
+      createdAt: data.created_at,
+      updatedAt: data.updated_at,
+    },
+  });
+}
+
+// ── DELETE /api/agent-talk/memory — delete one memory ───────────────────────
 
 export async function DELETE(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.email) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
+  const userId = session.user.email.toLowerCase();
 
-  try {
-    const body = await request.json();
-    const memoryId = body.memoryId;
-    if (!memoryId) {
-      return NextResponse.json({ error: 'memoryId required' }, { status: 400 });
-    }
+  let body: any;
+  try { body = await request.json(); }
+  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
-    const deleted = await deleteSupermemoryMemory(memoryId);
-    return NextResponse.json({ success: deleted });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+  const memoryId = body.memoryId;
+  if (!memoryId) return NextResponse.json({ error: 'memoryId required' }, { status: 400 });
+
+  const supabase = await getSupabase();
+  const { error } = await supabase
+    .from('arcus_memories')
+    .delete()
+    .eq('id', memoryId)
+    .eq('user_id', userId);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  return NextResponse.json({ success: true });
 }

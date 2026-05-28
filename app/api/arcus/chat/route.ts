@@ -165,15 +165,58 @@ export async function POST(request: NextRequest) {
     log('error', 'Context build failed — continuing with empty context', { error: e.message, stack: e.stack?.slice(0, 300) });
   }
 
-  // The learned voice profile is the HIGHEST-priority styling instruction —
-  // it precedes the free-text personality preference so it dominates email bodies.
-  const combinedPersonality = [voiceContext, personalityData]
-    .filter(s => s && s.trim())
-    .join('\n\n');
-
+  // PART 23: split the two signals.
+  //   - voice (sent-mail derived) → personality: drives email body STYLE.
+  //   - free-text user instructions → userInstructions: BINDING RULES.
+  // The old code concatenated them under one "voice profile" header which
+  // made the LLM treat behavioral rules ("never schedule before 9am") as
+  // writing-style hints. They're now two separate prompt blocks with
+  // distinct semantics.
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
-    : buildSystemPrompt({ userName, userId, connectedIntegrations, memories, personality: combinedPersonality });
+    : buildSystemPrompt({
+        userName,
+        userId,
+        connectedIntegrations,
+        memories,
+        personality: voiceContext || undefined,
+        userInstructions: personalityData || undefined,
+      });
+
+  // Auto-extract "remember X" / "save this" / "from now on..." from the
+  // user's message and persist it as a memory in-band. Fire-and-forget so
+  // memory writes never block the response stream. Patterns are deliberately
+  // conservative — false positives create noise in the user's settings card.
+  (async () => {
+    try {
+      const REMEMBER_PATTERNS: Array<{ re: RegExp; group: number }> = [
+        // "remember that <fact>", "remember <fact>"
+        { re: /\bremember\s+(?:that\s+|this:\s*)?(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
+        // "please remember <fact>", "can you remember <fact>"
+        { re: /\b(?:please|can you|could you)\s+remember\s+(?:that\s+)?(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
+        // "save this to memory: <fact>"
+        { re: /\b(?:save\s+(?:this\s+)?(?:to|in|as)\s+memory|note\s+for\s+(?:later|me))[:\s]+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
+        // "from now on, <rule>"
+        { re: /\bfrom\s+now\s+on[,:\s]+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 1 },
+        // "always <verb> ..." / "never <verb> ..." at start of message
+        { re: /^\s*(always|never)\s+(.{8,300}?)(?:[.!?]\s*$|[.!?]\s+\w)/i, group: 0 },
+      ];
+      for (const { re, group } of REMEMBER_PATTERNS) {
+        const m = message.match(re);
+        if (m) {
+          const fact = (group === 0 ? m[0] : m[group])?.trim();
+          if (fact && fact.length >= 8 && fact.length <= 300) {
+            const { saveMemory } = await import('../../../../lib/arcus/memory');
+            await saveMemory(userId, fact, ['user-stated'], 'user');
+            log('info', 'Auto-extracted user memory', { fact: fact.slice(0, 120) });
+            break; // one extraction per message — avoid double-saves
+          }
+        }
+      }
+    } catch (e: any) {
+      log('warn', 'Auto-extract memory failed', { error: e.message });
+    }
+  })();
 
   // Sanitize history (last 20 turns)
   const sanitizedHistory = history

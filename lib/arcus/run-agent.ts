@@ -32,6 +32,36 @@ async function getVoiceProfilePromptBlock(userId: string): Promise<string> {
   }
 }
 
+/**
+ * Fetch the user's free-text "Arcus AI Instructions" from user_profiles.
+ * Returns empty string when:
+ *   - the user hasn't saved any instructions
+ *   - the user has explicitly toggled instructions OFF
+ *   - any error occurs (we don't want to fail an agent run on a profile lookup)
+ *
+ * Background-agent runs use this so saved rules ("always cc legal@",
+ * "never schedule weekends", "use bullet points") apply to autonomous work
+ * just like they do to interactive chat.
+ */
+async function fetchUserInstructions(userId: string): Promise<string> {
+  try {
+    // @ts-ignore — JS module
+    const { getSupabaseAdmin } = await import('../supabase.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    const prefs = (data?.preferences as Record<string, unknown>) || {};
+    if (prefs.arcus_instructions_enabled === false) return '';
+    const text = (prefs.arcus_personality as string) || '';
+    return typeof text === 'string' ? text.trim() : '';
+  } catch {
+    return '';
+  }
+}
+
 export const REPORT_FORMAT_SUFFIX = `
 
 ---
@@ -146,13 +176,17 @@ export async function buildAgentLoopArgs(
   // FIX 2: Two parallel memory searches —
   //   1. Self-history: what this agent did in previous runs
   //   2. Topic context: relationship/preference context relevant to this task
-  const [connectedIntegrations, [selfHistory, topicContext], voicePrompt] = await Promise.all([
+  // PART 23 also pulls the user's binding instructions from their profile
+  // so background runs obey "always cc legal@", "never schedule weekends",
+  // etc. exactly like interactive chat does.
+  const [connectedIntegrations, [selfHistory, topicContext], voicePrompt, userInstructions] = await Promise.all([
     getConnectedIntegrations(userId),
     Promise.all([
       searchMemories(userId, `[AGENT_RUN] ${agentName || taskDescription.slice(0, 80)}`, 3),
       searchMemories(userId, taskDescription, 4),
     ]),
     getVoiceProfilePromptBlock(userId),
+    fetchUserInstructions(userId),
   ]);
 
   // Merge both memory sets, deduplicating identical lines
@@ -168,6 +202,7 @@ export async function buildAgentLoopArgs(
     connectedIntegrations,
     memories,
     personality: voicePrompt || undefined,
+    userInstructions: userInstructions || undefined,
     isBackgroundAgent: true,
     skipConfirmations: agent.skip_confirmations ?? false,
     agentTaskDescription: taskDescription,

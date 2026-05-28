@@ -10,7 +10,19 @@ export interface SystemPromptOptions {
   userId: string;
   connectedIntegrations: string[];
   memories: string;
+  /**
+   * The user's learned writing voice — derived from sent-mail analysis.
+   * Drives email body STYLE only (greetings, sign-offs, formality, contractions).
+   * NOT for behavioral rules — those go in userInstructions.
+   */
   personality?: string;
+  /**
+   * The user's free-text instructions from the Arcus AI settings card.
+   * These are BINDING RULES the assistant must obey across every turn —
+   * not style guidance. Examples: "never schedule meetings before 9am",
+   * "always cc legal@", "use bullet points in chat", "decline weekends".
+   */
+  userInstructions?: string;
   isBackgroundAgent?: boolean;
   skipConfirmations?: boolean;
   agentTaskDescription?: string;
@@ -328,6 +340,28 @@ At the end of every run, memory_save is called automatically with a summary of w
 Every email body you write MUST sound exactly like this user. Apply without exception — greeting style, sentence rhythm, sign-off, formality, contractions, punctuation habits. There is no email where "default professional tone" is acceptable. Do NOT call any tool to re-fetch the voice profile — it is already here.
 
 ${opts.personality.trim()}` : '';
+
+  // The user's free-text instructions from the Arcus AI settings card.
+  // Treated as BINDING RULES that override anything else in the prompt
+  // when they conflict (the user explicitly told us what they want).
+  const instructionsBlock = opts.userInstructions?.trim() ? `
+
+---
+
+## USER INSTRUCTIONS — BINDING, ABSOLUTE PRIORITY
+
+These are the user's standing instructions for how YOU must operate. They are not preferences or suggestions — they are RULES. Apply them on every turn, in every tool call, in every email and message. When they conflict with any other rule in this system prompt, **the user instructions win**. Never ask the user to repeat or re-confirm an instruction they have already saved here.
+
+\`\`\`
+${opts.userInstructions.trim()}
+\`\`\`
+
+How to apply:
+- If an instruction names a time/date constraint ("never before 9am", "weekends are off-limits"), refuse any action that would violate it. Tell the user briefly why.
+- If an instruction names a tone/format preference ("bullet points", "no exclamation marks", "always sign as Maulik"), apply it to every chat reply AND every draft body.
+- If an instruction names a routing rule ("always cc legal@x.com", "send copies to my assistant"), wire it into every email you draft or send.
+- If an instruction is ambiguous, follow your best interpretation; do NOT pause to ask the user to clarify the instruction itself.
+- These instructions persist across runs and conversations — they are the user's identity, not session state.` : '';
 
   return `You are Arcus — not a chatbot, but a fully autonomous AI agent living inside the user's productivity stack. You actually do things: search, read, draft, schedule, log, notify, synthesize. You operate across Gmail, Google Calendar, Notion, and Slack simultaneously.
 
@@ -842,7 +876,7 @@ Use for visual results: contact avatars, Notion page covers, web search thumbnai
 ---
 
 ## Voice — how Arcus speaks
-Direct. Calm. Competent. No fluff, no hedging. You are the user's chief of staff — not an assistant that follows instructions, but an agent that thinks, decides, and acts. In chat: short and confident. In Canvas documents: thorough and well-structured. Every response should feel considered, not mechanical. The difference between a tool and an agent is judgment: use it.${voiceBlock}`;
+Direct. Calm. Competent. No fluff, no hedging. You are the user's chief of staff — not an assistant that follows instructions, but an agent that thinks, decides, and acts. In chat: short and confident. In Canvas documents: thorough and well-structured. Every response should feel considered, not mechanical. The difference between a tool and an agent is judgment: use it.${voiceBlock}${instructionsBlock}`;
 }
 
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {

@@ -43,12 +43,43 @@ export async function isMemoryEnabled(userId: string): Promise<boolean> {
 // ── Core API ───────────────────────────────────────────────────────────────────
 
 /**
- * Store a single memory entry.
+ * Store a single memory entry. Dual-writes to:
+ *   1. arcus_memories Supabase table — the durable source of truth the
+ *      settings UI reads, edits, and deletes from. Always written when
+ *      Supabase is reachable.
+ *   2. Supermemory — secondary semantic-search index. Best-effort; if
+ *      SUPERMEMORY_API_KEY is missing this is silently skipped.
+ *
+ * source: 'user' (the user said "remember X" or added via UI),
+ *         'ai' (the LLM extracted a worth-keeping fact during chat),
+ *         'agent_run' (background-agent run record).
  */
-export async function saveMemory(userId: string, content: string, tags?: string[]): Promise<void> {
-  const key = getKey();
-  if (!key || !content?.trim()) return;
+export async function saveMemory(
+  userId: string,
+  content: string,
+  tags?: string[],
+  source: 'user' | 'ai' | 'agent_run' = 'ai',
+): Promise<void> {
+  if (!content?.trim()) return;
+  const trimmed = content.slice(0, 2000);
 
+  // 1. Supabase (the durable store) — always run when possible.
+  try {
+    const { getSupabaseAdmin } = await import('../supabase.js');
+    const supabase = getSupabaseAdmin();
+    await supabase.from('arcus_memories').insert({
+      user_id: userId.toLowerCase(),
+      content: trimmed,
+      tags: tags ?? [],
+      source,
+    });
+  } catch {
+    // Silent — table may not be migrated yet
+  }
+
+  // 2. Supermemory (secondary index) — only when configured.
+  const key = getKey();
+  if (!key) return;
   try {
     await fetch(`${BASE}/memories`, {
       method: 'POST',
@@ -57,8 +88,8 @@ export async function saveMemory(userId: string, content: string, tags?: string[
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        content: content.slice(0, 2000),
-        metadata: { userId, tags: tags ?? [] },
+        content: trimmed,
+        metadata: { userId, tags: tags ?? [], source },
       }),
       signal: AbortSignal.timeout(5000),
     });
@@ -81,94 +112,98 @@ export interface RawMemoryItem {
  * Never throws; returns [] on any error.
  */
 export async function searchMemoriesRaw(userId: string, query: string, limit = 8): Promise<RawMemoryItem[]> {
-  const key = getKey();
-  if (!key) return [];
-
+  // 1. Supabase (always tried first — source of truth).
+  const supabaseItems: RawMemoryItem[] = [];
   try {
-    let results: any[] = [];
+    const { getSupabaseAdmin } = await import('../supabase.js');
+    const supabase = getSupabaseAdmin();
+    const q = (query || '').trim();
+    let req = supabase
+      .from('arcus_memories')
+      .select('content, tags, created_at')
+      .eq('user_id', userId.toLowerCase())
+      .order('created_at', { ascending: false })
+      .limit(limit * 2);
+    // If a real query was provided, ILIKE-filter on content. Empty query
+    // returns most-recent memories (used for "load all" cases).
+    if (q && q !== '*') {
+      // Use textual contains as a basic filter — semantic match comes from Supermemory.
+      req = req.ilike('content', `%${q.slice(0, 80)}%`);
+    }
+    const { data } = await req;
+    for (const row of (data || []) as any[]) {
+      supabaseItems.push({
+        text: String(row.content || '').slice(0, 600),
+        timestamp: row.created_at,
+        tags: Array.isArray(row.tags) ? row.tags : undefined,
+      });
+    }
+  } catch {
+    // Table may not exist yet (migration not applied) — fall through silently.
+  }
 
-    const postRes = await fetch(`${BASE}/memories/search`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ q: query, limit, filters: { userId } }),
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (postRes.ok) {
-      const data = await postRes.json();
-      results = data.results ?? data.memories ?? data.data ?? [];
-    } else {
-      const params = new URLSearchParams({ q: query, limit: String(limit), userId });
-      const getRes = await fetch(`${BASE}/search?${params}`, {
-        headers: { Authorization: `Bearer ${key}` },
+  // 2. Supermemory (semantic recall) — only when configured. Merge results
+  //    de-duplicating by text.
+  const key = getKey();
+  if (key) {
+    try {
+      let results: any[] = [];
+      const postRes = await fetch(`${BASE}/memories/search`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ q: query, limit, filters: { userId } }),
         signal: AbortSignal.timeout(5000),
       });
-      if (getRes.ok) {
-        const data = await getRes.json();
+      if (postRes.ok) {
+        const data = await postRes.json();
         results = data.results ?? data.memories ?? data.data ?? [];
+      } else {
+        const params = new URLSearchParams({ q: query, limit: String(limit), userId });
+        const getRes = await fetch(`${BASE}/search?${params}`, {
+          headers: { Authorization: `Bearer ${key}` },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (getRes.ok) {
+          const data = await getRes.json();
+          results = data.results ?? data.memories ?? data.data ?? [];
+        }
       }
-    }
-
-    return results.slice(0, limit).map((r: any): RawMemoryItem => ({
-      text: String(r.content ?? r.text ?? r.memory ?? '').slice(0, 600),
-      score: typeof r.score === 'number' ? r.score : undefined,
-      timestamp: r.created_at ?? r.timestamp ?? undefined,
-      tags: Array.isArray(r.metadata?.tags) ? r.metadata.tags : undefined,
-    })).filter((m) => m.text);
-  } catch {
-    return [];
+      const seen = new Set(supabaseItems.map(i => i.text));
+      for (const r of results) {
+        const text = String(r.content ?? r.text ?? r.memory ?? '').slice(0, 600);
+        if (!text || seen.has(text)) continue;
+        seen.add(text);
+        supabaseItems.push({
+          text,
+          score: typeof r.score === 'number' ? r.score : undefined,
+          timestamp: r.created_at ?? r.timestamp ?? undefined,
+          tags: Array.isArray(r.metadata?.tags) ? r.metadata.tags : undefined,
+        });
+      }
+    } catch { /* silent */ }
   }
+
+  return supabaseItems.filter(m => m.text).slice(0, limit);
 }
 
 /**
  * Search memories relevant to the current user message.
  * Returns a formatted context string to inject into the system prompt.
+ * Delegates to searchMemoriesRaw so Supabase-backed memories always work
+ * even when Supermemory is unconfigured.
  */
 export async function searchMemories(userId: string, query: string, limit = 6): Promise<string> {
-  const key = getKey();
-  if (!key) return '';
-
   try {
-    // Try POST search first (some Supermemory versions), fall back to GET
-    let results: any[] = [];
+    const items = await searchMemoriesRaw(userId, query, limit);
+    if (!items.length) return '';
 
-    const postRes = await fetch(`${BASE}/memories/search`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${key}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ q: query, limit, filters: { userId } }),
-      signal: AbortSignal.timeout(5000),
-    });
-
-    if (postRes.ok) {
-      const data = await postRes.json();
-      results = data.results ?? data.memories ?? data.data ?? [];
-    } else {
-      // Fall back to GET with query params
-      const params = new URLSearchParams({ q: query, limit: String(limit), userId });
-      const getRes = await fetch(`${BASE}/search?${params}`, {
-        headers: { Authorization: `Bearer ${key}` },
-        signal: AbortSignal.timeout(5000),
-      });
-      if (getRes.ok) {
-        const data = await getRes.json();
-        results = data.results ?? data.memories ?? data.data ?? [];
-      }
-    }
-
-    if (!results.length) return '';
-
-    // Separate by type for structured injection
+    // Bucket by tag prefix for structured prompt injection.
     const relationships: string[] = [];
     const preferences: string[] = [];
     const context: string[] = [];
-
-    for (const r of results.slice(0, limit)) {
-      const text: string = (r.content ?? r.text ?? r.memory ?? '').slice(0, 350);
+    for (const item of items) {
+      const text = item.text.slice(0, 350);
       if (!text) continue;
-
       if (text.startsWith('[RELATIONSHIP]')) relationships.push(text.replace('[RELATIONSHIP]', '').trim());
       else if (text.startsWith('[PREFERENCE]')) preferences.push(text.replace('[PREFERENCE]', '').trim());
       else context.push(text);
