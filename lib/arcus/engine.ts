@@ -461,6 +461,24 @@ export function sanitizeModelText(text: string): string {
     /(?:^|\n)\s*(?:IMPORTANT|NOTE TO (?:THE )?ASSISTANT|INTERNAL|SYSTEM|REMINDER TO (?:YOU|SELF)|TO THE (?:AGENT|MODEL|LLM))\s*[:\-—][^\n]*(?:do\s+not\s+(?:call|emit|write|use|continue)|wait\s+for\s+the\s+user|the\s+ui\s+will|next\s+turn|on the next call|stop\s+(?:and|here)|never\s+(?:call|emit))[^\n]*(?:\n(?!\s*$)[^\n]*)*/gi;
   clean = clean.replace(SELF_INSTRUCTION_PARAGRAPH, '');
 
+  // Second shape: imperative-mood self-talk addressed to the LLM that uses no
+  // header keyword. Pattern: "Now write/call/do X to the user ... Do NOT [verb]
+  // more/any (tools|calls)." This catches tool-output tails like
+  // "Now write a short confirmation to the user telling them the agent is
+  // live ... Do NOT call any more tools."
+  const IMPERATIVE_SELF_INSTRUCTION =
+    /(?:\s|^)Now\s+(?:write|call|tell|reply|compose|confirm|provide|respond|give|do|inform|notify)\s+[^.\n]{0,200}?(?:the\s+user|to\s+the\s+user|in\s+chat|in\s+your\s+response)[^.\n]{0,200}?\.[^\n]{0,200}?(?:Do\s+NOT|Don'?t)\s+call\s+(?:any\s+more|more)\s+tools?\.?/gi;
+  clean = clean.replace(IMPERATIVE_SELF_INSTRUCTION, '');
+
+  // Third shape: bare "Do NOT call any more tools." sentence anywhere — that's
+  // never something to say to a user.
+  clean = clean.replace(/\s*Do\s+NOT\s+call\s+(?:any\s+more|more)\s+tools?\.?/gi, '');
+
+  // Fourth shape: "Now write/confirm ..." tail when the rest of the strip
+  // didn't trigger. Conservative — only at end of text and only when it
+  // explicitly addresses the user.
+  clean = clean.replace(/\s*Now\s+(?:write|call|tell|reply|compose|confirm)\s+[^.\n]*?(?:to\s+the\s+user|the\s+user)[^.\n]*?\.\s*$/gi, '');
+
   return clean.replace(/\n{3,}/g, '\n\n').trim();
 }
 

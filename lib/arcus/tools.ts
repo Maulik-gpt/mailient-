@@ -5913,14 +5913,20 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       })
     : null;
 
+  // The output is what the LLM sees as its tool result. Keep it concise and
+  // factual — NO embedded self-instructions like "Now write a confirmation".
+  // The scheduled_agent canvas card carries the visual confirmation; the LLM
+  // composes its own one-sentence reply for chat.
+  const channelHuman = data.output_channel === 'gmail' ? 'your Gmail inbox'
+    : data.output_channel === 'slack' ? 'Slack'
+    : 'both Slack and your Gmail inbox';
   return {
     output: [
-      `Scheduled agent "${data.name}" created successfully and is now LIVE.`,
-      `Schedule: ${scheduleLabel} (cron: ${cron})`,
-      nextRunLabel ? `Next run: ${nextRunLabel}` : '',
-      `Delivery: ${data.output_channel}`,
-      `Now write a short confirmation to the user telling them the agent is live, when it will next run, and how the report will be delivered. Do NOT call any more tools.`,
-    ].filter(Boolean).join('\n'),
+      `Agent "${data.name}" is live.`,
+      `Schedule: ${scheduleLabel} (cron ${cron}).`,
+      nextRunLabel ? `Next run: ${nextRunLabel}.` : '',
+      `Delivery: ${channelHuman}.`,
+    ].filter(Boolean).join(' '),
     canvasData: {
       title: data.name,
       type: 'scheduled_agent',

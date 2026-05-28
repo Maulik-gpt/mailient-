@@ -303,14 +303,34 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
     };
 
     if (shouldAnimate) {
+      // Wrap pure-text paragraph contents with WordBlurStream so each word
+      // fades in from a soft blur. Inline emphasis (strong/em/code/links)
+      // still renders through the base components — only the bare text
+      // nodes inside a paragraph get the blur animation. List items get
+      // the same treatment for parity with paragraphs.
+      const animateChildren = (children: any): any => {
+        if (typeof children === 'string') {
+          return <WordBlurStream text={children} loop={false} msPerWord={70} startupMs={250} maxBlurPx={5} />;
+        }
+        if (Array.isArray(children)) {
+          return children.map((c, i) =>
+            typeof c === 'string'
+              ? <WordBlurStream key={i} text={c} loop={false} msPerWord={70} startupMs={250} maxBlurPx={5} />
+              : c
+          );
+        }
+        return children;
+      };
+      const Para = (base as any).p;
+      const Li = (base as any).li;
       return {
         ...base,
-        text: ({ children }: { children: string }) => {
-          if (typeof children === 'string') {
-            return <WordBlurStream text={children} loop={false} />;
-          }
-          return children;
-        }
+        p: (props: any) => Para
+          ? <Para {...props}>{animateChildren(props.children)}</Para>
+          : <p>{animateChildren(props.children)}</p>,
+        li: (props: any) => Li
+          ? <Li {...props}>{animateChildren(props.children)}</Li>
+          : <li>{animateChildren(props.children)}</li>,
       };
     }
 

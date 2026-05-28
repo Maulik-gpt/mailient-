@@ -625,7 +625,24 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               );
               emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
               if (result.canvasData) emit('canvas', result.canvasData);
-              emit('message', { content: result.output });
+              // Compose a clean one-sentence chat message ourselves — never
+              // ship the raw tool output (which is for the LLM's eyes).
+              const cd: any = result.canvasData;
+              const attrs: any[] = cd?.pageMeta?.attendees || [];
+              const scheduleLabel = attrs[0] || 'as scheduled';
+              const channelRaw = (attrs[2] || 'gmail') as string;
+              const channelHuman = channelRaw === 'gmail' ? 'your Gmail inbox'
+                : channelRaw === 'slack' ? 'Slack'
+                : 'both Slack and your Gmail inbox';
+              const nextRun = cd?.pageMeta?.startTime;
+              const nextRunHuman = nextRun
+                ? new Date(nextRun).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
+                : null;
+              const agentName = params.name;
+              const chatMsg = nextRunHuman
+                ? `**${agentName}** is live — first run ${nextRunHuman}, report lands in ${channelHuman}.`
+                : `**${agentName}** is live — running ${scheduleLabel}, report lands in ${channelHuman}.`;
+              emit('message', { content: chatMsg });
               emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
               controller.close();
               return;
