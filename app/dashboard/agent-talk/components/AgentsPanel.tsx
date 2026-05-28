@@ -288,14 +288,38 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
 
 // ── Templates ──────────────────────────────────────────────────────────────────
 
-const TEMPLATES = [
-  { name: 'Morning Inbox Sweep', description: 'Scan inbox for unanswered client emails, draft replies in your tone, email a summary.', cron_schedule: '0 7 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 7am, search my inbox for any unanswered client emails, study my recent sent emails to learn my writing tone, draft a personalized reply for each one, and email me a clear summary with links to each draft.' },
-  { name: 'Meeting Autopilot', description: 'Find meeting requests, check calendar, book with Meet links, Slack you a summary.', cron_schedule: '0 9 * * *', output_channel: 'both' as const, task_description: 'Every morning at 9am, search my Gmail inbox for meeting requests, check my Google Calendar for availability, book confirmed meetings with Google Meet links, and send me a Slack message listing what was scheduled.' },
-  { name: 'Weekly Opportunity Digest', description: 'Scan all emails from the week, identify revenue opportunities and leads, email a full digest.', cron_schedule: '0 18 * * 0', output_channel: 'gmail' as const, task_description: 'Every Sunday at 6pm, search through all emails I received this week, identify revenue opportunities, potential partnerships, and warm leads, and write a comprehensive weekly digest email.' },
-  { name: 'Client Pulse', description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping.', cron_schedule: '0 */1 * * *', output_channel: 'slack' as const, task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences.' },
-  { name: 'Notion + Inbox Sync', description: 'Cross-reference Notion tasks with Gmail, find gaps, send a daily project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my Notion task list, search Gmail for emails related to each project, identify gaps, and email me a concise project briefing.' },
-  { name: 'Lead Harvest', description: 'Run the lead qualification flow across inbox and web, push to Notion, email a harvest report.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for inbound leads, research and qualify each one via web search, save qualified leads to Notion, and email me a harvest report.' },
-];
+// Curated agent templates — fetched from /api/arcus/agents/templates so
+// the catalog stays a single source of truth. We keep a thin offline
+// fallback list so the dashboard still renders if the API is unreachable.
+import { AGENT_TEMPLATES as CURATED_AGENT_TEMPLATES, type AgentTemplate as CuratedAgentTemplate } from '@/lib/arcus/agent-templates';
+
+interface UITemplate {
+  id?: string;
+  emoji?: string;
+  name: string;
+  description: string;
+  tagline?: string;
+  cron_schedule: string;
+  output_channel: 'gmail' | 'slack' | 'both';
+  task_description: string;
+  skip_confirmations?: boolean;
+}
+
+function curatedToUITemplate(t: CuratedAgentTemplate): UITemplate {
+  return {
+    id: t.id,
+    emoji: t.emoji,
+    name: t.name,
+    description: t.description,
+    tagline: t.tagline,
+    cron_schedule: t.cronSchedule,
+    output_channel: t.outputChannel,
+    task_description: t.taskDescription,
+    skip_confirmations: t.skipConfirmations,
+  };
+}
+
+const TEMPLATES: UITemplate[] = CURATED_AGENT_TEMPLATES.map(curatedToUITemplate);
 
 function PremiumDatePicker({ value, onChange, minDate }: {
   value: string;
@@ -1345,17 +1369,43 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
           onAgentClick={() => {}}
         />
       ) : tab === 'marketplace' ? (
-        <div className="flex flex-col items-center justify-center py-16 px-4 bg-arcus-surface/10 border border-arcus-divider/40 rounded-3xl text-center">
-          <div className="w-12 h-12 rounded-2xl bg-arcus-surface/80 flex items-center justify-center mb-4 border border-arcus-divider">
-            <Compass className="w-6 h-6 text-arcus-fg-secondary animate-pulse" />
-          </div>
-          <h3 className="text-[18px] font-extrabold text-arcus-fg tracking-tight mb-2 font-sans">Marketplace Coming Soon</h3>
-          <p className="text-[13px] text-arcus-fg-muted max-w-sm leading-relaxed mb-1">
-            Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
+        <div>
+          <p className="text-[13px] text-arcus-fg-muted mb-5 leading-relaxed">
+            One-click starter agents. Each opens the create modal pre-filled with a tested schedule, task, and output channel — tweak anything before activating.
           </p>
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-arcus-raised/60 text-arcus-fg-secondary border border-arcus-divider/80 mt-4 uppercase tracking-wider">
-            Under Development
-          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {TEMPLATES.map((t, i) => (
+              <motion.div
+                key={t.id || i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: i * 0.04 }}
+                className="bg-arcus-surface/60 backdrop-blur-xl border border-arcus-border rounded-2xl p-4 flex flex-col hover:border-arcus-divider hover:bg-arcus-surface transition-all group"
+              >
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0 text-[18px]">
+                    {t.emoji || <Clock className="w-4 h-4 text-arcus-fg-secondary" />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[14px] font-bold text-arcus-fg leading-tight truncate">{t.name}</p>
+                    {t.tagline && (
+                      <p className="text-[11px] text-arcus-fg-muted truncate">{t.tagline}</p>
+                    )}
+                  </div>
+                </div>
+                <p className="text-[12.5px] text-arcus-fg-muted leading-relaxed flex-1 mb-3 line-clamp-3">{t.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-arcus-fg-muted font-medium">{cronToLabel(t.cron_schedule)}</span>
+                  <button
+                    onClick={() => setTemplateInit(t as any)}
+                    className="px-3.5 py-1.5 rounded-lg bg-arcus-fg text-arcus-fg-inverse text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all"
+                  >
+                    Add agent
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       ) : agents.length === 0 ? (
         <div>

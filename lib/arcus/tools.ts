@@ -3159,7 +3159,7 @@ async function draftReply(userId: string, input: any, context: ToolContext = {})
     : undefined;
 
   return {
-    output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.${lowScoreNote}`,
+    output: `Draft saved to Gmail successfully.\nTo: ${displayName} <${input.to}>\nSubject: ${subject}\nGmail URL: ${previewUrl}\nDraft ID: ${draft.id}\n\nDraft body (first 400 chars):\n${input.body.slice(0, 400)}${input.body.length > 400 ? '...' : ''}\n\nNow write your final response: confirm what you did, include the subject line and the opening lines of the draft verbatim, and tell the user to review and send from the draft panel. Do NOT call send_email.${lowScoreNote}`,
     canvasData: {
       title: `Draft: ${subject}`,
       type: 'email_draft',
@@ -3373,7 +3373,7 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
   const recipientName = input.recipientName || (typeof input.to === 'string' ? input.to.split('@')[0] : '');
 
   return {
-    output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}`,
+    output: `Email sent successfully! Message ID: ${sent.id}\nTo: ${input.to}\nSubject: ${input.subject}\nGmail URL: ${viewUrl}`,
     canvasData: {
       title: input.subject || '(no subject)',
       type: 'email_sent',
@@ -3491,6 +3491,7 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
     output: [
       `Meeting created: "${created.summary}"`,
       `Start: ${created.start?.dateTime}`,
+      created.htmlLink ? `Calendar URL: ${created.htmlLink}` : '',
       meetLink ? `Meet: ${meetLink}` : '',
       input.attendees?.length ? `Attendees: ${input.attendees.join(', ')}` : '',
       `Now confirm to the user what was scheduled and provide the meet link.`,
