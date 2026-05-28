@@ -3299,16 +3299,13 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
-              // If a question or plan card was already shown, no chat message needed
-              if (hadQuestionEvent || hadPlanEvent) {
+              // If a question or plan card was already shown, no chat message needed.
+              // PART 21: if the LLM produced no text but tools ran, do NOT fabricate
+              // a "Done — completed X" string. The cards themselves (confirmation,
+              // spec, plan, action result) are the message. Falling back to a
+              // tool-name salad makes the assistant look like it's hallucinating.
+              if (hadQuestionEvent || hadPlanEvent || !finalProcessedText) {
                 finalProcessedText = '';
-              } else if (!finalProcessedText && (stepIndex > 0 || currentAgentSteps.length > 0)) {
-                // Show a concise summary of what was done
-                const completedSteps = currentAgentSteps.filter(s => s.status === 'completed' || s.status === 'active');
-                const toolNames = [...new Set(completedSteps.map(s => (s.label || (s as any).tool || '').replace(/_/g, ' ')).filter(Boolean))].join(', ');
-                finalProcessedText = completedSteps.length > 0
-                  ? `Done — completed ${toolNames}. Let me know if you need any changes.`
-                  : '';
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
@@ -3354,15 +3351,10 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
-        // Generate a fallback only if no structured event (question/plan) already handled the response
-        let fallbackText = hadQuestionEvent || hadPlanEvent ? '' : finalContent.trim();
-        if (!fallbackText && !hadQuestionEvent && !hadPlanEvent && autoCompletedSteps.length > 0) {
-          const completedLabels = [...new Set(autoCompletedSteps
-            .filter(s => s.status === 'completed')
-            .map(s => (s.label || (s as any).tool || '').replace(/_/g, ' '))
-            .filter(Boolean))].join(', ');
-          fallbackText = completedLabels ? `Done — completed ${completedLabels}.` : '';
-        }
+        // PART 21: never fabricate a "Done — completed X" salad. The cards
+        // already on the message ARE the deliverable. Blank chat text on
+        // stream-finished-without-done is fine.
+        const fallbackText = hadQuestionEvent || hadPlanEvent ? '' : finalContent.trim();
 
         setMessages(msgs => msgs.map(m => {
           if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -3396,15 +3388,10 @@ export default function ChatInterface({
           allMsgs = [...allMsgs, userMsg];
         }
 
-        // Use synthesized content — skip fallback entirely if a question or plan card was shown
-        let finalPersistedText = hadQuestionEvent || hadPlanEvent ? '' : (finalProcessedText || finalContent);
-        if (!finalPersistedText.trim() && !hadQuestionEvent && !hadPlanEvent && currentAgentSteps.length > 0) {
-          const completedLabels = [...new Set(currentAgentSteps
-            .filter(s => s.status === 'completed')
-            .map(s => (s.label || (s as any).tool || '').replace(/_/g, ' '))
-            .filter(Boolean))].join(', ');
-          finalPersistedText = completedLabels ? `Done — completed ${completedLabels}.` : '';
-        }
+        // PART 21: persist whatever real text the run produced — no
+        // "Done — completed [tool salad]" fabrication. Empty string is the
+        // correct persisted value when cards carry the response.
+        const finalPersistedText = (hadQuestionEvent || hadPlanEvent) ? '' : (finalProcessedText || finalContent || '').trim();
         // Capture the in-memory message's live meta so EVERY card type the SSE
         // handlers set on this message (agentSpecConfirm, agentPlanPreview,
         // confirmationData, connectorRequired, planStepFailed, actionResults,

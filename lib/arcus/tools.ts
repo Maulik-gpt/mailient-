@@ -5620,6 +5620,32 @@ async function getUserTimezone(userId: string): Promise<string> {
 }
 
 async function requestConfirmation(input: any, userId: string, context: ToolContext = {}): Promise<ToolResult> {
+  // HARD GUARD — refuse confirmations for tools that have their OWN flow.
+  // create_scheduled_agent has the spec-card → live-agent-card sequence;
+  // draft_reply saves a draft the user reviews in the UI; open_canvas just
+  // renders content. Calling request_confirmation for any of these produces
+  // a generic "Confirm/Cancel" card with nothing meaningful behind it,
+  // which the user reads as a hallucination.
+  const actionStr = String(input?.action || '').toLowerCase();
+  const SELF_CONFIRMING_PATTERNS = [
+    /\bcreate_scheduled_agent\b/,
+    /\bscheduled\s+agent\b/,
+    /\bschedule\s+(an?\s+)?agent\b/,
+    /\bcreate\s+(an?\s+)?agent\b/,
+    /\bregister\s+(an?\s+)?agent\b/,
+    /\bdraft_reply\b/,
+    /\bdraft\s+(a\s+)?reply\b/,
+    /\bopen_canvas\b/,
+  ];
+  for (const pat of SELF_CONFIRMING_PATTERNS) {
+    if (pat.test(actionStr)) {
+      return failureResult(
+        `Refusing to issue request_confirmation for "${input?.action}". This tool action has its own confirmation flow built in — call it directly. If you wanted to create a scheduled agent, call create_scheduled_agent with spec_markdown (Stage 1 spec card). If you wanted to draft a reply, call draft_reply (saves to Gmail drafts). Do NOT route these through request_confirmation.`,
+        'self_confirming_tool',
+      );
+    }
+  }
+
   const details: Record<string, string> = {};
   if (input.details && typeof input.details === 'object') {
     for (const [k, v] of Object.entries(input.details)) {
