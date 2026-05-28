@@ -332,19 +332,26 @@ export function ConnectorsModal({
 
   const handleDisconnect = async (appId: string) => {
     try {
-      const res = await fetch(`/api/integrations?provider=${appId}`, {
-        method: 'DELETE'
+      // PART 25: unified disconnect — clears all three token stores
+      // (arcus_integrations, integration_credentials, user_tokens) so the
+      // chat layer correctly sees the connector as disconnected on next turn.
+      const res = await fetch('/api/arcus/connectors/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider: appId }),
       });
-      if (res.ok) {
-        // Refresh statuses
-        const resStatus = await fetch('/api/integrations/status');
-        if (resStatus.ok) {
-          const data = await resStatus.json();
-          setStatuses(data.integrations || []);
-        }
-        setSelectedApp(null);
-        setManageDropdownOpen(false);
+      if (!res.ok) {
+        const errBody = await res.json().catch(() => ({}));
+        throw new Error(errBody.error || `Disconnect failed (${res.status})`);
       }
+      // Refresh statuses
+      const resStatus = await fetch('/api/integrations/status');
+      if (resStatus.ok) {
+        const data = await resStatus.json();
+        setStatuses(data.integrations || []);
+      }
+      setSelectedApp(null);
+      setManageDropdownOpen(false);
     } catch (err) {
       console.error('Failed to disconnect:', err);
     }

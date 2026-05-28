@@ -128,20 +128,37 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
 
     const handleDisconnectApp = async (appId: string) => {
         try {
-            const res = await fetch(`/api/integrations?provider=${appId}`, {
-                method: 'DELETE'
+            // PART 25: route through the unified disconnect endpoint built in
+            // PART 24 so all three token stores are cleared in one call
+            // (arcus_integrations + integration_credentials + user_tokens).
+            // The legacy DELETE /api/integrations only cleared
+            // integration_credentials, leaving the newer arcus_integrations
+            // row orphaned — chat would keep seeing the connector as
+            // connected after the user clicked Disconnect.
+            const res = await fetch('/api/arcus/connectors/disconnect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ provider: appId }),
             });
-            if (res.ok) {
-                const resStatus = await fetch('/api/integrations/status');
-                if (resStatus.ok) {
-                    const data = await resStatus.json();
-                    setIntegrationStatuses(Array.isArray(data.integrations) ? data.integrations : []);
-                }
-                toast.success('App disconnected');
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.error || `Disconnect failed (${res.status})`);
             }
-        } catch (err) {
-            toast.error('Failed to disconnect app');
-            console.error('Failed to disconnect:', err);
+            const result = await res.json().catch(() => ({}));
+            // Refresh status panel from server
+            const resStatus = await fetch('/api/integrations/status');
+            if (resStatus.ok) {
+                const data = await resStatus.json();
+                setIntegrationStatuses(Array.isArray(data.integrations) ? data.integrations : []);
+            }
+            toast.success(
+                result?.totalRows
+                    ? `Disconnected (${result.totalRows} record${result.totalRows === 1 ? '' : 's'} cleared)`
+                    : 'App disconnected',
+            );
+        } catch (err: any) {
+            toast.error(err?.message || 'Failed to disconnect app');
+            console.error('[Settings] Disconnect failed:', err);
         }
     };
 

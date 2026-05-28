@@ -414,10 +414,28 @@ export async function callLLM(
     await sleep(200);
   }
 
+  // PART 25 — better diagnostics when every pass fails. The browser-side
+  // catch reads err.message to decide whether to auto-retry vs show hard
+  // failure. Keep the canonical "models are currently busy" prefix so the
+  // classifier still matches, but append diagnostics so the server log is
+  // actually useful for debugging WHY (no keys, all dead, all rate-limited).
+  const totalKeys = keys.length;
+  const deadCount = deadKeys.size;
+  const aliveCount = totalKeys - deadCount;
+  const diag = totalKeys === 0
+    ? 'no OpenRouter API keys configured'
+    : aliveCount === 0
+      ? `all ${totalKeys} API key(s) marked dead`
+      : `${aliveCount}/${totalKeys} key(s) alive but every model returned null (rate-limited / cooling / empty)`;
   log('error', 'Engine', 'All passes exhausted', {
-    keys: keys.length, deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
+    keys: totalKeys, alive: aliveCount, dead: deadCount,
+    deadKeys: [...deadKeys].map(k => `…${k.slice(-4)}`),
+    diag,
   });
-  throw new Error('All models are currently busy. Please try again in a moment.');
+  // Also surface as a console.error so client-side diagnostics catch it
+  // when the engine is being called inside the browser path.
+  console.error('[Arcus:Engine] All passes exhausted:', diag);
+  throw new Error(`All models are currently busy. Please try again in a moment. (${diag})`);
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────

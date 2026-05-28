@@ -1054,13 +1054,25 @@ function classifyArcusError(message: string | undefined): ArcusErrorKind {
     m.includes('token expired') ||
     m.includes('403')
   ) return 'auth';
-  // Transient warnings → auto-retry already wired in for these
+  // Transient warnings → auto-retry already wired in for these.
+  // PART 25: added "models are currently busy" / "models busy" / "all passes"
+  // because the engine throws "All models are currently busy. Please try
+  // again in a moment." when every free OpenRouter key is rate-limited.
+  // The screenshot showed this hitting the hard-red 'error' path instead
+  // of the soft-yellow auto-retry path because none of the previous tokens
+  // matched the engine's actual error text.
   if (
     m.includes('exhausted') ||
     m.includes('timed out') ||
     m.includes('timeout') ||
     m.includes('rate limit') ||
-    m.includes('429')
+    m.includes('429') ||
+    m.includes('models are currently busy') ||
+    m.includes('models busy') ||
+    m.includes('all passes') ||
+    m.includes('please try again in a moment') ||
+    m.includes('service unavailable') ||
+    m.includes('503')
   ) return 'warning';
   return 'error';
 }
