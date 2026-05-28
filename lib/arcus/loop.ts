@@ -406,6 +406,27 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         try { controller.enqueue(encode(sseEvent(type, data))); } catch { /* closed */ }
       };
 
+      /**
+       * F1.2 — Single canonical close path. Every controller.close() in this
+       * loop MUST go through this helper so we always emit `done` first.
+       * Previously, error branches called close() without done, leaving the
+       * ChatInterface in its "stream finished unexpectedly" fallback path
+       * (where it fabricated "Done — completed [tool salad]" strings).
+       *
+       * If a 'done' was already emitted before the caller hit this helper,
+       * the alreadyDone flag suppresses the second emission so we don't
+       * double-emit `done`. Idempotent on multiple calls (controller throws
+       * when closing twice).
+       */
+      let alreadyDone = false;
+      const closeStream = (totalSteps = 0) => {
+        if (!alreadyDone) {
+          alreadyDone = true;
+          try { controller.enqueue(encode(sseEvent('done', { runId, durationMs: Date.now() - startedAt, totalSteps }))); } catch { /* closed */ }
+        }
+        try { controller.close(); } catch { /* already closed */ }
+      };
+
       try {
         log('info', 'run_start', { runId, isPlanMode, tools: availableTools.map(t => t.name), msgLen: userMessage.length });
         emit('run_start', { runId, message: userMessage });
@@ -453,8 +474,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const questions = (askCall.input?.questions ?? []).filter((q: any) => q?.text?.trim());
               if (questions.length > 0) {
                 emit('question', { questions, runId });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0, hadQuestion: true });
-                controller.close();
+                closeStream(0);
                 return;
               }
             }
@@ -488,8 +508,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
           const planText = sanitizeModelText(getText(vagueRes.content));
           emit('message', { content: planText });
-          emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
-          controller.close();
+          closeStream(0);
           return;
         }
 
@@ -570,13 +589,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
                 if (result.canvasData) emit('canvas', result.canvasData);
                 emit('message', { content: result.output });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
-                controller.close();
+                closeStream(1);
                 return;
               } catch (err: any) {
                 log('error', 'agent_creation_intercept_execution_failed', { error: err.message });
                 emit('error', { message: `Couldn't create the agent: ${err.message}` });
-                controller.close();
+                closeStream(0);
                 return;
               }
             }
@@ -644,8 +662,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   .replace(/\s*Now\s+(?:write|call|tell|reply|compose|confirm)\s+[^.\n]*?(?:to\s+the\s+user|the\s+user)[^.\n]*?\.\s*$/gi, '')
                   .trim();
                 emit('message', { content: userFacing || `Couldn't create the agent — ${result.errorCode || 'unknown error'}.` });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
-                controller.close();
+                closeStream(1);
                 return;
               }
 
@@ -668,16 +685,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 ? `**${agentName}** is live — first run ${nextRunHuman}, report lands in ${channelHuman}.`
                 : `**${agentName}** is live — running ${scheduleLabel}, report lands in ${channelHuman}.`;
               emit('message', { content: chatMsg });
-              emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
-              controller.close();
+              closeStream(1);
               return;
             } catch (err: any) {
               log('error', 'stage2_intercept_execution_failed', { error: err.message });
               emit('error', { message: `Couldn't create the agent: ${err.message}` });
-              // F1.2 partial — also emit done so client doesn't fall into
-              // its "stream-finished-without-done" fallback path.
-              emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
-              controller.close();
+              closeStream(0);
               return;
             }
           }
@@ -770,8 +783,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             estimatedCalls: executionPlan.estimatedCalls,
             specificDescription: specificDescription || `I will execute ${executionPlan.steps.length} steps to complete your request.`,
           });
-          emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
-          controller.close();
+          closeStream(0);
           return;
         }
 
@@ -1073,8 +1085,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const questions = askUserCall.input?.questions ?? [];
               if (questions.length > 0) {
                 emit('question', { questions, runId });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
-                controller.close();
+                closeStream(totalToolCalls);
                 return;
               }
             }
@@ -1364,19 +1375,25 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                       waitingForUser: true,
                       reason: code,
                     });
-                    // Replace the LLM-facing failure with a short one — the
-                    // card carries the explanation. The LLM should NOT write
-                    // a paragraph; one acknowledgement sentence at most.
-                    toolResults[toolResults.length - 1] = {
-                      type: 'tool_result',
-                      tool_use_id: tc.id,
-                      content:
-                        `Tool ${tc.name} failed: ${connectorMeta.name} is not connected (or scope is missing). ` +
-                        `A connector card has ALREADY been shown to the user. ` +
-                        `Reply with ONE short sentence acknowledging the missing connection — example: ` +
-                        `"I need ${connectorMeta.name} access to do that — reconnect it from the card and I'll continue." ` +
-                        `Do NOT write a long paragraph. Do NOT call any more tools.`,
-                    };
+                    // F1.4 — Replace the LLM-facing failure by tool_use_id,
+                    // NOT by array index. Previously `toolResults[length-1]`
+                    // assumed the last pushed entry was this failure, which
+                    // is true in serial code but is a hidden invariant a
+                    // future parallel-batch refactor could easily break.
+                    const newContent =
+                      `Tool ${tc.name} failed: ${connectorMeta.name} is not connected (or scope is missing). ` +
+                      `A connector card has ALREADY been shown to the user. ` +
+                      `Reply with ONE short sentence acknowledging the missing connection — example: ` +
+                      `"I need ${connectorMeta.name} access to do that — reconnect it from the card and I'll continue." ` +
+                      `Do NOT write a long paragraph. Do NOT call any more tools.`;
+                    const matchIdx = toolResults.findIndex(r => r.tool_use_id === tc.id);
+                    if (matchIdx >= 0) {
+                      toolResults[matchIdx] = { type: 'tool_result', tool_use_id: tc.id, content: newContent };
+                    } else {
+                      // Defensive — push if not found (shouldn't happen but
+                      // beats silently dropping the failure context).
+                      toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: newContent });
+                    }
                   }
                   continue;
                 }
@@ -1460,8 +1477,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
               if (mustStop) {
                 messages.push({ role: 'user', content: toolResults as any });
-                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
-                controller.close();
+                closeStream(totalToolCalls);
                 return;
               }
             }
@@ -1809,7 +1825,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           emit('message', { content: finalText, canvasContent: canvasContent || undefined });
         }
 
-        emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: totalToolCalls });
+        closeStream(totalToolCalls);
 
       } catch (err: any) {
         log('error', 'Unhandled loop error', {
@@ -1819,7 +1835,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           runId,
         });
         emit('error', { message: err.message || 'Something went wrong. Please try again.' });
+        // F1.2 — always emit done after error so the client doesn't fall
+        // back to its "stream finished unexpectedly" salad path.
+        closeStream(0);
       } finally {
+        // Idempotent — closeStream() above already closed. This catches
+        // any edge case where the try block returned without closing.
         try { controller.close(); } catch { /* already closed */ }
       }
     },

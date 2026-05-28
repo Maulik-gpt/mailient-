@@ -98,6 +98,17 @@ const ALL_FREE_MODELS = [
   ...FALLBACK_MODELS,
 ];
 
+// F2.3 — Paid escape hatch. Activated only when ALL_FREE_MODELS exhaust AND
+// ALLOW_PAID_MODELS=true in env. These are cheap, fast, reliable paid models
+// the user pays for via their $29/mo plan when every free key is rate-limited.
+// Ordered cheapest → fastest → most-capable so the engine spends as little
+// as possible per turn.
+const PAID_MODELS = [
+  'openai/gpt-5-nano',         // cheapest, fast, tool-capable
+  'anthropic/claude-haiku-5',  // fast + reliable
+  'google/gemini-2.5-flash',   // fallback
+];
+
 
 function getKeys(): string[] {
   return [
@@ -412,6 +423,30 @@ export async function callLLM(
     const r = await tryModel(model, noToolsBody, MODEL_TIMEOUT);
     if (r) return r;
     await sleep(200);
+  }
+
+  // F2.3 — Pass 4: paid-model escape hatch. Activated when every free model
+  // returned null AND the operator enabled paid fallback via env. Without
+  // this, $29/mo users hit the same "All models busy" error free users do.
+  if (process.env.ALLOW_PAID_MODELS === 'true' && PAID_MODELS.length) {
+    log('warn', 'Engine', 'Pass 3 failed — falling back to paid models', { models: PAID_MODELS });
+    await sleep(300);
+    for (const model of PAID_MODELS) {
+      const r = await tryModel(model, baseBody, MODEL_TIMEOUT);
+      if (r) {
+        log('info', 'Engine', 'Paid fallback succeeded', { model });
+        return r;
+      }
+      await sleep(150);
+    }
+    // Final emergency: paid + no tools (some paid models may refuse tools)
+    for (const model of PAID_MODELS.slice(0, 2)) {
+      const r = await tryModel(model, noToolsBody, MODEL_TIMEOUT);
+      if (r) {
+        log('info', 'Engine', 'Paid no-tools fallback succeeded', { model });
+        return r;
+      }
+    }
   }
 
   // PART 25 — better diagnostics when every pass fails. The browser-side

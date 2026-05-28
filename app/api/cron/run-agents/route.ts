@@ -202,11 +202,50 @@ export async function GET(request: NextRequest) {
         return agent.name;
       } catch (err: any) {
         console.error(`[Cron] Agent ${agent.name} failed:`, err.message);
+
+        // F3.3 — Transient-failure retry. If the error is something like
+        // "models busy" / "timeout" / "5xx", shift last_run_at backward by
+        // ~30 minutes so the next cron tick re-runs the agent ~30 min from
+        // now, instead of waiting the full schedule (~24 h for a daily
+        // agent). Hard failures (validation errors, auth) keep last_run_at
+        // = now so they don't loop on a permanent error.
+        const errStr = String(err.message || '').toLowerCase();
+        const isTransient =
+          errStr.includes('models are currently busy') ||
+          errStr.includes('rate limit') ||
+          errStr.includes('429') ||
+          errStr.includes('timeout') ||
+          errStr.includes('timed out') ||
+          errStr.includes('etimedout') ||
+          errStr.includes('econnreset') ||
+          /\b5\d\d\b/.test(errStr) ||
+          errStr.includes('service unavailable');
+
+        // The 30-min retry window: schedule a re-run by pretending last_run_at
+        // was 30 min before the agent's normal interval would have fired.
+        // Stamp last_run_at = (now - cron_interval + 30 min). Since we don't
+        // parse cron deltas here, approximate: subtract 23.5 h from now —
+        // for a daily agent the next "due" check (which requires diffMin > 55
+        // from current last_run_at) clears in ~30 min. For sub-daily agents
+        // this is more aggressive, which is fine for transient errors.
+        const RETRY_DELAY_MIN = 30;
+        const APPROX_INTERVAL_MS = 24 * 60 * 60 * 1000; // assume daily
+        const retryStamp = isTransient
+          ? new Date(now.getTime() - APPROX_INTERVAL_MS + RETRY_DELAY_MIN * 60_000).toISOString()
+          : now.toISOString();
+        const summary = isTransient
+          ? `Transient error (retrying in ~${RETRY_DELAY_MIN}m): ${err.message}`
+          : `Error: ${err.message}`;
+
         await supabase
           .from('arcus_agents')
-          .update({ status: 'active', last_run_at: now.toISOString(), last_report_summary: `Error: ${err.message}` })
+          .update({ status: 'active', last_run_at: retryStamp, last_report_summary: summary })
           .eq('id', agent.id);
-        try { await sendErrorNotification(agent, err.message); } catch { /* non-critical */ }
+        // Only notify the user on hard failures — transient ones will
+        // self-recover on the retry.
+        if (!isTransient) {
+          try { await sendErrorNotification(agent, err.message); } catch { /* non-critical */ }
+        }
         throw err;
       }
     }),
