@@ -23,6 +23,8 @@ import { getSupabaseAdmin } from '../supabase.js';
 // @ts-ignore
 import { decrypt } from '../crypto.js';
 
+import { normalizeUserId } from './user-id';
+
 const TABLE = 'arcus_integrations';
 const TTL_MS = 60 * 60 * 1000; // 1 hour — Gmail scope changes are rare
 
@@ -42,7 +44,7 @@ export interface ScopeCheckResult {
 export async function verifyGmailScopes(userId: string): Promise<ScopeCheckResult> {
   try {
     const supabase = getSupabaseAdmin();
-    const uid = userId.toLowerCase();
+    const uid = normalizeUserId(userId);
 
     // 1) Pull token + cache state in one round trip
     const { data, error } = await supabase
@@ -121,7 +123,7 @@ export async function invalidateGmailScope(userId: string): Promise<void> {
     await supabase
       .from(TABLE)
       .update({ scope_ok_until: null })
-      .eq('user_id', userId.toLowerCase())
+      .eq('user_id', normalizeUserId(userId))
       .eq('provider', 'gmail');
   } catch {
     /* non-fatal */

@@ -12,6 +12,8 @@
  * Never throws — memory failure must never break the conversation.
  */
 
+import { normalizeUserId } from './user-id';
+
 const BASE = 'https://api.supermemory.ai/v3';
 
 function getKey(): string | null {
@@ -63,12 +65,27 @@ export async function saveMemory(
   if (!content?.trim()) return;
   const trimmed = content.slice(0, 2000);
 
+  // F7.1 — Respect the per-user memory toggle. Previously saveMemory wrote
+  // unconditionally, bypassing the user's opt-out in the settings card.
+  // Manual user-added memories ('user' source) still go through — that's
+  // an explicit "remember this" action the user took. Auto-extracted
+  // memories ('ai' / 'agent_run') are silently skipped when the toggle
+  // is off, matching how the older extractAndSaveInsights paths behaved.
+  if (source !== 'user') {
+    try {
+      const enabled = await isMemoryEnabled(userId);
+      if (!enabled) return;
+    } catch {
+      // If we can't determine the toggle state, fail open and write.
+    }
+  }
+
   // 1. Supabase (the durable store) — always run when possible.
   try {
     const { getSupabaseAdmin } = await import('../supabase.js');
     const supabase = getSupabaseAdmin();
     await supabase.from('arcus_memories').insert({
-      user_id: userId.toLowerCase(),
+      user_id: normalizeUserId(userId),
       content: trimmed,
       tags: tags ?? [],
       source,
@@ -121,7 +138,7 @@ export async function searchMemoriesRaw(userId: string, query: string, limit = 8
     let req = supabase
       .from('arcus_memories')
       .select('content, tags, created_at')
-      .eq('user_id', userId.toLowerCase())
+      .eq('user_id', normalizeUserId(userId))
       .order('created_at', { ascending: false })
       .limit(limit * 2);
     // If a real query was provided, ILIKE-filter on content. Empty query

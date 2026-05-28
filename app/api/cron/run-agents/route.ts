@@ -152,11 +152,24 @@ export async function GET(request: NextRequest) {
   const perAgentSlice = sharedBudget / readyToRun.length;
   const perAgentToolCalls = Math.min(80, Math.max(20, Math.floor(perAgentSlice / 2500)));
 
-  // Mark all as 'running' up front so the next tick doesn't double-launch
-  // any of them if this function takes longer than the cron interval.
+  // F3.1 — Mark 'running' AND set last_run_at = now in ONE write up front.
+  //
+  // Previously only status was updated here; last_run_at was written after
+  // the run completed. If Vercel's 60s timeout killed the function before
+  // that post-run write, the row was left as {status:'running', last_run_at:
+  // <stale>}. The stale-lock check on the next tick (60-min threshold)
+  // would see the stale last_run_at, treat the agent as crash-recovered,
+  // and re-run it. Long-running agents could loop indefinitely.
+  //
+  // By stamping last_run_at at START, even a timeout leaves a fresh
+  // timestamp — the stale-lock recovery only fires after a real 60-min
+  // hang, never on a normal long-but-completed run.
+  const nowIso = now.toISOString();
   await Promise.all(
     readyToRun.map(a =>
-      supabase.from('arcus_agents').update({ status: 'running' }).eq('id', a.id),
+      supabase.from('arcus_agents')
+        .update({ status: 'running', last_run_at: nowIso })
+        .eq('id', a.id),
     ),
   );
 

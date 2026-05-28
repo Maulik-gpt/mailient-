@@ -882,8 +882,9 @@ Direct. Calm. Competent. No fluff, no hedging. You are the user's chief of staff
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {
   try {
     const { getSupabaseAdmin } = await import('../supabase.js');
+    const { normalizeUserId } = await import('./user-id');
     const supabase = getSupabaseAdmin();
-    const uid = userId.toLowerCase();
+    const uid = normalizeUserId(userId);
 
     const [arcusRes, legacyRes, userTokensRes] = await Promise.all([
       supabase.from('arcus_integrations').select('provider').eq('user_id', uid),

@@ -18,6 +18,7 @@
 
 // @ts-ignore — JS module, no .d.ts
 import { getSupabaseAdmin } from '../supabase.js';
+import { normalizeUserId } from './user-id';
 
 export type ApprovalActionType =
   | 'send_email'
@@ -91,7 +92,7 @@ export async function recordPendingApproval(params: {
       .from(APPROVAL_TABLE)
       .insert({
         conversation_id: params.conversationId,
-        user_id: params.userId.toLowerCase(),
+        user_id: normalizeUserId(params.userId),
         action_type: params.actionType,
         target_key: params.targetKey,
         action_label: params.actionLabel || null,
@@ -137,7 +138,7 @@ export async function consumeApproval(params: {
       .from(APPROVAL_TABLE)
       .select('id, expires_at')
       .eq('conversation_id', params.conversationId)
-      .eq('user_id', params.userId.toLowerCase())
+      .eq('user_id', normalizeUserId(params.userId))
       .eq('action_type', params.actionType)
       .eq('target_key', params.targetKey)
       .eq('status', 'approved')
@@ -189,7 +190,7 @@ export async function approvePending(params: {
       .from(APPROVAL_TABLE)
       .update({ status: 'approved', approved_at: new Date().toISOString() })
       .eq('id', params.approvalId)
-      .eq('user_id', params.userId.toLowerCase())
+      .eq('user_id', normalizeUserId(params.userId))
       .eq('status', 'pending');
     if (error) {
       console.warn('[Arcus:Approvals] approvePending failed:', error.message);
@@ -224,7 +225,7 @@ export async function hasDeclinedApproval(params: {
       .from(APPROVAL_TABLE)
       .select('id')
       .eq('conversation_id', params.conversationId)
-      .eq('user_id', params.userId.toLowerCase())
+      .eq('user_id', normalizeUserId(params.userId))
       .eq('action_type', params.actionType)
       .eq('target_key', params.targetKey)
       .eq('status', 'declined')
@@ -250,7 +251,7 @@ export async function declinePending(params: {
       .from(APPROVAL_TABLE)
       .update({ status: 'declined' })
       .eq('id', params.approvalId)
-      .eq('user_id', params.userId.toLowerCase())
+      .eq('user_id', normalizeUserId(params.userId))
       .eq('status', 'pending');
     return !error;
   } catch {

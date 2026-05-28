@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '../supabase.js';
+import { normalizeUserId } from './user-id';
 
 export interface PendingActionParams {
   agentId: string;
@@ -20,7 +21,7 @@ export async function queuePendingAction(params: PendingActionParams): Promise<b
       .insert({
         agent_id: params.agentId,
         run_id: params.runId,
-        user_id: params.userId.toLowerCase(),
+        user_id: normalizeUserId(params.userId),
         tool_name: params.toolName,
         tool_input: params.toolInput,
         status: 'pending',

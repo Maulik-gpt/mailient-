@@ -24,6 +24,7 @@ import {
 } from './session-state';
 import { queuePendingAction } from './agent-approvals';
 import { getCanvasState, setCanvasState } from './canvas-state';
+import { normalizeUserId } from './user-id';
 
 // ── Token helpers ──────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ import { getCanvasState, setCanvasState } from './canvas-state';
 async function refreshGoogleToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
-    const uid = userId.toLowerCase();
+    const uid = normalizeUserId(userId);
 
     // 1. Try to find in arcus_integrations (V3)
     const { data: v3 } = await supabase
@@ -145,7 +146,7 @@ async function performGoogleRefresh(refreshToken: string): Promise<string | null
 async function getGmailToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
-    const uid = userId.toLowerCase();
+    const uid = normalizeUserId(userId);
 
     // 1. arcus_integrations (V3 OAuth flow)
     const { data: v3 } = await supabase
@@ -182,7 +183,7 @@ async function getGmailToken(userId: string): Promise<string | null> {
 async function getGcalToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
-    const uid = userId.toLowerCase();
+    const uid = normalizeUserId(userId);
 
     // 1. arcus_integrations (V3 OAuth flow)
     const { data: v3 } = await supabase
@@ -2828,7 +2829,7 @@ async function voiceProfileGenerate(userId: string, input: any): Promise<ToolRes
     const { data } = await supabase
       .from('arcus_integrations')
       .select('access_token, refresh_token')
-      .eq('user_id', userId.toLowerCase())
+      .eq('user_id', normalizeUserId(userId))
       .eq('provider', 'gmail')
       .maybeSingle();
 
@@ -4655,7 +4656,7 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
         if (m.id === id) return false;
         const from = (getHeader(m.payload?.headers || [], 'From') || '').toLowerCase();
         const internalDate = parseInt(m.internalDate || '0');
-        return internalDate > sentMs && !from.includes(userId.toLowerCase());
+        return internalDate > sentMs && !from.includes(normalizeUserId(userId));
       });
 
       if (!hasReply && subject && to) {
@@ -4793,7 +4794,7 @@ function learnFromSentEmail(userId: string, body: string, subject: string): void
       const { data: existing } = await supabase
         .from('user_voice_profiles')
         .select('voice_profile')
-        .eq('user_id', userId.toLowerCase())
+        .eq('user_id', normalizeUserId(userId))
         .maybeSingle();
 
       const prev = (existing?.voice_profile as any) || {};
@@ -4827,7 +4828,7 @@ function learnFromSentEmail(userId: string, body: string, subject: string): void
       };
 
       await supabase.from('user_voice_profiles').upsert(
-        { user_id: userId.toLowerCase(), voice_profile: blended, updated_at: new Date().toISOString() },
+        { user_id: normalizeUserId(userId), voice_profile: blended, updated_at: new Date().toISOString() },
         { onConflict: 'user_id' }
       );
     } catch { /* completely non-fatal */ }
@@ -5879,11 +5880,48 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
   // ── End integration gate ────────────────────────────────────────────────────
 
   const supabase = getSupabaseAdmin();
+  const normalizedUserId = normalizeUserId(userId);
+  const trimmedName = input.name.trim();
+
+  // F8.1 — Idempotency: if an agent with the same (user_id, name) is
+  // already active/paused/running, return THAT row instead of inserting a
+  // duplicate. Stage-2 spec-approved messages can fire twice on double-
+  // click, and template-spawn from the marketplace has its own dedup but
+  // the LLM-driven path didn't. Two identical rows = two cron firings of
+  // the same work twice a day, burning budget and confusing users.
+  const { data: existing } = await supabase
+    .from('arcus_agents')
+    .select('id, name, task_description, cron_schedule, output_channel, slack_channel, skip_confirmations, expires_at, status')
+    .eq('user_id', normalizedUserId)
+    .eq('name', trimmedName)
+    .in('status', ['active', 'paused', 'running'])
+    .maybeSingle();
+  if (existing) {
+    const scheduleLabel = cronToLabel(existing.cron_schedule);
+    const userTz = await getUserTimezone(userId);
+    const nextRun = nextRunIso(existing.cron_schedule, userTz);
+    return {
+      output: `Agent "${trimmedName}" is already live (created earlier). Schedule: ${scheduleLabel}. No new agent was created.`,
+      canvasData: {
+        title: existing.name,
+        type: 'scheduled_agent',
+        markdown: '',
+        pageMeta: {
+          pageId: existing.id,
+          contentPreview: existing.task_description,
+          url: '',
+          startTime: nextRun || undefined,
+          attendees: [scheduleLabel, existing.cron_schedule, existing.output_channel, String(!!existing.skip_confirmations), existing.status],
+        },
+      },
+    };
+  }
+
   const { data, error } = await supabase
     .from('arcus_agents')
     .insert({
-      user_id: userId.toLowerCase(),
-      name: input.name.trim(),
+      user_id: normalizedUserId,
+      name: trimmedName,
       task_description: input.task_description.trim(),
       cron_schedule: cron,
       output_channel: input.output_channel || 'gmail',
@@ -8482,7 +8520,7 @@ async function performanceMonitoringAndOptimization(userId: string, input: any):
     const { data, error } = await supabase
       .from('arcus_audit_log')
       .select('tool_name, success, duration_ms, created_at')
-      .eq('user_id', userId.toLowerCase())
+      .eq('user_id', normalizeUserId(userId))
       .gte('created_at', since)
       .order('created_at', { ascending: false })
       .limit(500);

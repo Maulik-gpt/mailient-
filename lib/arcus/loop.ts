@@ -624,9 +624,34 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 },
               );
               emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
+
+              // F1.1 — Branch on result.success. Previously we ALWAYS emitted
+              // a "**X** is live — first run …" message even on validation
+              // errors / integration gates / agent_create_failed, because the
+              // happy-path code ran unconditionally. The user would see a
+              // confident "live" message but no agent was created.
+              if (result.success === false) {
+                log('warn', 'stage2_intercept_tool_returned_failure', { code: result.errorCode, output: result.output.slice(0, 200) });
+                // Surface the canvasData regardless (integration_required
+                // card is useful) but use the tool's actual output text in
+                // the chat message — sanitized by the sanitizer downstream
+                // so self-instructions don't leak.
+                if (result.canvasData) emit('canvas', result.canvasData);
+                // Strip the LLM-facing "Now write..." / "Do NOT call any
+                // more tools" tails before showing to the user.
+                const userFacing = result.output
+                  .replace(/\s*Do\s+NOT\s+call\s+(?:any\s+more|more)\s+tools?\.?/gi, '')
+                  .replace(/\s*Now\s+(?:write|call|tell|reply|compose|confirm)\s+[^.\n]*?(?:to\s+the\s+user|the\s+user)[^.\n]*?\.\s*$/gi, '')
+                  .trim();
+                emit('message', { content: userFacing || `Couldn't create the agent — ${result.errorCode || 'unknown error'}.` });
+                emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
+                controller.close();
+                return;
+              }
+
+              // Happy path — agent created. Emit canvas + compose a clean
+              // one-sentence chat message from canvasData.pageMeta.
               if (result.canvasData) emit('canvas', result.canvasData);
-              // Compose a clean one-sentence chat message ourselves — never
-              // ship the raw tool output (which is for the LLM's eyes).
               const cd: any = result.canvasData;
               const attrs: any[] = cd?.pageMeta?.attendees || [];
               const scheduleLabel = attrs[0] || 'as scheduled';
@@ -649,6 +674,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             } catch (err: any) {
               log('error', 'stage2_intercept_execution_failed', { error: err.message });
               emit('error', { message: `Couldn't create the agent: ${err.message}` });
+              // F1.2 partial — also emit done so client doesn't fall into
+              // its "stream-finished-without-done" fallback path.
+              emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 0 });
               controller.close();
               return;
             }

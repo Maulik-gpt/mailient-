@@ -28,6 +28,7 @@
 
 import { getSupabaseAdmin } from '../supabase.js';
 import { saveMemory, searchMemoriesRaw } from './memory';
+import { normalizeUserId } from './user-id';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 1. WORKLIST — filter at source
@@ -211,7 +212,7 @@ export async function readActiveClaims(
     const { data, error } = await supabase
       .from('arcus_agent_scratchpad')
       .select('agent_id, agent_name, claims')
-      .eq('user_id', userId.toLowerCase());
+      .eq('user_id', normalizeUserId(userId));
     if (error) return new Set();
 
     const now = Date.now();
@@ -250,7 +251,7 @@ export async function writeClaim(
       .from('arcus_agent_scratchpad')
       .upsert(
         {
-          user_id: userId.toLowerCase(),
+          user_id: normalizeUserId(userId),
           agent_id: agentId,
           agent_name: agentName,
           claims: [claim],

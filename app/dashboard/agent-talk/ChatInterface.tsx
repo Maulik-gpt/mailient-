@@ -489,6 +489,19 @@ interface Email {
   snippet: string;
 }
 
+/**
+ * F5.1 — Collision-free message id generator. Date.now() alone can collide
+ * when two messages are created in the same millisecond (rapid retry,
+ * suggestion-click + send within ~1ms). We OR-combine the timestamp with a
+ * monotonically increasing counter so two calls in the same ms still get
+ * distinct ids. JS numbers stay safe up to 2^53; this stays well below.
+ */
+let __msgIdCounter = 0;
+function nextMessageId(): number {
+  __msgIdCounter = (__msgIdCounter + 1) % 1000;
+  return Date.now() * 1000 + __msgIdCounter;
+}
+
 interface AgentMessage {
   id: number;
   type: 'agent';
@@ -2139,7 +2152,7 @@ export default function ChatInterface({
 
     // 2. Add the "Continue" message to the UI
     const continueMsg: UserMessage = {
-      id: Date.now(),
+      id: nextMessageId(),
       type: 'user',
       role: 'user',
       content: "Continue",
@@ -2520,7 +2533,7 @@ export default function ChatInterface({
   const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, options: any = {}) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
-    const assistantMsgId = Date.now() + 1;
+    const assistantMsgId = nextMessageId();
 
     setIsLoading(true);
     setIsAgentLoopActive(true);
@@ -3416,7 +3429,7 @@ export default function ChatInterface({
         const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
         let allMsgs = existing.messages || [];
         if (!hasUserMsg) {
-          const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
           allMsgs = [...allMsgs, userMsg];
         }
 
@@ -3540,7 +3553,7 @@ export default function ChatInterface({
         const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
         let allMsgs = existing.messages || [];
         if (!hasUserMsg) {
-          const userMsg: UserMessage = { id: Date.now(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
           allMsgs = [...allMsgs, userMsg];
         }
 
@@ -3674,7 +3687,7 @@ export default function ChatInterface({
 
         // Add error message to chat with recovery guidance
         const errorAgentMessage: AgentMessage = {
-          id: Date.now() + 1,
+          id: nextMessageId(),
           type: 'agent',
           role: 'assistant',
           notes: [],
@@ -3701,7 +3714,7 @@ export default function ChatInterface({
 
       // Add error to chat
       const errorAgentMessage: AgentMessage = {
-        id: Date.now() + 1,
+        id: nextMessageId(),
         type: 'agent',
         role: 'assistant',
         notes: [],
@@ -4217,7 +4230,7 @@ export default function ChatInterface({
     }
 
     const newMessage: UserMessage = {
-      id: Date.now(),
+      id: nextMessageId(),
       type: 'user',
       role: 'user',
       notes: [],
@@ -4358,7 +4371,7 @@ export default function ChatInterface({
       setPendingReplyProposal(null);
 
       const agentMessage: AgentMessage = {
-        id: Date.now() + 1,
+        id: nextMessageId(),
         type: 'agent',
         role: 'assistant',
         notes: [],

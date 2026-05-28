@@ -12,6 +12,7 @@
 
 // @ts-ignore — JS module, no .d.ts
 import { getSupabaseAdmin } from '../supabase.js';
+import { normalizeUserId } from './user-id';
 
 const TABLE = 'arcus_canvas_state';
 
@@ -64,7 +65,7 @@ export async function setCanvasState(params: {
     const supabase = getSupabaseAdmin();
     await supabase.from(TABLE).upsert({
       conversation_id: params.conversationId,
-      user_id: params.userId.toLowerCase(),
+      user_id: normalizeUserId(params.userId),
       title: params.title ?? null,
       type: params.type ?? null,
       markdown: params.markdown ?? '',
