@@ -264,6 +264,49 @@ function humanizeError(tool: string, raw: string): string {
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
+/**
+ * Parse the structured Stage-2 message the ChatInterface Confirm button sends:
+ *
+ *   Spec approved for "<name>". Create the agent now.
+ *   Call create_scheduled_agent with these exact parameters AND _planApproved: true:
+ *   - name: "Morning Inbox Sweep"
+ *   - task_description: "..."
+ *   - cron_schedule: "0 7 * * *"
+ *   - output_channel: "gmail"
+ *   - slack_channel: "#general"     (optional)
+ *   - skip_confirmations: false
+ *   - _planApproved: true
+ *
+ * Returns the input object create_scheduled_agent expects, or null if parsing
+ * failed (caller falls through to the normal loop).
+ */
+function parseStructuredAgentParams(msg: string): Record<string, any> | null {
+  try {
+    const params: Record<string, any> = {};
+    // Match lines like:  - key: "value"   or   - key: value   or   - key: true
+    const lineRe = /^\s*-\s*([a-zA-Z_]+)\s*:\s*(.+?)\s*$/gm;
+    let m: RegExpExecArray | null;
+    while ((m = lineRe.exec(msg)) !== null) {
+      const key = m[1];
+      let raw = m[2];
+      // Strip surrounding quotes
+      if ((raw.startsWith('"') && raw.endsWith('"')) ||
+          (raw.startsWith("'") && raw.endsWith("'"))) {
+        raw = raw.slice(1, -1);
+      }
+      // Coerce literals
+      if (raw === 'true') params[key] = true;
+      else if (raw === 'false') params[key] = false;
+      else if (raw === 'null') params[key] = null;
+      else if (/^-?\d+$/.test(raw)) params[key] = parseInt(raw, 10);
+      else params[key] = raw;
+    }
+    return Object.keys(params).length > 0 ? params : null;
+  } catch {
+    return null;
+  }
+}
+
 function sseEvent(type: string, data: unknown): string {
   return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
 }
@@ -539,6 +582,61 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             }
             log('warn', 'agent_creation_intercept_no_tool_call — falling through to default loop');
           }
+        }
+
+        // ── Stage 2 intercept: spec-approved message from UI Confirm button ─
+        // After the user clicks Confirm on the spec card, ChatInterface sends:
+        //   Spec approved for "<name>". Create the agent now.
+        //   Call create_scheduled_agent with these exact parameters AND _planApproved: true:
+        //   - name: "..."
+        //   - task_description: "..."
+        //   - cron_schedule: "..."
+        //   - output_channel: "..."
+        //   - skip_confirmations: false|true
+        //   - _planApproved: true
+        // We don't need an LLM round-trip — parse the params directly from the
+        // message and call the tool. This guarantees the LLM cannot "ask for
+        // confirmation again" because the LLM never sees this message.
+        const isStage2SpecApproved =
+          !isPlanMode &&
+          !isBackgroundAgent &&
+          /^Spec approved for ['"]/.test(userMessage.trim()) &&
+          userMessage.includes('_planApproved: true');
+
+        if (isStage2SpecApproved) {
+          emit('thinking', { status: 'Registering your agent…' });
+          const params = parseStructuredAgentParams(userMessage);
+          if (params && params.name && params.task_description && params.cron_schedule) {
+            try {
+              emit('tool_call', { tool: 'create_scheduled_agent', params, iteration: 0 });
+              const result = await executeTool(
+                'create_scheduled_agent',
+                params,
+                userId,
+                {
+                  conversationId,
+                  toolHistory: [],
+                  isBackgroundAgent,
+                  skipConfirmations,
+                  runId,
+                  agentId,
+                  runState: 'EXECUTING' as const,
+                },
+              );
+              emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
+              if (result.canvasData) emit('canvas', result.canvasData);
+              emit('message', { content: result.output });
+              emit('done', { runId, durationMs: Date.now() - startedAt, totalSteps: 1 });
+              controller.close();
+              return;
+            } catch (err: any) {
+              log('error', 'stage2_intercept_execution_failed', { error: err.message });
+              emit('error', { message: `Couldn't create the agent: ${err.message}` });
+              controller.close();
+              return;
+            }
+          }
+          log('warn', 'stage2_intercept_param_parse_failed — falling through to default loop', { sample: userMessage.slice(0, 200) });
         }
 
         // ── PART 10: Auto-detect plan-first tasks ───────────────────────────
