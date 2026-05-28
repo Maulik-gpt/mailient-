@@ -5826,6 +5826,33 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       );
     }
 
+    // F2.6 — Run the integration check FIRST so the user sees the
+    // integration-required card immediately, not after clicking Confirm.
+    // Previously Stage 1 rendered the spec, the user clicked Confirm, then
+    // Stage 3's integration gate fired — the spec card vanished and an
+    // integration-required card appeared mid-flow. Confusing.
+    const requiredIntegrations = detectRequiredIntegrations(taskDescription, outputChannel);
+    if (requiredIntegrations.length > 0) {
+      const connected = await getConnectedIntegrations(userId);
+      const missing = requiredIntegrations.filter(r => !connected.includes(r));
+      if (missing.length > 0) {
+        return {
+          output: `Before I can create **${agentName}**, you need to connect: ${missing.join(', ')}. Connect those integrations from the card below, then ask me to create the agent again.`,
+          canvasData: {
+            title: agentName,
+            type: 'integration_required',
+            markdown: '',
+            pageMeta: {
+              required: requiredIntegrations,
+              connected: requiredIntegrations.filter(r => connected.includes(r)),
+              missing,
+              agentParams,
+            } as any,
+          },
+        };
+      }
+    }
+
     // Persist the spec to canvas state so update_canvas / inspection can read it later.
     if (context.conversationId) {
       await setCanvasState({

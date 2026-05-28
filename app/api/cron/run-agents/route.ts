@@ -176,6 +176,27 @@ export async function GET(request: NextRequest) {
   const runResults = await Promise.allSettled(
     readyToRun.map(async (agent) => {
       results.push(`Running: ${agent.name} (${agent.user_id})`);
+      // FX.2 — Insert a run record so we have history beyond just the
+      // most-recent on arcus_agents. Updated in-flight as the run progresses.
+      const runStartedAt = new Date();
+      let runRecordId: string | null = null;
+      try {
+        const { data: runRecord } = await supabase
+          .from('arcus_agent_runs')
+          .insert({
+            agent_id: agent.id,
+            user_id: agent.user_id,
+            started_at: runStartedAt.toISOString(),
+            status: 'running',
+          })
+          .select('id')
+          .single();
+        runRecordId = runRecord?.id || null;
+      } catch (e: any) {
+        // Table may not be migrated yet — non-fatal, run still proceeds.
+        console.warn(`[Cron:Runs] Could not insert run record: ${e.message}`);
+      }
+
       try {
         const report = await runAgentTask(agent, {
           maxToolCalls: perAgentToolCalls,
@@ -184,12 +205,14 @@ export async function GET(request: NextRequest) {
 
         const runHasPending = await hasPendingActions(agent.id);
 
-        // Delivery (email + Slack) in parallel per agent
-        await Promise.allSettled([
+        // Delivery (email + Slack) in parallel per agent — capture per-channel
+        // results so we can record which worked.
+        const [emailResult, slackResult] = await Promise.allSettled([
           sendEmailReport(agent.user_id, agent.name, report, runHasPending),
           sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
         ]);
 
+        const completedAt = new Date();
         await supabase
           .from('arcus_agents')
           .update({
@@ -198,6 +221,23 @@ export async function GET(request: NextRequest) {
             last_report_summary: report.slice(0, 500),
           })
           .eq('id', agent.id);
+
+        // FX.2 — Update the run record with final status + delivery.
+        if (runRecordId) {
+          try {
+            await supabase
+              .from('arcus_agent_runs')
+              .update({
+                completed_at: completedAt.toISOString(),
+                duration_ms: completedAt.getTime() - runStartedAt.getTime(),
+                status: 'success',
+                report_summary: report.slice(0, 500),
+                email_delivery: emailResult.status === 'fulfilled' ? 'sent' : 'failed',
+                slack_delivery: slackResult.status === 'fulfilled' ? 'sent' : 'failed',
+              })
+              .eq('id', runRecordId);
+          } catch { /* non-fatal */ }
+        }
 
         return agent.name;
       } catch (err: any) {
@@ -241,6 +281,22 @@ export async function GET(request: NextRequest) {
           .from('arcus_agents')
           .update({ status: 'active', last_run_at: retryStamp, last_report_summary: summary })
           .eq('id', agent.id);
+
+        // FX.2 — Update the run record with failure status.
+        if (runRecordId) {
+          try {
+            await supabase
+              .from('arcus_agent_runs')
+              .update({
+                completed_at: new Date().toISOString(),
+                duration_ms: Date.now() - runStartedAt.getTime(),
+                status: isTransient ? 'transient_error' : 'error',
+                error_message: String(err.message || 'unknown error').slice(0, 1000),
+              })
+              .eq('id', runRecordId);
+          } catch { /* non-fatal */ }
+        }
+
         // Only notify the user on hard failures — transient ones will
         // self-recover on the retry.
         if (!isTransient) {

@@ -209,35 +209,49 @@ export async function POST(request) {
 /**
  * DELETE /api/integrations - Disconnect integration
  */
+// F6.1 — DEPRECATED. This handler used to only delete from
+// integration_credentials, leaving arcus_integrations and user_tokens
+// rows orphaned — the chat layer kept seeing connectors as connected
+// after the user disconnected. PART 24 introduced a unified endpoint at
+// /api/arcus/connectors/disconnect that deletes from all three stores
+// with the conditional safeguard for shared Google tokens.
+//
+// This handler now proxies to that endpoint so any old call site keeps
+// working but goes through the correct cleanup path. Log a deprecation
+// warning so we can find and migrate callers, then delete this handler
+// in a follow-up.
 export async function DELETE(request) {
+  console.warn('[DEPRECATED] DELETE /api/integrations — use POST /api/arcus/connectors/disconnect instead.');
   try {
     const session = await auth();
     if (!session?.user?.email) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-
     const { searchParams } = new URL(request.url);
     const provider = searchParams.get('provider');
-
     if (!provider) {
       return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
     }
 
-    const userEmail = session.user.email;
-
-    // Remove credentials
-    const { error } = await supabase
-      .from('integration_credentials')
-      .delete()
-      .eq('user_email', userEmail)
-      .eq('provider', provider);
-
-    if (error) throw error;
-
-    // Log the disconnection
-    await db.logIntegrationEvent(userEmail, provider, 'disconnected');
-
-    return NextResponse.json({ success: true, message: `Disconnected ${provider}` });
+    // Proxy to the unified endpoint with the same cookie/session.
+    const origin = new URL(request.url).origin;
+    const proxied = await fetch(`${origin}/api/arcus/connectors/disconnect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        // Forward the session cookie so the unified endpoint's auth() succeeds.
+        cookie: request.headers.get('cookie') || '',
+      },
+      body: JSON.stringify({ provider }),
+    });
+    const body = await proxied.json().catch(() => ({}));
+    if (!proxied.ok) {
+      return NextResponse.json(
+        { error: body.error || `Disconnect failed (${proxied.status})` },
+        { status: proxied.status },
+      );
+    }
+    return NextResponse.json({ success: true, message: `Disconnected ${provider}`, ...body });
   } catch (error) {
     console.error('[Integrations API] Disconnect error:', error);
     return NextResponse.json(
