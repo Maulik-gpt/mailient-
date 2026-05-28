@@ -5859,35 +5859,75 @@ export default function ChatInterface({
                                       />
                                     )}
 
-                                    {/* Action buttons — AFTER all cards */}
-                                    {msg.role === 'assistant' && !(msg as AgentMessage).meta?.limitReached && !(msg as AgentMessage).meta?.isStreaming && !(msg as AgentMessage).meta?.hasError && (
-                                      <MessageActionButtons
-                                        msg={msg}
-                                        isLoading={isLoading}
-                                        onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
-                                        onRegenerate={handleRegenerateClick}
-                                        onShare={async () => {
-                                          if (!currentConversationId || messages.length === 0) return null;
-                                          try {
-                                            const res = await fetch('/api/agent-talk/share', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({
-                                                conversationId: currentConversationId,
-                                                messages,
-                                                title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
-                                              }),
-                                            });
-                                            const data = await res.json();
-                                            return data.shareUrl || null;
-                                          } catch { return null; }
-                                        }}
-                                      />
-                                    )}
+                                    {/* Action buttons — AFTER all cards. Hidden whenever the
+                                        assistant is still asking the user for something (pending
+                                        question, spec/plan/integration/confirmation card waiting
+                                        for a click, agent loop currently running for this msg). */}
+                                    {(() => {
+                                      if (msg.role !== 'assistant') return null;
+                                      const m = msg as AgentMessage;
+                                      if (m.meta?.limitReached || m.meta?.isStreaming || m.meta?.hasError) return null;
+                                      // ── "Still asking the user" gate ──
+                                      const isStillAskingUser =
+                                        !!m.meta?.agentSpecConfirm ||
+                                        !!m.meta?.agentPlanPreview ||
+                                        !!m.meta?.confirmationData ||
+                                        !!m.meta?.planStepFailed ||
+                                        !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
+                                        !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
+                                        // Pending follow-up question card attached to THIS msg
+                                        (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
+                                      // Agent loop still streaming this assistant turn
+                                      const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
+                                      if (isStillAskingUser || isThisMsgActive) return null;
+                                      return (
+                                        <MessageActionButtons
+                                          msg={msg}
+                                          isLoading={isLoading}
+                                          onFeedback={(type, id) => setFeedbackModal({ isOpen: true, type, msgId: id })}
+                                          onRegenerate={handleRegenerateClick}
+                                          onShare={async () => {
+                                            if (!currentConversationId || messages.length === 0) return null;
+                                            try {
+                                              const res = await fetch('/api/agent-talk/share', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({
+                                                  conversationId: currentConversationId,
+                                                  messages,
+                                                  title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+                                                }),
+                                              });
+                                              const data = await res.json();
+                                              return data.shareUrl || null;
+                                            } catch { return null; }
+                                          }}
+                                        />
+                                      );
+                                    })()}
                                   </div>
-                                  <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
-                                    {msg.time}
-                                  </div>
+                                  {(() => {
+                                    // Same gate for the timestamp — don't print "9:43 AM" under
+                                    // a card that's still waiting on the user.
+                                    if (msg.role === 'assistant') {
+                                      const m = msg as AgentMessage;
+                                      const isStillAskingUser =
+                                        !!m.meta?.agentSpecConfirm ||
+                                        !!m.meta?.agentPlanPreview ||
+                                        !!m.meta?.confirmationData ||
+                                        !!m.meta?.planStepFailed ||
+                                        !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
+                                        !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
+                                        (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
+                                      const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
+                                      if (isStillAskingUser || isThisMsgActive) return null;
+                                    }
+                                    return (
+                                      <div className={`mt-2 px-1 text-[10px] tracking-tight text-graphite-muted-2 opacity-60 ${msg.role === 'user' ? 'text-right' : 'text-left'}`}>
+                                        {msg.time}
+                                      </div>
+                                    );
+                                  })()}
                                 </div>
                               </div>
                             </div>

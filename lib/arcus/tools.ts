@@ -8304,14 +8304,21 @@ async function notionAutoArchiveCompletedWork(userId: string, input: any): Promi
   if (!dbMatch) return failureResult(`Could not find a database matching "${databaseHint}".`, 'not_found');
   const databaseId = dbMatch[1];
 
-  // @ts-ignore
-  const { getNotionToken } = await import('./notion-token-helpers').catch(() => ({ getNotionToken: null as any }));
-  if (!getNotionToken) {
-    // Inline fallback: read the token via supabase like searchNotion does
-    return { output: `Found database ${databaseId}. Manual archive needed — Notion API relation/page-archive operations require an authenticated bearer. Use the Notion UI bulk-archive on "${databaseHint}" filtered by ${statusPropName} ∈ [${completedValues.join(', ')}].` };
-  }
-
-  return { output: `Auto-archive would target database ${databaseId} with statusProperty="${statusPropName}" completedValues=[${completedValues.join(', ')}]. Implementation requires Notion archive-page API access — call this when database write permissions are verified.` };
+  // Notion archive-page API call deferred — the existing searchNotion
+  // primitive doesn't expose the bearer token, and adding a per-page archive
+  // PATCH loop here would need its own auth wrapper. Until that ships, this
+  // tool returns a triage report so the user can bulk-archive in the Notion
+  // UI with confidence about what needs archiving.
+  return {
+    output: [
+      `Auto-archive triage for database ${databaseId} ("${databaseHint}"):`,
+      `Status property: "${statusPropName}"`,
+      `Completed values: [${completedValues.join(', ')}]`,
+      '',
+      `Manual archive step: open the database in Notion → filter by ${statusPropName} ∈ [${completedValues.join(', ')}] → bulk-select → Archive.`,
+      `Notion archive-page API will be wired here in a future update.`,
+    ].join('\n'),
+  };
 }
 
 async function notionGenerateWeeklySummaries(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
