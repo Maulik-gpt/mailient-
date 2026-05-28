@@ -3405,13 +3405,31 @@ export default function ChatInterface({
             .filter(Boolean))].join(', ');
           finalPersistedText = completedLabels ? `Done — completed ${completedLabels}.` : '';
         }
-        const agentMsg: AgentMessage = { 
-          id: assistantMsgId, 
-          type: 'agent', 
-          role: 'assistant', 
-          content: { text: finalPersistedText, list: [], footer: '' }, 
+        // Capture the in-memory message's live meta so EVERY card type the SSE
+        // handlers set on this message (agentSpecConfirm, agentPlanPreview,
+        // confirmationData, connectorRequired, planStepFailed, actionResults,
+        // etc.) survives the localStorage round-trip. The old code rebuilt
+        // meta from a hand-rolled allow-list of closure variables, dropping
+        // any card type that wasn't explicitly tracked there.
+        let liveMeta: any = null;
+        setMessages(prev => {
+          const live = prev.find(m => m.id === assistantMsgId && m.type === 'agent') as AgentMessage | undefined;
+          if (live) liveMeta = live.meta || null;
+          return prev;
+        });
+
+        const agentMsg: AgentMessage = {
+          id: assistantMsgId,
+          type: 'agent',
+          role: 'assistant',
+          content: { text: finalPersistedText, list: [], footer: '' },
           time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
           meta: {
+            // Persist whatever the live message accumulated during streaming
+            ...(liveMeta || {}),
+            // Then layer the closure-derived fields on top so the most-recent
+            // values from this turn always win (kept for backwards compat with
+            // any handlers that set these via closures, not message meta).
             agentSteps: currentAgentSteps,
             agentNarratives: currentAgentNarratives,
             ...(currentTaskList ? { taskList: currentTaskList } : {}),
@@ -3421,6 +3439,9 @@ export default function ChatInterface({
             ...(currentActionResult ? { actionResult: currentActionResult } : {}),
             ...(currentDraftReply ? { draftReply: currentDraftReply } : {}),
             ...(currentCanvasResult ? { result: currentCanvasResult } : {}),
+            // Clear streaming-only flags before persisting
+            isStreaming: false,
+            liveThinking: '',
           }
         };
 
