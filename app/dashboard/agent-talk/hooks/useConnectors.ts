@@ -138,38 +138,57 @@ export function useConnectors(options: UseConnectorsOptions) {
     }
   }, [userId, supabase, loadAccounts, options]);
 
-  // Disconnect an account
-  const disconnect = useCallback(async (accountId: string) => {
+  // Disconnect an account (now: by connectorId, not accountId — so we can
+  // hit the unified Arcus disconnect endpoint which clears every store).
+  // The legacy /api/connectors/{accountId} DELETE only touched one table,
+  // so disconnecting Gmail from the UI left the row in integration_credentials
+  // and user_tokens orphaned — the next chat turn would still think Gmail
+  // was connected. Now we POST a provider to the new endpoint and it deletes
+  // from arcus_integrations + integration_credentials + (conditionally)
+  // user_tokens, plus invalidates the scope-probe cache.
+  const disconnect = useCallback(async (accountIdOrConnectorId: string) => {
     if (!userId) return;
 
     try {
       setError(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
+      // Resolve to a connectorId — the new endpoint takes provider, not
+      // arcus account id. The local state stores both, so we accept either.
+      const account = connectedAccounts.find(
+        a => a.id === accountIdOrConnectorId || a.connectorId === accountIdOrConnectorId,
+      );
+      const provider = account?.connectorId || accountIdOrConnectorId;
 
-      const response = await fetch(`/api/connectors/${accountId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
+      const response = await fetch('/api/arcus/connectors/disconnect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to disconnect account');
+        const errBody = await response.json().catch(() => ({}));
+        throw new Error(errBody.error || 'Failed to disconnect');
       }
 
-      // Update local state
-      setConnectedAccounts(prev => 
-        prev.filter(acc => acc.id !== accountId)
-      );
-
-      options.onDisconnect?.(accountId);
-
+      // Local state — drop ANY account whose connectorId matches the provider.
+      setConnectedAccounts(prev => prev.filter(a => a.connectorId !== provider));
+      options.onDisconnect?.(accountIdOrConnectorId);
+      // Refresh from server so anything we missed (other parallel rows) syncs.
+      loadAccounts();
     } catch (err) {
       setError(err as Error);
       options.onError?.(err as Error);
     }
-  }, [userId, supabase, options]);
+  }, [userId, supabase, options, connectedAccounts, loadAccounts]);
+
+  // Reconfigure / "Manage" — re-initiates OAuth for an already-connected
+  // provider. Used when a connector's scopes expired or the user wants to
+  // re-authorize. Same flow as connect() but the OAuth screen will show
+  // the user the existing app permissions and let them grant any missing
+  // scope (e.g. add Calendar after only granting Gmail).
+  const reconfigure = useCallback(async (connectorId: string) => {
+    return connect(connectorId);
+  }, [connect]);
 
   // Dismiss banner
   const dismissBanner = useCallback(() => {
@@ -206,6 +225,7 @@ export function useConnectors(options: UseConnectorsOptions) {
     // Actions
     connect,
     disconnect,
+    reconfigure,
     dismissBanner,
     refresh: loadAccounts
   };

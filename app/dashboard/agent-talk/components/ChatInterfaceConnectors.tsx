@@ -41,6 +41,7 @@ export function ChatInterfaceConnectors({
     connectedCount,
     connect,
     disconnect,
+    reconfigure,
     dismissBanner,
     refresh
   } = useConnectors({
@@ -65,6 +66,13 @@ export function ChatInterfaceConnectors({
 
   const handleDisconnect = async (accountId: string) => {
     await disconnect(accountId);
+  };
+
+  // Manage / Configure / Re-authorize — re-initiates OAuth so the user can
+  // grant additional scopes (e.g. add Calendar to an existing Gmail link)
+  // or refresh expired tokens without disconnecting and reconnecting.
+  const handleReconfigure = async (connectorId: string) => {
+    await reconfigure(connectorId);
   };
 
   return (
@@ -121,6 +129,7 @@ export function ChatInterfaceConnectors({
         connectedAccounts={connectedAccounts}
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
+        onReconfigure={handleReconfigure}
         isConnecting={isConnecting}
       />
 

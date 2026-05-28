@@ -1306,23 +1306,49 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   outcomes.push({ tool: tc.name, ok: false, error: result.output });
                   toolResults.push({ type: 'tool_result', tool_use_id: tc.id, content: failureMsg });
 
-                  // Gmail scope-missing recovery: invalidate the preflight cache
-                  // so the next chat turn re-probes, and emit a connector_required
-                  // card so the user can reconnect inline without leaving the chat.
-                  // No retry this turn — scope changes require user OAuth consent.
-                  if (code === 'gmail_scope_missing') {
-                    invalidateGmailScope(userId).catch(() => { /* non-fatal */ });
+                  // Scope-missing / not-connected recovery: emit a
+                  // connector_required card so the user can reconnect inline.
+                  // PART 24 broadens this from gmail-only to every connector
+                  // so calendar / notion / slack failures also show the card
+                  // instead of the LLM writing a confused paragraph.
+                  // Also: inject a hard "STOP" instruction into the failure
+                  // result the LLM sees so it doesn't narrate the problem
+                  // — the card already tells the user everything.
+                  const CONNECTOR_FAILURE_MAP: Record<string, { id: string; name: string; description: string }> = {
+                    gmail_scope_missing:    { id: 'gmail',  name: 'Gmail',            description: 'Reconnect Gmail — the current token is missing some scopes.' },
+                    gmail_not_connected:    { id: 'gmail',  name: 'Gmail',            description: 'Connect Gmail so I can read and draft email.' },
+                    gcal_scope_missing:     { id: 'gcal',   name: 'Google Calendar',  description: 'Reconnect Google Calendar — the current token has Gmail scopes but not Calendar scopes.' },
+                    gcal_not_connected:     { id: 'gcal',   name: 'Google Calendar',  description: 'Connect Google Calendar so I can read your schedule and book meetings.' },
+                    notion_not_connected:   { id: 'notion', name: 'Notion',           description: 'Connect Notion so I can read and write pages.' },
+                    notion_scope_missing:   { id: 'notion', name: 'Notion',           description: 'Reconnect Notion — the workspace authorization needs to be refreshed.' },
+                    slack_not_connected:    { id: 'slack',  name: 'Slack',            description: 'Connect Slack so I can post messages and read channels.' },
+                  };
+                  const connectorMeta = CONNECTOR_FAILURE_MAP[code];
+                  if (connectorMeta) {
+                    if (code === 'gmail_scope_missing') {
+                      invalidateGmailScope(userId).catch(() => { /* non-fatal */ });
+                    }
                     emit('connector_required', {
                       connectors: [{
-                        id: 'gmail',
-                        name: 'Gmail',
-                        description:
-                          'Reconnect Gmail so I can finish that task — the current token is missing some scopes.',
+                        ...connectorMeta,
                         connected: false,
                       }],
                       waitingForUser: true,
-                      reason: 'gmail_scope_missing',
+                      reason: code,
                     });
+                    // Replace the LLM-facing failure with a short one — the
+                    // card carries the explanation. The LLM should NOT write
+                    // a paragraph; one acknowledgement sentence at most.
+                    toolResults[toolResults.length - 1] = {
+                      type: 'tool_result',
+                      tool_use_id: tc.id,
+                      content:
+                        `Tool ${tc.name} failed: ${connectorMeta.name} is not connected (or scope is missing). ` +
+                        `A connector card has ALREADY been shown to the user. ` +
+                        `Reply with ONE short sentence acknowledging the missing connection — example: ` +
+                        `"I need ${connectorMeta.name} access to do that — reconnect it from the card and I'll continue." ` +
+                        `Do NOT write a long paragraph. Do NOT call any more tools.`,
+                    };
                   }
                   continue;
                 }

@@ -54,6 +54,7 @@ interface ConnectorModalProps {
   connectedAccounts: ConnectedAccount[];
   onConnect: (connectorId: string) => void;
   onDisconnect: (accountId: string) => void;
+  onReconfigure?: (connectorId: string) => void;
   isConnecting?: string | null;
 }
 
@@ -63,12 +64,13 @@ const categoryLabels: Record<string, string> = {
   [CONNECTOR_CATEGORIES.TASKS]: 'Tasks'
 };
 
-export function ConnectorModal({ 
-  isOpen, 
-  onClose, 
+export function ConnectorModal({
+  isOpen,
+  onClose,
   connectedAccounts,
   onConnect,
   onDisconnect,
+  onReconfigure,
   isConnecting
 }: ConnectorModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -150,16 +152,19 @@ export function ConnectorModal({
     }
   };
 
-  // Handle try it out
+  // Handle try it out — close the modal so the user is back in the chat
+  // and can immediately use the connector. (Was a console.log no-op.)
   const handleTryItOut = () => {
-    // TODO: Implement try it out functionality
-    console.log('Try it out clicked for', selectedConnector?.name);
+    onClose();
   };
 
-  // Handle manage
+  // Handle manage / configure — re-initiates the OAuth flow for the
+  // selected connector so the user can grant additional scopes or refresh
+  // expired tokens. (Was a console.log no-op.)
   const handleManage = () => {
-    // TODO: Implement manage functionality
-    console.log('Manage clicked for', selectedConnector?.name);
+    if (selectedConnector && onReconfigure) {
+      onReconfigure(selectedConnector.id);
+    }
   };
 
   return (
