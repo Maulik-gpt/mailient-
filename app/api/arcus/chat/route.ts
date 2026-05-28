@@ -153,13 +153,25 @@ export async function POST(request: NextRequest) {
   let memories = '';
   let personalityData = '';
   let voiceContext = '';
+  let preferenceMemories = '';
   try {
-    [connectedIntegrations, memories, personalityData, voiceContext] = await Promise.all([
+    // Phase C — Enrich the memory context with TWO parallel queries:
+    //   1. searchMemories(message)  — semantic match to current message
+    //   2. searchMemories('[PREFERENCE]') — explicit preference memories
+    // Past code only queried (1), so the LLM might miss a saved preference
+    // that doesn't semantically overlap with the current message ("never
+    // schedule weekends" wouldn't surface on a Monday "schedule X" query).
+    [connectedIntegrations, memories, preferenceMemories, personalityData, voiceContext] = await Promise.all([
       getConnectedIntegrations(userId),
       searchMemories(userId, message, 5),
+      searchMemories(userId, '[PREFERENCE]', 8),
       fetchPersonality(userId),
       getVoiceContext(userId),
     ]);
+    // Combine, dedup by line content
+    if (preferenceMemories && !memories.includes(preferenceMemories.slice(0, 100))) {
+      memories = [memories, preferenceMemories].filter(Boolean).join('\n\n');
+    }
     log('info', 'Context ready', { integrations: connectedIntegrations, memoryChars: memories.length, voiceProfileChars: voiceContext.length });
   } catch (e: any) {
     log('error', 'Context build failed — continuing with empty context', { error: e.message, stack: e.stack?.slice(0, 300) });

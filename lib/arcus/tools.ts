@@ -1304,6 +1304,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       required: ['content'],
     },
   },
+  {
+    name: 'surface_proactive_signals',
+    description:
+      'PROACTIVE INITIATIVE — runs an LLM judgment pass over recent context (inbox results, calendar window, memory items) and emits a `signals` array of things the user did NOT ask about but should know. ' +
+      'Use AFTER a broad search (gmail_unlimited_search, calendar_unlimited_scan) so the agent surfaces deadlines, stalled deals, conflicts, VIP-waiting threads, and revenue opportunities — within the user\'s saved rules. ' +
+      'Categories: DEADLINE, STALLED_DEAL, CONFLICT, VIP_WAITING, RULE_VIOLATION_AVOIDED, OPPORTUNITY. Max 5 signals; the LLM is told to be surgical. ' +
+      'Output: JSON { signals: [{category, summary, evidence[], suggestedAction?}] } or {signals:[]}. Errors: validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        recentContext: { type: 'string', description: 'Required. Summary of what you just searched/fetched: inbox results, calendar window, memory items. The scan needs ground truth.' },
+        userRules: { type: 'string', description: 'Optional. The user\'s saved binding instructions from the settings card.' },
+        memoryContext: { type: 'string', description: 'Optional. Memory items relevant to the current task — relationship weights, preferences, prior decisions.' },
+      },
+      required: ['recentContext'],
+    },
+  },
   // ── PART 7 — Web & external research tools ────────────────────────────────
   {
     name: 'web_search_unlimited',
@@ -2436,6 +2453,8 @@ export async function executeTool(
       case 'error_recovery_and_retries':          result = await errorRecoveryAndRetries(userId, input, context); break;
       case 'performance_monitoring_and_optimization': result = await performanceMonitoringAndOptimization(userId, input); break;
       case 'output_formatting_and_presentation':  result = await outputFormattingAndPresentation(userId, input); break;
+      // Phase C — Proactive triage / initiative within rules
+      case 'surface_proactive_signals':           result = await surfaceProactiveSignals(userId, input); break;
       case 'get_delegation_rules':  result = await getDelegationRules(userId); break;
       case 'create_delegation_rule': result = await createDelegationRule(userId, input); break;
       default:
@@ -9313,4 +9332,93 @@ async function gmailDetectUrgency(userId: string, input: any): Promise<ToolResul
   }
   out.sort((a, b) => b.urgencyScore - a.urgencyScore);
   return { output: JSON.stringify(out, null, 2) };
+}
+
+// ── Phase C — Proactive triage signals ───────────────────────────────────────
+//
+// Runs a focused LLM judgment pass over recent context (Gmail results,
+// calendar events, memory items, the user's saved rules) and returns a
+// `signals` array — items worth flagging that the user didn't explicitly ask
+// about. Initiative within rules.
+//
+// Categories the LLM looks for (the prompt enumerates them so it can't
+// hallucinate new ones):
+//   - DEADLINE: dated obligation in inbox/calendar the user might miss
+//   - STALLED_DEAL: outbound thread with no inbound reply for N+ days
+//   - CONFLICT: calendar overlap, schedule + commitment mismatch
+//   - VIP_WAITING: high-value contact's email awaiting reply
+//   - RULE_VIOLATION_AVOIDED: an action the user's rules forbid that the
+//     agent declined or routed around
+//   - OPPORTUNITY: revenue/partnership signal the user might want to act on
+//
+// Each signal: { category, summary, evidence: string[], suggested_action?: string }
+// The LLM bundles these into the report or surfaces them as a "Needs your
+// attention" section. By having a dedicated tool the LLM can call AFTER
+// broad searches, we get a consistent place for "agentic initiative" to
+// emerge — instead of relying on the model to volunteer it inconsistently.
+
+const PROACTIVE_SIGNALS_PROMPT = `You are a chief-of-staff scanning recent activity for the user. Identify THINGS THE USER DID NOT ASK ABOUT but should know — within the user's saved rules and memory. Be surgical. Quality over quantity. Max 5 signals.
+
+Allowed categories (use these exact strings):
+  DEADLINE              — dated obligation soon to expire
+  STALLED_DEAL          — outbound conversation with no reply for 5+ days
+  CONFLICT              — calendar overlap or commitment mismatch
+  VIP_WAITING           — high-value contact's email awaiting reply
+  RULE_VIOLATION_AVOIDED — action the user's rules forbid that you skipped or routed around
+  OPPORTUNITY           — revenue/partnership signal worth surfacing
+
+Output ONLY JSON: { "signals": [ { "category": "<one of above>", "summary": "<short, 1 sentence>", "evidence": ["<concrete data point>", ...], "suggestedAction": "<optional one-sentence action>" } ] }
+
+Rules:
+  - NEVER invent. Each signal must reference real data in the context.
+  - If nothing is worth flagging, return { "signals": [] }.
+  - Apply the user's saved instructions — if a rule says "never schedule weekends", flag a weekend booking as RULE_VIOLATION_AVOIDED (assuming you did decline it).
+  - Skip items the user explicitly asked about (those are answered in the main response, not surfaced as signals).`;
+
+async function surfaceProactiveSignals(userId: string, input: any): Promise<ToolResult> {
+  const recentContext = (input?.recentContext || '').trim();
+  const userRules = (input?.userRules || '').trim();
+  const memoryContext = (input?.memoryContext || '').trim();
+  if (!recentContext) {
+    return failureResult(
+      'recentContext is required — pass a summary of what you just searched / fetched (inbox results, calendar window, memory items). The proactive scan needs ground truth to be useful.',
+      'validation_error',
+    );
+  }
+
+  const userInput = [
+    userRules ? `## User's saved rules\n${userRules.slice(0, 2000)}` : '',
+    memoryContext ? `## Relevant memory\n${memoryContext.slice(0, 2000)}` : '',
+    `## Recent context\n${recentContext.slice(0, 8000)}`,
+  ].filter(Boolean).join('\n\n');
+
+  try {
+    const r = await callLLM(
+      [
+        { role: 'system', content: PROACTIVE_SIGNALS_PROMPT },
+        { role: 'user', content: userInput },
+      ],
+      [],
+      { maxTokens: 1200, temperature: 0.2 },
+    );
+    const raw = getText(r.content).trim();
+    const m = raw.match(/\{[\s\S]*\}/);
+    if (!m) return { output: JSON.stringify({ signals: [] }) };
+    try {
+      const parsed = JSON.parse(m[0]);
+      const signals = Array.isArray(parsed?.signals) ? parsed.signals.slice(0, 5) : [];
+      // Defensive: enforce the schema shape on each item
+      const clean = signals.map((s: any) => ({
+        category: String(s?.category || 'OPPORTUNITY').toUpperCase(),
+        summary: String(s?.summary || '').slice(0, 280),
+        evidence: Array.isArray(s?.evidence) ? s.evidence.map((e: any) => String(e).slice(0, 200)).slice(0, 5) : [],
+        suggestedAction: s?.suggestedAction ? String(s.suggestedAction).slice(0, 280) : undefined,
+      })).filter((s: any) => s.summary);
+      return { output: JSON.stringify({ signals: clean }, null, 2) };
+    } catch {
+      return { output: JSON.stringify({ signals: [] }) };
+    }
+  } catch (err: any) {
+    return failureResult(`Proactive scan failed: ${err.message}`, 'internal_error');
+  }
 }

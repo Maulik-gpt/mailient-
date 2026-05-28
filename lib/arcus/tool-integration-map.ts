@@ -124,6 +124,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   output_formatting_and_presentation: null,
   get_delegation_rules: null,
   create_delegation_rule: null,
+  surface_proactive_signals: null,
 };
 
 export const INTEGRATION_LABELS: Record<string, string> = {
