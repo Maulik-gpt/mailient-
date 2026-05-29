@@ -364,3 +364,91 @@ export function isBroadContextTask(userMessage: string): boolean {
 
   return BROAD.some(p => p.test(t));
 }
+
+// ── Five-VA dispatcher (PART 37) ──────────────────────────────────────────────
+//
+// The system prompt tells the LLM to act as 5 VAs working in parallel (Inbox,
+// Calendar, CRM, Comms, Research). But on free/small models the LLM rarely
+// emits multiple tool_use blocks in one turn — so the user sees one-tool-at-
+// a-time behavior even though the infra supports concurrency.
+//
+// This classifier looks at the user's message and returns which of the 5 VAs
+// the request actually touches. The loop fans out a parallel read per VA
+// when ≥2 are relevant, so the LLM's first turn has cross-VA context
+// pre-loaded instead of having to discover it serially.
+//
+// Trigger philosophy:
+//   - skip the dispatch when the message is trivial ("hi", "ok", "thanks")
+//   - skip when the user is replying to a confirmation card ("yes", "go ahead")
+//   - skip pure single-VA messages too — one VA in parallel is just "one tool"
+//   - fire only when ≥2 VAs would each do useful work
+//
+// Returns a (possibly empty) ordered set: the canonical order matches the
+// system prompt's enumeration so logs/reports are consistent.
+
+export type ArcusVA = 'inbox' | 'calendar' | 'crm' | 'comms' | 'research';
+
+// Short-circuit list — these tokens never warrant a parallel sweep even if
+// they happen to match a VA keyword by coincidence.
+const TRIVIAL_PATTERNS = [
+  /^(hi|hey|hello|yo|sup|gm|gn|thanks?|thank\s+you|ty|ok(ay)?|sure|sounds?\s+good|got\s+it|cool|nice|great)\s*[.!?]*$/i,
+  /^(yes|yep|yeah|y|no|nope|n|cancel|stop|nvm|never\s+mind)\s*[.!?]*$/i,
+  /^(go\s+ahead|proceed|do\s+it|send\s+it|confirm(ed)?|please\s+proceed)\s*[.!?]*$/i,
+];
+
+// One regex per VA. Conservative — we'd rather under-fire than over-fire
+// (a no-op sweep wastes 5 API calls and clutters the LLM's first context).
+const VA_HINTS: Array<{ va: ArcusVA; pattern: RegExp }> = [
+  {
+    va: 'inbox',
+    pattern: /\b(email|emails|inbox|gmail|reply|replies|respond|message(s)?\s+from|thread(s)?|sender|subject|unread|sent|draft(s)?|forward|follow[- ]?up(s)?)\b/i,
+  },
+  {
+    va: 'calendar',
+    pattern: /\b(meeting(s)?|calendar|schedule(d)?|availability|free\s+(time|slot)|booking|reschedule|invite(s)?|event(s)?|appointment(s)?|tomorrow|next\s+(week|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|today|this\s+(afternoon|morning|evening))\b/i,
+  },
+  {
+    va: 'crm',
+    pattern: /\b(notion|crm|database|deal(s)?|pipeline|client(s)?|contact(s)?|company|companies|account(s)?|project(s)?|task(s)?|page(s)?|note(s)?|log|track(ing|ed)?|status)\b/i,
+  },
+  {
+    va: 'comms',
+    pattern: /\b(slack|channel|dm|team|ping|notify|alert|message\s+(the|my)?\s*team|let\s+\w+\s+know|update\s+(the|my)\s+(team|channel))\b/i,
+  },
+  {
+    va: 'research',
+    pattern: /\b(research|background|profile|who\s+is|who'?s|tell\s+me\s+about|company\s+info|history|past\s+(emails|conversations|interactions)|context\s+on|find\s+(info|details)\s+(on|about)|google|web\s+search)\b/i,
+  },
+];
+
+export function classifyRelevantVAs(userMessage: string): ArcusVA[] {
+  const t = userMessage.trim();
+  if (t.length < 6) return [];
+  if (TRIVIAL_PATTERNS.some(p => p.test(t))) return [];
+
+  const hit: ArcusVA[] = [];
+  for (const { va, pattern } of VA_HINTS) {
+    if (pattern.test(t)) hit.push(va);
+  }
+  return hit;
+}
+
+/**
+ * Convenience: should the loop run a parallel sweep for this message?
+ * True when either (a) the legacy broad-context whitelist fires, OR
+ * (b) the message touches ≥2 of the five VAs.
+ */
+export function shouldDispatchParallelVAs(userMessage: string): {
+  fire: boolean;
+  vas: ArcusVA[];
+  reason: 'broad_context' | 'multi_va' | 'none';
+} {
+  const vas = classifyRelevantVAs(userMessage);
+  if (vas.length >= 2) return { fire: true, vas, reason: 'multi_va' };
+  if (isBroadContextTask(userMessage)) {
+    // Fall back to all five VAs for the legacy "morning brief" patterns —
+    // they're inherently cross-VA even when phrased without specific nouns.
+    return { fire: true, vas: ['inbox', 'calendar', 'crm', 'comms', 'research'], reason: 'broad_context' };
+  }
+  return { fire: false, vas, reason: 'none' };
+}

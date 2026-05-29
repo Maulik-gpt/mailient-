@@ -42,7 +42,7 @@
 import crypto from 'crypto';
 import { callLLM, getText, getRawText, getToolCalls, sanitizeModelText } from './engine';
 import { executeTool, getAvailableTools, TOOL_SCHEMAS } from './tools';
-import { processGmailResults, isVagueInstruction, isBroadContextTask } from './inbox-pipeline';
+import { processGmailResults, isVagueInstruction, shouldDispatchParallelVAs, type ArcusVA } from './inbox-pipeline';
 import { invalidateGmailScope } from './gmail-scope';
 import { getSupabaseAdmin } from '../supabase.js';
 import { buildExecutionPlan, planToHint, checkPrerequisites } from './orchestrator';
@@ -1060,65 +1060,120 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           runState: runState as 'PLANNING' | 'CONFIRMING' | 'EXECUTING' | 'REPORTING',
         });
 
-        // ── Context Switching Elimination: Unified context sweep ───────────
-        // For broad tasks ("morning brief", "prepare for tomorrow", "what did I miss"),
-        // pre-fetch from all connected integrations in parallel BEFORE the LLM
-        // starts reasoning. This gives the LLM a unified view across platforms
-        // and eliminates the need for sequential tool calls just to gather context.
-        const broadTask = !isPlanMode && isBroadContextTask(userMessage);
-        if (broadTask && connectedIntegrations.length > 0) {
-          emit('thinking', { status: 'Gathering context across your connected tools…' });
-          log('info', 'Unified context sweep triggered', { integrations: connectedIntegrations });
+        // ── Five-VA dispatcher: parallel context sweep ──────────────────────
+        // PART 37 — small/free LLMs rarely emit multiple tool_use blocks per
+        // turn. That makes the AI feel one-tool-at-a-time even though the
+        // system prompt and infra both support 5-VA parallelism. To force
+        // the parallel-VA experience: detect which VAs the request touches,
+        // fire each VA's read tool concurrently here, then inject the
+        // combined context + a per-turn dispatch nudge so the LLM's first
+        // response synthesizes across VAs instead of discovering them one
+        // by one.
+        const vaDispatch = !isPlanMode ? shouldDispatchParallelVAs(userMessage) : { fire: false, vas: [], reason: 'none' as const };
+        if (vaDispatch.fire && connectedIntegrations.length > 0) {
+          // Map each VA → the read tool it owns + the section header for its
+          // sweep result. Only VAs whose underlying integration is connected
+          // actually fan out; the others are silently skipped so we don't
+          // claim coverage we can't deliver.
+          type VAFanout = {
+            va: ArcusVA;
+            requires: (integrations: string[]) => boolean;
+            tool: string;
+            input: Record<string, any>;
+            header: string;
+            fallback: string;
+          };
+          const FANOUT: VAFanout[] = [
+            {
+              va: 'inbox',
+              requires: (i) => i.includes('gmail'),
+              tool: 'search_gmail',
+              input: { query: 'is:unread newer_than:2d', maxResults: 10 },
+              header: '## 📧 Inbox VA — Recent Unread (last 2 days)',
+              fallback: '## 📧 Inbox VA\n(Could not fetch — Gmail may need reconnection)',
+            },
+            {
+              va: 'calendar',
+              requires: (i) => i.includes('gcal'),
+              tool: 'get_calendar_events',
+              input: { daysAhead: 3, maxResults: 15 },
+              header: '## 📅 Calendar VA — Next 3 Days',
+              fallback: '## 📅 Calendar VA\n(Could not fetch — Calendar may need reconnection)',
+            },
+            {
+              va: 'crm',
+              requires: (i) => i.includes('notion') || i.includes('notion_calendar'),
+              tool: 'search_notion',
+              input: { query: '', maxResults: 5 },
+              header: '## 📝 CRM VA — Recent Notion Pages',
+              fallback: '## 📝 CRM VA\n(Could not fetch)',
+            },
+            {
+              va: 'comms',
+              requires: (i) => i.includes('slack'),
+              tool: 'slack_get_channels',
+              input: { limit: 10 },
+              header: '## 💬 Comms VA — Slack Channels',
+              fallback: '## 💬 Comms VA\n(Could not fetch — Slack may need reconnection)',
+            },
+            {
+              va: 'research',
+              // Memory works without an external integration — always eligible.
+              requires: () => true,
+              tool: 'memory_search',
+              // Use the user message as the relevance query so the Research
+              // VA surfaces history specific to this turn, not a generic dump.
+              input: { query: userMessage.slice(0, 200), limit: 5 },
+              header: '## 🔍 Research VA — Relevant Memory',
+              fallback: '## 🔍 Research VA\n(No relevant memory found)',
+            },
+          ];
 
-          const sweepResults: string[] = [];
-          const sweepPromises: Promise<void>[] = [];
+          const active = FANOUT.filter(f => vaDispatch.vas.includes(f.va) && f.requires(connectedIntegrations));
+          if (active.length >= 2) {
+            const vaNames = active.map(a => a.va);
+            emit('thinking', { status: `Dispatching ${active.length} VAs in parallel — ${vaNames.join(', ')}…` });
+            log('info', 'Five-VA dispatch triggered', { reason: vaDispatch.reason, vas: vaNames });
 
-          // Gmail: recent unread emails
-          if (connectedIntegrations.includes('gmail')) {
-            sweepPromises.push(
-              executeTool('search_gmail', { query: 'is:unread newer_than:2d', maxResults: 10 }, userId)
-                .then(r => { sweepResults.push(`## Recent Unread Emails\n${r.output}`); })
-                .catch(() => { sweepResults.push('## Recent Unread Emails\n(Could not fetch — Gmail may need reconnection)'); })
+            const sweepResults: string[] = [];
+            const sweepPromises: Promise<void>[] = active.map(f =>
+              executeTool(f.tool, f.input, userId)
+                .then(r => { sweepResults.push(`${f.header}\n${r.output}`); })
+                .catch(() => { sweepResults.push(f.fallback); })
             );
-          }
 
-          // Calendar: next 3 days
-          if (connectedIntegrations.includes('gcal')) {
-            sweepPromises.push(
-              executeTool('get_calendar_events', { daysAhead: 3, maxResults: 15 }, userId)
-                .then(r => { sweepResults.push(`## Upcoming Calendar (3 days)\n${r.output}`); })
-                .catch(() => { sweepResults.push('## Upcoming Calendar\n(Could not fetch — Calendar may need reconnection)'); })
-            );
-          }
+            await Promise.allSettled(sweepPromises);
 
-          // Notion: recent activity (notion_calendar uses the same token)
-          if (connectedIntegrations.includes('notion') || connectedIntegrations.includes('notion_calendar')) {
-            sweepPromises.push(
-              executeTool('search_notion', { query: '', maxResults: 5 }, userId)
-                .then(r => { sweepResults.push(`## Recent Notion Pages\n${r.output}`); })
-                .catch(() => { sweepResults.push('## Recent Notion Pages\n(Could not fetch)'); })
-            );
-          }
-
-          await Promise.allSettled(sweepPromises);
-
-          if (sweepResults.length > 0) {
-            // Inject the unified context as a system message so the LLM can
-            // synthesize across all platforms in its first response.
-            const contextBlock = sweepResults.join('\n\n---\n\n');
-            messages.push({
-              role: 'user',
-              content: [
-                '[UNIFIED CONTEXT SWEEP — pre-fetched from connected integrations]',
-                'The following data was gathered in parallel from the user\'s connected tools.',
-                'Use this context to give a comprehensive, cross-platform answer.',
-                'You do NOT need to call these tools again unless you need more detail.',
-                '',
-                contextBlock,
-              ].join('\n'),
-            } as any);
-            log('info', 'Context sweep injected', { sections: sweepResults.length, totalChars: contextBlock.length });
-            totalToolCalls += sweepPromises.length; // count pre-fetches toward the limit
+            if (sweepResults.length > 0) {
+              const contextBlock = sweepResults.join('\n\n---\n\n');
+              // The user-message payload now has TWO parts:
+              //   1. the sweep results (cross-VA context, pre-loaded)
+              //   2. a tight dispatch nudge that survives the 1100-line system
+              //      prompt by virtue of being the most recent context the
+              //      model sees before deciding what to do.
+              messages.push({
+                role: 'user',
+                content: [
+                  `[FIVE-VA PARALLEL DISPATCH — ${active.length} VAs already ran for you]`,
+                  `The following data was gathered IN PARALLEL from ${vaNames.join(', ')}.`,
+                  'Synthesize across these VAs — do NOT re-call the same read tools unless you need detail beyond what is shown.',
+                  '',
+                  contextBlock,
+                  '',
+                  '---',
+                  '[DISPATCH REFLEX — act on this turn]',
+                  'You are a chief of staff routing five specialist VAs (Inbox / Calendar / CRM / Comms / Research).',
+                  'If multiple VAs would do useful work in your next move, emit ALL their tool calls in THIS SINGLE response.',
+                  'The loop executes parallel tool_use blocks concurrently. One tool per turn is leaving four VAs idle while the user waits.',
+                ].join('\n'),
+              } as any);
+              log('info', 'Five-VA sweep + dispatch nudge injected', {
+                vas: vaNames,
+                sections: sweepResults.length,
+                totalChars: contextBlock.length,
+              });
+              totalToolCalls += sweepPromises.length; // count pre-fetches toward the limit
+            }
           }
         }
 
