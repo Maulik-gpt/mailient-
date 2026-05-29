@@ -380,6 +380,40 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // LLM actually fetched ground truth before acting.
   const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
 
+  // PART 31 — Per-run dedup cache. When the LLM tries to call a READ tool
+  // with the same params it already used this turn, we return the cached
+  // result instead of re-running the API call. This kills the "drafting one
+  // reply does the same search 4 times" loop the user reported.
+  //
+  // ONLY read/search tools are cacheable — writes (send_email, etc.)
+  // always re-execute because their semantics differ (a second send is a
+  // second email, not a cached no-op).
+  //
+  // Key shape: `${toolName}|${stableJsonStringify(input)}`
+  const READ_TOOLS_FOR_DEDUP = new Set([
+    'search_gmail', 'read_email', 'gmail_read_thread', 'get_sent_emails',
+    'gmail_get_labels', 'gmail_get_profile',
+    'get_calendar_events', 'calendar_get_availability', 'calendar_unlimited_scan',
+    'search_notion', 'notion_read_page', 'fetch_notion_schema',
+    'web_search', 'web_search_instant',
+    'memory_search', 'memory_get_contact_profile', 'memory_unlimited_scan',
+    'gmail_unlimited_search', 'gmail_bulk_read_threads',
+    'get_voice_profile', 'get_contact_context', 'get_recipient_context',
+    'slack_get_channels', 'slack_find_user',
+  ]);
+  const toolResultCache = new Map<string, { output: string; success?: boolean; canvasData?: any }>();
+  function makeCacheKey(name: string, input: any): string {
+    try {
+      // Sort keys for stable hashing
+      const sortedKeys = Object.keys(input || {}).sort();
+      const sorted: any = {};
+      for (const k of sortedKeys) sorted[k] = input[k];
+      return `${name}|${JSON.stringify(sorted)}`;
+    } catch {
+      return `${name}|<unserializable>`;
+    }
+  }
+
   const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations, isBackgroundAgent);
   // Background agents get the raised limit so they can handle large inboxes
   // without hitting the wall mid-run. Interactive sessions stay at 20 so
@@ -1239,7 +1273,36 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                       };
                     }
 
-                    let result = await executeTool(tc.name, inputToUse, userId, buildToolContext());
+                    // PART 31 — Dedup: if this is a read-only tool and we've
+                    // already called it with the same input this run, return
+                    // the cached result. Saves the API call + tells the LLM
+                    // it already has this data so it stops looping.
+                    let result;
+                    if (READ_TOOLS_FOR_DEDUP.has(tc.name)) {
+                      const cacheKey = makeCacheKey(tc.name, inputToUse);
+                      const cached = toolResultCache.get(cacheKey);
+                      if (cached) {
+                        log('info', 'dedup_cache_hit', { tool: tc.name, key: cacheKey.slice(0, 80) });
+                        result = {
+                          ...cached,
+                          output:
+                            `[Cached — you already called ${tc.name} with these params earlier this turn.]\n` +
+                            `Stop re-fetching. Use this data and move on.\n\n` +
+                            cached.output,
+                        };
+                      } else {
+                        result = await executeTool(tc.name, inputToUse, userId, buildToolContext());
+                        if (result.success !== false) {
+                          toolResultCache.set(cacheKey, {
+                            output: result.output,
+                            success: result.success,
+                            canvasData: result.canvasData,
+                          });
+                        }
+                      }
+                    } else {
+                      result = await executeTool(tc.name, inputToUse, userId, buildToolContext());
+                    }
 
                     // Newsletter layer 2: classify what slipped through
                     let extraArchiveCount = 0;

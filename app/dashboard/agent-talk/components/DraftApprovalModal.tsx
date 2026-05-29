@@ -32,6 +32,66 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { RichTextEditor } from './RichTextEditor';
 
+/**
+ * Render a draft body that may contain light markdown (bold, italic,
+ * links, list bullets, paragraph breaks) as safe HTML. We:
+ *   1. Escape every HTML special char in the source first (XSS-safe)
+ *   2. Re-apply a tiny whitelist of conversions
+ *
+ * Intentionally MORE LIMITED than ReactMarkdown — emails don't need
+ * headings, tables, code fences. Keeps the output looking like a real
+ * email body, not a doc.
+ */
+function renderDraftMarkdown(raw: string): string {
+  if (!raw) return '';
+  // Step 1: escape everything
+  let s = raw
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  // Step 2: inline markdown — order matters (links before bold so URLs in
+  // brackets aren't treated as italics)
+  // [text](url)  →  <a href="url">text</a>
+  s = s.replace(
+    /\[([^\]]+)\]\(((?:https?|mailto):[^)\s]+)\)/g,
+    '<a href="$2" target="_blank" rel="noopener noreferrer" class="text-blue-400 underline decoration-blue-400/40 underline-offset-2 hover:decoration-blue-400 transition-colors">$1</a>',
+  );
+  // **bold** (must come before *italic*)
+  s = s.replace(/\*\*([^*\n]+?)\*\*/g, '<strong class="font-semibold text-white">$1</strong>');
+  // _italic_ or *italic* (single character)
+  s = s.replace(/(?<![*\w])\*([^*\n]+?)\*(?!\*)/g, '<em>$1</em>');
+  s = s.replace(/(?<![_\w])_([^_\n]+?)_(?!_)/g, '<em>$1</em>');
+  // `code`
+  s = s.replace(/`([^`\n]+?)`/g, '<code class="px-1 py-0.5 rounded bg-white/10 text-[12px] font-mono">$1</code>');
+
+  // Step 3: block-level — split paragraphs by blank lines, normalize bullets
+  const paragraphs = s.split(/\n\s*\n/);
+  const rendered = paragraphs
+    .map(para => {
+      const lines = para.split('\n').map(l => l.trimEnd());
+      // Detect a list: every non-empty line starts with -, *, or N. / N)
+      const isList = lines.length > 0 && lines.every(l => !l.trim() || /^\s*([-*]|\d+[.)])\s+/.test(l));
+      if (isList && lines.some(l => l.trim())) {
+        const isOrdered = lines.some(l => /^\s*\d+[.)]/.test(l));
+        const items = lines
+          .map(l => l.replace(/^\s*([-*]|\d+[.)])\s+/, ''))
+          .filter(l => l.length > 0)
+          .map(l => `<li>${l}</li>`)
+          .join('');
+        return isOrdered
+          ? `<ol class="list-decimal pl-5 my-2 space-y-1">${items}</ol>`
+          : `<ul class="list-disc pl-5 my-2 space-y-1">${items}</ul>`;
+      }
+      // Plain paragraph: single newlines become <br>
+      return `<p class="mb-3 last:mb-0">${lines.join('<br>')}</p>`;
+    })
+    .join('');
+
+  return rendered;
+}
+
 export interface DraftApprovalData {
   content: string;
   recipientName: string;
@@ -138,8 +198,11 @@ export function DraftApprovalModal({
   };
 
   // Body — preserve line breaks and paragraph spacing as clean rendered text.
-  // Not a code block, not raw markdown — just a real email preview.
-  const bodyForDisplay = editedContent || draftData.content || '';
+  // PART 31 fix: when the LLM emits markdown (**bold**, [link](url), bullets),
+  // we now render it as HTML so the user sees a proper email preview instead
+  // of `**asterisks**` and `[brackets](https://...)` shown literally.
+  const rawBody = editedContent || draftData.content || '';
+  const bodyHtml = renderDraftMarkdown(rawBody);
 
   return (
     <AnimatePresence>
@@ -236,10 +299,16 @@ export function DraftApprovalModal({
                   value={editedContent}
                   onChange={(plain) => setEditedContent(plain)}
                 />
+              ) : rawBody ? (
+                <div
+                  className="text-white/90 text-[14px] leading-[1.7] font-sans selection:bg-blue-500/30 draft-body-preview"
+                  // We rendered to HTML server-safely via renderDraftMarkdown
+                  // (escapes user input then re-applies a small whitelist).
+                  // eslint-disable-next-line react/no-danger
+                  dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                />
               ) : (
-                <div className="text-white/90 text-[14px] leading-[1.7] whitespace-pre-wrap font-sans selection:bg-blue-500/30">
-                  {bodyForDisplay || <span className="text-white/30 italic">(empty draft)</span>}
-                </div>
+                <div className="text-white/30 italic text-[14px]">(empty draft)</div>
               )}
             </div>
 

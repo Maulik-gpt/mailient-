@@ -23,6 +23,7 @@ import { IntegrationRequiredCard, type IntegrationRequiredData } from './compone
 import { ConfirmationCard, type ConfirmationData } from './components/ConfirmationCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { PlanPreviewCard, type PlanPreviewData, type PlanPreviewStep } from './components/PlanPreviewCard';
+import { SourcesPanel, type SourceItem } from './components/SourcesPanel';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
 import PlanArtifactCard from './components/PlanArtifactCard';
@@ -502,6 +503,162 @@ function nextMessageId(): number {
   return Date.now() * 1000 + __msgIdCounter;
 }
 
+/**
+ * PART 31 — Map a tool_result event to one or more SourceItem rows for the
+ * Sources tab. Pulls a few useful fields out of the summary string by
+ * tool-specific regex; for tools we don't recognize we still emit a
+ * generic 'other' source so the user can see SOMETHING ran.
+ *
+ * Intentionally conservative — if extraction fails we return a one-line
+ * fallback rather than spamming garbled tokens.
+ */
+function extractSourcesFromToolResult(toolName: string, summary: string, params?: Record<string, any>): SourceItem[] {
+  if (!toolName) return [];
+  const s = (summary || '').toString();
+  const sources: SourceItem[] = [];
+
+  // Gmail-family tools
+  if (/^(search_gmail|gmail_unlimited_search|gmail_bulk_read_threads|read_email|gmail_read_thread)$/.test(toolName)) {
+    // Search-style: "Found N email(s)…" + per-line "From: X   Subject: Y"
+    const lines = s.split('\n');
+    let currentFrom = '';
+    let currentSubject = '';
+    for (const line of lines) {
+      const fromMatch = line.match(/^\s*From:\s*(.+?)\s*$/);
+      const subjMatch = line.match(/^\s*Subject:\s*(.+?)\s*$/);
+      if (fromMatch) currentFrom = fromMatch[1];
+      if (subjMatch) {
+        currentSubject = subjMatch[1];
+        if (currentSubject) {
+          sources.push({ category: 'gmail', title: currentSubject, context: currentFrom });
+          currentFrom = '';
+          currentSubject = '';
+        }
+      }
+    }
+    if (sources.length === 0) {
+      const countMatch = s.match(/Found\s+(\d+)\s+email/);
+      const q = params?.query || params?.gmailQuery || '';
+      sources.push({
+        category: 'gmail',
+        title: countMatch ? `${countMatch[1]} email${countMatch[1] === '1' ? '' : 's'} matching: ${q || '(query)'}` : (q ? `Gmail: ${q}` : 'Gmail search'),
+      });
+    }
+    return sources;
+  }
+
+  if (/^(draft_reply|draft_cold_email|send_email|gmail_batch_draft_replies|gmail_batch_send_emails)$/.test(toolName)) {
+    // "Draft saved to Gmail successfully.\nTo: X <y@z>\nSubject: ABC\nGmail URL: https://..."
+    const subj = s.match(/Subject:\s*(.+?)(?:\n|$)/)?.[1];
+    const to = s.match(/To:\s*(.+?)(?:\n|$)/)?.[1];
+    const url = s.match(/Gmail URL:\s*(https?:\/\/[^\s]+)/)?.[1];
+    sources.push({
+      category: 'gmail',
+      title: subj || (toolName.includes('send') ? 'Email sent' : 'Draft saved'),
+      context: to,
+      url,
+    });
+    return sources;
+  }
+
+  // Calendar
+  if (/^(get_calendar_events|calendar_get_availability|calendar_unlimited_scan)$/.test(toolName)) {
+    const lines = s.split('\n');
+    let current = '';
+    for (const line of lines) {
+      const eventMatch = line.match(/^\s*\d+\.\s+(.+?)\s*$/);
+      const whenMatch = line.match(/^\s*When:\s*(.+?)\s*$/);
+      if (eventMatch) current = eventMatch[1];
+      if (whenMatch && current) {
+        sources.push({ category: 'calendar', title: current, context: whenMatch[1] });
+        current = '';
+      }
+    }
+    if (sources.length === 0) {
+      const eventCount = s.match(/(\d+)\s+(?:upcoming\s+)?event/i);
+      sources.push({ category: 'calendar', title: eventCount ? `${eventCount[1]} calendar event(s)` : 'Calendar scan' });
+    }
+    return sources;
+  }
+
+  if (/^(schedule_meeting|calendar_batch_create_events)$/.test(toolName)) {
+    const title = s.match(/Meeting created:\s*"([^"]+)"/)?.[1];
+    const start = s.match(/Start:\s*(.+?)(?:\n|$)/)?.[1];
+    const url = s.match(/Calendar URL:\s*(https?:\/\/[^\s]+)/)?.[1];
+    sources.push({ category: 'calendar', title: title || 'Meeting scheduled', context: start, url });
+    return sources;
+  }
+
+  // Notion
+  if (/^(search_notion|notion_read_page|notion_get_calendar_events|fetch_notion_schema)$/.test(toolName)) {
+    const lines = s.split('\n').slice(0, 10);
+    for (const line of lines) {
+      const m = line.match(/^\s*[-•]\s+(.+?)\s*$/);
+      if (m && m[1].length > 2 && m[1].length < 200) {
+        sources.push({ category: 'notion', title: m[1] });
+      }
+    }
+    if (sources.length === 0) {
+      sources.push({ category: 'notion', title: params?.query ? `Notion: ${params.query}` : 'Notion search' });
+    }
+    return sources;
+  }
+
+  if (/^(create_notion_page|notion_create_task|notion_auto_log_all_communication|notion_batch_create_database_entries|notion_deal_tracking_automation)$/.test(toolName)) {
+    const url = s.match(/URL:\s*(https?:\/\/[^\s]+)/)?.[1];
+    const title = params?.title || 'Notion page';
+    sources.push({ category: 'notion', title, url });
+    return sources;
+  }
+
+  // Slack
+  if (/^(send_slack_message|slack_send_dm|slack_post_daily_briefing|slack_team_digest_weekly|send_slack)/.test(toolName)) {
+    const channel = params?.channel || 'DM';
+    sources.push({ category: 'slack', title: `Posted to ${channel}` });
+    return sources;
+  }
+  if (/^(slack_get_channels|slack_find_user)$/.test(toolName)) {
+    sources.push({ category: 'slack', title: toolName.replace(/_/g, ' ') });
+    return sources;
+  }
+
+  // Web
+  if (/^(web_search|web_search_instant|web_search_unlimited|company_intelligence_research|contact_research_and_verification)$/.test(toolName)) {
+    // Look for URLs in the summary
+    const urls = (s.match(/https?:\/\/[^\s)]+/g) || []).slice(0, 5);
+    if (urls.length) {
+      for (const url of urls) {
+        try {
+          const host = new URL(url).hostname.replace(/^www\./, '');
+          sources.push({ category: 'web', title: host, url });
+        } catch { /* skip */ }
+      }
+    } else {
+      const q = params?.query || params?.queries?.[0] || '';
+      sources.push({ category: 'web', title: q ? `Search: ${q}` : 'Web search' });
+    }
+    return sources;
+  }
+
+  // Memory
+  if (/^(memory_search|memory_get_contact_profile|memory_unlimited_scan|memory_relationship_intelligence|searchMemoriesRaw)$/.test(toolName)) {
+    const countMatch = s.match(/(\d+)\s+memor/i);
+    sources.push({
+      category: 'memory',
+      title: countMatch ? `${countMatch[1]} memory item${countMatch[1] === '1' ? '' : 's'}` : 'Memory lookup',
+    });
+    return sources;
+  }
+  if (/^(memory_save|remember_about_contact|memory_bulk_save_learning|record_processed_items)$/.test(toolName)) {
+    sources.push({ category: 'memory', title: 'Saved to memory' });
+    return sources;
+  }
+
+  // Everything else — generic
+  sources.push({ category: 'other', title: toolName.replace(/_/g, ' '), context: s.length < 100 ? s : undefined });
+  return sources;
+}
+
 interface AgentMessage {
   id: number;
   type: 'agent';
@@ -714,6 +871,15 @@ interface AgentMessage {
       specMarkdown: string;
       agentParams: Record<string, any>;
     };
+    /** PART 31 — Sources tab data. Per-tool grouping of items the assistant
+     *  consulted to produce its answer. Built up during the tool_result SSE
+     *  stream from per-tool summary text. */
+    sources?: Array<{
+      category: 'gmail' | 'calendar' | 'notion' | 'slack' | 'web' | 'memory' | 'other';
+      title?: string;
+      url?: string;
+      context?: string;
+    }>;
   };
 }
 
@@ -3005,12 +3171,35 @@ export default function ChatInterface({
                     updatedStatuses[planStepIdx] = toolSuccess ? 'completed' : 'failed';
                   }
                 }
+                // PART 31 — Extract Source items from the tool result and
+                // append to meta.sources. Only on success and only when there
+                // was useful data — failures and empty results don't earn a
+                // source row.
+                let nextSources = (m.meta as any)?.sources as SourceItem[] | undefined;
+                if (toolSuccess && data.summary) {
+                  const newItems = extractSourcesFromToolResult(data.tool || '', data.summary || '', data.params || {});
+                  if (newItems.length) {
+                    const existing = nextSources || [];
+                    // De-dup by (category + title + url) to keep the panel tight
+                    const seen = new Set(existing.map(s => `${s.category}|${s.title || ''}|${s.url || ''}`));
+                    const merged = [...existing];
+                    for (const item of newItems) {
+                      const key = `${item.category}|${item.title || ''}|${item.url || ''}`;
+                      if (!seen.has(key)) {
+                        seen.add(key);
+                        merged.push(item);
+                      }
+                    }
+                    nextSources = merged;
+                  }
+                }
                 return {
                   ...m,
                   meta: {
                     ...(m.meta || {}),
                     agentSteps: nextResultSteps,
                     ...(updatedStatuses && plan ? { orchestrationPlan: { ...plan, stepStatuses: updatedStatuses } } : {}),
+                    ...(nextSources ? { sources: nextSources } : {}),
                   },
                 };
               }));
@@ -5959,6 +6148,26 @@ export default function ChatInterface({
                                       );
                                     })()}
                                   </div>
+                                  {/* PART 31 — Sources tab. Renders ONLY when the assistant
+                                      finished, has source items, and isn't waiting for the user. */}
+                                  {(() => {
+                                    if (msg.role !== 'assistant') return null;
+                                    const m = msg as AgentMessage;
+                                    const srcs = m.meta?.sources;
+                                    if (!srcs || srcs.length === 0) return null;
+                                    if (m.meta?.isStreaming || m.meta?.hasError || m.meta?.limitReached) return null;
+                                    const isStillAskingUser =
+                                      !!m.meta?.agentSpecConfirm ||
+                                      !!m.meta?.agentPlanPreview ||
+                                      !!m.meta?.confirmationData ||
+                                      !!m.meta?.planStepFailed ||
+                                      !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
+                                      !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
+                                      (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
+                                    const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
+                                    if (isStillAskingUser || isThisMsgActive) return null;
+                                    return <SourcesPanel sources={srcs} />;
+                                  })()}
                                   {(() => {
                                     // Same gate for the timestamp — don't print "9:43 AM" under
                                     // a card that's still waiting on the user.
