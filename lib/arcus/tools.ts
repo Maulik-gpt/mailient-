@@ -5826,13 +5826,105 @@ function buildAgentRunPlan(input: any) {
   };
 }
 
+// G5 — Accept natural-language schedules ("every morning at 7", "weekday
+// afternoons", "twice a day", "every Monday and Thursday at 9am") so the
+// LLM doesn't have to translate to cron syntax perfectly. Returns a valid
+// 5-field cron or null if no match — callers fall back to the LLM's
+// original cron_schedule field in that case.
+function naturalLanguageToCron(raw: string): string | null {
+  if (!raw) return null;
+  const t = raw.toLowerCase().trim();
+
+  // 5-field cron already → pass-through
+  if (/^[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+\s+[\d*\/,\-]+$/.test(t)) {
+    return t;
+  }
+
+  function parseHourPhrase(): { h: number; m: number } | null {
+    // "at 7am", "at 7:30 am", "at 14:00", "at 9", "at 9 pm"
+    const m1 = t.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+    if (m1) {
+      let h = parseInt(m1[1], 10);
+      const min = m1[2] ? parseInt(m1[2], 10) : 0;
+      const ampm = m1[3];
+      if (ampm === 'pm' && h < 12) h += 12;
+      if (ampm === 'am' && h === 12) h = 0;
+      if (h >= 0 && h <= 23 && min >= 0 && min <= 59) return { h, m: min };
+    }
+    if (/\bmorning\b/.test(t)) return { h: 7, m: 0 };
+    if (/\bnoon\b/.test(t)) return { h: 12, m: 0 };
+    if (/\bafternoon\b/.test(t)) return { h: 14, m: 0 };
+    if (/\bevening\b/.test(t)) return { h: 18, m: 0 };
+    if (/\bnight\b/.test(t)) return { h: 21, m: 0 };
+    return null;
+  }
+
+  // Hourly / every N hours
+  let m;
+  if ((m = t.match(/every\s+hour|hourly/))) return '0 * * * *';
+  if ((m = t.match(/every\s+(\d+)\s+hours?/))) return `0 */${m[1]} * * *`;
+
+  // Twice a day / multi-daily
+  if (/twice\s+a\s+day|two\s+times\s+a\s+day/.test(t)) return '0 9,17 * * *';
+  if (/three\s+times\s+a\s+day/.test(t)) return '0 8,13,18 * * *';
+
+  // Day-of-week shortcuts
+  const DOW: Record<string, number> = {
+    sun: 0, sunday: 0, mon: 1, monday: 1, tue: 2, tues: 2, tuesday: 2,
+    wed: 3, weds: 3, wednesday: 3, thu: 4, thur: 4, thurs: 4, thursday: 4,
+    fri: 5, friday: 5, sat: 6, saturday: 6,
+  };
+
+  // Multiple specific weekdays — "every Monday and Thursday at 9am"
+  const dayMatches: number[] = [];
+  for (const [k, v] of Object.entries(DOW)) {
+    if (new RegExp(`\\b${k}s?\\b`).test(t)) dayMatches.push(v);
+  }
+  const uniqueDays = Array.from(new Set(dayMatches)).sort();
+
+  const hp = parseHourPhrase() || { h: 9, m: 0 };
+
+  if (/\bweekdays?\b|monday\s+to\s+friday|mon-fri/.test(t)) {
+    return `${hp.m} ${hp.h} * * 1-5`;
+  }
+  if (/\bweekends?\b/.test(t)) {
+    return `${hp.m} ${hp.h} * * 0,6`;
+  }
+  if (uniqueDays.length > 0) {
+    return `${hp.m} ${hp.h} * * ${uniqueDays.join(',')}`;
+  }
+
+  // Daily fallback
+  if (/every\s+day|daily|each\s+day/.test(t) || /at\s+\d/.test(t) || /morning|noon|afternoon|evening|night/.test(t)) {
+    return `${hp.m} ${hp.h} * * *`;
+  }
+
+  // Weekly without specific day → Monday
+  if (/weekly|every\s+week/.test(t)) {
+    return `${hp.m} ${hp.h} * * 1`;
+  }
+
+  // Monthly
+  if (/monthly|every\s+month/.test(t)) {
+    return `${hp.m} ${hp.h} 1 * *`;
+  }
+
+  return null;
+}
+
 async function createScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
     return failureResult('Cannot create the agent — a name and a task description are both required.', 'validation_error');
   }
-  const cron = (input.cron_schedule || '0 7 * * *').trim();
+  // G5 — Accept either a 5-field cron OR a natural-language schedule.
+  let cron = (input.cron_schedule || '0 7 * * *').trim();
   if (cron.split(/\s+/).length !== 5) {
-    return failureResult(`Invalid cron schedule "${cron}". It must have exactly 5 space-separated fields (m h dom mon dow).`, 'validation_error');
+    const nl = naturalLanguageToCron(cron);
+    if (nl) {
+      cron = nl;
+    } else {
+      return failureResult(`Schedule "${cron}" wasn't recognised. Use either a 5-field cron ("m h dom mon dow") or a natural phrase ("every weekday at 9am", "daily at 7", "every Monday and Thursday morning").`, 'validation_error');
+    }
   }
 
   const agentName = input.name.trim();

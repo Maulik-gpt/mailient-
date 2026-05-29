@@ -2720,9 +2720,12 @@ export default function ChatInterface({
     setMessages(prev => [...prev, placeholderMsg]);
 
     // Build conversation history from current messages to give Arcus memory
+    // G4 — Wider context: keep the last 40 turns instead of 20 so long
+    // threads, multi-step approvals, and earlier instructions stay in scope.
+    // 40 × ~200 tokens = ~8k of conversation history — well within budget.
     const history = messages
       .filter(m => m.id !== assistantMsgId && (m.role === 'user' || m.role === 'assistant'))
-      .slice(-20)
+      .slice(-40)
       .map(m => ({
         role: m.role as 'user' | 'assistant',
         content: m.role === 'user'

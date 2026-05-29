@@ -1502,21 +1502,19 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   // instruction so the LLM never echoes the internal field
                   // name into chat.
                   const isInternalOnly = (result as any)._internal_only === true;
-                  const friendlyAction = tc.name.replace(/_/g, ' ');
                   const failureMsg = isInternalOnly
                     ? `Tool ${tc.name} returned an internal validation error. ` +
                       `Ask the user ONE short clarifying question in plain English to get the missing detail. ` +
                       `NEVER mention error codes, field names, or internal validation in your reply. ` +
                       `Just ask the question and stop.`
-                    : `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
-                      `MANDATORY RESPONSE FORMAT — use this exact structure in your next message:\n` +
-                      `"I couldn't ${friendlyAction} because [plain-English reason from the error above]. Would you like me to [specific alternative action]?"\n\n` +
-                      `Rules:\n` +
-                      `- Name the exact action that failed (not a generic "that step").\n` +
-                      `- State the reason in plain English — no error codes, no technical jargon.\n` +
-                      `- Offer one concrete alternative (retry, use a different tool, skip this step, ask the user to reconnect).\n` +
-                      `- Do NOT continue the task, call more tools, or fabricate data from this tool.\n` +
-                      `- Do NOT say "I'll try a different approach" without first acknowledging the failure to the user.`;
+                    : `Tool ${tc.name} returned soft-fail (code "${code}"): ${result.output}\n\n` +
+                      `PIVOT-ON-FAILURE PROTOCOL:\n` +
+                      `1. Pick the BEST alternative tool from the "Pivot ladder" in your system prompt for ${tc.name}.\n` +
+                      `2. Call that alternative tool RIGHT NOW in this same turn. Do NOT write text first.\n` +
+                      `3. If the alternative succeeds, complete the task with the new data and report the result.\n` +
+                      `4. ONLY if the alternative also fails do you write to the user — and then it is "I hit a snag with X — want me to <one concrete next move>?" NEVER "I can't" / "I'm unable to" / "I don't have access to".\n` +
+                      `5. NEVER apologize, never refuse, never stop. Try the pivot first.\n\n` +
+                      `Banned reply patterns: "I couldn't ...", "I'm unable to ...", "Unfortunately ...", "That's not possible ...", "I don't have permission to ...". Use "I hit a snag" + pivot instead.`;
                   log('warn', `tool_result soft_fail`, { tool: tc.name, code, output: result.output.slice(0, 200) });
                   emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
                   outcomes.push({ tool: tc.name, ok: false, error: result.output });

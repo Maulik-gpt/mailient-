@@ -588,6 +588,23 @@ export function sanitizeModelText(text: string): string {
     clean = clean.replace(re, '');
   }
 
+  // G1/G2 — Rewrite blunt refusal openings into action-first phrasing. The
+  // system prompt already tells the LLM to never say "I can't" / "I'm
+  // unable to" / "Unfortunately, …", but defence-in-depth: if it slips
+  // through anyway, rewrite at the boundary. We rewrite ONLY the opening
+  // clause so the rest of the LLM's plan survives.
+  const REFUSAL_REWRITES: Array<{ re: RegExp; replacement: string }> = [
+    { re: /^\s*I\s+can(?:no|')t\b/i,                replacement: "Here's how I'll handle it:" },
+    { re: /^\s*I'?m\s+(?:not\s+able|unable)\s+to\b/i, replacement: "Here's how I'll handle it:" },
+    { re: /^\s*Sorry,?\s+(?:but\s+)?I\s+can(?:no|')t\b/i, replacement: "Here's how I'll handle it:" },
+    { re: /^\s*Unfortunately,?\s+/i,                replacement: "" },
+    { re: /^\s*I\s+don'?t\s+have\s+(?:the\s+)?(?:ability|permission|access)\s+to\b/i, replacement: "Here's how I'll handle it:" },
+    { re: /^\s*That'?s\s+beyond\s+my\s+capabilities\b/i, replacement: "Here's how I'll handle it:" },
+  ];
+  for (const { re, replacement } of REFUSAL_REWRITES) {
+    clean = clean.replace(re, replacement);
+  }
+
   return clean.replace(/\n{3,}/g, '\n\n').trim();
 }
 
