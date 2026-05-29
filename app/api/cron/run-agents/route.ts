@@ -198,7 +198,7 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const report = await runAgentTask(agent, {
+        const { report, toolCalls } = await runAgentTask(agent, {
           maxToolCalls: perAgentToolCalls,
           deadlineMs: sharedBudget,
         });
@@ -223,14 +223,20 @@ export async function GET(request: NextRequest) {
           .eq('id', agent.id);
 
         // FX.2 — Update the run record with final status + delivery.
+        // PART 35 — also persist tool_calls + artifact_links (defined in the
+        // migration but previously left empty), so the Recent runs UI can
+        // surface "drafted 8 / booked 2 / 47 tool calls" at a glance.
         if (runRecordId) {
           try {
+            const artifactLinks = extractArtifactLinks(report);
             await supabase
               .from('arcus_agent_runs')
               .update({
                 completed_at: completedAt.toISOString(),
                 duration_ms: completedAt.getTime() - runStartedAt.getTime(),
                 status: 'success',
+                tool_calls: toolCalls,
+                artifact_links: artifactLinks,
                 report_summary: report.slice(0, 500),
                 email_delivery: emailResult.status === 'fulfilled' ? 'sent' : 'failed',
                 slack_delivery: slackResult.status === 'fulfilled' ? 'sent' : 'failed',
@@ -368,6 +374,81 @@ function matchCronField(field: string, value: number, _min: number, _max: number
   if (field.includes('-') && !field.includes(',')) { const [a, b] = field.split('-').map(Number); return value >= a && value <= b; }
   if (field.includes(',')) return field.split(',').map(Number).includes(value);
   return parseInt(field) === value;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Artifact link extraction — PART 35
+// ─────────────────────────────────────────────────────────────────────────────
+//
+// Parse the report's "## 🔗 All Links" section into a structured object so the
+// Recent runs UI can render clickable per-bucket links without re-parsing
+// markdown client-side. Buckets mirror REPORT_FORMAT_SUFFIX exactly:
+//   gmail   ← Gmail drafts + Emails sent
+//   calendar ← Calendar events
+//   notion  ← Notion pages
+//   slack   ← Slack messages
+//
+// Returns null when no Links section is found (read-only scans, malformed
+// reports) so the column stays null instead of {} — easier to filter on.
+
+interface ArtifactLink {
+  label: string;
+  url: string;
+}
+interface ArtifactLinks {
+  gmail?: ArtifactLink[];
+  calendar?: ArtifactLink[];
+  notion?: ArtifactLink[];
+  slack?: ArtifactLink[];
+}
+
+function extractArtifactLinks(report: string): ArtifactLinks | null {
+  // Find the Links section header — emoji-tolerant, also matches " All Links"
+  // without the emoji in case the LLM stripped it.
+  const linksHeaderRe = /^##\s+(?:[^\w\s]+\s+)?All Links[^\n]*$/im;
+  const headerMatch = linksHeaderRe.exec(report);
+  if (!headerMatch) return null;
+
+  const after = report.slice(headerMatch.index + headerMatch[0].length);
+  // Cut at the next ## heading or the trust-receipts footer divider, whichever
+  // comes first.
+  const endIdx = after.search(/\n##\s+|\n---\s*\n/);
+  const section = endIdx === -1 ? after : after.slice(0, endIdx);
+
+  // Each bucket starts with a bold label like **📧 Gmail drafts** or
+  // **📤 Emails sent**. Walk line by line, attributing markdown links to the
+  // most recent bucket.
+  const out: ArtifactLinks = {};
+  let bucket: keyof ArtifactLinks | null = null;
+  const linkRe = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g;
+
+  for (const line of section.split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // Bucket header detection — also tolerates a leading list marker.
+    const headerLine = trimmed.replace(/^[-*+]\s+/, '');
+    if (/^\*\*/.test(headerLine)) {
+      const lower = headerLine.toLowerCase();
+      if (lower.includes('gmail draft') || lower.includes('emails sent') || lower.includes('email sent')) bucket = 'gmail';
+      else if (lower.includes('calendar')) bucket = 'calendar';
+      else if (lower.includes('notion')) bucket = 'notion';
+      else if (lower.includes('slack')) bucket = 'slack';
+      else bucket = null;
+      continue;
+    }
+
+    if (!bucket) continue;
+    let m: RegExpExecArray | null;
+    linkRe.lastIndex = 0;
+    while ((m = linkRe.exec(trimmed)) !== null) {
+      const list = out[bucket] ?? (out[bucket] = []);
+      list.push({ label: m[1].slice(0, 200), url: m[2].slice(0, 500) });
+    }
+  }
+
+  // Empty result → return null so the DB column stays null, not {}.
+  return Object.keys(out).length === 0 ? null : out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

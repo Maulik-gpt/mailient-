@@ -8,6 +8,7 @@ import {
   Plus, Clock, Mail, Zap, Loader2, X, Slack,
   MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2, Play,
   List, CalendarDays, ChevronLeft, ChevronRight, Compass,
+  Check, ExternalLink, Calendar as CalendarIcon, Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -27,6 +28,30 @@ interface Agent {
   last_run_at: string | null;
   last_report_summary: string | null;
   created_at: string;
+}
+
+// One row from arcus_agent_runs — populated by the cron runner on every
+// scheduled attempt. The RecentRuns subcomponent below lazy-loads up to 7 of
+// these per agent the first time the card is expanded.
+interface ArtifactLink { label: string; url: string }
+interface AgentRun {
+  id: string;
+  agent_id: string;
+  started_at: string;
+  completed_at: string | null;
+  duration_ms: number | null;
+  status: 'running' | 'success' | 'error' | 'transient_error';
+  tool_calls: number | null;
+  report_summary: string | null;
+  error_message: string | null;
+  email_delivery: 'sent' | 'failed' | 'skipped' | null;
+  slack_delivery: 'sent' | 'failed' | 'skipped' | null;
+  artifact_links: {
+    gmail?: ArtifactLink[];
+    calendar?: ArtifactLink[];
+    notion?: ArtifactLink[];
+    slack?: ArtifactLink[];
+  } | null;
 }
 
 // ── Cron helpers ───────────────────────────────────────────────────────────────
@@ -943,6 +968,194 @@ function CreateModal({ onClose, onSave, initial }: {
 
 // ── Agent Card ─────────────────────────────────────────────────────────────────
 
+// ── Recent runs (PART 35) ──────────────────────────────────────────────────────
+// Lazy-loads up to 7 rows from /api/arcus/agents/runs?agentId=... on first
+// expand. Renders status pill, when it ran, duration, tool-call count,
+// delivery icons, and per-bucket artifact link counts. Each artifact group
+// links out to the actual page/event/draft via the URLs the cron runner
+// extracted from the report's "All Links" section.
+
+function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  const diffSec = Math.round((Date.now() - then) / 1000);
+  if (diffSec < 60) return 'just now';
+  if (diffSec < 3600) return `${Math.floor(diffSec / 60)}m ago`;
+  if (diffSec < 86400) return `${Math.floor(diffSec / 3600)}h ago`;
+  const days = Math.floor(diffSec / 86400);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function formatDuration(ms: number | null): string | null {
+  if (ms == null || ms < 0) return null;
+  if (ms < 1000) return `${ms}ms`;
+  const sec = ms / 1000;
+  if (sec < 60) return `${sec.toFixed(1)}s`;
+  const min = Math.floor(sec / 60);
+  return `${min}m ${Math.round(sec % 60)}s`;
+}
+
+function statusPill(status: AgentRun['status']) {
+  const map: Record<AgentRun['status'], { label: string; cls: string; icon: React.ReactNode }> = {
+    success:         { label: 'Success',  cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',  icon: <Check className="w-3 h-3" /> },
+    error:           { label: 'Error',    cls: 'bg-red-500/10 text-red-400 border-red-500/30',              icon: <AlertCircle className="w-3 h-3" /> },
+    transient_error: { label: 'Retrying', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/30',        icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+    running:         { label: 'Running',  cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+  };
+  const meta = map[status] ?? map.running;
+  return (
+    <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border', meta.cls)}>
+      {meta.icon}
+      {meta.label}
+    </span>
+  );
+}
+
+function deliveryIcon(channel: 'email' | 'slack', state: AgentRun['email_delivery']) {
+  if (state == null || state === 'skipped') return null;
+  const Icon = channel === 'email' ? Mail : Slack;
+  const ok = state === 'sent';
+  return (
+    <span
+      title={`${channel} delivery: ${state}`}
+      className={cn(
+        'inline-flex items-center justify-center w-5 h-5 rounded',
+        ok ? 'text-emerald-400' : 'text-red-400',
+      )}
+    >
+      <Icon className="w-3 h-3" />
+    </span>
+  );
+}
+
+function ArtifactBucket({
+  icon, count, links, label,
+}: { icon: React.ReactNode; count: number; links: ArtifactLink[]; label: string }) {
+  const [open, setOpen] = useState(false);
+  if (count === 0) return null;
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] text-arcus-fg-secondary bg-arcus-raised/60 hover:bg-arcus-raised border border-arcus-divider/50 hover:border-arcus-divider transition-colors"
+        title={`${count} ${label}`}
+      >
+        {icon}
+        <span className="font-semibold">{count}</span>
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            className="absolute z-30 left-0 top-7 min-w-[260px] max-w-[360px] bg-white dark:bg-neutral-900 border border-arcus-border rounded-xl overflow-hidden shadow-2xl"
+          >
+            <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-arcus-fg-muted border-b border-arcus-divider/60">
+              {label} ({count})
+            </div>
+            <div className="max-h-[220px] overflow-y-auto py-1">
+              {links.map((l, i) => (
+                <a
+                  key={i}
+                  href={l.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-3 py-2 text-[12px] text-arcus-fg-secondary hover:bg-arcus-raised hover:text-arcus-fg transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3 flex-shrink-0 opacity-60" />
+                  <span className="truncate">{l.label}</span>
+                </a>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function RunRow({ run }: { run: AgentRun }) {
+  const dur = formatDuration(run.duration_ms);
+  const links = run.artifact_links ?? {};
+  return (
+    <div className="px-3 py-3 border-b border-arcus-divider/40 last:border-b-0">
+      <div className="flex items-center gap-2 flex-wrap">
+        {statusPill(run.status)}
+        <span className="text-[12px] text-arcus-fg-muted">{relativeTime(run.started_at)}</span>
+        {dur && <span className="text-[11px] text-arcus-fg-muted">· {dur}</span>}
+        {typeof run.tool_calls === 'number' && run.tool_calls > 0 && (
+          <span className="text-[11px] text-arcus-fg-muted">· {run.tool_calls} tool {run.tool_calls === 1 ? 'call' : 'calls'}</span>
+        )}
+        <div className="ml-auto flex items-center gap-1">
+          {deliveryIcon('email', run.email_delivery)}
+          {deliveryIcon('slack', run.slack_delivery)}
+        </div>
+      </div>
+
+      {run.status === 'error' && run.error_message ? (
+        <p className="mt-2 text-[12px] text-red-400 leading-relaxed line-clamp-2">{run.error_message}</p>
+      ) : run.report_summary ? (
+        <p className="mt-2 text-[12px] text-arcus-fg-muted leading-relaxed line-clamp-2">{run.report_summary}</p>
+      ) : null}
+
+      {(links.gmail?.length || links.calendar?.length || links.notion?.length || links.slack?.length) ? (
+        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+          <ArtifactBucket icon={<Mail className="w-3 h-3" />}        count={links.gmail?.length ?? 0}    links={links.gmail ?? []}    label="Gmail" />
+          <ArtifactBucket icon={<CalendarIcon className="w-3 h-3" />} count={links.calendar?.length ?? 0} links={links.calendar ?? []} label="Calendar" />
+          <ArtifactBucket icon={<Database className="w-3 h-3" />}     count={links.notion?.length ?? 0}   links={links.notion ?? []}   label="Notion" />
+          <ArtifactBucket icon={<Slack className="w-3 h-3" />}        count={links.slack?.length ?? 0}    links={links.slack ?? []}    label="Slack" />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function RecentRuns({ agentId, expanded }: { agentId: string; expanded: boolean }) {
+  const [runs, setRuns] = useState<AgentRun[] | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!expanded || runs !== null || loading) return;
+    let cancelled = false;
+    setLoading(true);
+    fetch(`/api/arcus/agents/runs?agentId=${encodeURIComponent(agentId)}&limit=7`)
+      .then(async r => {
+        const j = await r.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!r.ok) { setErr(j.error || `HTTP ${r.status}`); setRuns([]); return; }
+        setRuns(Array.isArray(j.runs) ? j.runs : []);
+      })
+      .catch(e => { if (!cancelled) { setErr(String(e?.message || e)); setRuns([]); } })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [expanded, agentId, runs, loading]);
+
+  if (!expanded) return null;
+
+  return (
+    <div className="mt-2 border border-arcus-divider/50 rounded-xl bg-arcus-elevated/40 overflow-hidden">
+      <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-arcus-fg-muted border-b border-arcus-divider/40 flex items-center justify-between">
+        <span>Recent runs</span>
+        {runs && runs.length > 0 && <span className="font-medium normal-case tracking-normal text-arcus-fg-muted">last {runs.length}</span>}
+      </div>
+      {loading && (
+        <div className="px-3 py-4 flex items-center gap-2 text-[12px] text-arcus-fg-muted">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading run history…
+        </div>
+      )}
+      {err && !loading && (
+        <div className="px-3 py-3 text-[12px] text-red-400">Could not load runs: {err}</div>
+      )}
+      {!loading && !err && runs && runs.length === 0 && (
+        <div className="px-3 py-4 text-[12px] text-arcus-fg-muted">No runs yet. The first scheduled run will appear here.</div>
+      )}
+      {!loading && runs && runs.map(r => <RunRow key={r.id} run={r} />)}
+    </div>
+  );
+}
+
 function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }: {
   agent: Agent; onToggle: () => void; onEdit: () => void; onDelete: () => void; onToggleConf: () => void; onRunNow: () => void;
 }) {
@@ -1036,32 +1249,19 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }
           </div>
         </div>
 
-        {/* Last run expandable */}
-        {agent.last_run_at && (
-          <div className="mt-3">
-            <button
-              onClick={() => setExpanded(v => !v)}
-              className="flex items-center gap-1.5 text-[12px] text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors"
-            >
-              <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
-              Last run: {formatRunDate(agent.last_run_at)}
-            </button>
-            <AnimatePresence>
-              {expanded && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  className="overflow-hidden"
-                >
-                  <p className="mt-2 text-[13px] text-arcus-fg-muted leading-relaxed pl-4 border-l border-arcus-divider">
-                    {agent.last_report_summary || 'Run completed.'}
-                  </p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-        )}
+        {/* Recent runs expandable — lazy-loads up to 7 rows on first expand. */}
+        <div className="mt-3">
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="flex items-center gap-1.5 text-[12px] text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors"
+          >
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
+            {agent.last_run_at
+              ? <>Recent runs <span className="text-arcus-fg-muted/70">· last {formatRunDate(agent.last_run_at)}</span></>
+              : <>Recent runs <span className="text-arcus-fg-muted/70">· none yet</span></>}
+          </button>
+          <RecentRuns agentId={agent.id} expanded={expanded} />
+        </div>
       </div>
 
       {/* Skip confirmations */}

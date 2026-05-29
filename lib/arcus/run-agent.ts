@@ -232,10 +232,17 @@ export async function buildAgentLoopArgs(
   };
 }
 
+export interface AgentRunResult {
+  /** Final report markdown (canvas if present, else final message). */
+  report: string;
+  /** Count of tool_call SSE events observed during the run. */
+  toolCalls: number;
+}
+
 export async function runAgentTask(
   agent: { user_id: string; task_description: string; name?: string; id?: string },
   budget: AgentRunBudget = {},
-): Promise<string> {
+): Promise<AgentRunResult> {
   const args = await buildAgentLoopArgs(agent, budget);
   const stream = runAgentLoop(args);
 
@@ -246,6 +253,7 @@ export async function runAgentTask(
   let currentEventType = '';
 
   let canvasMarkdown = '';
+  let toolCalls = 0;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -275,6 +283,12 @@ export async function runAgentTask(
         } catch { /* ok */ }
         currentEventType = '';
       }
+
+      if (line.startsWith('data: ') && currentEventType === 'tool_call') {
+        // Count without parsing — every emitted tool_call frame is one call.
+        toolCalls += 1;
+        currentEventType = '';
+      }
     }
   }
 
@@ -292,5 +306,5 @@ export async function runAgentTask(
   // Fire-and-forget — never block the cron run on memory write
   saveMemory(agent.user_id, runRecord, ['agent_run', 'background']).catch(() => {});
 
-  return report;
+  return { report, toolCalls };
 }

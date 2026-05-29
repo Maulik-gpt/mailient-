@@ -3357,6 +3357,7 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
       userId,
       actionType: 'send_email',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       return failureResult(
@@ -3471,6 +3472,7 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
       userId,
       actionType: 'schedule_meeting',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       const att = Array.isArray(input.attendees) ? input.attendees.join(', ') : '';
@@ -3752,6 +3754,7 @@ async function calendarCancelEvent(userId: string, input: any, context: ToolCont
       userId,
       actionType: 'cancel_event',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       return failureResult(
@@ -4034,6 +4037,7 @@ async function createNotionPage(userId: string, input: any, context: ToolContext
       userId,
       actionType: 'create_notion_page',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       return failureResult(
@@ -5316,6 +5320,7 @@ async function sendSlackMessage(userId: string, input: any, context: ToolContext
       userId,
       actionType: 'send_slack_message',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       return failureResult(
@@ -5473,6 +5478,7 @@ async function slackSendDm(userId: string, input: any, context: ToolContext = {}
       userId,
       actionType: 'send_slack_dm',
       targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
     });
     if (!approved && !failedOpen) {
       return failureResult(

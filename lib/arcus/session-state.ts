@@ -116,21 +116,42 @@ export async function recordPendingApproval(params: {
  * mark it consumed in the same transaction. Returns true iff a matching
  * approved row existed and was consumed.
  *
- * Fail-open semantics: if Supabase is unreachable OR the table doesn't exist
- * (migration not applied), this returns true so the write proceeds. Once
- * every deployment has the migration we can flip this to fail-closed.
+ * Fail-open semantics — narrowed in PART 35 to only the two cases that have
+ * a legitimate reason to bypass the gate:
+ *
+ *   1. Missing conversationId — background agents bypass the request_confirmation
+ *      path entirely (their own approval is the agent creation), so an absent
+ *      conversation id is structural, not a failure.
+ *   2. Table missing (PG error 42P01) — migration not applied yet. Failing
+ *      closed here would brick every send on under-migrated deployments.
+ *
+ * Every other error path (Supabase unreachable, network blip, generic
+ * exception) now fails CLOSED. Before this change, a generic catch returned
+ * `{ approved: true, failedOpen: true }`, which meant a Supabase timeout
+ * during a confirmation lookup let the write through unconfirmed — silently
+ * defeating the rule the module exists to enforce.
  */
 export async function consumeApproval(params: {
   conversationId: string;
   userId: string;
   actionType: ApprovalActionType;
   targetKey: string;
+  /**
+   * Explicit opt-in for the background-agent bypass. When true, this caller
+   * is responsible for its own approval surface (e.g. agent creation flow)
+   * and consumeApproval should not gate the write. Defaults to false.
+   */
+  isBackgroundAgent?: boolean;
 }): Promise<{ approved: boolean; failedOpen: boolean }> {
-  if (!params.conversationId) {
-    // No conversation id means we cannot match against any approval — let it
-    // through. This happens on background-agent runs where the request_confirmation
-    // path is bypassed entirely.
+  if (params.isBackgroundAgent) {
     return { approved: true, failedOpen: true };
+  }
+  if (!params.conversationId) {
+    // Interactive callers must always pass a conversationId. Treat the
+    // omission as a configuration bug, not a free bypass — fail closed and
+    // log loudly so the missing call-site is fixed.
+    console.warn('[Arcus:Approvals] consumeApproval called without conversationId — failing CLOSED');
+    return { approved: false, failedOpen: false };
   }
   try {
     const supabase = getSupabaseAdmin();
@@ -152,7 +173,7 @@ export async function consumeApproval(params: {
         console.warn('[Arcus:Approvals] table missing, failing open');
         return { approved: true, failedOpen: true };
       }
-      console.warn('[Arcus:Approvals] consumeApproval lookup error:', error.message);
+      console.warn('[Arcus:Approvals] consumeApproval lookup error — failing CLOSED:', error.message);
       return { approved: false, failedOpen: false };
     }
 
@@ -171,8 +192,11 @@ export async function consumeApproval(params: {
 
     return { approved: true, failedOpen: false };
   } catch (err: any) {
-    console.warn('[Arcus:Approvals] consumeApproval threw:', err.message);
-    return { approved: true, failedOpen: true };
+    // Network blip, Supabase outage, JSON parse error, etc. — failing open
+    // here would let any write through whenever Supabase is unreachable,
+    // exactly the kind of silent defeat this module is supposed to prevent.
+    console.warn('[Arcus:Approvals] consumeApproval threw — failing CLOSED:', err.message);
+    return { approved: false, failedOpen: false };
   }
 }
 
