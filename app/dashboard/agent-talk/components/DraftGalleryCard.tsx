@@ -16,7 +16,7 @@
  *   ...
  *   Footer: [Save all to drafts]       [Send selected (N)]
  *
- * Sending: sequential POSTs to /api/dashboard/agent-talk/send-email (same
+ * Sending: sequential POSTs to /api/agent-talk/send-email (same
  * route the single-draft modal uses). Each row goes idle → sending → sent
  * or → error with a small status icon. Toast on success/failure totals.
  */

@@ -14,6 +14,61 @@ function encodeRfc822(to: string, subject: string, body: string, threadId?: stri
   return Buffer.from(lines.join('\r\n')).toString('base64url');
 }
 
+// Translate a Gmail API failure into a user-friendly response. NEVER leak raw
+// Google error JSON to the UI — that's a spec violation ("never raw error
+// text"). The raw text is still captured in console.error for debugging.
+function classifyGmailError(status: number, errText: string): {
+  httpStatus: number;
+  code: string;
+  error: string;
+  /** True when the client should show a "Reconnect Gmail" CTA. */
+  reconnect?: boolean;
+} {
+  const lower = errText.toLowerCase();
+  if (status === 401 || lower.includes('invalid credentials') || lower.includes('invalid_token')) {
+    return {
+      httpStatus: 401,
+      code: 'gmail_auth_expired',
+      error: 'Gmail authorization expired. Reconnect Gmail in Integrations and try again.',
+      reconnect: true,
+    };
+  }
+  if (status === 403 && (lower.includes('insufficient') || lower.includes('scope'))) {
+    return {
+      httpStatus: 403,
+      code: 'gmail_scope_missing',
+      error: 'Gmail send permission is missing. Reconnect Gmail and approve the "send mail" scope.',
+      reconnect: true,
+    };
+  }
+  if (status === 429 || lower.includes('rate limit') || lower.includes('quota')) {
+    return {
+      httpStatus: 429,
+      code: 'gmail_rate_limited',
+      error: 'Gmail rate-limited this send. Wait a minute and try again.',
+    };
+  }
+  if (status === 400 && lower.includes('recipient')) {
+    return {
+      httpStatus: 400,
+      code: 'gmail_invalid_recipient',
+      error: 'Recipient address is invalid. Double-check the email and try again.',
+    };
+  }
+  if (status >= 500) {
+    return {
+      httpStatus: 502,
+      code: 'gmail_upstream',
+      error: 'Gmail is having trouble right now. Try again in a moment.',
+    };
+  }
+  return {
+    httpStatus: 400,
+    code: 'gmail_send_failed',
+    error: 'Gmail rejected the send. Try again, or use Gmail directly if it keeps failing.',
+  };
+}
+
 export async function POST(req: NextRequest) {
   try {
     const session = await auth();
@@ -22,10 +77,18 @@ export async function POST(req: NextRequest) {
     }
 
     const userId = session.user.email.toLowerCase();
-    const { to, subject, body, threadId } = await req.json();
+    // Accept both `body` (canonical) and `content` (used historically by
+    // DraftApprovalModal + DraftGalleryCard). Without this back-compat,
+    // every UI-initiated send 400'd with "Missing required fields: body".
+    const payload = await req.json();
+    const { to, subject, threadId } = payload;
+    const body: string | undefined = payload.body ?? payload.content;
 
     if (!to || !subject || !body) {
-      return NextResponse.json({ error: 'Missing required fields: to, subject, body' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Missing required fields: to, subject, body (or content).' },
+        { status: 400 },
+      );
     }
 
     // Fetch Gmail access token — try arcus_integrations first, then user_tokens fallback
@@ -54,7 +117,14 @@ export async function POST(req: NextRequest) {
     }
 
     if (!accessToken) {
-      return NextResponse.json({ error: 'Gmail not connected. Please connect Gmail in your integrations.' }, { status: 404 });
+      return NextResponse.json(
+        {
+          code: 'gmail_not_connected',
+          error: 'Gmail isn’t connected. Connect Gmail in Integrations to send.',
+          reconnect: true,
+        },
+        { status: 404 },
+      );
     }
 
     const raw = encodeRfc822(to, subject, body, threadId);
@@ -71,10 +141,11 @@ export async function POST(req: NextRequest) {
 
     if (!gmailRes.ok) {
       const errText = await gmailRes.text().catch(() => '');
-      console.error(`[send-email] Gmail API error ${gmailRes.status}:`, errText.slice(0, 300));
+      console.error(`[send-email] Gmail API error ${gmailRes.status}:`, errText.slice(0, 500));
+      const mapped = classifyGmailError(gmailRes.status, errText);
       return NextResponse.json(
-        { error: `Gmail send failed (${gmailRes.status})`, detail: errText.slice(0, 200) },
-        { status: gmailRes.status >= 500 ? 502 : 400 }
+        { code: mapped.code, error: mapped.error, ...(mapped.reconnect ? { reconnect: true } : {}) },
+        { status: mapped.httpStatus },
       );
     }
 
@@ -83,6 +154,10 @@ export async function POST(req: NextRequest) {
 
   } catch (err: any) {
     console.error('[send-email] Unexpected error:', err?.message);
-    return NextResponse.json({ error: err?.message || 'Internal error' }, { status: 500 });
+    // Don't echo the raw exception to the UI — bind it to a stable shape.
+    return NextResponse.json(
+      { code: 'send_internal_error', error: 'Couldn’t send right now. Try again in a moment.' },
+      { status: 500 },
+    );
   }
 }

@@ -5975,6 +5975,16 @@ export default function ChatInterface({
                                           setTimeout(() => {
                                             if (currentConversationId) {
                                               processAgentLoopMessage(response, currentConversationId, false);
+                                            } else {
+                                              // PART 36: don't let "Confirmed" be a silent dead-end. If the
+                                              // conversation lost its id (rare, but happened on refresh-mid-flow),
+                                              // tell the user and let them re-prompt rather than sit on a green
+                                              // pill that doesn't advance the agent.
+                                              toast.error(
+                                                action === 'confirm'
+                                                  ? 'Confirmed, but the conversation lost its session. Send a quick "go ahead" to resume.'
+                                                  : 'Cancelled. Send a new message to continue.',
+                                              );
                                             }
                                           }, 300);
                                         }}
@@ -6049,7 +6059,7 @@ export default function ChatInterface({
                                           voiceScore: d.voiceScore,
                                         })))}
                                         onSendOne={async (item) => {
-                                          const res = await fetch('/api/dashboard/agent-talk/send-email', {
+                                          const res = await fetch('/api/agent-talk/send-email', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({
@@ -6089,7 +6099,7 @@ export default function ChatInterface({
                                           ));
                                         }}
                                         onSendReply={async ({ content, recipientEmail, subject, threadId, gmailDraftId }) => {
-                                          const res = await fetch('/api/dashboard/agent-talk/send-email', {
+                                          const res = await fetch('/api/agent-talk/send-email', {
                                             method: 'POST',
                                             headers: { 'Content-Type': 'application/json' },
                                             body: JSON.stringify({ to: recipientEmail, subject, content, threadId, gmailDraftId }),

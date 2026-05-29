@@ -36,6 +36,41 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
   useEffect(() => setMounted(true), []);
   const isDark = !mounted || resolvedTheme === 'dark';
 
+  // Safety net: if the parent never flips `status` (network blip, missing
+  // currentConversationId, etc.), the Confirm button used to sit on
+  // "Confirming…" forever and there was no way to retry. Reset after 8s so
+  // the user can try again instead of being stuck.
+  useEffect(() => {
+    if (!loading) return;
+    const t = setTimeout(() => setLoading(false), 8000);
+    return () => clearTimeout(t);
+  }, [loading]);
+
+  // Keyboard: Enter confirms, Escape cancels. Active only while the card is
+  // unresolved (status === undefined) AND not mid-confirm. Matches the
+  // DraftApprovalModal's Esc behavior so the two confirmation surfaces feel
+  // the same.
+  useEffect(() => {
+    if (status || loading) return;
+    const handler = (e: KeyboardEvent) => {
+      // Ignore if the user is typing into an input — the chat composer must
+      // keep its own Enter behavior.
+      const t = e.target as HTMLElement | null;
+      const isEditable = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable);
+      if (isEditable) return;
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        setLoading(true);
+        onAction('confirm');
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onAction('cancel');
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [status, loading, onAction]);
+
   // Resolved state — show a compact pill
   if (status) {
     return (
