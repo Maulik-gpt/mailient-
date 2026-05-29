@@ -130,7 +130,10 @@ export interface LLMMessage {
 export type ContentBlock =
   | { type: 'text'; text: string }
   | { type: 'tool_use'; id: string; name: string; input: Record<string, any> }
-  | { type: 'tool_result'; tool_use_id: string; content: string };
+  | { type: 'tool_result'; tool_use_id: string; content: string }
+  // F12 — Vision content block. Passed through to OpenAI-style vision API
+  // (gemini-2.5-flash, gpt-4o-mini, claude-haiku-5 all accept this shape).
+  | { type: 'image_url'; image_url: { url: string } };
 
 export interface ToolSchema {
   name: string;
@@ -204,6 +207,23 @@ function toOpenAIMessages(messages: LLMMessage[]): any[] {
         }));
       }
       out.push(assistantMsg);
+      continue;
+    }
+
+    // F12 — User message with images: forward as multi-part content
+    // ({type:'text',text:...} + {type:'image_url',image_url:{url:...}}).
+    const imageBlocks = blocks.filter(b => b.type === 'image_url') as Array<{
+      type: 'image_url'; image_url: { url: string };
+    }>;
+    if (msg.role === 'user' && imageBlocks.length > 0) {
+      const textParts = blocks
+        .filter(b => b.type === 'text')
+        .map(b => ({ type: 'text', text: (b as any).text }));
+      const imgParts = imageBlocks.map(b => ({
+        type: 'image_url',
+        image_url: b.image_url,
+      }));
+      out.push({ role: 'user', content: [...textParts, ...imgParts] });
       continue;
     }
 
@@ -531,6 +551,42 @@ export function sanitizeModelText(text: string): string {
   // didn't trigger. Conservative — only at end of text and only when it
   // explicitly addresses the user.
   clean = clean.replace(/\s*Now\s+(?:write|call|tell|reply|compose|confirm)\s+[^.\n]*?(?:to\s+the\s+user|the\s+user)[^.\n]*?\.\s*$/gi, '');
+
+  // F7.1: strip the "[Cached — you already called X ...]" prefix that leaks
+  // when the LLM pastes its own tool-result envelope into chat. Match the
+  // whole paragraph it lives in so we don't leave dangling fragments.
+  clean = clean.replace(/\[\s*Cached\s*[—\-:]\s*[^\]\n]*\]\s*/gi, '');
+  clean = clean.replace(/^\s*\[?\s*Cached\b[^\n]*\n?/gim, '');
+
+  // F7.2: strip raw JSON paragraphs the LLM pastes from tool results.
+  // Match a paragraph that is JUST {…} or […] on its own — never something
+  // a user wants to see. Multiline-safe.
+  clean = clean.replace(/(^|\n\n)\s*[\{\[][\s\S]{0,4000}?[\}\]]\s*(?=\n\n|$)/g, (m, sep) => {
+    const body = m.trim();
+    // Heuristic: only strip if it actually parses as JSON.
+    try {
+      JSON.parse(body);
+      return sep || '';
+    } catch {
+      return m;
+    }
+  });
+
+  // F7.3: strip tool-error envelopes the LLM mirrors verbatim. These are
+  // INTERNAL failure strings ("Cannot show the agent spec — spec_markdown is
+  // required …", "must_read_thread_first", "gmail_scope_missing"). They are
+  // structured for the LLM, not the user.
+  const TOOL_ERROR_PATTERNS = [
+    /Cannot show the agent spec[^\n]*\n?/gi,
+    /spec_markdown is required[^\n]*\n?/gi,
+    /must_read_thread_first[^\n]*\n?/gi,
+    /\b[a-z]+_(?:scope_missing|not_connected|token_expired|rate_limited|quota_exceeded)\b[^\n]*\n?/gi,
+    /\b_internal_only\b[^\n]*\n?/gi,
+    /Tool result[^\n]*?(?:success|failure)\s*:[^\n]*\n?/gi,
+  ];
+  for (const re of TOOL_ERROR_PATTERNS) {
+    clean = clean.replace(re, '');
+  }
 
   return clean.replace(/\n{3,}/g, '\n\n').trim();
 }

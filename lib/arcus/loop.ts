@@ -46,6 +46,7 @@ import { processGmailResults, isVagueInstruction, isBroadContextTask } from './i
 import { invalidateGmailScope } from './gmail-scope';
 import { getSupabaseAdmin } from '../supabase.js';
 import { buildExecutionPlan, planToHint, checkPrerequisites } from './orchestrator';
+import { classifyUserIntent, shouldSuppressTools, intentSystemHint } from './intent-classifier';
 import type { LLMMessage } from './engine';
 
 // ── Audit logging — fire-and-forget, never blocks the loop ────────────────────
@@ -355,6 +356,19 @@ export interface LoopOptions {
   isBackgroundAgent?: boolean;
   skipConfirmations?: boolean;
   agentId?: string;
+  /**
+   * F6 — Free-text user instructions from the settings card. The loop uses
+   * the FIRST 220 chars as a per-turn reminder appended to the user message
+   * so the LLM re-reads the rules every step instead of having to recall
+   * them from the bottom of a 1000-line system prompt.
+   */
+  userInstructions?: string;
+  /**
+   * F12 — Attachments uploaded with the user's message. Only image types are
+   * forwarded to the LLM as vision content blocks; non-image attachments are
+   * surfaced as text mentions ("file: <name>") so the model knows they exist.
+   */
+  attachments?: Array<{ name: string; url: string; type: string; size?: number }>;
 }
 
 // ── Main loop ──────────────────────────────────────────────────────────────────
@@ -373,7 +387,27 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     isBackgroundAgent,
     skipConfirmations,
     agentId,
+    userInstructions,
+    attachments,
   } = opts;
+
+  // F12 — Split attachments into image (sent as vision blocks) and other
+  // (surfaced as text). image_url accepts data: URLs and https: URLs equally.
+  const imageAttachments = (attachments || []).filter(a =>
+    a.type?.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|heic)$/i.test(a.name || ''),
+  );
+  const nonImageAttachments = (attachments || []).filter(a => !imageAttachments.includes(a));
+
+  // F6 — One-line reminder of the user's binding rules, appended to every
+  // user message so attention never drifts past them.
+  const activeRulesHint = (() => {
+    if (!userInstructions || !userInstructions.trim()) return '';
+    const compact = userInstructions
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 220);
+    return `\n\n[ACTIVE RULES: ${compact}${userInstructions.length > 220 ? '…' : ''}]`;
+  })();
   // Tracks every successful tool call this run so PART 4 Rule 1 (draft_reply
   // requires a preceding read_email/gmail_read_thread) and Rule 3
   // (schedule_meeting requires a preceding calendar fetch) can verify the
@@ -402,19 +436,64 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     'slack_get_channels', 'slack_find_user',
   ]);
   const toolResultCache = new Map<string, { output: string; success?: boolean; canvasData?: any }>();
+
+  // F4 — Normalize input values so the LLM hitting the same search with a
+  // slightly different phrasing (e.g. "Q3 proposal" vs "Q3 proposal Priya")
+  // still cache-hits. Without this the cache rarely caught anything.
+  const STOP_WORDS = new Set([
+    'a', 'an', 'and', 'or', 'the', 'is', 'are', 'was', 'were', 'be', 'been',
+    'of', 'in', 'on', 'at', 'to', 'for', 'with', 'by', 'from', 'as',
+    'this', 'that', 'these', 'those', 'i', 'you', 'we', 'they', 'me', 'my',
+    'about', 'please', 'find', 'show', 'me', 'get', 'list', 'all', 'any',
+  ]);
+  function normalizeValue(v: any): any {
+    if (v == null) return v;
+    if (typeof v === 'string') {
+      const tokens = v
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s@\-_.]/gu, ' ')
+        .split(/\s+/)
+        .filter(t => t && !STOP_WORDS.has(t));
+      tokens.sort();
+      return tokens.join(' ');
+    }
+    if (Array.isArray(v)) {
+      const norm = v.map(normalizeValue);
+      // Stable order for ID arrays / lists — sort lex.
+      try { return [...norm].sort((a, b) => String(a).localeCompare(String(b))); }
+      catch { return norm; }
+    }
+    if (typeof v === 'object') {
+      const out: any = {};
+      for (const k of Object.keys(v).sort()) out[k] = normalizeValue(v[k]);
+      return out;
+    }
+    return v;
+  }
   function makeCacheKey(name: string, input: any): string {
     try {
-      // Sort keys for stable hashing
-      const sortedKeys = Object.keys(input || {}).sort();
-      const sorted: any = {};
-      for (const k of sortedKeys) sorted[k] = input[k];
-      return `${name}|${JSON.stringify(sorted)}`;
+      return `${name}|${JSON.stringify(normalizeValue(input || {}))}`;
     } catch {
       return `${name}|<unserializable>`;
     }
   }
 
-  const availableTools = isPlanMode ? [] : getAvailableTools(connectedIntegrations, isBackgroundAgent);
+  // F1 — Intent classifier. Computed early so the LLM gets [INTENT: …] in
+  // its system prompt AND so we can suppress the tool schema entirely for
+  // identity / smalltalk / capability messages (kills "Who are you?" →
+  // calendar tool dispatch).
+  const lastTurn = history.length > 0 ? history[history.length - 1] : null;
+  const hasOpenConfirmation = !!(lastTurn && lastTurn.role === 'assistant' &&
+    /(should I|shall I|do you want me to|need approval|please confirm|confirmation card)/i.test(lastTurn.content));
+  const detectedIntent = classifyUserIntent(userMessage, hasOpenConfirmation);
+  const suppressToolsForIntent = shouldSuppressTools(detectedIntent) && !isBackgroundAgent;
+
+  const availableTools = (isPlanMode || suppressToolsForIntent)
+    ? []
+    : getAvailableTools(connectedIntegrations, isBackgroundAgent);
+
+  // Append intent hint to the system prompt so the LLM reads it every turn.
+  const effectiveSystemPrompt = `${systemPrompt}\n\n${intentSystemHint(detectedIntent)}`;
   // Background agents get the raised limit so they can handle large inboxes
   // without hitting the wall mid-run. Interactive sessions stay at 20 so
   // the LLM doesn't burn budget on exploratory calls.
@@ -563,11 +642,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           userMessage.trim().startsWith('Create agent ') ||
           userMessage.trim().startsWith('Execute these steps in order:');
 
+        // F10 — Intent classifier feeds this intercept. The regex stays as a
+        // fallback but the classifier catches paraphrases the regex misses
+        // ("set up a daily inbox check" without the word "agent"). The
+        // classifier ALSO acts as a negative filter — if the user asked
+        // "what's my agent's status?" the classifier returns `query`, not
+        // `agent_creation`, so the intercept is suppressed even though the
+        // word "agent" appears.
         const looksLikeAgentCreation =
           !isPlanMode &&
           !isBackgroundAgent &&
           !isAgentCreationFollowup &&
-          AGENT_CREATION_INTENT.test(userMessage);
+          (detectedIntent === 'agent_creation' || AGENT_CREATION_INTENT.test(userMessage)) &&
+          detectedIntent !== 'query' &&
+          detectedIntent !== 'capability';
 
         if (looksLikeAgentCreation) {
           emit('thinking', { status: 'Drafting the agent spec…' });
@@ -622,7 +710,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 );
                 emit('tool_result', { tool: 'create_scheduled_agent', success: result.success !== false, summary: result.output.slice(0, 300), iteration: 0 });
                 if (result.canvasData) emit('canvas', result.canvasData);
-                emit('message', { content: result.output });
+                // F8 — Internal-only validation errors (e.g. missing spec_markdown)
+                // must NEVER reach chat verbatim. Swap with a clean clarifying ask.
+                const isInternalOnly = (result as any)._internal_only === true;
+                const userFacing = isInternalOnly
+                  ? 'What should this agent do, and how often? (e.g. "summarise my inbox every morning at 7am")'
+                  : sanitizeModelText(result.output);
+                emit('message', { content: userFacing });
                 closeStream(1);
                 return;
               } catch (err: any) {
@@ -847,10 +941,27 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           ? `\n\n[PLAN MODE — STRICT]\nYou are in plan creation mode. Your only output must be a well-structured markdown plan document.\nRules:\n- Do NOT execute any actions or call any tools\n- Do NOT use agent-style language ("I'll now...", "Let me...", "I've completed...")\n- Write the plan entirely in future tense ("Step 1: Search...", "Step 2: Analyse...")\n- Structure the plan with: ## Objective, ## Steps (numbered), ## Expected Output, ## Time estimate\n- Be specific: name the exact tools/APIs/searches that would be used\n- The user should be able to hand this plan to someone else and have it executed exactly`
           : '';
 
+        // F12 — Build the user message. If images attached, use the multi-block
+        // vision shape ({type:'text'},{type:'image_url'}). Non-image attachments
+        // (PDF, txt, etc.) are surfaced as a text mention so the LLM knows they
+        // exist even though it can't see their contents.
+        const userMessageWithRules = userMessage + activeRulesHint;
+        const attachmentMention = nonImageAttachments.length > 0
+          ? `\n\n[Attached files (not images, contents not visible to you): ${nonImageAttachments.map(a => a.name).join(', ')}]`
+          : '';
+        const finalUserText = userMessageWithRules + attachmentMention;
+
+        const userMessageContent: string | any[] = imageAttachments.length > 0
+          ? [
+              { type: 'text' as const, text: finalUserText },
+              ...imageAttachments.map(a => ({ type: 'image_url' as const, image_url: { url: a.url } })),
+            ]
+          : finalUserText;
+
         const messages: LLMMessage[] = [
-          { role: 'system', content: systemPrompt + planModeInstruction },
+          { role: 'system', content: effectiveSystemPrompt + planModeInstruction },
           ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
-          { role: 'user', content: userMessage },
+          { role: 'user', content: userMessageContent as any },
         ];
 
         // Inject orchestration hint as the final user message so it's the last
@@ -1387,22 +1498,25 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 // acknowledgement instruction breaks that loop.
                 if (result.success === false) {
                   const code = result.errorCode || 'tool_failed';
-                  // FIX 2 — enforce exact user-facing acknowledgement format.
-                  // The LLM MUST say "I couldn't [action] because [reason].
-                  // Would you like me to [alternative]?" before doing anything
-                  // else. Generic "I'll try a different approach" without naming
-                  // the failure is not acceptable.
+                  // F8 — Internal-only validation errors get a sanitized
+                  // instruction so the LLM never echoes the internal field
+                  // name into chat.
+                  const isInternalOnly = (result as any)._internal_only === true;
                   const friendlyAction = tc.name.replace(/_/g, ' ');
-                  const failureMsg =
-                    `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
-                    `MANDATORY RESPONSE FORMAT — use this exact structure in your next message:\n` +
-                    `"I couldn't ${friendlyAction} because [plain-English reason from the error above]. Would you like me to [specific alternative action]?"\n\n` +
-                    `Rules:\n` +
-                    `- Name the exact action that failed (not a generic "that step").\n` +
-                    `- State the reason in plain English — no error codes, no technical jargon.\n` +
-                    `- Offer one concrete alternative (retry, use a different tool, skip this step, ask the user to reconnect).\n` +
-                    `- Do NOT continue the task, call more tools, or fabricate data from this tool.\n` +
-                    `- Do NOT say "I'll try a different approach" without first acknowledging the failure to the user.`;
+                  const failureMsg = isInternalOnly
+                    ? `Tool ${tc.name} returned an internal validation error. ` +
+                      `Ask the user ONE short clarifying question in plain English to get the missing detail. ` +
+                      `NEVER mention error codes, field names, or internal validation in your reply. ` +
+                      `Just ask the question and stop.`
+                    : `Tool ${tc.name} failed with code "${code}". Reason: ${result.output}\n\n` +
+                      `MANDATORY RESPONSE FORMAT — use this exact structure in your next message:\n` +
+                      `"I couldn't ${friendlyAction} because [plain-English reason from the error above]. Would you like me to [specific alternative action]?"\n\n` +
+                      `Rules:\n` +
+                      `- Name the exact action that failed (not a generic "that step").\n` +
+                      `- State the reason in plain English — no error codes, no technical jargon.\n` +
+                      `- Offer one concrete alternative (retry, use a different tool, skip this step, ask the user to reconnect).\n` +
+                      `- Do NOT continue the task, call more tools, or fabricate data from this tool.\n` +
+                      `- Do NOT say "I'll try a different approach" without first acknowledging the failure to the user.`;
                   log('warn', `tool_result soft_fail`, { tool: tc.name, code, output: result.output.slice(0, 200) });
                   emit('tool_result', { tool: tc.name, success: false, summary: result.output.slice(0, 300), iteration });
                   outcomes.push({ tool: tc.name, ok: false, error: result.output });
@@ -1877,6 +1991,81 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
         // Final state transition before delivering the user-facing message.
         transitionState('REPORTING', 'final_message');
+
+        // F7 — defensive sanitizer pass before emit. Catches raw JSON,
+        // `[Cached —]` envelopes, tool-error codes the LLM may have pasted.
+        // sanitizeModelText is idempotent so it's safe even after earlier strips.
+        finalText = sanitizeModelText(finalText);
+
+        // ── FINAL HALLUCINATION GUARD ────────────────────────────────────
+        // The most damaging hallucination is the LLM claiming it did an
+        // action ("I've sent the email", "I scheduled the meeting") when
+        // no successful tool call backs the claim. We scan finalText for
+        // past-tense action verbs and require a matching success. If the
+        // claim is unbacked, we replace it with a neutral phrasing so the
+        // user is never told "done" for work that didn't happen.
+        if (!isPlanMode && finalText.trim()) {
+          const succeededTools = new Set(
+            outcomes.filter(o => o.ok).map(o => o.tool),
+          );
+          const succeeded = (names: string[]) => names.some(n => succeededTools.has(n));
+
+          const CLAIM_RULES: Array<{
+            re: RegExp;
+            requires: string[];
+            replacement: string;
+            label: string;
+          }> = [
+            {
+              re: /\bI(?:'ve| have)?\s+sent\b[^.\n]*\./gi,
+              requires: ['send_email', 'gmail_batch_send_emails', 'send_slack_message', 'slack_send_dm', 'report_send_gmail', 'report_send_slack'],
+              replacement: 'I prepared the message but did not actually send it — let me know if you want me to send.',
+              label: 'sent',
+            },
+            {
+              re: /\bI(?:'ve| have)?\s+(?:drafted|written|composed)\b[^.\n]*\./gi,
+              requires: ['draft_reply', 'draft_cold_email', 'gmail_batch_draft_replies', 'gmail_generate_auto_replies'],
+              replacement: 'I have not drafted the message yet — share the recipient and intent and I will draft it.',
+              label: 'drafted',
+            },
+            {
+              re: /\bI(?:'ve| have)?\s+(?:scheduled|booked)\b[^.\n]*\./gi,
+              requires: ['schedule_meeting', 'calendar_batch_create_events'],
+              replacement: 'I have not actually scheduled anything yet — confirm the time and attendees and I will book it.',
+              label: 'scheduled',
+            },
+            {
+              re: /\bI(?:'ve| have)?\s+(?:created|logged|saved|added)\b[^.\n]*?\b(?:notion|page|task|database|entry)\b[^.\n]*\./gi,
+              requires: ['create_notion_page', 'notion_create_task', 'notion_batch_create_database_entries'],
+              replacement: 'I have not created the Notion entry yet — confirm and I will log it.',
+              label: 'notion_created',
+            },
+            {
+              re: /\bI(?:'ve| have)?\s+(?:archived|deleted)\b[^.\n]*\./gi,
+              requires: ['gmail_archive_thread', 'gmail_auto_archive_threads'],
+              replacement: 'I have not archived anything yet — say the word and I will.',
+              label: 'archived',
+            },
+            {
+              re: /\bI(?:'ve| have)?\s+(?:cancelled|canceled)\b[^.\n]*\b(?:meeting|event|call)\b[^.\n]*\./gi,
+              requires: ['calendar_cancel_event'],
+              replacement: 'I have not cancelled that event yet — confirm and I will.',
+              label: 'cancelled',
+            },
+          ];
+
+          for (const rule of CLAIM_RULES) {
+            if (!rule.re.test(finalText)) {
+              rule.re.lastIndex = 0;
+              continue;
+            }
+            rule.re.lastIndex = 0;
+            if (!succeeded(rule.requires)) {
+              log('warn', 'hallucination_guard_stripped_claim', { label: rule.label });
+              finalText = finalText.replace(rule.re, rule.replacement);
+            }
+          }
+        }
 
         if (isPlanMode) {
           const titleMatch = finalText.match(/^#\s+(.+)$/m);

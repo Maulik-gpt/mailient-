@@ -126,6 +126,7 @@ export async function POST(request: NextRequest) {
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     conversationId?: string;
     isPlanMode?: boolean;
+    attachments?: Array<{ name: string; url: string; type: string; size?: number }>;
   } = {};
   try {
     body = await request.json();
@@ -134,7 +135,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
 
-  const { message, history = [], conversationId, isPlanMode = false } = body;
+  const { message, history = [], conversationId, isPlanMode = false, attachments = [] } = body;
   if (!message?.trim()) {
     log('warn', 'Empty message received', { userId });
     return new Response(JSON.stringify({ error: 'message is required' }), { status: 400 });
@@ -302,6 +303,8 @@ export async function POST(request: NextRequest) {
       connectedIntegrations,
       isPlanMode,
       conversationId,
+      userInstructions: personalityData || undefined,
+      attachments,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });

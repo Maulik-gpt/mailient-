@@ -2696,7 +2696,7 @@ export default function ChatInterface({
   // ═══════════════════════════════════════════════════════════════════════════
   // AGENT LOOP — SSE-based agentic processing (Phase 1)
   // ═══════════════════════════════════════════════════════════════════════════
-  const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, options: any = {}) => {
+  const processAgentLoopMessage = async (messageText: string, conversationIdToUse: string, isNew: boolean, options: any = {}, attachments?: Array<{ name: string; url: string; type: string; size?: number }>) => {
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const assistantMsgId = nextMessageId();
@@ -2740,6 +2740,8 @@ export default function ChatInterface({
           conversationId: conversationIdToUse,
           history,
           isPlanMode: options.isPlanMode || false,
+          // F12 — Forward attachments so the backend can build vision content blocks.
+          attachments: attachments || [],
         }),
         signal: abortControllerRef.current.signal
       });
@@ -3678,6 +3680,43 @@ export default function ChatInterface({
           body: JSON.stringify({ conversationId: conversationIdToUse, messages: unique, title: convTitle }),
         }).catch(() => { /* non-critical */ });
 
+        // F3 — Defensive re-save AFTER React has flushed all pending
+        // setMessages updates. PART 20 fixed the meta capture but the
+        // closure still reads state mid-flush; on slower devices late SSE
+        // events (sources panel, signals, undo refs) hadn't landed yet.
+        // requestAnimationFrame + microtask drain → guaranteed final state.
+        if (typeof window !== 'undefined') {
+          requestAnimationFrame(() => {
+            setTimeout(() => {
+              try {
+                let freshMeta: any = null;
+                setMessages(prev => {
+                  const live = prev.find(m => m.id === assistantMsgId && m.type === 'agent') as AgentMessage | undefined;
+                  if (live) freshMeta = live.meta || null;
+                  return prev;
+                });
+                if (!freshMeta) return;
+                const existingRaw2 = localStorage.getItem(`conversation_${conversationIdToUse}`);
+                if (!existingRaw2) return;
+                const parsed = JSON.parse(existingRaw2);
+                const idx = (parsed.messages || []).findIndex((m: any) => m.id === assistantMsgId);
+                if (idx < 0) return;
+                parsed.messages[idx] = {
+                  ...parsed.messages[idx],
+                  meta: { ...(parsed.messages[idx].meta || {}), ...freshMeta, isStreaming: false, liveThinking: '' },
+                };
+                parsed.lastUpdated = new Date().toISOString();
+                localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(parsed));
+                fetch('/api/arcus/conversation', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ conversationId: conversationIdToUse, messages: parsed.messages, title: parsed.title }),
+                }).catch(() => { /* non-critical */ });
+              } catch { /* never break on persistence */ }
+            }, 0);
+          });
+        }
+
         if (isNew) {
           generateChatTitle(messageText).then(title => {
             // Update the main conversation localStorage object so history shows the AI title
@@ -3787,7 +3826,7 @@ export default function ChatInterface({
   async function processAIMessage(messageText: string, conversationIdToUse: string, isNew: boolean, attachments?: any[], options: any = {}) {
     // ── Agent Loop routing: Use the new autonomous SSE loop for ALL queries ──────
     // The AI will now autonomously decide to use search, canvas, or plan tools.
-    return processAgentLoopMessage(messageText, conversationIdToUse, isNew, options);
+    return processAgentLoopMessage(messageText, conversationIdToUse, isNew, options, attachments);
 
   };
 

@@ -114,9 +114,18 @@ export function CanvasPanel({
   }, [canvasData]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (displayedData?.type === 'email_draft' || displayedData?.type === 'reply') {
+    if (!displayedData) return;
+    if (displayedData.type === 'email_draft' || displayedData.type === 'reply') {
       const body = displayedData.content?.body || extractEmailBody(displayedData.raw || '');
       setEditedBody(body);
+      setEditMode(false);
+    } else {
+      // F11 — Non-email docs: seed editedBody with the markdown so the Edit
+      // button has something to edit.
+      const docText = displayedData.raw
+        || (typeof displayedData.content === 'string' ? displayedData.content : '')
+        || '';
+      setEditedBody(docText);
       setEditMode(false);
     }
   }, [displayedData]);
@@ -363,7 +372,17 @@ export function CanvasPanel({
             ) : (
               <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <MetaInsights type={displayedData.type} content={getTextContent()} />
-                <MarkdownView content={displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '')} />
+                {editMode ? (
+                  <textarea
+                    value={editedBody}
+                    onChange={e => setEditedBody(e.target.value)}
+                    className="w-full min-h-[480px] bg-transparent text-[14px] text-arcus-fg-secondary leading-relaxed resize-none focus:outline-none font-mono"
+                    autoFocus
+                    placeholder="Document body…"
+                  />
+                ) : (
+                  <MarkdownView content={editedBody || displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '')} />
+                )}
               </motion.div>
             )}
           </AnimatePresence>
@@ -405,6 +424,11 @@ export function CanvasPanel({
             </>
           ) : (
             <>
+              {editMode ? (
+                <FooterButton onClick={() => setEditMode(false)} variant="ghost">Done editing</FooterButton>
+              ) : (
+                <FooterButton onClick={() => setEditMode(true)} variant="ghost" icon={<Edit3 className="w-3.5 h-3.5" />}>Edit</FooterButton>
+              )}
               <FooterButton
                 onClick={handleDownloadDocx}
                 variant="ghost"

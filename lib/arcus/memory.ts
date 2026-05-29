@@ -84,14 +84,21 @@ export async function saveMemory(
   try {
     const { getSupabaseAdmin } = await import('../supabase.js');
     const supabase = getSupabaseAdmin();
-    await supabase.from('arcus_memories').insert({
+    const { error } = await supabase.from('arcus_memories').insert({
       user_id: normalizeUserId(userId),
       content: trimmed,
       tags: tags ?? [],
       source,
     });
-  } catch {
-    // Silent — table may not be migrated yet
+    if (error) {
+      // F5 — surface previously silent failures so users can see "memory not
+      // configured" in logs (and we can wire a settings-card banner later).
+      const { reportError } = await import('./error-reporter');
+      reportError('memory.save', error, { userId, source });
+    }
+  } catch (err) {
+    const { reportError } = await import('./error-reporter');
+    reportError('memory.save.exception', err, { userId, source });
   }
 
   // 2. Supermemory (secondary index) — only when configured.

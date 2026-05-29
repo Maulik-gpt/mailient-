@@ -3125,6 +3125,29 @@ async function draftReply(userId: string, input: any, context: ToolContext = {})
     );
   }
 
+  // F9 — Pre-draft context lock. If the LLM tries to draft WITHOUT a threadId
+  // AND it has not read any thread / email / sent_mail this turn, refuse so
+  // the draft is grounded in real context instead of hallucinated content.
+  // Background agents bypass (their loop has different gating).
+  if (
+    !input.threadId &&
+    !context.isBackgroundAgent &&
+    context.toolHistory &&
+    context.toolHistory.length > 0
+  ) {
+    const READS = new Set([
+      'gmail_read_thread', 'read_email', 'search_gmail',
+      'gmail_unlimited_search', 'gmail_bulk_read_threads', 'get_sent_emails',
+    ]);
+    const fetchedAny = context.toolHistory.some(e => e.success && READS.has(e.name));
+    if (!fetchedAny) {
+      return failureResult(
+        'Refusing to draft without a threadId and without any prior email read this turn. Search the inbox (search_gmail) or read the target thread (gmail_read_thread) first so the draft references real content.',
+        'must_read_thread_first',
+      );
+    }
+  }
+
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
@@ -5837,12 +5860,22 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
   ) {
     const specMarkdown = (input.spec_markdown || '').trim();
     if (!specMarkdown) {
-      return failureResult(
-        'Cannot show the agent spec — spec_markdown is required on the first call. ' +
-        'Write the full specification document (H1 title, ## 1. Agent Objective, ## 2. Operational Logic, ' +
-        '## 3. Schedule & Delivery, ## 4. Expected Output) and pass it in spec_markdown, then call this tool again.',
-        'validation_error',
-      );
+      // F8 — Internal-only error: hide the raw "spec_markdown is required"
+      // string from chat output. The sanitizer in engine.ts strips this
+      // verbatim, and the loop reads `_internal_only` to swap in a clean
+      // user-facing prompt instead.
+      return {
+        success: false,
+        errorCode: 'validation_error',
+        output:
+          'INTERNAL: spec_markdown is required on the first call. ' +
+          'You (the model) must compose the full specification document — ' +
+          'H1 title, ## 1. Agent Objective, ## 2. Operational Logic, ## 3. Schedule & Delivery, ## 4. Expected Output — ' +
+          'and call create_scheduled_agent again with spec_markdown set. ' +
+          'When responding to the user, ask them ONE short clarifying question about the agent (what should it do? how often?) — ' +
+          'do NOT mention spec_markdown, validation, or any internal field name.',
+        _internal_only: true,
+      } as any;
     }
 
     // F2.6 — Run the integration check FIRST so the user sees the
