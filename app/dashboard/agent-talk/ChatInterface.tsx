@@ -4272,6 +4272,7 @@ export default function ChatInterface({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isActuallyAtBottom, setIsActuallyAtBottom] = useState(true);
+  const isAtBottomRef = useRef(true);
   const loadedConversationIdRef = useRef<string | null>(null);
 
   // Load initial conversation if provided via URL
@@ -4297,13 +4298,6 @@ export default function ChatInterface({
     }
   }, [currentConversationId ?? null, isInitialMode]);
 
-  // Automatic scroll to latest content (messages or thinking steps)
-  useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [messages, isLoading, isThinkingStepsOpen, liveThinkingBlocks]);
-
   // Initial Load: Restore conversation from URL or handle manual re-sync
   useEffect(() => {
     if (initialConversationId && isInitialMode) {
@@ -4315,11 +4309,12 @@ export default function ChatInterface({
   const handleScroll = () => {
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 200;
-      const isAtBottom = Math.abs(scrollHeight - scrollTop - clientHeight) < 10;
+      // Snappy 100px threshold for user scrolling detection
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
 
-      setShowScrollButton(!isNearBottom);
+      isAtBottomRef.current = isAtBottom;
       setIsActuallyAtBottom(isAtBottom);
+      setShowScrollButton(!isAtBottom);
     }
   };
 
@@ -4332,7 +4327,12 @@ export default function ChatInterface({
   }, []);
 
   const scrollToBottom = (instant = false) => {
-    if (messagesEndRef.current) {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: instant ? "auto" : "smooth"
+      });
+    } else if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: instant ? "auto" : "smooth",
         block: "end"
@@ -4340,23 +4340,56 @@ export default function ChatInterface({
     }
   };
 
-  // Scroll to bottom when messages or thinking state changes
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      scrollToBottom();
-    }, 100);
-    return () => clearTimeout(timeoutId);
-  }, [messages, isThinkingStepsOpen, isLoading]);
+  // Unified Natural Auto-Scroll logic
+  const prevMessagesLength = useRef(messages.length);
+  const prevIsLoading = useRef(isLoading);
+  const prevIsAgentActive = useRef(isAgentLoopActive);
+  const prevThinkingStepsOpen = useRef(isThinkingStepsOpen);
 
-  // Handle thinking expansion scroll
   useEffect(() => {
-    if (isThinkingStepsOpen) {
-      const timeoutId = setTimeout(() => {
-        scrollToBottom();
-      }, 300); // Allow animation to finish or start well
-      return () => clearTimeout(timeoutId);
+    if (!scrollContainerRef.current) return;
+
+    const isNewMessage = messages.length > prevMessagesLength.current;
+    prevMessagesLength.current = messages.length;
+
+    const isStreaming = isLoading || isAgentLoopActive;
+    const wasStreaming = prevIsLoading.current || prevIsAgentActive.current;
+    prevIsLoading.current = isLoading;
+    prevIsAgentActive.current = isAgentLoopActive;
+
+    const justOpenedThinking = isThinkingStepsOpen && !prevThinkingStepsOpen.current;
+    prevThinkingStepsOpen.current = isThinkingStepsOpen;
+
+    const lastMessage = messages[messages.length - 1];
+    const isUserSent = lastMessage?.role === 'user';
+
+    // 1. If user sent a new message, smoothly scroll down and reset bottom tracking
+    if (isNewMessage && isUserSent) {
+      scrollToBottom(false);
+      isAtBottomRef.current = true;
+      setIsActuallyAtBottom(true);
+      setShowScrollButton(false);
+      return;
     }
-  }, [isThinkingStepsOpen]);
+
+    // 2. If expanding thinking steps, smoothly scroll down
+    if (justOpenedThinking) {
+      scrollToBottom(false);
+      return;
+    }
+
+    // 3. During streaming/loading, keep scroll locked at bottom instantly to keep up cleanly
+    if (isStreaming && isAtBottomRef.current) {
+      scrollToBottom(true);
+      return;
+    }
+
+    // 4. When streaming completes, perform a final smooth scroll alignment
+    if (wasStreaming && !isStreaming && isAtBottomRef.current) {
+      scrollToBottom(false);
+      return;
+    }
+  }, [messages, isLoading, isAgentLoopActive, isThinkingStepsOpen, liveThinkingBlocks]);
 
   // Remove new message IDs after animation
   useEffect(() => {
@@ -6263,10 +6296,15 @@ export default function ChatInterface({
                         className="absolute bottom-[110px] right-12 z-50"
                       >
                         <button
-                          onClick={() => scrollToBottom(false)}
-                          className="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center shadow-[0_10px_30px_rgba(255,255,255,0.2)] hover:scale-110 active:scale-95 transition-all group"
+                          onClick={() => {
+                            scrollToBottom(false);
+                            isAtBottomRef.current = true;
+                            setIsActuallyAtBottom(true);
+                            setShowScrollButton(false);
+                          }}
+                          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
                         >
-                          <ChevronDown className="w-6 h-6 group-hover:translate-y-0.5 transition-transform" />
+                          <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
                         </button>
                       </motion.div>
                     )}
