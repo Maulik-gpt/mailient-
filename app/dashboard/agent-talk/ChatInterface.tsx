@@ -4337,6 +4337,13 @@ export default function ChatInterface({
 
   const scrollToBottom = (instant = false) => {
     if (scrollContainerRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const isAlreadyAtBottom = scrollHeight - scrollTop - clientHeight < 10;
+      if (isAlreadyAtBottom) {
+        isProgrammaticScrollRef.current = false;
+        return;
+      }
+
       // Suppress handleScroll during this programmatic scroll
       isProgrammaticScrollRef.current = true;
       scrollContainerRef.current.scrollTo({
@@ -4344,14 +4351,13 @@ export default function ChatInterface({
         behavior: instant ? "auto" : "smooth"
       });
       // Clear the flag after the scroll event has had time to fire
-      // Use 'scrollend' when available, otherwise a generous timeout
       const container = scrollContainerRef.current;
       const clearFlag = () => { isProgrammaticScrollRef.current = false; };
       if ('onscrollend' in container) {
         container.addEventListener('scrollend', clearFlag, { once: true });
-      } else {
-        setTimeout(clearFlag, instant ? 50 : 600);
       }
+      // Always run a safety timeout to clear the flag in case the scroll event doesn't fire
+      setTimeout(clearFlag, instant ? 100 : 800);
     } else if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: instant ? "auto" : "smooth",
@@ -6306,36 +6312,36 @@ export default function ChatInterface({
                     </div>
                   </div>
 
-                  {/* Scroll to Bottom Button */}
-                  <AnimatePresence>
-                    {showScrollButton && !isInitialMode && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                        className="absolute bottom-[110px] right-12 z-50"
-                      >
-                        <button
-                          onClick={() => {
-                            scrollToBottom(false);
-                            isAtBottomRef.current = true;
-                            setIsActuallyAtBottom(true);
-                            setShowScrollButton(false);
-                          }}
-                          className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
-                        >
-                          <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
-                        </button>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
                   {/* Fixed Prompt Box for Conversation Mode */}
                   {!isInitialMode && (
                     <div
                       className="absolute bottom-0 left-0 right-0 z-50 bg-arcus-bg"
                       style={{ backgroundColor: 'var(--arcus-bg)' }}
                     >
+                      {/* Scroll to Bottom Button - dynamically anchored above the prompt container */}
+                      <AnimatePresence>
+                        {showScrollButton && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                            className="absolute bottom-full mb-4 right-12 z-50"
+                          >
+                            <button
+                              onClick={() => {
+                                scrollToBottom(false);
+                                isAtBottomRef.current = true;
+                                setIsActuallyAtBottom(true);
+                                setShowScrollButton(false);
+                              }}
+                              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
+                            >
+                              <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
+                            </button>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+
                       {/* Premium, theme-aware seamless fade gradient to make scrolled content merge beautifully into the page background */}
                       <div
                         className="absolute bottom-full left-0 right-0 h-10 pointer-events-none"

@@ -1038,7 +1038,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   "inline-flex items-center justify-center font-medium h-8 w-8 rounded-full transition-all duration-200 outline-none",
                   isRecording
                     ? "bg-transparent hover:bg-black/[0.05] dark:bg-white/5 text-red-500 hover:text-red-400"
-                    : "!bg-black dark:!bg-white hover:!bg-black/80 dark:hover:!bg-white/90 !text-white dark:!text-black shadow-lg"
+                    : "bg-black dark:bg-white hover:bg-black/80 dark:hover:bg-white/90 text-white dark:text-black shadow-lg"
                 )}
                 onClick={(e) => {
                   e.stopPropagation();
@@ -1054,9 +1054,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 ) : isRecording ? (
                   <StopCircle className="h-5 w-5 text-red-500" />
                 ) : hasContent ? (
-                  <ArrowUp className="h-4 w-4 !text-white dark:!text-black stroke-[3px]" />
+                  <ArrowUp className="h-4 w-4 text-white dark:text-black stroke-[3px]" />
                 ) : (
-                  <Mic className="h-5 w-5 !text-white dark:!text-black transition-colors" />
+                  <Mic className="h-5 w-5 text-white dark:text-black transition-colors" />
                 )}
               </button>
             </PromptInputAction>
