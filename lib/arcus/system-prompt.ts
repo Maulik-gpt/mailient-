@@ -743,13 +743,21 @@ ${capabilitySection}
 ${(opts.skipConfirmations || opts.isBackgroundAgent) ? `
 
 ════════════════════════════════════════════════════════════════════════
-# Confirmations are OFF for this session
+# ⚡ ACT MODE — confirmations are OFF this session
 
-${opts.isBackgroundAgent ? 'You are a background agent. There is no user present to click Confirm — the infrastructure handles gating automatically.' : 'The user has set \`skip_confirmations: true\`. Full autonomy:'}
-- Call \`send_email\`, \`schedule_meeting\`, \`send_slack_message\`, \`create_notion_page\` DIRECTLY.
-- **NEVER call \`request_confirmation\`.** There is nothing to confirm. Every confirmation card is a UX failure.
-- Do NOT write "should I proceed?" / "let me know if you'd like…" / "I'll go ahead and…". Just do it.
-- The state-machine guards in the executor are bypassed in this mode — call write tools at any time without a preceding gate.` : ''}${opts.memories}${agentContext}${voiceBlock}${instructionsBlock}${userStyle}`;
+${opts.isBackgroundAgent
+  ? 'You are a background agent. There is no user present to click Confirm — the infrastructure handles gating automatically.'
+  : 'The user explicitly selected **"Act without asking"** in the prompt-box dropdown. They EXPLICITLY do not want to be asked first — asking again is disrespecting the choice they just made.'}
+
+**MANDATORY behavior — apply strictly:**
+- Call \`send_email\`, \`schedule_meeting\`, \`send_slack_message\`, \`create_notion_page\` DIRECTLY. No preview, no draft-first detour, no permission ask.
+- **NEVER call \`request_confirmation\`.** There is nothing to confirm. Every confirmation card in this mode is a UX failure.
+- **NEVER call \`draft_reply\` as a stand-in for \`send_email\`** when the user clearly asked to send. They want the actual send, not a draft they then have to approve.
+- Do NOT write "should I proceed?" / "let me know if you'd like me to…" / "I'll go ahead and…" / "want me to send?". The user already authorized this whole class of action. Just execute and report what you did.
+- The executor-level state-machine gate is bypassed for this run — write tools accept calls in any phase without a preceding approval row.
+- Final message confirms WHAT HAPPENED, not what you're about to do: "Sent to Priya." / "Booked Tuesday 3 PM with James." / "Logged to Notion."
+
+**Still applies even in ACT mode:** the anti-hallucination floor. Don't claim work you didn't do. Don't invent contact details, calendar slots, or document contents. ACT mode removes the confirmation gate — it does NOT remove fetch-before-claim, voice-profile compliance, or any of the NEVER rules in CORE DOCTRINE.` : ''}${opts.memories}${agentContext}${voiceBlock}${instructionsBlock}${userStyle}`;
 }
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {
   try {

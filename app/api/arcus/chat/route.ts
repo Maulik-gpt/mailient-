@@ -218,6 +218,10 @@ export async function POST(request: NextRequest) {
     conversationId?: string;
     isPlanMode?: boolean;
     attachments?: Array<{ name: string; url: string; type: string; size?: number }>;
+    /** PART 47 — per-request override of the saved actionMode. 'auto' →
+     *  skipConfirmations=true for this run. Falls back to the persisted
+     *  user pref when omitted. */
+    actionMode?: 'ask' | 'auto';
   } = {};
   try {
     body = await request.json();
@@ -226,7 +230,7 @@ export async function POST(request: NextRequest) {
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
 
-  const { message, history = [], conversationId, isPlanMode = false, attachments = [] } = body;
+  const { message, history = [], conversationId, isPlanMode = false, attachments = [], actionMode: bodyActionMode } = body;
   if (!message?.trim()) {
     log('warn', 'Empty message received', { userId });
     return new Response(JSON.stringify({ error: 'message is required' }), { status: 400 });
@@ -246,7 +250,7 @@ export async function POST(request: NextRequest) {
   let personalityData = '';
   let voiceContext = '';
   let preferenceMemories = '';
-  let stylePrefs: { communicationStyle?: 'direct' | 'balanced' | 'warm'; verbosity?: 'brief' | 'normal' | 'detailed' } = {};
+  let stylePrefs: { communicationStyle?: 'direct' | 'balanced' | 'warm'; verbosity?: 'brief' | 'normal' | 'detailed'; actionMode?: 'ask' | 'auto' } = {};
   try {
     // Phase C — Enrich the memory context with TWO parallel queries:
     //   1. searchMemories(message)  — semantic match to current message
@@ -301,6 +305,16 @@ export async function POST(request: NextRequest) {
     : shouldDispatchParallelVAs(slashExpanded);
   const promptVAFilter = vaDispatch.fire && vaDispatch.vas.length >= 2 ? vaDispatch.vas : undefined;
 
+  // PART 47 — resolve the effective write-action mode early so it flows into
+  // BOTH the system prompt (turns on the "Confirmations are OFF" overlay
+  // block) AND runAgentLoop (bypasses the executor's state-machine gate).
+  // Precedence: per-request body override → persisted user pref → 'ask' default.
+  const effectiveActionMode: 'ask' | 'auto' =
+    bodyActionMode === 'ask' || bodyActionMode === 'auto'
+      ? bodyActionMode
+      : stylePrefs.actionMode ?? 'ask';
+  const skipConfirmations = effectiveActionMode === 'auto';
+
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
     : buildSystemPrompt({
@@ -314,6 +328,9 @@ export async function POST(request: NextRequest) {
         // PART 45 — user-tunable voice + length overlay.
         communicationStyle: stylePrefs.communicationStyle,
         verbosity: stylePrefs.verbosity,
+        // PART 47 — Auto mode flips the system prompt into "execute writes
+        // directly" mode for this run.
+        skipConfirmations,
       });
 
   // Auto-extract "remember X" / "save this" / "from now on..." from the
@@ -420,7 +437,7 @@ export async function POST(request: NextRequest) {
   // system-prompt build operate on the expanded text.)
   const messageWithAttachmentContents = await embedTextAttachments(slashExpanded, attachments);
 
-  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length, extractedTextBytes: messageWithAttachmentContents.length - message.length });
+  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length, extractedTextBytes: messageWithAttachmentContents.length - message.length, actionMode: effectiveActionMode });
 
   let stream: ReadableStream;
   try {
@@ -434,6 +451,9 @@ export async function POST(request: NextRequest) {
       conversationId,
       userInstructions: personalityData || undefined,
       attachments,
+      // PART 47 — interactive 'Auto' mode bypasses the confirmation surface.
+      // Background-agent runs continue to set this via run-agent.ts.
+      skipConfirmations,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });
@@ -489,6 +509,7 @@ async function fetchPersonality(userId: string): Promise<string> {
 async function fetchUserStylePrefs(userId: string): Promise<{
   communicationStyle?: 'direct' | 'balanced' | 'warm';
   verbosity?: 'brief' | 'normal' | 'detailed';
+  actionMode?: 'ask' | 'auto';
 }> {
   try {
     const { getSupabaseAdmin } = await import('../../../../lib/supabase.js');
@@ -501,9 +522,12 @@ async function fetchUserStylePrefs(userId: string): Promise<{
     const prefs = (data?.preferences as Record<string, unknown>) || {};
     const style = prefs.arcus_communication_style as string | undefined;
     const verb = prefs.arcus_verbosity as string | undefined;
+    const action = prefs.arcus_action_mode as string | undefined;
     return {
       communicationStyle: style === 'direct' || style === 'balanced' || style === 'warm' ? style : undefined,
       verbosity: verb === 'brief' || verb === 'normal' || verb === 'detailed' ? verb : undefined,
+      // PART 47 — persisted Ask / Auto mode.
+      actionMode: action === 'ask' || action === 'auto' ? action : undefined,
     };
   } catch {
     return {};

@@ -33,6 +33,11 @@ export async function GET() {
       // old terse style switch to 'direct' + 'brief'.
       communicationStyle: (prefs.arcus_communication_style as string) || 'warm',
       verbosity: (prefs.arcus_verbosity as string) || 'normal',
+      // PART 47 — write-action confirmation mode. Default 'ask' (current
+      // behavior: inline previews + confirm before send/schedule/post/create).
+      // Users who trust Arcus pick 'auto' — writes execute immediately, no
+      // preview, no confirmation. Persists so the choice survives reload.
+      actionMode: (prefs.arcus_action_mode as string) || 'ask',
     });
   } catch {
     return NextResponse.json({
@@ -41,6 +46,7 @@ export async function GET() {
       memoryEnabled: true,
       communicationStyle: 'warm',
       verbosity: 'normal',
+      actionMode: 'ask',
     });
   }
 }
@@ -56,6 +62,7 @@ export async function POST(request: NextRequest) {
   let instructionsEnabled: boolean | undefined;
   let communicationStyle: string | undefined;
   let verbosity: string | undefined;
+  let actionMode: string | undefined;
   try {
     const body = await request.json();
     personality = (body.personality as string) || '';
@@ -67,6 +74,9 @@ export async function POST(request: NextRequest) {
     }
     if (typeof body.verbosity === 'string' && ['brief', 'normal', 'detailed'].includes(body.verbosity)) {
       verbosity = body.verbosity;
+    }
+    if (typeof body.actionMode === 'string' && ['ask', 'auto'].includes(body.actionMode)) {
+      actionMode = body.actionMode;
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -92,6 +102,9 @@ export async function POST(request: NextRequest) {
     }
     if (verbosity !== undefined) {
       updatedPrefs.arcus_verbosity = verbosity;
+    }
+    if (actionMode !== undefined) {
+      updatedPrefs.arcus_action_mode = actionMode;
     }
 
     if (existing) {

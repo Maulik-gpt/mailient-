@@ -1,7 +1,7 @@
 import React, { forwardRef, useState, useEffect, useRef, useCallback, createContext, useContext, TextareaHTMLAttributes, ElementRef, ComponentPropsWithoutRef } from "react";
 import * as TooltipPrimitive from "@radix-ui/react-tooltip";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
-import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity as InfinityIcon, Workflow, Bug, MessageSquare, Check, Lock, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles } from "lucide-react";
+import { ArrowUp, Paperclip, Square, X, StopCircle, Mic, BrainCog, Monitor, FileText, Film, Music, Globe, Mail, Search, Infinity as InfinityIcon, Workflow, Bug, MessageSquare, Check, Lock, ChevronDown, Plus, Plug, Database, Calendar, Layout, Sparkles, Hand, FastForward } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu';
@@ -475,7 +475,7 @@ const formatFileSize = (bytes: number) => {
 
 // Main PromptInputBox Component
 interface PromptInputBoxProps {
-  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string }) => void;
+  onSend?: (message: string, files?: File[], options?: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string; actionMode?: ActionMode }) => void;
   onStop?: () => void;
   isLoading?: boolean;
   placeholder?: string;
@@ -503,12 +503,34 @@ interface PromptInputBoxProps {
   onSlashClientCommand?: (
     handlerName: 'openAgents' | 'openMemorySettings' | 'openSettings' | 'clearConversation' | 'showHelp',
   ) => void;
+  /**
+   * PART 47 — current write-action mode + change handler. The chat input
+   * displays a dropdown ("Ask" / "Auto") matching Claude Code's style; on
+   * change, the parent persists to user_profiles.preferences and threads
+   * the value into onSend's options so the chat route can pass
+   * skipConfirmations to runAgentLoop. Defaults to 'ask' for safety.
+   */
+  actionMode?: ActionMode;
+  onActionModeChange?: (mode: ActionMode) => void;
 }
 
 const MODES = [
   { id: 'agent', label: 'Agent', icon: InfinityIcon, description: 'Autonomous agent for complex workflows' },
   { id: 'plan', label: 'Plan', icon: Workflow, description: 'Create detailed plans for accomplishing tasks' },
 ] as const;
+
+// PART 47 — write-action confirmation mode. Matches Claude Code's "Ask
+// before acting" / "Act without asking" toggle. Default 'ask' (safer).
+// Effect: 'auto' sets skipConfirmations=true on every chat call →
+// the existing CORE DOCTRINE skip-confirmations block fires → the LLM
+// executes writes (send_email, schedule_meeting, send_slack_message,
+// create_notion_page) directly without inline previews or request_confirmation.
+const ACTION_MODES = [
+  { id: 'ask',  label: 'Ask',  icon: Hand,        description: 'Arcus pauses so you can approve each send / schedule / post.' },
+  { id: 'auto', label: 'Auto', icon: FastForward, description: 'Arcus executes writes without pausing for approval. Use with trust.' },
+] as const;
+
+export type ActionMode = typeof ACTION_MODES[number]['id'];
 
 // --- Custom Model Logos ---
 const AnthropicLogo = ({ className }: { className?: string }) => (
@@ -584,6 +606,25 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   // space (committing to a command) or clears the input.
   const [slashDismissed, setSlashDismissed] = React.useState(false);
   const [slashFocusedIndex, setSlashFocusedIndex] = React.useState(0);
+  // PART 47 — write-action mode (Ask / Auto). Initial value comes from the
+  // parent (loaded from user_profiles.preferences); local state lets the
+  // dropdown switch instantly while the parent debounces the persistence.
+  const [actionMode, setActionMode] = React.useState<ActionMode>(props.actionMode ?? 'ask');
+  const [isActionMenuOpen, setIsActionMenuOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    if (props.actionMode && props.actionMode !== actionMode) {
+      setActionMode(props.actionMode);
+    }
+    // Only sync FROM parent; user-driven changes flow OUT via onActionModeChange.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.actionMode]);
+
+  const handleActionModeChange = (mode: ActionMode) => {
+    setActionMode(mode);
+    props.onActionModeChange?.(mode);
+    setIsActionMenuOpen(false);
+  };
 
   React.useEffect(() => {
     const fetchStatus = async () => {
@@ -719,7 +760,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
         isCanvas: activeMode === 'agent', // Canvas is Agent-mode only; Plan uses PlanCanvas artifact
         isSearch: activeMode === 'agent',
         isPlanMode: activeMode === 'plan',
-        modelId: activeModelId
+        modelId: activeModelId,
+        // PART 47 — pass the user's chosen confirmation mode so the chat
+        // route can translate it into skipConfirmations for runAgentLoop.
+        actionMode,
       });
       setInput("");
       setFiles([]);
@@ -991,8 +1035,8 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                             onClick={() => handleModeChange(mode.id)}
                             className={cn(
                               "w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
-                              activeMode === mode.id 
-                                ? "bg-arcus-surface-hover text-arcus-fg" 
+                              activeMode === mode.id
+                                ? "bg-arcus-surface-hover text-arcus-fg"
                                 : "hover:bg-arcus-surface-hover/50 text-arcus-fg-secondary hover:text-arcus-fg"
                             )}
                           >
@@ -1011,6 +1055,70 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                           </div>
                         </div>
                       ))}
+                    </motion.div>
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* PART 47 — Action mode (Ask / Auto) — Claude-Code-style toggle.
+                When 'Auto' is selected the chat route passes skipConfirmations
+                to runAgentLoop, the system-prompt overlay tells the LLM to
+                execute writes directly, and the executor-level approval gate
+                is bypassed. Default 'Ask' keeps the inline-preview flow. */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsActionMenuOpen(v => !v)}
+                aria-label="Action mode"
+                className={cn(
+                  "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all font-bold",
+                  actionMode === 'auto'
+                    ? "bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                    : "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 text-arcus-fg-secondary hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20",
+                )}
+              >
+                {React.createElement(ACTION_MODES.find(m => m.id === actionMode)?.icon || Hand, { className: "w-3.5 h-3.5" })}
+                <span className="text-[12px] tracking-tight capitalize">{actionMode}</span>
+                <ChevronDown className={cn("w-3 h-3 transition-transform", isActionMenuOpen && "rotate-180")} />
+              </button>
+
+              <AnimatePresence>
+                {isActionMenuOpen && (
+                  <>
+                    <div className="fixed inset-0 z-[60]" onClick={() => setIsActionMenuOpen(false)} />
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                      className="absolute bottom-full left-0 mb-2 w-80 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl z-[70] overflow-hidden p-1.5"
+                    >
+                      {ACTION_MODES.map((mode) => {
+                        const isActive = actionMode === mode.id;
+                        const accent = mode.id === 'auto' ? 'text-amber-400' : 'text-blue-400';
+                        return (
+                          <button
+                            key={mode.id}
+                            type="button"
+                            onClick={() => handleActionModeChange(mode.id)}
+                            className={cn(
+                              "w-full flex items-start justify-between gap-3 px-3 py-3 rounded-xl transition-all text-left",
+                              isActive
+                                ? "bg-arcus-surface-hover text-arcus-fg"
+                                : "hover:bg-arcus-surface-hover/50 text-arcus-fg-secondary hover:text-arcus-fg",
+                            )}
+                          >
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <mode.icon className={cn("w-4 h-4 mt-0.5 flex-shrink-0", isActive ? accent : "text-inherit")} />
+                              <div className="min-w-0">
+                                <div className="text-[13px] font-bold">{mode.label === 'Ask' ? 'Ask before acting' : 'Act without asking'}</div>
+                                <div className="text-[11px] text-arcus-fg-muted leading-snug mt-0.5">{mode.description}</div>
+                              </div>
+                            </div>
+                            {isActive && <Check className={cn("w-3.5 h-3.5 mt-0.5 flex-shrink-0", accent)} />}
+                          </button>
+                        );
+                      })}
                     </motion.div>
                   </>
                 )}

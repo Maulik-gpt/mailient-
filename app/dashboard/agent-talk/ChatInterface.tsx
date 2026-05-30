@@ -2034,6 +2034,9 @@ export default function ChatInterface({
   // PART 45 — user-tunable voice + length prefs (loaded from /api/agent-talk/personality).
   const [communicationStyle, setCommunicationStyle] = useState<'direct' | 'balanced' | 'warm'>('warm');
   const [verbosity, setVerbosity] = useState<'brief' | 'normal' | 'detailed'>('normal');
+  // PART 47 — Ask / Auto write-action mode, with the same persistence pattern.
+  // Drives the prompt-box dropdown + the per-request body field on /api/arcus/chat.
+  const [actionMode, setActionMode] = useState<'ask' | 'auto'>('ask');
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [gmailTokenSource, setGmailTokenSource] = useState<string | null>(null);
   const [isNotesQuery, setIsNotesQuery] = useState<boolean>(false);
@@ -2735,6 +2738,11 @@ export default function ChatInterface({
           isPlanMode: options.isPlanMode || false,
           // F12 — Forward attachments so the backend can build vision content blocks.
           attachments: attachments || [],
+          // PART 47 — per-request override of the saved action mode (Ask / Auto).
+          // When 'auto', the chat route sets skipConfirmations=true on the run.
+          ...(options.actionMode === 'ask' || options.actionMode === 'auto'
+            ? { actionMode: options.actionMode }
+            : {}),
         }),
         signal: abortControllerRef.current.signal
       });
@@ -4118,6 +4126,10 @@ export default function ChatInterface({
         if (data.verbosity === 'brief' || data.verbosity === 'normal' || data.verbosity === 'detailed') {
           setVerbosity(data.verbosity);
         }
+        // PART 47 — action mode.
+        if (data.actionMode === 'ask' || data.actionMode === 'auto') {
+          setActionMode(data.actionMode);
+        }
       }
     } catch (error) {
       console.error('Error loading personality preferences:', error);
@@ -4156,6 +4168,25 @@ export default function ChatInterface({
 
   const handleToggleMemory = (enabled: boolean) => {
     setMemoryEnabled(enabled);
+  };
+
+  // PART 47 — persist the Ask / Auto choice as soon as the user flips the
+  // prompt-box dropdown. Fire-and-forget — local state is the source of
+  // truth for the current session; the POST just makes the choice survive
+  // a reload. Failures are silent so a Supabase blip never blocks chat.
+  const handleActionModeChange = (mode: 'ask' | 'auto') => {
+    setActionMode(mode);
+    fetch('/api/agent-talk/personality', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        // The endpoint requires personality even for partial updates — pass
+        // the current saved value so we don't accidentally clear it.
+        personality: savedPersonality,
+        instructionsEnabled,
+        actionMode: mode,
+      }),
+    }).catch(() => { /* silent — local state already updated */ });
   };
 
   // PART 46 — slash-command client handlers. Triggered when the user submits
@@ -5291,6 +5322,8 @@ export default function ChatInterface({
                               onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                               onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                               onSlashClientCommand={handleSlashClientCommand}
+                              actionMode={actionMode}
+                              onActionModeChange={handleActionModeChange}
                               selectedEmailsCount={selectedEmails.length}
                               suggestionInput={suggestionInput}
                               showConnectBanner={false}
@@ -6320,6 +6353,8 @@ export default function ChatInterface({
                           onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                           onPersonalityClick={() => setIsPersonalityModalOpen(true)}
                           onSlashClientCommand={handleSlashClientCommand}
+                          actionMode={actionMode}
+                          onActionModeChange={handleActionModeChange}
                           selectedEmailsCount={selectedEmails.length}
                           suggestionInput={suggestionInput}
                           onConnectClick={() => setIsIntegrationsModalOpen(true)}
