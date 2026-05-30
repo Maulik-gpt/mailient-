@@ -16,14 +16,42 @@ interface MemoryItem {
   metadata?: Record<string, unknown>;
 }
 
+// PART 45 — user-tunable voice + length controls.
+type CommunicationStyle = 'direct' | 'balanced' | 'warm';
+type Verbosity = 'brief' | 'normal' | 'detailed';
+
+const STYLE_OPTIONS: Array<{ value: CommunicationStyle; label: string; hint: string }> = [
+  { value: 'direct',   label: 'Direct',   hint: 'Crisp. Just the outcome.' },
+  { value: 'balanced', label: 'Balanced', hint: 'One opener, then point.' },
+  { value: 'warm',     label: 'Warm',     hint: 'Leads with warmth.' },
+];
+
+const VERBOSITY_OPTIONS: Array<{ value: Verbosity; label: string; hint: string }> = [
+  { value: 'brief',    label: 'Brief',    hint: 'One-liners.' },
+  { value: 'normal',   label: 'Normal',   hint: 'Outcome + attention items.' },
+  { value: 'detailed', label: 'Detailed', hint: 'Full picture.' },
+];
+
 interface ArcusSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSaveInstructions: (instructions: string, enabled: boolean) => void;
+  /**
+   * PART 45 — onSaveInstructions now passes the full settings object as a
+   * third arg so the parent can POST every field in one round-trip. The
+   * (instructions, enabled) positional args stay for back-compat with any
+   * existing handler that ignores the third arg.
+   */
+  onSaveInstructions: (
+    instructions: string,
+    enabled: boolean,
+    style?: { communicationStyle: CommunicationStyle; verbosity: Verbosity },
+  ) => void;
   onToggleMemory: (enabled: boolean) => void;
   initialInstructions?: string;
   initialInstructionsEnabled?: boolean;
   initialMemoryEnabled?: boolean;
+  initialCommunicationStyle?: CommunicationStyle;
+  initialVerbosity?: Verbosity;
 }
 
 type TabId = 'instructions' | 'memory';
@@ -150,12 +178,17 @@ export function ArcusSettingsModal({
   initialInstructions = '',
   initialInstructionsEnabled = true,
   initialMemoryEnabled = true,
+  initialCommunicationStyle = 'warm',
+  initialVerbosity = 'normal',
 }: ArcusSettingsModalProps) {
   // ── State ────────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabId>('instructions');
   const [instructions, setInstructions] = useState(initialInstructions);
   const [instructionsEnabled, setInstructionsEnabled] = useState(initialInstructionsEnabled);
   const [memoryEnabled, setMemoryEnabled] = useState(initialMemoryEnabled);
+  // PART 45 — voice + length user prefs.
+  const [communicationStyle, setCommunicationStyle] = useState<CommunicationStyle>(initialCommunicationStyle);
+  const [verbosity, setVerbosity] = useState<Verbosity>(initialVerbosity);
 
   // Instructions
   const [isEnhancing, setIsEnhancing] = useState(false);
@@ -177,11 +210,13 @@ export function ArcusSettingsModal({
       setInstructions(initialInstructions);
       setInstructionsEnabled(initialInstructionsEnabled);
       setMemoryEnabled(initialMemoryEnabled);
+      setCommunicationStyle(initialCommunicationStyle);
+      setVerbosity(initialVerbosity);
       setEnhanceError('');
       setMemoryError('');
       setShowClearConfirm(false);
     }
-  }, [isOpen, initialInstructions, initialInstructionsEnabled, initialMemoryEnabled]);
+  }, [isOpen, initialInstructions, initialInstructionsEnabled, initialMemoryEnabled, initialCommunicationStyle, initialVerbosity]);
 
   // ── Load memories when tab switches or modal opens ───────────────────────────
   const loadMemories = useCallback(async () => {
@@ -232,7 +267,7 @@ export function ArcusSettingsModal({
   const handleSaveInstructions = async () => {
     setIsSavingInstructions(true);
     try {
-      await onSaveInstructions(instructions, instructionsEnabled);
+      await onSaveInstructions(instructions, instructionsEnabled, { communicationStyle, verbosity });
     } finally {
       setIsSavingInstructions(false);
       onClose();
@@ -376,8 +411,73 @@ export function ArcusSettingsModal({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 8 }}
                 transition={{ duration: 0.15 }}
-                className="space-y-4"
+                className="space-y-5"
               >
+                {/* PART 45 — Voice + length segmented controls. Sit ABOVE the
+                    binding-instructions toggle so the user picks broad tone
+                    first, then layers specific rules underneath. */}
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
+                      Communication style
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {STYLE_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setCommunicationStyle(opt.value)}
+                          className={cn(
+                            'flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all',
+                            communicationStyle === opt.value
+                              ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
+                              : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700',
+                          )}
+                        >
+                          <span className="text-[12.5px] font-bold">{opt.label}</span>
+                          <span className={cn(
+                            'text-[10.5px] leading-tight',
+                            communicationStyle === opt.value
+                              ? 'text-white/65 dark:text-black/55'
+                              : 'text-neutral-500 dark:text-white/40',
+                          )}>{opt.hint}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
+                      Response length
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {VERBOSITY_OPTIONS.map(opt => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => setVerbosity(opt.value)}
+                          className={cn(
+                            'flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all',
+                            verbosity === opt.value
+                              ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
+                              : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700',
+                          )}
+                        >
+                          <span className="text-[12.5px] font-bold">{opt.label}</span>
+                          <span className={cn(
+                            'text-[10.5px] leading-tight',
+                            verbosity === opt.value
+                              ? 'text-white/65 dark:text-black/55'
+                              : 'text-neutral-500 dark:text-white/40',
+                          )}>{opt.hint}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-neutral-200 dark:border-neutral-800" />
+
                 {/* Toggle */}
                 <ToggleSwitch
                   enabled={instructionsEnabled}

@@ -245,6 +245,7 @@ export async function POST(request: NextRequest) {
   let personalityData = '';
   let voiceContext = '';
   let preferenceMemories = '';
+  let stylePrefs: { communicationStyle?: 'direct' | 'balanced' | 'warm'; verbosity?: 'brief' | 'normal' | 'detailed' } = {};
   try {
     // Phase C — Enrich the memory context with TWO parallel queries:
     //   1. searchMemories(message)  — semantic match to current message
@@ -252,12 +253,13 @@ export async function POST(request: NextRequest) {
     // Past code only queried (1), so the LLM might miss a saved preference
     // that doesn't semantically overlap with the current message ("never
     // schedule weekends" wouldn't surface on a Monday "schedule X" query).
-    [connectedIntegrations, memories, preferenceMemories, personalityData, voiceContext] = await Promise.all([
+    [connectedIntegrations, memories, preferenceMemories, personalityData, voiceContext, stylePrefs] = await Promise.all([
       getConnectedIntegrations(userId),
       searchMemories(userId, message, 5),
       searchMemories(userId, '[PREFERENCE]', 8),
       fetchPersonality(userId),
       getVoiceContext(userId),
+      fetchUserStylePrefs(userId),
     ]);
     // Combine, dedup by line content
     if (preferenceMemories && !memories.includes(preferenceMemories.slice(0, 100))) {
@@ -294,6 +296,9 @@ export async function POST(request: NextRequest) {
         personality: voiceContext || undefined,
         userInstructions: personalityData || undefined,
         relevantVAs: promptVAFilter,
+        // PART 45 — user-tunable voice + length overlay.
+        communicationStyle: stylePrefs.communicationStyle,
+        verbosity: stylePrefs.verbosity,
       });
 
   // Auto-extract "remember X" / "save this" / "from now on..." from the
@@ -456,6 +461,35 @@ async function fetchPersonality(userId: string): Promise<string> {
     return (prefs.arcus_personality as string) || '';
   } catch {
     return '';
+  }
+}
+
+/**
+ * PART 45 — fetch the user's tone + length preferences. Defaults match the
+ * PART 43 voice rewrite ('warm' + 'normal'). Returned undefined fields tell
+ * buildSystemPrompt to skip injecting the style overlay block entirely.
+ */
+async function fetchUserStylePrefs(userId: string): Promise<{
+  communicationStyle?: 'direct' | 'balanced' | 'warm';
+  verbosity?: 'brief' | 'normal' | 'detailed';
+}> {
+  try {
+    const { getSupabaseAdmin } = await import('../../../../lib/supabase.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('user_profiles')
+      .select('preferences')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    const prefs = (data?.preferences as Record<string, unknown>) || {};
+    const style = prefs.arcus_communication_style as string | undefined;
+    const verb = prefs.arcus_verbosity as string | undefined;
+    return {
+      communicationStyle: style === 'direct' || style === 'balanced' || style === 'warm' ? style : undefined,
+      verbosity: verb === 'brief' || verb === 'normal' || verb === 'detailed' ? verb : undefined,
+    };
+  } catch {
+    return {};
   }
 }
 

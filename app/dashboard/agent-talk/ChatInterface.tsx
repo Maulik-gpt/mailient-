@@ -2044,6 +2044,9 @@ export default function ChatInterface({
   const [savedPersonality, setSavedPersonality] = useState<string>('');
   const [instructionsEnabled, setInstructionsEnabled] = useState(true);
   const [memoryEnabled, setMemoryEnabled] = useState(true);
+  // PART 45 — user-tunable voice + length prefs (loaded from /api/agent-talk/personality).
+  const [communicationStyle, setCommunicationStyle] = useState<'direct' | 'balanced' | 'warm'>('warm');
+  const [verbosity, setVerbosity] = useState<'brief' | 'normal' | 'detailed'>('normal');
   const [gmailAccessToken, setGmailAccessToken] = useState<string | null>(null);
   const [gmailTokenSource, setGmailTokenSource] = useState<string | null>(null);
   const [isNotesQuery, setIsNotesQuery] = useState<boolean>(false);
@@ -4171,24 +4174,43 @@ export default function ChatInterface({
         setSavedPersonality(data.personality || '');
         setInstructionsEnabled(data.instructionsEnabled !== false);
         setMemoryEnabled(data.memoryEnabled !== false);
+        // PART 45 — voice + length prefs.
+        if (data.communicationStyle === 'direct' || data.communicationStyle === 'balanced' || data.communicationStyle === 'warm') {
+          setCommunicationStyle(data.communicationStyle);
+        }
+        if (data.verbosity === 'brief' || data.verbosity === 'normal' || data.verbosity === 'detailed') {
+          setVerbosity(data.verbosity);
+        }
       }
     } catch (error) {
       console.error('Error loading personality preferences:', error);
     }
   };
 
-  const handleSavePersonality = async (personality: string, enabled: boolean) => {
+  const handleSavePersonality = async (
+    personality: string,
+    enabled: boolean,
+    style?: { communicationStyle: 'direct' | 'balanced' | 'warm'; verbosity: 'brief' | 'normal' | 'detailed' },
+  ) => {
     try {
       const response = await fetch('/api/agent-talk/personality', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ personality, instructionsEnabled: enabled }),
+        body: JSON.stringify({
+          personality,
+          instructionsEnabled: enabled,
+          // PART 45 — only POST when provided so older callers keep working.
+          ...(style?.communicationStyle ? { communicationStyle: style.communicationStyle } : {}),
+          ...(style?.verbosity ? { verbosity: style.verbosity } : {}),
+        }),
       });
       if (response.ok) {
         setSavedPersonality(personality);
         setInstructionsEnabled(enabled);
+        if (style?.communicationStyle) setCommunicationStyle(style.communicationStyle);
+        if (style?.verbosity) setVerbosity(style.verbosity);
       }
     } catch (error) {
       console.error('Error saving personality preferences:', error);
@@ -6449,6 +6471,8 @@ export default function ChatInterface({
           initialInstructions={savedPersonality}
           initialInstructionsEnabled={instructionsEnabled}
           initialMemoryEnabled={memoryEnabled}
+          initialCommunicationStyle={communicationStyle}
+          initialVerbosity={verbosity}
         />
 
         {/* Library overlay modal */}

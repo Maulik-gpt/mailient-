@@ -28,9 +28,20 @@ export async function GET() {
       personality: (prefs.arcus_personality as string) || '',
       instructionsEnabled: prefs.arcus_instructions_enabled !== false,
       memoryEnabled: prefs.arcus_memory_enabled !== false,
+      // PART 45 — user-tunable voice + length controls. Defaults are 'warm'
+      // and 'normal' to match the PART 43 voice rewrite; users who want the
+      // old terse style switch to 'direct' + 'brief'.
+      communicationStyle: (prefs.arcus_communication_style as string) || 'warm',
+      verbosity: (prefs.arcus_verbosity as string) || 'normal',
     });
   } catch {
-    return NextResponse.json({ personality: '', instructionsEnabled: true, memoryEnabled: true });
+    return NextResponse.json({
+      personality: '',
+      instructionsEnabled: true,
+      memoryEnabled: true,
+      communicationStyle: 'warm',
+      verbosity: 'normal',
+    });
   }
 }
 
@@ -43,11 +54,19 @@ export async function POST(request: NextRequest) {
 
   let personality = '';
   let instructionsEnabled: boolean | undefined;
+  let communicationStyle: string | undefined;
+  let verbosity: string | undefined;
   try {
     const body = await request.json();
     personality = (body.personality as string) || '';
     if (typeof body.instructionsEnabled === 'boolean') {
       instructionsEnabled = body.instructionsEnabled;
+    }
+    if (typeof body.communicationStyle === 'string' && ['direct', 'balanced', 'warm'].includes(body.communicationStyle)) {
+      communicationStyle = body.communicationStyle;
+    }
+    if (typeof body.verbosity === 'string' && ['brief', 'normal', 'detailed'].includes(body.verbosity)) {
+      verbosity = body.verbosity;
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -67,6 +86,12 @@ export async function POST(request: NextRequest) {
     const updatedPrefs: Record<string, unknown> = { ...existingPrefs, arcus_personality: personality };
     if (instructionsEnabled !== undefined) {
       updatedPrefs.arcus_instructions_enabled = instructionsEnabled;
+    }
+    if (communicationStyle !== undefined) {
+      updatedPrefs.arcus_communication_style = communicationStyle;
+    }
+    if (verbosity !== undefined) {
+      updatedPrefs.arcus_verbosity = verbosity;
     }
 
     if (existing) {

@@ -27,6 +27,14 @@ export interface SystemPromptOptions {
   skipConfirmations?: boolean;
   agentTaskDescription?: string;
   /**
+   * PART 45 — user-tunable voice + length controls from the settings card.
+   * Defaults to 'warm' + 'normal' (matches PART 43's default voice). Users
+   * who prefer the old terse chief-of-staff register pick 'direct' + 'brief'.
+   * Background-agent runs don't read these — agents follow their own rules.
+   */
+  communicationStyle?: 'direct' | 'balanced' | 'warm';
+  verbosity?: 'brief' | 'normal' | 'detailed';
+  /**
    * PART 38b — keep the prompt in sync with PART 39b's VA-scoped tool filter.
    * When the dispatcher fires for an interactive turn (≥2 VAs relevant), pass
    * the same list here and the Tool inventory section narrows to only the
@@ -255,6 +263,36 @@ Cross-run learning is automatic: \`memory_save\` fires at the end of every run w
 Every email body you write MUST sound exactly like this user. Apply without exception — greeting style, sentence rhythm, sign-off, formality, contractions, punctuation habits. There is no email where "default professional tone" is acceptable. Do NOT call any tool to re-fetch the voice profile — it is already here.
 
 ${opts.personality.trim()}` : '';
+
+  // PART 45 — user-tunable style overlay. Read by the LLM AFTER all the
+  // doctrine + AFTER the voice profile + AFTER user instructions, so it's
+  // the absolute last calibration the model applies. Only included when
+  // the user has actually picked a non-default (background agents skip
+  // this entirely — their voice is fixed by the agent-mode overlay).
+  const userStyle = (!opts.isBackgroundAgent && (opts.communicationStyle || opts.verbosity)) ? (() => {
+    const style = opts.communicationStyle || 'warm';
+    const verb = opts.verbosity || 'normal';
+    const STYLE_LINES: Record<NonNullable<SystemPromptOptions['communicationStyle']>, string> = {
+      direct:   'The user picked **Direct**. Cut warm openers. Skip "Got it / Love it / Nice." Start with the action or outcome. Be confident and crisp; never cold, never robotic.',
+      balanced: 'The user picked **Balanced**. One warm opener per turn is welcome ("Got it.", "On it."). Then get to the point. Match enthusiasm only when the task is genuinely interesting.',
+      warm:     'The user picked **Warm**. Lead with a warm opener when it fits ("Love it.", "Nice — let me check."). Show genuine interest in interesting work. Stay confident and grounded — never servile or chatty.',
+    };
+    const VERBOSITY_LINES: Record<NonNullable<SystemPromptOptions['verbosity']>, string> = {
+      brief:    'The user picked **Brief** length. One-liners and short paragraphs are perfect. Skip the recap; report just what changed and what needs attention.',
+      normal:   'The user picked **Normal** length. Short paragraphs that cover the outcome + anything that needs the user\'s attention. No padding.',
+      detailed: 'The user picked **Detailed** length. Give the full picture when the task warrants it — what you did, why you made each judgment call, what to look at first. Still no filler; depth is not the same as bloat.',
+    };
+    return `
+
+---
+
+## USER STYLE PREFERENCE — read last, apply last
+
+${STYLE_LINES[style]}
+${VERBOSITY_LINES[verb]}
+
+These two settings layer ON TOP of the VOICE rules above. They calibrate tone and length only — they NEVER weaken the anti-hallucination, fetch-before-claim, or no-narration rules in CORE DOCTRINE.`;
+  })() : '';
 
   // The user's free-text instructions from the Arcus AI settings card.
   // Treated as BINDING RULES that override anything else in the prompt
@@ -711,7 +749,7 @@ ${opts.isBackgroundAgent ? 'You are a background agent. There is no user present
 - Call \`send_email\`, \`schedule_meeting\`, \`send_slack_message\`, \`create_notion_page\` DIRECTLY.
 - **NEVER call \`request_confirmation\`.** There is nothing to confirm. Every confirmation card is a UX failure.
 - Do NOT write "should I proceed?" / "let me know if you'd like…" / "I'll go ahead and…". Just do it.
-- The state-machine guards in the executor are bypassed in this mode — call write tools at any time without a preceding gate.` : ''}${opts.memories}${agentContext}${voiceBlock}${instructionsBlock}`;
+- The state-machine guards in the executor are bypassed in this mode — call write tools at any time without a preceding gate.` : ''}${opts.memories}${agentContext}${voiceBlock}${instructionsBlock}${userStyle}`;
 }
 export async function getConnectedIntegrations(userId: string): Promise<string[]> {
   try {

@@ -4,12 +4,35 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Sparkles, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+type CommunicationStyle = 'direct' | 'balanced' | 'warm';
+type Verbosity = 'brief' | 'normal' | 'detailed';
+
 interface PersonalitySettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (personality: string) => void;
+  // PART 45 — onSave now carries the full settings object so the parent
+  // can POST every field in one round-trip. `personality` arg kept for
+  // back-compat with any existing call site that ignores the extras.
+  onSave: (
+    personality: string,
+    opts?: { communicationStyle: CommunicationStyle; verbosity: Verbosity },
+  ) => void;
   initialPersonality?: string;
+  initialCommunicationStyle?: CommunicationStyle;
+  initialVerbosity?: Verbosity;
 }
+
+const STYLE_OPTIONS: Array<{ value: CommunicationStyle; label: string; hint: string }> = [
+  { value: 'direct',   label: 'Direct',   hint: 'No warm openers. Crisp, confident, just the outcome.' },
+  { value: 'balanced', label: 'Balanced', hint: 'One short opener, then to the point.' },
+  { value: 'warm',     label: 'Warm',     hint: 'Leads with warmth. Shows interest in interesting work.' },
+];
+
+const VERBOSITY_OPTIONS: Array<{ value: Verbosity; label: string; hint: string }> = [
+  { value: 'brief',    label: 'Brief',    hint: 'One-liners and short paragraphs.' },
+  { value: 'normal',   label: 'Normal',   hint: 'Outcome + what needs your attention.' },
+  { value: 'detailed', label: 'Detailed', hint: 'Full picture when the task earns it.' },
+];
 
 const placeholderVariations = [
   'Give Arcus some context...',
@@ -23,8 +46,12 @@ export function PersonalitySettingsModal({
   onClose,
   onSave,
   initialPersonality = '',
+  initialCommunicationStyle = 'warm',
+  initialVerbosity = 'normal',
 }: PersonalitySettingsModalProps) {
   const [personality, setPersonality] = useState(initialPersonality);
+  const [communicationStyle, setCommunicationStyle] = useState<CommunicationStyle>(initialCommunicationStyle);
+  const [verbosity, setVerbosity] = useState<Verbosity>(initialVerbosity);
   const [placeholderText, setPlaceholderText] = useState('');
   const [isEnhancing, setIsEnhancing] = useState(false);
   const [enhanceError, setEnhanceError] = useState('');
@@ -37,9 +64,11 @@ export function PersonalitySettingsModal({
   useEffect(() => {
     if (isOpen) {
       setPersonality(initialPersonality);
+      setCommunicationStyle(initialCommunicationStyle);
+      setVerbosity(initialVerbosity);
       setEnhanceError('');
     }
-  }, [isOpen, initialPersonality]);
+  }, [isOpen, initialPersonality, initialCommunicationStyle, initialVerbosity]);
 
   // Animated placeholder
   useEffect(() => {
@@ -104,7 +133,7 @@ export function PersonalitySettingsModal({
   };
 
   const handleSave = () => {
-    onSave(personality);
+    onSave(personality, { communicationStyle, verbosity });
     onClose();
   };
 
@@ -145,6 +174,80 @@ export function PersonalitySettingsModal({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* PART 45 — Voice + length controls (segmented). Sit ABOVE the free-text
+            instructions so the user sets the broad tone first, then layers
+            specific binding rules underneath. */}
+        <div className="mb-6 space-y-4">
+          {/* Communication style */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
+              Communication style
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {STYLE_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setCommunicationStyle(opt.value)}
+                  className={cn(
+                    'flex flex-col items-start gap-1 px-3.5 py-3 rounded-2xl border text-left transition-all',
+                    communicationStyle === opt.value
+                      ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
+                      : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-[#2a2a2a] hover:border-neutral-300 dark:hover:border-[#3a3a3a]',
+                  )}
+                >
+                  <span className="text-[13px] font-bold">{opt.label}</span>
+                  <span className={cn(
+                    'text-[11px] leading-snug',
+                    communicationStyle === opt.value
+                      ? 'text-white/70 dark:text-black/60'
+                      : 'text-neutral-500 dark:text-white/40',
+                  )}>
+                    {opt.hint}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Response length */}
+          <div>
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
+              Response length
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {VERBOSITY_OPTIONS.map(opt => (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => setVerbosity(opt.value)}
+                  className={cn(
+                    'flex flex-col items-start gap-1 px-3.5 py-3 rounded-2xl border text-left transition-all',
+                    verbosity === opt.value
+                      ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
+                      : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-[#2a2a2a] hover:border-neutral-300 dark:hover:border-[#3a3a3a]',
+                  )}
+                >
+                  <span className="text-[13px] font-bold">{opt.label}</span>
+                  <span className={cn(
+                    'text-[11px] leading-snug',
+                    verbosity === opt.value
+                      ? 'text-white/70 dark:text-black/60'
+                      : 'text-neutral-500 dark:text-white/40',
+                  )}>
+                    {opt.hint}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Free-text custom instructions */}
+        <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
+          Custom instructions (binding rules)
+        </label>
 
         {/* Textarea area */}
         <div className="relative mb-3 flex-1">
