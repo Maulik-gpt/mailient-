@@ -135,6 +135,60 @@ Do not call any tools. Output the plan markdown directly now.`;
 }
 
 function ts() { return new Date().toISOString().slice(11, 23); }
+
+/**
+ * PART 44c — pull contents of plain-text attachments off Vercel Blob (or
+ * wherever they're hosted) and inline them into the user message so the LLM
+ * actually reads them. Without this the LLM only sees the filename and
+ * routinely hallucinates "I've reviewed your document" when nothing was
+ * actually loaded.
+ *
+ * Strictly text-only MIME types and extensions. Binary files (PDF, docx,
+ * xlsx, zip) are left alone — the loop's binaryHint tells the LLM to
+ * acknowledge it can't read them. PDFs would need a parser (pdf-parse,
+ * deferred to a later PART).
+ *
+ * Each extracted body is truncated to 50KB to keep prompt size sane. Network
+ * fetch is capped at 6s per file. All errors swallowed — extraction failure
+ * never breaks the chat flow.
+ */
+async function embedTextAttachments(
+  message: string,
+  attachments: Array<{ name: string; url: string; type: string; size?: number }>,
+): Promise<string> {
+  if (!attachments?.length) return message;
+
+  const TEXT_MIME_RE = /^(text\/|application\/(json|xml|x-yaml|yaml))/i;
+  const TEXT_EXT_RE = /\.(txt|md|markdown|csv|tsv|json|jsonl|log|xml|yaml|yml|ini|conf|env\.example)$/i;
+  const MAX_BODY_BYTES = 50_000;
+
+  const textAttachments = attachments.filter(a => {
+    const type = (a.type || '').toLowerCase();
+    const name = (a.name || '').toLowerCase();
+    return TEXT_MIME_RE.test(type) || TEXT_EXT_RE.test(name);
+  });
+
+  if (textAttachments.length === 0) return message;
+
+  const blocks: string[] = [];
+  for (const a of textAttachments) {
+    try {
+      const res = await fetch(a.url, { signal: AbortSignal.timeout(6000) });
+      if (!res.ok) continue;
+      const raw = await res.text();
+      const truncated = raw.length > MAX_BODY_BYTES
+        ? `${raw.slice(0, MAX_BODY_BYTES)}\n…[truncated — ${raw.length - MAX_BODY_BYTES} more bytes]`
+        : raw;
+      blocks.push(`[ATTACHMENT — ${a.name}]\n\`\`\`\n${truncated}\n\`\`\``);
+    } catch {
+      // swallow — the loop's binaryHint covers unreachable files
+    }
+  }
+
+  return blocks.length > 0
+    ? `${message}\n\n${blocks.join('\n\n')}`
+    : message;
+}
 function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) {
   const line = extra
     ? `[Arcus:Route] ${ts()} ${msg} ${JSON.stringify(extra)}`
@@ -337,7 +391,14 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length });
+  // PART 44c — extract contents of plain-text attachments (txt, md, csv,
+  // json, log) server-side and prepend them to the user message inside
+  // fenced [ATTACHMENT — filename] blocks so the LLM can actually read them.
+  // PDFs, docx, etc. are binary — left as-is for the loop to mention as
+  // unreadable. Truncated to 50KB each to keep prompt size sane.
+  const messageWithAttachmentContents = await embedTextAttachments(message, attachments);
+
+  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length, extractedTextBytes: messageWithAttachmentContents.length - message.length });
 
   let stream: ReadableStream;
   try {
@@ -345,7 +406,7 @@ export async function POST(request: NextRequest) {
       userId,
       systemPrompt,
       history: sanitizedHistory,
-      userMessage: message,
+      userMessage: messageWithAttachmentContents,
       connectedIntegrations,
       isPlanMode,
       conversationId,

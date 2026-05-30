@@ -1046,11 +1046,24 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         // vision shape ({type:'text'},{type:'image_url'}). Non-image attachments
         // (PDF, txt, etc.) are surfaced as a text mention so the LLM knows they
         // exist even though it can't see their contents.
+        //
+        // PART 44 — strengthen the attachment hints so the LLM never claims to
+        // have "analyzed" something it cannot read. The chat route already
+        // extracts plain-text file contents server-side (PART 44c) and prepends
+        // them to the message inside [ATTACHMENT — filename] fences; whatever
+        // remains in nonImageAttachments here is binary (PDF, docx, xlsx, zip)
+        // whose contents are genuinely unavailable.
         const userMessageWithRules = userMessage + activeRulesHint;
-        const attachmentMention = nonImageAttachments.length > 0
-          ? `\n\n[Attached files (not images, contents not visible to you): ${nonImageAttachments.map(a => a.name).join(', ')}]`
+        const imageHint = imageAttachments.length > 0
+          ? `\n\n[IMAGE${imageAttachments.length > 1 ? 'S' : ''} ATTACHED: ${imageAttachments.map(a => a.name || 'image').join(', ')}]\nIf the active model supports vision you may see the image content. If you cannot describe specific visible elements (colors, shapes, text shown), do NOT claim to have "analyzed" or "reviewed" the image — say honestly: "I see you attached <name> but I can't make out its contents from here. Describe what's in it or paste the key text and I'll take it from there."`
           : '';
-        const finalUserText = userMessageWithRules + attachmentMention;
+        const binaryAttachmentNames = nonImageAttachments
+          .filter(a => !/^text\/|\.(txt|md|csv|json|log)$/i.test(a.type || a.name || ''))
+          .map(a => a.name || 'file');
+        const binaryHint = binaryAttachmentNames.length > 0
+          ? `\n\n[BINARY FILE${binaryAttachmentNames.length > 1 ? 'S' : ''} ATTACHED: ${binaryAttachmentNames.join(', ')}]\nContents NOT loaded — these are binary files (PDF, docx, xlsx, zip, etc.) whose contents the current setup cannot read. Do NOT claim to have analyzed them. Ask the user to paste the relevant passages as text, or extract a screenshot if it's visual.`
+          : '';
+        const finalUserText = userMessageWithRules + imageHint + binaryHint;
 
         const userMessageContent: string | any[] = imageAttachments.length > 0
           ? [
@@ -2236,6 +2249,44 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             if (!succeeded(rule.requires)) {
               log('warn', 'hallucination_guard_stripped_claim', { label: rule.label });
               finalText = finalText.replace(rule.re, rule.replacement);
+            }
+          }
+        }
+
+        // PART 44d — attachment-hallucination guard. When the user attached
+        // any file AND the LLM's response contains a claim like "I analyzed /
+        // reviewed / looked at the image / document" without the response
+        // actually quoting or describing specific content from it, strip the
+        // claim. Binary attachments (PDF, docx) are unreadable; image-only
+        // attachments require a vision-capable model that free-tier rarely
+        // provides. The heuristic: if a claim verb appears but the response
+        // doesn't reference at least one concrete word from the attachment
+        // name OR contain quoted text (markers of actual content awareness),
+        // it's almost certainly fabricated.
+        if ((attachments?.length ?? 0) > 0 && finalText.trim()) {
+          const claimVerbRe = /\b(?:I(?:'ve| have)?\s+(?:analy[sz]ed|reviewed|looked\s+at|read\s+through|examined|gone\s+through|seen|checked\s+out))\b[^.\n]*\b(?:image|images|photo|attachment|document|file|pdf|screenshot|reference)\b[^.\n]*\./gi;
+          if (claimVerbRe.test(finalText)) {
+            claimVerbRe.lastIndex = 0;
+            // Markers that the LLM is actually grounded in attachment content:
+            // (1) a quoted substring (presumed pulled from the file),
+            // (2) the attachment filename mentioned directly,
+            // (3) a [ATTACHMENT — …] block reference (the LLM read the embed).
+            const fnameTokens = (attachments ?? [])
+              .map(a => (a.name || '').replace(/\.[^.]+$/, '').toLowerCase())
+              .filter(Boolean);
+            const lower = finalText.toLowerCase();
+            const hasQuotedExcerpt = /"[^"\n]{8,}"|'[^'\n]{8,}'/.test(finalText);
+            const mentionsFilename = fnameTokens.some(t => t.length >= 3 && lower.includes(t));
+            const referencesAttachmentBlock = /\[ATTACHMENT/i.test(finalText);
+            if (!hasQuotedExcerpt && !mentionsFilename && !referencesAttachmentBlock) {
+              log('warn', 'attachment_hallucination_stripped', {
+                attachmentCount: attachments?.length ?? 0,
+                claimSample: finalText.match(claimVerbRe)?.[0]?.slice(0, 100),
+              });
+              finalText = finalText.replace(
+                claimVerbRe,
+                "I see you attached a file, but my current setup can't read its contents from here — paste the key part as text or describe what's in it and I'll take it from there.",
+              );
             }
           }
         }
