@@ -8,7 +8,9 @@
  * Tools never throw — they return error strings that Claude can reason about.
  */
 
+// @ts-ignore — JS module
 import { getSupabaseAdmin } from '../supabase.js';
+// @ts-ignore — JS module
 import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
 import { getConnectedIntegrations } from './system-prompt';
@@ -26,291 +28,31 @@ import { queuePendingAction } from './agent-approvals';
 import { getCanvasState, setCanvasState } from './canvas-state';
 import { normalizeUserId } from './user-id';
 
-// ── Token helpers ──────────────────────────────────────────────────────────────
-
-/**
- * Refresh a Google access token using the stored refresh token.
- * Stores the new access token back in user_tokens.
- * Returns the new access token, or null if refresh fails.
- */
-async function refreshGoogleToken(userId: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const uid = normalizeUserId(userId);
-
-    // 1. Try to find in arcus_integrations (V3)
-    const { data: v3 } = await supabase
-      .from('arcus_integrations')
-      .select('refresh_token, provider')
-      .eq('user_id', uid)
-      .in('provider', ['gcal', 'gmail'])
-      .maybeSingle();
-
-    if (v3?.refresh_token) {
-      const refreshToken = decrypt(v3.refresh_token);
-      const newToken = await performGoogleRefresh(refreshToken);
-      if (newToken) {
-        await supabase
-          .from('arcus_integrations')
-          .update({
-            access_token: encrypt(newToken),
-            expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', uid)
-          .eq('provider', v3.provider);
-        return newToken;
-      }
-    }
-
-    // 2. Try to find in integration_credentials (legacy V2)
-    const { data: legacy } = await supabase
-      .from('integration_credentials')
-      .select('encrypted_refresh_token, refresh_token, provider')
-      .eq('user_id', uid)
-      .in('provider', ['google_calendar', 'google'])
-      .maybeSingle();
-
-    if (legacy) {
-      const encryptedRf = legacy.encrypted_refresh_token || (legacy.refresh_token ? encrypt(legacy.refresh_token) : null);
-      if (encryptedRf) {
-        const refreshToken = decrypt(encryptedRf);
-        const newToken = await performGoogleRefresh(refreshToken);
-        if (newToken) {
-          await supabase
-            .from('integration_credentials')
-            .update({
-              encrypted_access_token: encrypt(newToken),
-              access_token: newToken,
-              expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-              updated_at: new Date().toISOString(),
-            })
-            .eq('user_id', uid)
-            .eq('provider', legacy.provider);
-          return newToken;
-        }
-      }
-    }
-
-    // 3. Fallback to user_tokens
-    const { data: ut } = await supabase
-      .from('user_tokens')
-      .select('encrypted_refresh_token')
-      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
-      .maybeSingle();
-
-    if (ut?.encrypted_refresh_token) {
-      const refreshToken = decrypt(ut.encrypted_refresh_token);
-      const newToken = await performGoogleRefresh(refreshToken);
-      if (newToken) {
-        await supabase
-          .from('user_tokens')
-          .update({
-            encrypted_access_token: encrypt(newToken),
-            access_token_expires_at: new Date(Date.now() + 3600 * 1000).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`);
-        return newToken;
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function performGoogleRefresh(refreshToken: string): Promise<string | null> {
-  const clientId = process.env.GOOGLE_CLIENT_ID;
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-  if (!clientId || !clientSecret) return null;
-
-  const res = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken,
-      grant_type: 'refresh_token',
-    }),
-    signal: AbortSignal.timeout(8000),
-  });
-
-  if (!res.ok) return null;
-  const json = await res.json();
-  return json.access_token || null;
-}
-
-async function getGmailToken(userId: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const uid = normalizeUserId(userId);
-
-    // 1. arcus_integrations (V3 OAuth flow)
-    const { data: v3 } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', uid)
-      .eq('provider', 'gmail')
-      .maybeSingle();
-    if (v3?.access_token) return decrypt(v3.access_token);
-
-    // 2. integration_credentials (legacy OAuth flow)
-    const { data: legacy } = await supabase
-      .from('integration_credentials')
-      .select('encrypted_access_token')
-      .eq('user_id', uid)
-      .eq('provider', 'google')
-      .maybeSingle();
-    if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
-
-    // 3. user_tokens (populated automatically on Google login via NextAuth)
-    const { data: ut } = await supabase
-      .from('user_tokens')
-      .select('encrypted_access_token')
-      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
-      .maybeSingle();
-    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function getGcalToken(userId: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const uid = normalizeUserId(userId);
-
-    // 1. arcus_integrations (V3 OAuth flow)
-    const { data: v3 } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', uid)
-      .eq('provider', 'gcal')
-      .maybeSingle();
-    if (v3?.access_token) return decrypt(v3.access_token);
-
-    // 2. integration_credentials (legacy OAuth flow)
-    const { data: legacy } = await supabase
-      .from('integration_credentials')
-      .select('encrypted_access_token')
-      .eq('user_id', uid)
-      .eq('provider', 'google_calendar')
-      .maybeSingle();
-    if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
-
-    // 3. user_tokens (Google login covers Calendar scope too)
-    const { data: ut } = await supabase
-      .from('user_tokens')
-      .select('encrypted_access_token')
-      .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
-      .maybeSingle();
-    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-// Shown when the Calendar API rejects the token for lack of calendar scope.
-// This happens when the only Google token on file is the Gmail/login token
-// (no calendar.events scope). The fix is a dedicated Calendar reconnect.
-const CALENDAR_SCOPE_MESSAGE =
-  'Google Calendar access needs to be re-authorized. The current Google connection only has email permissions, not calendar permissions. ' +
-  'Tell the user: "I need calendar access to do that. Click the connectors button in the prompt box, choose Google Calendar, and complete the Google sign-in — then ask me again."';
-
-// Gmail returns 403 when the OAuth token does not carry one of the Gmail
-// scopes the call requires (e.g. gmail.readonly, gmail.modify, gmail.send).
-// Most often this hits users who connected Google Sign-In before Arcus added
-// Gmail-specific permissions. The fix is a Gmail reconnect from the connectors
-// modal, which re-runs the OAuth consent screen with the missing scopes.
-const GMAIL_SCOPE_MESSAGE =
-  'Gmail access needs to be re-authorized. The current Google token is missing the required Gmail permissions. ' +
-  'Tell the user: "I need Gmail access to do that. Click the connectors button in the prompt box, choose Gmail, and complete the Google sign-in — then ask me again."';
-
-function isScopeError(status: number): boolean {
-  return status === 403 || status === 401;
-}
-
-// Pick the right failure for a non-ok Gmail response. 403 is always a scope
-// problem from Google's side; 404 is a missing message/thread; everything
-// else is bucketed as upstream_gmail with the raw status surfaced.
-function gmailHttpFailure(status: number, contextLabel: string): ToolResult {
-  if (status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
-  if (status === 404) return failureResult(`${contextLabel} (404 not found).`, 'not_found');
-  return failureResult(`${contextLabel} (${status}).`, 'upstream_gmail');
-}
-
-async function getNotionToken(userId: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    // Check both 'notion' and 'notion_calendar' — they share the same OAuth
-    // token but users may have connected only one of the two.
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', userId)
-      .in('provider', ['notion', 'notion_calendar'])
-      .limit(1)
-      .maybeSingle();
-    if (data?.access_token) return decrypt(data.access_token);
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function getSlackToken(userId: string): Promise<string | null> {
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-      .from('arcus_integrations')
-      .select('access_token')
-      .eq('user_id', userId)
-      .eq('provider', 'slack')
-      .maybeSingle();
-    if (data?.access_token) return decrypt(data.access_token);
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-// ── Gmail helpers ──────────────────────────────────────────────────────────────
-
-function b64decode(s: string): string {
-  try {
-    return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
-  } catch { return ''; }
-}
-
-function getHeader(headers: any[], name: string): string {
-  return headers?.find((h: any) => h.name?.toLowerCase() === name.toLowerCase())?.value || '';
-}
-
-function extractBody(payload: any, maxLen = 3000): string {
-  if (!payload) return '';
-  if (payload.body?.data) return b64decode(payload.body.data).slice(0, maxLen);
-  if (payload.parts) {
-    for (const p of payload.parts) {
-      if (p.mimeType === 'text/plain' && p.body?.data) return b64decode(p.body.data).slice(0, maxLen);
-    }
-    for (const p of payload.parts) { const r = extractBody(p, maxLen); if (r) return r; }
-  }
-  return '';
-}
-
-function buildRaw(to: string, subject: string, body: string, threadId?: string, inReplyTo?: string): string {
-  const lines = [`To: ${to}`, `Subject: ${subject}`, 'Content-Type: text/plain; charset=UTF-8'];
-  if (inReplyTo) { lines.push(`In-Reply-To: ${inReplyTo}`); lines.push(`References: ${inReplyTo}`); }
-  lines.push('', body);
-  return Buffer.from(lines.join('\r\n')).toString('base64url');
-}
+// PART 39a — shared infra split out of this file. Public types are re-exported
+// at the bottom so engine.ts / loop.ts / run-agent.ts keep their import paths.
+import {
+  type ToolResult,
+  type ToolHistoryEntry,
+  type ToolContext,
+  failureResult,
+} from './tools/types';
+import {
+  refreshGoogleToken,
+  getGmailToken,
+  getGcalToken,
+  getNotionToken,
+  getSlackToken,
+  CALENDAR_SCOPE_MESSAGE,
+  GMAIL_SCOPE_MESSAGE,
+  isScopeError,
+  gmailHttpFailure,
+} from './tools/http-tokens';
+import {
+  b64decode,
+  getHeader,
+  extractBody,
+  buildRaw,
+} from './tools/encoding-helpers';
 
 // ── Tool schemas ───────────────────────────────────────────────────────────────
 
@@ -2184,109 +1926,15 @@ export function getAvailableTools(connectedIntegrations: string[], isBackgroundA
 }
 
 // ── Tool implementations ───────────────────────────────────────────────────────
+//
+// ToolResult, ToolHistoryEntry, ToolContext, and failureResult moved to
+// ./tools/types in PART 39a. They're imported at the top of this file and
+// re-exported below for back-compat with callers (engine.ts, loop.ts,
+// run-agent.ts) that import them from './tools'.
 
-export interface ToolResult {
-  output: string;
-  /**
-   * False on any soft-failure path the tool handled gracefully (missing
-   * integration, upstream 4xx/5xx, empty result with no useful data, validation
-   * error). Undefined or true means the tool produced usable data.
-   *
-   * The agentic loop reads this directly — it is what the LLM uses to decide
-   * whether to surface a failure to the user or proceed. Without it, the loop
-   * trusts the LLM's narration of a "success" string and confabulates next
-   * steps as if the tool returned real data.
-   */
-  success?: boolean;
-  /**
-   * Stable short identifier for the failure class — e.g. `gmail_not_connected`,
-   * `upstream_4xx`, `not_found`, `validation_error`, `confirmation_required`.
-   * Surfaced to the LLM in the failure-acknowledgement bridge so it can pick
-   * the right recovery path (reconnect prompt vs. retry vs. alternative tool).
-   */
-  errorCode?: string;
-  requiresConfirmation?: boolean;
-  canvasData?: {
-    title: string;
-    type: string;
-    markdown: string;
-    draftMeta?: {
-      to?: string;
-      subject?: string;
-      threadId?: string;
-      body?: string;
-      recipientName?: string;
-      gmailDraftId?: string;
-      /**
-       * 0-100 score from the post-draft voice-profile critique. Surfaced on
-       * the draft card so the user knows when a draft drifted from their
-       * voice (typically when < 70). Computed inside draftReply via a
-       * second LLM pass against the injected voice profile.
-       */
-      voiceScore?: number;
-      /** Short reason behind a low score; surfaced under the score badge. */
-      voiceCritique?: string;
-    };
-    pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
-    isUpdate?: boolean;
-  };
-}
-
-/**
- * Build a structured soft-failure result. The loop reads `success: false` and
- * injects a hard failure-acknowledgement message back to the LLM so it cannot
- * continue as if the call succeeded. `message` lands in the tool result the
- * LLM sees; `code` is for branch logic and telemetry.
- */
-function failureResult(message: string, code: string): ToolResult {
-  return { success: false, errorCode: code, output: message };
-}
+export type { ToolResult, ToolHistoryEntry, ToolContext } from './tools/types';
 
 function ts() { return new Date().toISOString().slice(11, 23); }
-
-export interface ToolHistoryEntry {
-  name: string;
-  /** Tool input — used for prerequisite matching (e.g. threadId on read_email). */
-  input: Record<string, any>;
-  /** True iff result.success !== false. Prerequisites only count succeeded calls. */
-  success: boolean;
-}
-
-export interface ToolContext {
-  /**
-   * Stable conversation identifier — used to scope session approval lookups
-   * for write tools (send_email, schedule_meeting, send_slack_message,
-   * create_notion_page). Omitted on background-agent runs, in which case the
-   * approval gate fails open.
-   */
-  conversationId?: string;
-  /**
-   * Tool calls already executed earlier in this run, in order. The loop
-   * pushes each successful tool result here so prerequisite checks (PART 4
-   * Rules 1 + 3) can verify the LLM actually fetched ground truth before
-   * acting. Background-agent runs may omit; the prerequisite checks then
-   * fail open with a warning logged.
-   */
-  toolHistory?: ToolHistoryEntry[];
-
-  isBackgroundAgent?: boolean;
-  skipConfirmations?: boolean;
-  runId?: string;
-  agentId?: string;
-
-  /**
-   * FIX 1 — State machine at tool level.
-   * The loop passes the current run phase so write tools can enforce
-   * "no writes without prior approval" even when the session-state DB is
-   * unreachable (the consumeApproval gate fails-open in that scenario).
-   * PLANNING  → read-only; writes always blocked.
-   * CONFIRMING → waiting on user; writes still blocked.
-   * EXECUTING  → user approved; writes allowed.
-   * REPORTING  → writes blocked (run is wrapping up).
-   * Omitted for background-agent runs (they use skipConfirmations instead).
-   */
-  runState?: 'PLANNING' | 'CONFIRMING' | 'EXECUTING' | 'REPORTING';
-}
 
 /**
  * PART 4 Rule 1 helper — has the LLM successfully read this specific Gmail
