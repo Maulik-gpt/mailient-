@@ -6318,30 +6318,6 @@ export default function ChatInterface({
                       className="absolute bottom-0 left-0 right-0 z-50 bg-arcus-bg"
                       style={{ backgroundColor: 'var(--arcus-bg)' }}
                     >
-                      {/* Scroll to Bottom Button - dynamically anchored above the prompt container */}
-                      <AnimatePresence>
-                        {showScrollButton && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                            className="absolute bottom-full mb-4 right-12 z-50"
-                          >
-                            <button
-                              onClick={() => {
-                                scrollToBottom(false);
-                                isAtBottomRef.current = true;
-                                setIsActuallyAtBottom(true);
-                                setShowScrollButton(false);
-                              }}
-                              className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
-                            >
-                              <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
-                            </button>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
-
                       {/* Premium, theme-aware seamless fade gradient to make scrolled content merge beautifully into the page background */}
                       <div
                         className="absolute bottom-full left-0 right-0 h-10 pointer-events-none"
@@ -6351,6 +6327,29 @@ export default function ChatInterface({
                       />
 
                       <div className="max-w-3xl mx-auto w-full px-6 py-6 relative">
+                        {/* Scroll to Bottom Button - centered dynamically above the prompt container */}
+                        <AnimatePresence>
+                          {showScrollButton && (
+                            <motion.div
+                              initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                              animate={{ opacity: 1, y: 0, scale: 1 }}
+                              exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                              className="absolute bottom-full mb-4 left-1/2 -translate-x-1/2 z-50"
+                            >
+                              <button
+                                onClick={() => {
+                                  scrollToBottom(false);
+                                  isAtBottomRef.current = true;
+                                  setIsActuallyAtBottom(true);
+                                  setShowScrollButton(false);
+                                }}
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
+                              >
+                                <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
                         {/* Ask User Card — appears when AI needs clarification */}
                         <AnimatePresence>
                           {pendingQuestion && (
