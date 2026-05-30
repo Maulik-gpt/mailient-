@@ -26,6 +26,16 @@ export interface SystemPromptOptions {
   isBackgroundAgent?: boolean;
   skipConfirmations?: boolean;
   agentTaskDescription?: string;
+  /**
+   * PART 38b — keep the prompt in sync with PART 39b's VA-scoped tool filter.
+   * When the dispatcher fires for an interactive turn (≥2 VAs relevant), pass
+   * the same list here and the Tool inventory section narrows to only the
+   * tools those VAs own + utility tools. Without it the prompt would name
+   * tools that aren't actually in the LLM's schema list this turn — confusing
+   * + wasted tokens. Background agents pass nothing (they keep the full
+   * surface so a single task can span every VA).
+   */
+  relevantVAs?: ArcusVA[];
 }
 
 /**
@@ -40,7 +50,7 @@ export interface SystemPromptOptions {
  * what caused the LLM to pattern-match narration ("Searching inbox…") instead
  * of actually calling the tool.
  */
-import { INTEGRATION_LABELS, toolsForIntegration } from './tool-integration-map';
+import { INTEGRATION_LABELS, toolsForIntegration, toolMatchesAnyVA, type ArcusVA } from './tool-integration-map';
 
 const INTEGRATION_CAPABILITIES: Record<string, { label: string; tools: string[] }> =
   Object.fromEntries(
@@ -92,10 +102,29 @@ export function buildSystemPrompt(opts: SystemPromptOptions): string {
   // Tool inventory only — names, no behaviour prose. The schemas the LLM
   // receives alongside the prompt are the source of truth for what each tool
   // does, what it takes, and what it returns.
-  const canDoLines: string[] = ['**Always available:**', ...ALWAYS_AVAILABLE.map(l => `  - ${l}`)];
+  //
+  // PART 38b — when an interactive turn has ≥2 VAs dispatched (via
+  // shouldDispatchParallelVAs), opts.relevantVAs is passed in and BOTH the
+  // ALWAYS_AVAILABLE list AND the per-integration tool lists narrow to only
+  // tools owned by those VAs (plus utility tools that have no VA ownership).
+  // Without filtering: all 100 tool names listed every turn even when the
+  // LLM only sees ~30 schemas — wasted tokens + confusing.
+  const vaFilter = opts.relevantVAs?.length ? opts.relevantVAs : undefined;
+  const alwaysLines = ALWAYS_AVAILABLE.filter(line => {
+    // Each line opens with "tool_name" or "tool_name / other_tool — …".
+    // Pull the first identifier and check VA ownership against the active filter.
+    const firstTool = line.match(/^([a-z_]+)/i)?.[1];
+    return !firstTool || toolMatchesAnyVA(firstTool, vaFilter);
+  });
+
+  const canDoLines: string[] = ['**Always available:**', ...alwaysLines.map(l => `  - ${l}`)];
   for (const key of connected) {
     const info = INTEGRATION_CAPABILITIES[key];
-    canDoLines.push(`**${info.label}** (connected): ${info.tools.join(', ')}`);
+    const filteredTools = vaFilter
+      ? info.tools.filter(t => toolMatchesAnyVA(t, vaFilter))
+      : info.tools;
+    if (filteredTools.length === 0) continue; // skip integrations whose tools are all out-of-scope this turn
+    canDoLines.push(`**${info.label}** (connected): ${filteredTools.join(', ')}`);
   }
 
   const cannotDoLines: string[] = [];
@@ -104,8 +133,22 @@ export function buildSystemPrompt(opts: SystemPromptOptions): string {
     cannotDoLines.push(`**${info.label}** — NOT connected. Do not attempt any ${info.label} tools. Tell the user: "${info.label} isn't connected. Click the connectors button in the prompt box, select ${info.label}, and complete the login."`);
   }
 
+  // Tiny header when the VA filter is active, so the LLM knows the surface was
+  // narrowed on purpose (and that it can ask via ask_user to widen if needed).
+  const VA_LABELS: Record<ArcusVA, string> = {
+    inbox: '📧 Inbox',
+    calendar: '📅 Calendar',
+    crm: '📝 CRM',
+    comms: '💬 Comms',
+    research: '🔍 Research',
+  };
+  const vaFilterNote = vaFilter
+    ? `\n*This turn's tool surface is narrowed to ${vaFilter.map(v => VA_LABELS[v]).join(' + ')} VA(s) based on your message. If the work needs another VA mid-task, the loop re-evaluates on the next user turn.*\n`
+    : '';
+
   const capabilitySection = [
     '## Tool inventory (names only — see each tool\'s schema for inputs/output/errors)',
+    vaFilterNote,
     canDoLines.join('\n'),
     '',
     cannotDoLines.length

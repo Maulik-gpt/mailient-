@@ -17,6 +17,7 @@ import { auth as nextAuth } from '../../../../lib/auth.js';
 const auth: any = nextAuth;
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
+import { shouldDispatchParallelVAs } from '../../../../lib/arcus/inbox-pipeline';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
 import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
@@ -185,6 +186,15 @@ export async function POST(request: NextRequest) {
   // made the LLM treat behavioral rules ("never schedule before 9am") as
   // writing-style hints. They're now two separate prompt blocks with
   // distinct semantics.
+  // PART 38b — narrow the prompt's Tool inventory section in lockstep with
+  // PART 39b's getAvailableTools VA filter. Same classifier (PART 37) drives
+  // both: ≥2 VAs relevant → both prompt and tool surface narrow to those VAs.
+  // Plan mode and zero/one-VA turns get the full inventory (no filter).
+  const vaDispatch = isPlanMode
+    ? { fire: false, vas: [], reason: 'none' as const }
+    : shouldDispatchParallelVAs(message);
+  const promptVAFilter = vaDispatch.fire && vaDispatch.vas.length >= 2 ? vaDispatch.vas : undefined;
+
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
     : buildSystemPrompt({
@@ -194,6 +204,7 @@ export async function POST(request: NextRequest) {
         memories,
         personality: voiceContext || undefined,
         userInstructions: personalityData || undefined,
+        relevantVAs: promptVAFilter,
       });
 
   // Auto-extract "remember X" / "save this" / "from now on..." from the
