@@ -4309,16 +4309,17 @@ export default function ChatInterface({
   const handleScroll = useCallback(() => {
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
-      // Snappy 100px threshold for user scrolling detection
       const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
 
       isAtBottomRef.current = isAtBottom;
       setIsActuallyAtBottom(isAtBottom);
-      setShowScrollButton(!isAtBottom && !isInitialMode);
+      // NOTE: isInitialMode guard lives in the JSX render (`showScrollButton && !isInitialMode`)
+      // so we keep this handler free of closures over changing state to avoid stale bindings.
+      setShowScrollButton(!isAtBottom);
     }
-  }, [isInitialMode]);
+  }, []);
 
-  // Callback ref to reliably attach the scroll event listener on mounting
+  // Callback ref to reliably attach the scroll event listener when the DOM node mounts
   const setScrollContainerRef = useCallback((node: HTMLDivElement | null) => {
     if (scrollContainerRef.current) {
       scrollContainerRef.current.removeEventListener('scroll', handleScroll);
@@ -4326,18 +4327,8 @@ export default function ChatInterface({
     scrollContainerRef.current = node;
     if (node) {
       node.addEventListener('scroll', handleScroll);
-      // Run once snappy to check initial scroll position
-      setTimeout(() => {
-        if (node) {
-          const { scrollTop, scrollHeight, clientHeight } = node;
-          const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
-          isAtBottomRef.current = isAtBottom;
-          setIsActuallyAtBottom(isAtBottom);
-          setShowScrollButton(!isAtBottom && !isInitialMode);
-        }
-      }, 100);
     }
-  }, [handleScroll, isInitialMode]);
+  }, [handleScroll]);
 
   const scrollToBottom = (instant = false) => {
     if (scrollContainerRef.current) {
