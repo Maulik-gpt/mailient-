@@ -6343,7 +6343,7 @@ export default function ChatInterface({
                                   setIsActuallyAtBottom(true);
                                   setShowScrollButton(false);
                                 }}
-                                className="w-10 h-10 rounded-full flex items-center justify-center bg-white/95 dark:bg-zinc-900/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-800 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
+                                className="w-10 h-10 rounded-full flex items-center justify-center bg-gradient-to-b from-zinc-100/95 to-white/95 dark:bg-gradient-to-b dark:from-zinc-800/95 dark:to-zinc-950/95 text-zinc-700 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white border border-zinc-200/80 dark:border-zinc-700/80 shadow-[0_4px_12px_rgba(0,0,0,0.08)] dark:shadow-[0_4px_12px_rgba(0,0,0,0.3)] backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-200 group"
                               >
                                 <ChevronDown className="w-5 h-5 group-hover:translate-y-0.5 transition-transform duration-200" />
                               </button>
