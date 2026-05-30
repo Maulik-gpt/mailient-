@@ -4306,7 +4306,7 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
-  const handleScroll = () => {
+  const handleScroll = useCallback(() => {
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
       // Snappy 100px threshold for user scrolling detection
@@ -4314,17 +4314,30 @@ export default function ChatInterface({
 
       isAtBottomRef.current = isAtBottom;
       setIsActuallyAtBottom(isAtBottom);
-      setShowScrollButton(!isAtBottom);
+      setShowScrollButton(!isAtBottom && !isInitialMode);
     }
-  };
+  }, [isInitialMode]);
 
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (container) {
-      container.addEventListener('scroll', handleScroll);
-      return () => container.removeEventListener('scroll', handleScroll);
+  // Callback ref to reliably attach the scroll event listener on mounting
+  const setScrollContainerRef = useCallback((node: HTMLDivElement | null) => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.removeEventListener('scroll', handleScroll);
     }
-  }, []);
+    scrollContainerRef.current = node;
+    if (node) {
+      node.addEventListener('scroll', handleScroll);
+      // Run once snappy to check initial scroll position
+      setTimeout(() => {
+        if (node) {
+          const { scrollTop, scrollHeight, clientHeight } = node;
+          const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+          isAtBottomRef.current = isAtBottom;
+          setIsActuallyAtBottom(isAtBottom);
+          setShowScrollButton(!isAtBottom && !isInitialMode);
+        }
+      }, 100);
+    }
+  }, [handleScroll, isInitialMode]);
 
   const scrollToBottom = (instant = false) => {
     if (scrollContainerRef.current) {
@@ -5160,7 +5173,7 @@ export default function ChatInterface({
                   style={{ flex: '1 1 0%', minHeight: 0, overflow: 'hidden' }}
                 >
                   <div
-                    ref={scrollContainerRef}
+                    ref={setScrollContainerRef}
                     className="absolute inset-0 overflow-y-auto px-3 sm:px-6 py-4 scroll-smooth arcus-scrollbar"
                     style={{ paddingBottom: isInitialMode ? undefined : '140px' }}
                   >
