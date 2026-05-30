@@ -74,6 +74,74 @@ function logAudit(params: {
 const ASK_USER_SCHEMA = TOOL_SCHEMAS.find(s => s.name === 'ask_user')!;
 
 function ts() { return new Date().toISOString().slice(11, 23); }
+
+// ── Plan-mode output normalisation (PART 42) ──────────────────────────────────
+//
+// Free models routinely violate the plan-mode formatting rules: numbered steps
+// collapse into one paragraph, headings run inline with surrounding prose, and
+// for agent-creation requests the model sometimes dumps the would-be tool
+// params (`name: "X"`, `cron_schedule: "0 2 * * *"`) as the entire plan body.
+//
+// Rather than throwing those failures on the user, we apply three forgiving
+// rewrites before emitting the `plan` SSE event. None of these change the
+// MEANING of the LLM's output — they only fix presentation.
+
+function normalizePlanMarkdown(raw: string): string {
+  let s = (raw || '').trim();
+  if (!s) return s;
+
+  // 1. Detect the params-dump pattern: ≥3 lines of bare `key: "value"` shape
+  // with no markdown structure. Rewrite as a "Plan output was malformed"
+  // wrapper so the user at least sees readable text instead of a JSON-ish
+  // mess that looks like a bug.
+  const paramLineRe = /^\s*[a-z_]+:\s*("[^"\n]*"|true|false|\d+|-?\d+(?:\.\d+)?)\s*$/i;
+  const paramDumpLineCount = s.split(/\r?\n/).filter(l => paramLineRe.test(l)).length;
+  const totalNonBlank = s.split(/\r?\n/).filter(l => l.trim()).length;
+  if (paramDumpLineCount >= 3 && paramDumpLineCount / Math.max(1, totalNonBlank) > 0.5) {
+    // Convert the param-dump into a single narrative paragraph the user can read.
+    const lines = s.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    const narrativeBits = lines
+      .filter(l => paramLineRe.test(l))
+      .map(l => {
+        const m = l.match(/^([a-z_]+):\s*(.+)$/i);
+        if (!m) return null;
+        const key = m[1].replace(/_/g, ' ');
+        const val = m[2].replace(/^"|"$/g, '');
+        return `${key}: ${val}`;
+      })
+      .filter(Boolean);
+    s = [
+      `# Plan`,
+      '',
+      `## Configuration`,
+      '',
+      ...narrativeBits.map(b => `- ${b}`),
+      '',
+      `## Note`,
+      '',
+      `_The model returned configuration values instead of a structured plan. The settings above are what would be applied — review them and re-prompt if you want a fuller breakdown._`,
+    ].join('\n');
+  }
+
+  // 2. Split inline-numbered list items. Pattern: "1. Foo. 2. Bar. 3. Baz"
+  // becomes one numbered item per line. Only fire when the digit is preceded
+  // by sentence-end punctuation or 2+ spaces — never break legitimate prose.
+  s = s.replace(/([.!?:;]\s+|\s{2,})(\d{1,2}\.\s+)/g, '$1\n$2');
+
+  // 3. Ensure ## / ### headings have a blank line before them when they're
+  // not at the very start of the document. (Markdown renderers tolerate
+  // missing blanks but the LLM regularly produces "... text. ## Heading"
+  // which renders as a paragraph instead of a heading.)
+  s = s.replace(/(\S)(\n)(#{1,6}\s+)/g, '$1\n\n$3');
+
+  // 4. Ensure --- separators have blank lines around them.
+  s = s.replace(/([^\n])\n(---+)\n([^\n])/g, '$1\n\n$2\n\n$3');
+
+  // 5. Collapse runs of 3+ newlines so we don't end up with monster gaps.
+  s = s.replace(/\n{3,}/g, '\n\n');
+
+  return s.trim();
+}
 function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<string, unknown>) {
   const prefix = `[Arcus:Loop] ${ts()}`;
   const line = extra ? `${prefix} ${msg} ${JSON.stringify(extra)}` : `${prefix} ${msg}`;
@@ -2173,6 +2241,16 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         }
 
         if (isPlanMode) {
+          // PART 42 — post-process the LLM's plan output to recover from the
+          // two most common formatting failures on free models:
+          //   1. Steps collapsed into one paragraph ("1. Foo 2. Bar 3. Baz")
+          //      → split each numbered item onto its own line.
+          //   2. ## headings or --- separators run together with surrounding
+          //      content → insert the missing newlines.
+          //   3. Params-dump pattern (multiple `key: "value"` lines as the
+          //      whole body) → wrap with a header so it's at least readable
+          //      and log it for later prompt tuning.
+          finalText = normalizePlanMarkdown(finalText);
           const titleMatch = finalText.match(/^#\s+(.+)$/m);
           const planTitle = titleMatch ? titleMatch[1].trim() : 'Plan';
           emit('plan', { title: planTitle, markdown: finalText });

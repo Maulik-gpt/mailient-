@@ -71,30 +71,65 @@ ${integrationSection}
 - Do NOT include steps that say "use Microsoft 365", "log in to Outlook", "open Excel", "use HubSpot", or reference any app not listed as available above.
 - Plan around what IS available. If email is needed and Gmail is connected, use Gmail. If no calendar is connected, skip scheduling steps or note the user must do it manually.
 
-## Output rules — CRITICAL
+## Output rules — STRICT, NON-NEGOTIABLE
+
 - Output ONLY the plan document as markdown. No preamble, no "here is your plan", no explanation before or after.
 - Start immediately with "# [Plan Title]" on the first line.
-- EVERY heading (#, ##, ###, etc.) MUST be on its own separate line — NEVER inline within a sentence or paragraph.
-- EVERY "---" separator MUST be on its own line with a blank line before and after — NEVER inside a sentence or list item.
-- Use H1 (#) for the plan title only — one per document.
-- Use H2 (##) for major phases or sections — each on its own line.
-- Use H3 (###) for sub-sections — each on its own line.
-- Use bullet points (- ) for action items, resources, or lists.
-- Use --- on its own line to separate major sections.
-- Maximum 5000 characters total.
-- NEVER use emojis. Zero emojis allowed in any part of the plan.
-- NEVER use bracketed placeholders. Every item must be concrete and specific.
-- Write in direct, professional language. No hedging.
-- WRONG example: "Use Gmail for email. --- ## Phase 2: Schedule" — heading and separator inline
-- CORRECT example: each ## heading and each --- appear on their own dedicated lines with blank lines around them.
+- EVERY heading (#, ##, ###) on its own line. EVERY "---" on its own line with blanks around it.
+- Use H1 (#) once for the plan title. H2 (##) for sections. H3 (###) for sub-sections. Bullets (- ) for items.
+- Maximum 5000 characters.
+- NEVER use emojis. NEVER use bracketed placeholders like [TBD] or [insert X here]. Every item is concrete.
 
-## Plan structure guidance
-A good plan contains:
-1. A clear title and objective
-2. Context / background analysis
-3. Numbered phases or steps
-4. Specific action items under each phase
-5. Success criteria or expected outcomes
+## Steps section — USE arcus-steps JSON BLOCK (mandatory)
+
+The Steps section MUST be a fenced arcus-steps JSON block — NEVER inline-numbered prose like "1. Foo 2. Bar 3. Baz" (which renders as a wall of text). The canvas renderer parses arcus-steps and lays out each step with its own status dot. Each step has a short label (3-6 words) + a one-line description.
+
+Example of the EXACT format the Steps section must follow:
+
+\`\`\`arcus-steps
+{ "steps": [
+    { "label": "Search Gmail for newsletters", "description": "Use search_gmail with query 'category:promotions newer_than:7d'." },
+    { "label": "Read top 20 candidates", "description": "Use gmail_bulk_read_threads to pull bodies in one call." },
+    { "label": "Summarize into digest", "description": "Group by sender, bullet the most important items per source." },
+    { "label": "Save digest to Notion", "description": "Use create_notion_page with title 'Newsletter Digest — <date>'." }
+] }
+\`\`\`
+
+## Anti-patterns — these MUST NOT appear in the output
+
+ANTI-PATTERN 1 — params dump. The plan is for a HUMAN to read. Do NOT output bare key/value lines like:
+  name: "Newsletter Digest"
+  cron_schedule: "0 2 * * *"
+  output_channel: "gmail"
+These are tool inputs, not a plan. Translate them into narrative: "The agent runs nightly at 2:00 AM, delivers the digest to your Gmail inbox."
+
+ANTI-PATTERN 2 — inline-numbered steps. Do NOT collapse the Steps section into a single paragraph like "1. Search Gmail 2. Read threads 3. Summarize". Use the arcus-steps JSON block above — every step gets its own row.
+
+ANTI-PATTERN 3 — inline headings or separators. Do NOT write "Use Gmail. ## Phase 2: Schedule the run." Headings and \`---\` MUST each be on their own line with blank lines around them.
+
+ANTI-PATTERN 4 — recap of what the user said. Do NOT begin with "You asked me to plan X" or "Based on your request to do Y". Skip directly to the plan.
+
+## Plan structure — use this exact skeleton
+
+\`\`\`markdown
+# <Concrete Plan Title>
+
+## Objective
+<one or two sentences — what this plan achieves>
+
+## Steps
+\\\`\\\`\\\`arcus-steps
+{ "steps": [
+    { "label": "...", "description": "..." }
+] }
+\\\`\\\`\\\`
+
+## Expected Output
+<one paragraph describing what the user will see when the plan executes — concrete artifacts, links, counts>
+
+## Time Estimate
+<one line, e.g. "Daily — 2-3 minutes per run" or "One-time — 20-30 minutes">
+\`\`\`
 
 Do not call any tools. Output the plan markdown directly now.`;
 }
