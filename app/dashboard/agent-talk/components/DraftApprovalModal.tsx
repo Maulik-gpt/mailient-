@@ -163,6 +163,32 @@ export function DraftApprovalModal({
 
   const handleSendNow = () => setShowConfirmOverlay(true);
 
+  // PART 40 — fire-and-forget feedback signal so the next draft to this
+  // recipient inherits the lesson. Never blocks the user-facing flow; a
+  // failed POST is logged and ignored. Only called from the explicit
+  // sent / edited-and-sent / cancelled paths — not from Escape/backdrop
+  // (those carry too much noise from accidental clicks).
+  const reportDraftFeedback = (action: 'sent' | 'edited_and_sent' | 'cancelled') => {
+    if (!draftData?.recipientEmail) return;
+    const originalBody = draftData.content || '';
+    const finalBody = action === 'cancelled' ? undefined : editedContent;
+    try {
+      fetch('/api/arcus/learn/draft-feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          recipientEmail: draftData.recipientEmail,
+          recipientName: draftData.recipientName,
+          subject: draftData.subject,
+          originalBody,
+          finalBody,
+          action,
+        }),
+        keepalive: true,
+      }).catch(() => { /* learning is non-critical — never break the send flow */ });
+    } catch { /* swallow synchronous fetch errors too */ }
+  };
+
   const handleConfirmSend = async () => {
     if (!draftData.recipientEmail) {
       toast.error('Missing recipient email');
@@ -179,6 +205,12 @@ export function DraftApprovalModal({
       });
       setSendSuccess(true);
       toast.success('Email sent!');
+      // PART 40 — capture the learning signal AFTER successful send.
+      // 'sent' vs 'edited_and_sent' is decided by whether the user touched
+      // the body before confirming. The endpoint dedups trivial whitespace-
+      // only diffs back to 'sent'.
+      const wasEdited = editedContent.trim() !== (draftData.content || '').trim();
+      reportDraftFeedback(wasEdited ? 'edited_and_sent' : 'sent');
       // Auto-dismiss after the success state shows briefly
       setTimeout(() => onDismiss(), 1400);
     } catch (err) {
@@ -186,6 +218,15 @@ export function DraftApprovalModal({
       setIsSending(false);
       setShowConfirmOverlay(false);
     }
+  };
+
+  // PART 40 — explicit-cancellation handler. Bound to the X button and the
+  // Save to Drafts button (both are "the user looked at this draft and chose
+  // not to send it as-is"). Escape and backdrop click still go through bare
+  // onDismiss without feedback — too noisy.
+  const handleExplicitDismiss = () => {
+    reportDraftFeedback('cancelled');
+    onDismiss();
   };
 
   // Click-outside-to-dismiss: only on the backdrop element itself, not bubbled
@@ -235,7 +276,7 @@ export function DraftApprovalModal({
                 </h3>
               </div>
               <button
-                onClick={onDismiss}
+                onClick={handleExplicitDismiss}
                 disabled={isSending}
                 className="p-2 rounded-xl text-white/40 hover:text-white/80 hover:bg-white/5 transition-colors disabled:opacity-30 disabled:pointer-events-none"
                 title="Close (Esc)"
@@ -346,7 +387,7 @@ export function DraftApprovalModal({
                   {viewMode === 'editing' ? 'Done Editing' : 'Edit Draft'}
                 </button>
                 <button
-                  onClick={onDismiss}
+                  onClick={handleExplicitDismiss}
                   disabled={isSending || sendSuccess}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-[12.5px] tracking-wide uppercase text-white/50 hover:text-white/80 hover:bg-white/5 transition-all disabled:opacity-30 disabled:pointer-events-none"
                 >
