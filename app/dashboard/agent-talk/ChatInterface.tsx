@@ -4306,15 +4306,20 @@ export default function ChatInterface({
     }
   }, [initialConversationId, isInitialMode]);
 
+  // Tracks programmatic scrolls so handleScroll doesn't override the user's manually-scrolled position
+  const isProgrammaticScrollRef = useRef(false);
+
   const handleScroll = useCallback(() => {
+    // Ignore scroll events fired by our own programmatic scrollToBottom calls
+    if (isProgrammaticScrollRef.current) return;
+
     if (scrollContainerRef.current) {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
       const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
 
       isAtBottomRef.current = isAtBottom;
       setIsActuallyAtBottom(isAtBottom);
-      // NOTE: isInitialMode guard lives in the JSX render (`showScrollButton && !isInitialMode`)
-      // so we keep this handler free of closures over changing state to avoid stale bindings.
+      // isInitialMode guard lives in the JSX (`showScrollButton && !isInitialMode`)
       setShowScrollButton(!isAtBottom);
     }
   }, []);
@@ -4332,10 +4337,21 @@ export default function ChatInterface({
 
   const scrollToBottom = (instant = false) => {
     if (scrollContainerRef.current) {
+      // Suppress handleScroll during this programmatic scroll
+      isProgrammaticScrollRef.current = true;
       scrollContainerRef.current.scrollTo({
         top: scrollContainerRef.current.scrollHeight,
         behavior: instant ? "auto" : "smooth"
       });
+      // Clear the flag after the scroll event has had time to fire
+      // Use 'scrollend' when available, otherwise a generous timeout
+      const container = scrollContainerRef.current;
+      const clearFlag = () => { isProgrammaticScrollRef.current = false; };
+      if ('onscrollend' in container) {
+        container.addEventListener('scrollend', clearFlag, { once: true });
+      } else {
+        setTimeout(clearFlag, instant ? 50 : 600);
+      }
     } else if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({
         behavior: instant ? "auto" : "smooth",
