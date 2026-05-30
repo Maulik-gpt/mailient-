@@ -386,7 +386,11 @@ export function isBroadContextTask(userMessage: string): boolean {
 // Returns a (possibly empty) ordered set: the canonical order matches the
 // system prompt's enumeration so logs/reports are consistent.
 
-export type ArcusVA = 'inbox' | 'calendar' | 'crm' | 'comms' | 'research';
+// PART 39b — ArcusVA was moved to tool-integration-map.ts so the
+// TOOL_VA_OWNERSHIP map and this classifier share one source of truth.
+// Re-exported here so existing imports (`from './inbox-pipeline'`) keep working.
+export type { ArcusVA } from './tool-integration-map';
+import type { ArcusVA } from './tool-integration-map';
 
 // Short-circuit list — these tokens never warrant a parallel sweep even if
 // they happen to match a VA keyword by coincidence.

@@ -151,3 +151,142 @@ export function toolsForIntegration(integration: string): string[] {
   }
   return [...new Set(out)];
 }
+
+// ── PART 39b — VA ownership map ───────────────────────────────────────────────
+//
+// Maps each tool to the five-VA personas the system prompt teaches the LLM
+// to think with: inbox, calendar, crm, comms, research. Used by
+// getAvailableTools to narrow the surface to only the VAs a turn actually
+// touches — the LLM picks better tools first try when the set is smaller.
+//
+// Tools NOT in this map (open_canvas, ask_user, request_confirmation,
+// create_scheduled_agent, the orchestration utilities, etc.) are treated as
+// "utility" and are ALWAYS included regardless of which VAs were dispatched
+// — these are the tools the LLM needs every turn regardless of intent.
+
+export type ArcusVA = 'inbox' | 'calendar' | 'crm' | 'comms' | 'research';
+
+export const TOOL_VA_OWNERSHIP: Record<string, ArcusVA[]> = {
+  // 📧 Inbox VA
+  search_gmail: ['inbox'],
+  gmail_unlimited_search: ['inbox'],
+  read_email: ['inbox'],
+  gmail_read_thread: ['inbox'],
+  gmail_bulk_read_threads: ['inbox'],
+  get_sent_emails: ['inbox'],
+  gmail_extract_data_from_threads: ['inbox'],
+  gmail_detect_urgency: ['inbox'],
+  gmail_detect_conversation_type: ['inbox'],
+  gmail_get_labels: ['inbox'],
+  gmail_apply_label: ['inbox'],
+  gmail_auto_label_threads: ['inbox'],
+  gmail_archive_thread: ['inbox'],
+  gmail_auto_archive_threads: ['inbox'],
+  digest_newsletters: ['inbox'],
+  check_followups: ['inbox'],
+  draft_reply: ['inbox'],
+  draft_cold_email: ['inbox'],
+  draft_review: ['inbox'],
+  gmail_batch_draft_replies: ['inbox'],
+  gmail_generate_auto_replies: ['inbox'],
+  send_email: ['inbox'],
+  gmail_batch_send_emails: ['inbox'],
+  build_worklist: ['inbox'],
+  check_draft_quality: ['inbox'],
+  get_voice_profile: ['inbox'],
+  voice_profile_generate: ['inbox'],
+  voice_profile_update: ['inbox'],
+  gmail_get_profile: ['inbox'],
+
+  // 📅 Calendar VA
+  get_calendar_events: ['calendar'],
+  calendar_get_availability: ['calendar'],
+  calendar_unlimited_scan: ['calendar'],
+  calendar_auto_detect_conflicts: ['calendar'],
+  calendar_timezone_intelligence: ['calendar'],
+  calendar_generate_free_time_blocks: ['calendar'],
+  calendar_buffer_time_insertion: ['calendar'],
+  calendar_meeting_prep_automation: ['calendar'],
+  calendar_auto_generate_meet_links: ['calendar'],
+  calendar_auto_decline_low_priority: ['calendar'],
+  schedule_meeting: ['calendar'],
+  calendar_batch_create_events: ['calendar'],
+  calendar_cancel_event: ['calendar'],
+
+  // 📝 CRM VA (Notion)
+  search_notion: ['crm'],
+  notion_read_page: ['crm'],
+  fetch_notion_schema: ['crm'],
+  notion_get_calendar_events: ['crm', 'calendar'], // Notion calendar straddles two VAs
+  create_notion_page: ['crm'],
+  notion_create_task: ['crm'],
+  notion_batch_create_database_entries: ['crm'],
+  notion_auto_create_contact_profiles: ['crm', 'research'],
+  notion_auto_log_all_communication: ['crm', 'inbox'],
+  notion_auto_update_project_status: ['crm'],
+  notion_auto_generate_meeting_notes: ['crm', 'calendar'],
+  notion_deal_tracking_automation: ['crm'],
+  notion_create_smart_dashboards: ['crm'],
+  notion_link_related_items: ['crm'],
+  notion_auto_archive_completed_work: ['crm'],
+  notion_generate_weekly_summaries: ['crm'],
+  generate_internal_documentation: ['crm'],
+
+  // 💬 Comms VA (Slack + cross-channel delivery)
+  send_slack_message: ['comms'],
+  slack_send_dm: ['comms'],
+  slack_find_user: ['comms'],
+  slack_get_channels: ['comms'],
+  slack_post_daily_briefing: ['comms'],
+  slack_real_time_urgent_alerts: ['comms'],
+  slack_team_digest_weekly: ['comms'],
+  slack_deal_update_notifications: ['comms'],
+  slack_task_assignment_notifications: ['comms'],
+  slack_approval_request_routing: ['comms'],
+  report_send_gmail: ['comms'],
+  report_send_slack: ['comms'],
+  report_generate: ['comms'],
+
+  // 🔍 Research VA
+  web_search: ['research'],
+  web_search_instant: ['research'],
+  web_search_unlimited: ['research'],
+  company_intelligence_research: ['research'],
+  contact_research_and_verification: ['research'],
+  generate_proposal_documents: ['research'],
+  generate_email_sequence: ['research', 'inbox'],
+  generate_client_reports: ['research'],
+  generate_sow_documents: ['research'],
+  get_recipient_context: ['research', 'inbox'],
+  get_contact_context: ['research'],
+  remember_about_contact: ['research'],
+  memory_search: ['research'],
+  memory_save: ['research'],
+  memory_get_contact_profile: ['research'],
+  memory_unlimited_scan: ['research'],
+  memory_bulk_save_learning: ['research'],
+  memory_relationship_intelligence: ['research'],
+  surface_proactive_signals: ['research'],
+
+  // Tools NOT mapped above (open_canvas, update_canvas, ask_user,
+  // request_confirmation, create_scheduled_agent, agent_task_queue_management,
+  // error_recovery_and_retries, performance_monitoring_and_optimization,
+  // output_formatting_and_presentation, claim_worklist_items,
+  // record_processed_items, get_delegation_rules, create_delegation_rule)
+  // are utility tools — getAvailableTools treats them as always-included
+  // regardless of VA filter.
+};
+
+/**
+ * Returns true when the tool should be exposed to the LLM given the set of
+ * VAs the dispatcher routed to. Always returns true when:
+ *   - relevantVAs is empty/undefined (no filtering active — backwards compat)
+ *   - the tool isn't in TOOL_VA_OWNERSHIP (utility tools)
+ *   - the tool's VA list intersects relevantVAs
+ */
+export function toolMatchesAnyVA(toolName: string, relevantVAs: ArcusVA[] | undefined): boolean {
+  if (!relevantVAs?.length) return true;
+  const owners = TOOL_VA_OWNERSHIP[toolName];
+  if (!owners?.length) return true; // utility tool — always available
+  return owners.some(va => relevantVAs.includes(va));
+}

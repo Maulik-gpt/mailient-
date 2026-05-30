@@ -488,9 +488,30 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   const detectedIntent = classifyUserIntent(userMessage, hasOpenConfirmation);
   const suppressToolsForIntent = shouldSuppressTools(detectedIntent) && !isBackgroundAgent;
 
+  // PART 39b — VA-scoped tool filtering. Compute the dispatcher decision
+  // ONCE here so it's reused for (1) trimming the tool surface the LLM sees
+  // and (2) deciding whether to run the parallel context sweep further down.
+  // Filter applies only on interactive turns where the dispatcher fires
+  // (≥2 VAs relevant); background agents and pivot-prone follow-up turns
+  // keep the full surface.
+  const vaDispatch = !isPlanMode && !isBackgroundAgent
+    ? shouldDispatchParallelVAs(userMessage)
+    : { fire: false, vas: [] as ArcusVA[], reason: 'none' as const };
+  const vaFilter: ArcusVA[] | undefined = vaDispatch.fire && vaDispatch.vas.length >= 2
+    ? vaDispatch.vas
+    : undefined;
+
   const availableTools = (isPlanMode || suppressToolsForIntent)
     ? []
-    : getAvailableTools(connectedIntegrations, isBackgroundAgent);
+    : getAvailableTools(connectedIntegrations, isBackgroundAgent, vaFilter);
+
+  if (vaFilter) {
+    log('info', 'tool surface VA-filtered', {
+      relevantVAs: vaFilter,
+      total: TOOL_SCHEMAS.length,
+      exposed: availableTools.length,
+    });
+  }
 
   // Append intent hint to the system prompt so the LLM reads it every turn.
   const effectiveSystemPrompt = `${systemPrompt}\n\n${intentSystemHint(detectedIntent)}`;
@@ -1069,7 +1090,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         // combined context + a per-turn dispatch nudge so the LLM's first
         // response synthesizes across VAs instead of discovering them one
         // by one.
-        const vaDispatch = !isPlanMode ? shouldDispatchParallelVAs(userMessage) : { fire: false, vas: [], reason: 'none' as const };
+        // vaDispatch was computed at the top of runAgentLoop (PART 39b) so it
+        // could feed the VA-scoped tool filter. Reuse it here for the parallel
+        // sweep — same decision, no double-classification.
         if (vaDispatch.fire && connectedIntegrations.length > 0) {
           // Map each VA → the read tool it owns + the section header for its
           // sweep result. Only VAs whose underlying integration is connected

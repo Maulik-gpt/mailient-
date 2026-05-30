@@ -60,6 +60,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'search_gmail',
     description:
+      'PICK THIS when you need ≤25 Gmail results for the current chat turn. For inbox-wide scans (>25 results, scheduled-agent sweeps) use gmail_unlimited_search instead. ' +
       'Search Gmail metadata only — returns id, threadId, From, Subject, Date, snippet for each match. ' +
       'Does NOT return full bodies; call read_email for body. ' +
       'Output: plain-text list of numbered email summaries, or "No emails found matching that query." when empty. ' +
@@ -307,6 +308,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'get_calendar_events',
     description:
+      'PICK THIS for short windows (≤7 days) in interactive chat — quick "what\'s on my calendar tomorrow?", "list today\'s meetings". For long windows (>7 days), conflict detection, or merging with Notion Calendar, use calendar_unlimited_scan. ' +
       'List the user\'s Google Calendar events in a forward window. Required before any claim about a slot being free. ' +
       'Output: plain-text list with title, start time, attendees, or "No upcoming events..." when empty. ' +
       'Errors (success:false): gcal_not_connected, gcal_scope_missing, upstream_gcal.',
@@ -434,6 +436,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'memory_search',
     description:
+      'PICK THIS for ONE memory query. For 2-20 queries in parallel about the same target (e.g. covering aliases for one person) use memory_unlimited_scan. ' +
       'Search Supermemory for relevant context about a person, topic, or previous interaction. Call at the start of any task involving a known contact, project, or recurring concern so prior decisions and preferences inform the work. ' +
       'Returns raw memory items so you can quote them; for the system-prompt summary form, the chat route already injects relevant memories every turn. ' +
       'Output: numbered list of "<text>  [score: <n?>  when: <iso?>  tags: <csv?>]"; or "No memories found." ' +
@@ -530,8 +533,9 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'gmail_unlimited_search',
     description:
-      'Background-agent search. Like search_gmail but paginates up to 200 results (Gmail cap is 25 in the interactive tool). Use for inbox-wide scans where you need the full picture. ' +
-      'Output: same format as search_gmail. Errors (success:false): validation_error, gmail_not_connected, upstream_gmail.',
+      'PICK THIS for inbox-wide scans where you need >25 results (background-agent sweeps, "process every client thread this week", any task that calls for the full picture). For one-off ≤25-result lookups in chat use search_gmail. ' +
+      'Paginates up to 200 results. Output format identical to search_gmail. ' +
+      'Errors (success:false): validation_error, gmail_not_connected, upstream_gmail.',
     input_schema: {
       type: 'object',
       properties: {
@@ -689,8 +693,9 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'calendar_unlimited_scan',
     description:
-      'Read the entire calendar up to daysAhead (max 365). Optionally merges Notion Calendar entries. Returns one structured JSON with all events sorted chronologically: title, start, end, attendees, meetLink, location, organizer, optional flag. ' +
-      'Use this BEFORE proposing any meeting time or running conflict detection. Output: JSON. Errors: validation_error, gcal_not_connected, upstream_gcal.',
+      'PICK THIS BEFORE proposing any meeting time, before any conflict-detection pass, and for any window >7 days. Quick interactive "list tomorrow\'s meetings" lookups use get_calendar_events instead. ' +
+      'Reads the entire calendar up to daysAhead (max 365), optionally merging Notion Calendar entries. Returns one structured JSON with all events sorted chronologically: title, start, end, attendees, meetLink, location, organizer, optional flag. ' +
+      'Output: JSON. Errors: validation_error, gcal_not_connected, upstream_gcal.',
     input_schema: {
       type: 'object',
       properties: {
@@ -1437,6 +1442,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'web_search',
     description:
+      'PICK THIS for ONE real web query needing live results (news, recent events, company pages). For Wikipedia-style fact lookups ("when did X launch?") use the faster web_search_instant. For multi-angle research (5+ parallel queries on one target) use web_search_unlimited. ' +
       'Web search via Serper/Brave/DuckDuckGo with automatic provider fallback. Returns summaries — not full pages. ' +
       'Output: "Web search results for X:" followed by numbered hits with title, snippet, URL. ' +
       'Errors (success:false): web_search_unavailable (all providers down).',
@@ -1794,7 +1800,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
 // 9000-line file. Re-export so other callers (loop, autonomy, etc) that
 // historically imported from './tools' still resolve.
 export { TOOL_INTEGRATION_MAP as _TOOL_INTEGRATION_MAP } from './tool-integration-map';
-import { TOOL_INTEGRATION_MAP } from './tool-integration-map';
+import { TOOL_INTEGRATION_MAP, toolMatchesAnyVA, type ArcusVA } from './tool-integration-map';
 export { TOOL_INTEGRATION_MAP };
 
 // Legacy inline map kept temporarily for diff readability — UNUSED.
@@ -1912,16 +1918,44 @@ const _REMOVED_INLINE_INTEGRATION_MAP_DO_NOT_USE: Record<string, string | null> 
  * notion_calendar is treated as equivalent to notion — both share the
  * same Notion OAuth token and the same API tools.
  */
-export function getAvailableTools(connectedIntegrations: string[], isBackgroundAgent: boolean = false): ToolSchema[] {
+export function getAvailableTools(
+  connectedIntegrations: string[],
+  isBackgroundAgent: boolean = false,
+  /**
+   * PART 39b — optional VA filter. When the loop's five-VA dispatcher
+   * fires for a turn, it knows which subset of {inbox, calendar, crm,
+   * comms, research} the request actually touches. Passing that list
+   * here narrows the tool surface to only those VAs' tools (plus the
+   * always-included utility tools — open_canvas, ask_user,
+   * request_confirmation, orchestration helpers, etc.).
+   *
+   * Why: free/small LLMs pick the wrong tool less often when the choice
+   * set is smaller. Passing [] or undefined disables the filter (every
+   * connected tool included) — that's the back-compat path used for
+   * subsequent turns when the LLM might need to pivot to another VA.
+   */
+  relevantVAs?: ArcusVA[],
+): ToolSchema[] {
   const connected = new Set(connectedIntegrations);
   // If either notion or notion_calendar is connected, all Notion tools are available.
   const hasNotion = connected.has('notion') || connected.has('notion_calendar');
   return TOOL_SCHEMAS.filter(schema => {
     if (isBackgroundAgent && schema.name === 'request_confirmation') return false;
+
+    // Integration gate — same as before
     const required = TOOL_INTEGRATION_MAP[schema.name];
-    if (required === null) return true;
-    if (required === 'notion') return hasNotion;
-    return connected.has(required);
+    if (required !== null) {
+      if (required === 'notion') {
+        if (!hasNotion) return false;
+      } else if (!connected.has(required)) {
+        return false;
+      }
+    }
+
+    // VA gate — only when the caller asked for filtering
+    if (relevantVAs?.length && !toolMatchesAnyVA(schema.name, relevantVAs)) return false;
+
+    return true;
   });
 }
 
