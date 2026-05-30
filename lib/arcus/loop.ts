@@ -593,13 +593,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     `Rule: Only ask a clarifying question if (a) the answer is genuinely unknown from the request and context, AND (b) the answer would significantly change the structure of the plan. ` +
                     `Do NOT ask about: which apps to use (you can see what is connected), the user's name, timezone, or anything inferable from the request. ` +
                     `Do NOT ask more than 2 questions. ` +
-                    `If the request is specific enough to plan immediately, respond with ONLY the word "proceed" — nothing else.`,
+                    `If the request is specific enough to plan immediately, respond with ONLY the word "proceed" — nothing else.\n\n` +
+                    `IF you call ask_user: ALSO output ONE short sentence of text BEFORE the tool call. The sentence sets up the questions ("Before I draft this plan, I need to nail down a couple of things:" / "Quick — to make this plan useful, two things to confirm:"). Do NOT explain WHY you need the answers — the questions speak for themselves. Do NOT list the questions in the text; they render as a separate card.`,
                 },
                 ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
                 { role: 'user', content: userMessage },
               ],
               [ASK_USER_SCHEMA],
-              { maxTokens: 300, temperature: 0.1 },
+              { maxTokens: 350, temperature: 0.1 },
             );
 
             const clarifyToolCalls = getToolCalls(clarifyRes.content);
@@ -607,6 +608,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             if (askCall) {
               const questions = (askCall.input?.questions ?? []).filter((q: any) => q?.text?.trim());
               if (questions.length > 0) {
+                // Plan-mode UX fix — emit the preamble text the LLM produced
+                // alongside its ask_user tool call BEFORE the question event,
+                // so the user sees a normal chat bubble setting up the
+                // questions instead of an empty reply followed by a card.
+                // Falls back to a static preamble if the model produced none
+                // (older models sometimes emit the tool_use with no text).
+                const preambleRaw = sanitizeModelText(getRawText(clarifyRes.content) || '').trim();
+                const preamble = preambleRaw && preambleRaw.length >= 10 && preambleRaw.length <= 400
+                  ? preambleRaw
+                  : 'Before I draft this plan, I need to nail down a couple of things:';
+                emit('message', { content: preamble });
                 emit('question', { questions, runId });
                 closeStream(0);
                 return;
@@ -1005,6 +1017,23 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           const lastMsg = messages[messages.length - 1] as any;
           if (typeof lastMsg.content === 'string') {
             lastMsg.content = `${lastMsg.content}\n\n[AGENT PLAN APPROVED] The user has approved the agent plan. Call create_scheduled_agent NOW with the parameters from context AND include "_planApproved: true" in the input parameters. Do not show another plan preview.`;
+          }
+        }
+
+        // Plan-mode UX fix — when the user message is a Q&A reply to the
+        // clarify pass's ask_user, tell the LLM explicitly that the answers
+        // are in and it should draft the full plan now. Without this nudge
+        // the LLM sometimes treats the Q:/A: lines as conversational and
+        // produces a short reply instead of the structured markdown plan.
+        if (isPlanMode && /Q:[\s\S]*\nA:/.test(userMessage)) {
+          const lastMsg = messages[messages.length - 1] as any;
+          const hint = `\n\n[CLARIFYING ANSWERS RECEIVED] The user has answered your clarifying questions above. Draft the full structured markdown plan NOW per the plan-mode rules in the system prompt (## Objective / ## Steps (numbered) / ## Expected Output / ## Time estimate). Start the response immediately with "# <Plan Title>" — no preamble, no conversational text before the H1.`;
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content = `${lastMsg.content}${hint}`;
+          } else if (Array.isArray(lastMsg.content)) {
+            // Multi-block content (text + images) — find/append the text block
+            const textBlock = lastMsg.content.find((b: any) => b?.type === 'text');
+            if (textBlock) textBlock.text = `${textBlock.text}${hint}`;
           }
         }
 
