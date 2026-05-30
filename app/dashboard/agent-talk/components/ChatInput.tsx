@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
 import { ChatInputProps, Email } from '../types/chat';
+import { SlashCommandMenu } from './SlashCommandMenu';
+import { findSlashCommand, filterSlashCommands } from '@/lib/arcus/skills';
 import { IntegrationsModal } from '@/components/ui/integrations-modal';
 import { EmailSelectionModal } from '@/components/ui/email-selection-modal';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
@@ -198,8 +200,14 @@ class MediaRecordingManager {
   }
 }
 
-export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateChange, onEmailModalStateChange, selectedEmails = [], onEmailSelect, onEmailRemove }: ChatInputProps) {
+export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateChange, onEmailModalStateChange, selectedEmails = [], onEmailSelect, onEmailRemove, onSlashClientCommand }: ChatInputProps) {
   const [message, setMessage] = useState('');
+  // PART 46 — slash-command menu state. Menu is "open" whenever the input
+  // text starts with "/" and the user hasn't dismissed it via Esc.
+  // `slashFocusedIndex` tracks the currently keyboard-focused command in the
+  // filtered list so ↑/↓/Tab/Enter can act on it.
+  const [slashDismissed, setSlashDismissed] = useState(false);
+  const [slashFocusedIndex, setSlashFocusedIndex] = useState(0);
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [isListening, setIsListening] = useState(false);
   const [isTranscribing, setIsTranscribing] = useState(false);
@@ -218,20 +226,34 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
   const [mediaRecorderState, setMediaRecorderState] = useState<RecordingState>('idle');
 
   const handleSubmit = () => {
-    console.log('handleSubmit called:', {
-      hasMessage: !!message.trim(),
-      selectedEmailsCount: selectedEmails.length,
-      disabled,
-      recordingState,
-      isListening
-    });
-
     if ((message.trim() || selectedEmails.length > 0) && !disabled) {
-      console.log('Submitting message:', message.trim());
+      const trimmed = message.trim();
+
+      // PART 46 — client-kind slash commands never hit the network. If the
+      // first token matches a registered command and that command's kind is
+      // 'client', short-circuit to the local handler the parent provided.
+      // Server-kind commands fall through to onSendMessage and the chat
+      // route expands them server-side (see lib/arcus/skills.ts).
+      if (trimmed.startsWith('/')) {
+        const firstWhitespace = trimmed.search(/\s/);
+        const cmdToken = firstWhitespace === -1 ? trimmed : trimmed.slice(0, firstWhitespace);
+        const cmd = findSlashCommand(cmdToken);
+        if (cmd && cmd.kind === 'client' && cmd.clientHandler) {
+          onSlashClientCommand?.(cmd.clientHandler);
+          setMessage('');
+          setSlashDismissed(false);
+          setSlashFocusedIndex(0);
+          if (textareaRef.current) textareaRef.current.style.height = 'auto';
+          return;
+        }
+      }
+
       const emailTexts = selectedEmails.map(e => `[Email: ${e.subject} from ${e.from}]`).join(' ');
-      const fullMessage = `${emailTexts} ${message.trim()}`.trim();
+      const fullMessage = `${emailTexts} ${trimmed}`.trim();
       onSendMessage(fullMessage);
       setMessage('');
+      setSlashDismissed(false);
+      setSlashFocusedIndex(0);
       if (onEmailSelect) {
         onEmailSelect([]);
       }
@@ -240,14 +262,6 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
-    } else {
-      console.log('Submit blocked:', {
-        hasMessage: !!message.trim(),
-        selectedEmailsCount: selectedEmails.length,
-        disabled,
-        recordingState,
-        isListening
-      });
     }
   };
 
@@ -257,13 +271,38 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
     }
   };
 
+  // PART 46 — derived state for the slash menu. Open whenever the input
+  // text starts with "/" AND the user hasn't pressed Esc to dismiss. Filter
+  // is everything after the leading "/" up to the first whitespace.
+  const slashOpen = !slashDismissed && message.startsWith('/') && !message.includes(' ');
+  const slashFilter = slashOpen ? message.slice(1) : '';
+  const slashFiltered = slashOpen ? filterSlashCommands(slashFilter) : [];
+
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    console.log('handleKeyDown:', {
-      key: e.key,
-      shiftKey: e.shiftKey,
-      hasMessage: !!message.trim(),
-      disabled
-    });
+    // PART 46 — menu keyboard handling takes priority over text editing.
+    if (slashOpen && slashFiltered.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSlashFocusedIndex(i => (i + 1) % slashFiltered.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSlashFocusedIndex(i => (i - 1 + slashFiltered.length) % slashFiltered.length);
+        return;
+      }
+      if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+        e.preventDefault();
+        const picked = slashFiltered[Math.max(0, Math.min(slashFocusedIndex, slashFiltered.length - 1))];
+        if (picked) selectSlashCommand(picked.name);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setSlashDismissed(true);
+        return;
+      }
+    }
 
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -271,14 +310,39 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    console.log('handleInputChange:', {
-      newValue: e.target.value,
-      length: e.target.value.length,
-      previousMessage: message
-    });
+  // PART 46 — fill the input with the picked command name + trailing space,
+  // ready for the user to add args (v2) or hit Enter to fire. Re-focus the
+  // textarea so they can keep typing without grabbing the mouse.
+  const selectSlashCommand = (cmdName: string) => {
+    setMessage(`/${cmdName} `);
+    setSlashDismissed(false);
+    setSlashFocusedIndex(0);
+    setTimeout(() => {
+      textareaRef.current?.focus();
+      // Push cursor to the end.
+      const el = textareaRef.current;
+      if (el) {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    }, 0);
+  };
 
-    setMessage(e.target.value);
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const next = e.target.value;
+    setMessage(next);
+
+    // PART 46 — reset menu state when the user clears the input or stops
+    // typing a slash command. Re-arm dismissal so a fresh "/" reopens the
+    // menu after Esc.
+    if (!next.startsWith('/')) {
+      setSlashDismissed(false);
+      setSlashFocusedIndex(0);
+    } else {
+      // Keep focused index in range as the filter narrows.
+      const matches = filterSlashCommands(next.slice(1)).length;
+      if (matches > 0 && slashFocusedIndex >= matches) setSlashFocusedIndex(0);
+    }
 
     // Auto-resize textarea
     if (textareaRef.current) {
@@ -887,6 +951,17 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
   return (
     <div className="max-w-3xl mx-auto w-full">
       <div className="relative group transition-all duration-700">
+        {/* PART 46 — slash-command autocomplete. Mounted as a sibling to the
+            input bar so it floats ABOVE via absolute positioning (bottom-full)
+            inside this relative wrapper. */}
+        <SlashCommandMenu
+          isOpen={slashOpen}
+          filter={slashFilter}
+          focusedIndex={slashFocusedIndex}
+          onFocusIndex={setSlashFocusedIndex}
+          onSelect={(cmd) => selectSlashCommand(cmd.name)}
+        />
+
         <div className="relative flex flex-col bg-[#0b0b0c] border border-white/[0.08] hover:border-white/[0.14] rounded-[24px] shadow-2xl px-6 py-3.5 transition-all duration-500 focus-within:bg-[#060607] focus-within:border-white/[0.18]">
 
           {/* Recording Status Indicator */}

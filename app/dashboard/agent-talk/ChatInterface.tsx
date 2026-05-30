@@ -7,6 +7,8 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
+// PART 46 — slash-command registry (for /help generation + handler typing).
+import { SLASH_COMMANDS } from '@/lib/arcus/skills';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { ConnectorRequiredPanel, type ConnectorRequiredEntry } from './components/ThinkingLayerV2';
 import { AskUserCard, type AskQuestion } from './components/AskUserCard';
@@ -22,7 +24,7 @@ import { ScheduledAgentCard, type ScheduledAgentData } from './components/Schedu
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
 import { ConfirmationCard, type ConfirmationData } from './components/ConfirmationCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
-import { PlanPreviewCard, type PlanPreviewData, type PlanPreviewStep } from './components/PlanPreviewCard';
+import { PlanPreviewCard, type PlanPreviewData } from './components/PlanPreviewCard';
 import { SourcesPanel, type SourceItem } from './components/SourcesPanel';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
@@ -840,21 +842,6 @@ interface AgentMessage {
       completed: string[];
       skipped: string[];
       reason: string;
-    };
-    /** PART 10 — auto-detected plan preview for complex/irreversible tasks */
-    planPreview?: {
-      intent: string;
-      steps: PlanPreviewStep[];
-      missingIntegrations: string[];
-      estimatedCalls: { min: number; max: number };
-      specificDescription: string;
-    };
-    /** PART 10 Fix 5 — a plan step failed during approved-plan execution */
-    planStepFailed?: {
-      failedStep: string;
-      failedTool: string;
-      reason: string;
-      remainingSteps: string[];
     };
     /** PART 10 Fix 7 — agent plan preview before creating a scheduled agent */
     agentPlanPreview?: {
@@ -3431,56 +3418,6 @@ export default function ChatInterface({
               break;
             }
 
-            case 'plan_preview': {
-              // PART 10 — auto-detected plan preview for complex/irreversible tasks.
-              // Shown before execution so the user can approve, edit, or cancel.
-              if (data.steps?.length) {
-                hadPlanEvent = true;
-                setMessages(msgs => msgs.map(m => {
-                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return {
-                    ...m,
-                    content: { text: '', list: [], footer: '' },
-                    meta: {
-                      ...(m.meta || {}),
-                      isStreaming: false,
-                      planPreview: {
-                        intent: data.intent || '',
-                        steps: data.steps || [],
-                        missingIntegrations: data.missingIntegrations || [],
-                        estimatedCalls: data.estimatedCalls || { min: 1, max: 5 },
-                        specificDescription: data.specificDescription || '',
-                      },
-                    },
-                  };
-                }));
-              }
-              break;
-            }
-
-            case 'plan_step_failed': {
-              // PART 10 Fix 5 — a plan step failed mid-execution.
-              // Show a card asking the user to skip and continue, or stop.
-              if (data.failedTool) {
-                setMessages(msgs => msgs.map(m => {
-                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                  return {
-                    ...m,
-                    meta: {
-                      ...(m.meta || {}),
-                      planStepFailed: {
-                        failedStep: data.failedStep || data.failedTool,
-                        failedTool: data.failedTool,
-                        reason: data.reason || '',
-                        remainingSteps: data.remainingSteps || [],
-                      },
-                    },
-                  };
-                }));
-              }
-              break;
-            }
-
             case 'partial_completion': {
               // PART 9 — budget ran out before all plan steps could run.
               // Different from partial_failure (which is tool errors) — this is
@@ -3636,7 +3573,7 @@ export default function ChatInterface({
         const finalPersistedText = (hadQuestionEvent || hadPlanEvent) ? '' : (finalProcessedText || finalContent || '').trim();
         // Capture the in-memory message's live meta so EVERY card type the SSE
         // handlers set on this message (agentSpecConfirm, agentPlanPreview,
-        // confirmationData, connectorRequired, planStepFailed, actionResults,
+        // confirmationData, connectorRequired, actionResults,
         // etc.) survives the localStorage round-trip. The old code rebuilt
         // meta from a hand-rolled allow-list of closure variables, dropping
         // any card type that wasn't explicitly tracked there.
@@ -4219,6 +4156,62 @@ export default function ChatInterface({
 
   const handleToggleMemory = (enabled: boolean) => {
     setMemoryEnabled(enabled);
+  };
+
+  // PART 46 — slash-command client handlers. Triggered when the user submits
+  // a /<name> whose registry entry has kind:'client'. Each branch maps to an
+  // existing local action — opening a modal, clearing state, or injecting a
+  // help message. Server-kind commands (/brief, /inbox, etc.) NEVER reach
+  // this function — they go through onSend → chat route where the registry's
+  // expandSlashCommand swaps the slash for its canonical prompt template.
+  const handleSlashClientCommand = (
+    handlerName: 'openAgents' | 'openMemorySettings' | 'openSettings' | 'clearConversation' | 'showHelp',
+  ) => {
+    switch (handlerName) {
+      case 'openAgents':
+        setDashboardTab('agents');
+        break;
+      case 'openMemorySettings':
+      case 'openSettings':
+        // The settings modal hosts BOTH tabs (Instructions + Memory) — opening
+        // the modal is what both /memory and /settings do. Picking a tab is
+        // on the user (the modal opens on Instructions by default).
+        setIsPersonalityModalOpen(true);
+        break;
+      case 'clearConversation':
+        setMessages([]);
+        setCurrentConversationId(null);
+        break;
+      case 'showHelp': {
+        // Inject a synthetic assistant message listing every slash command,
+        // grouped by category. Reads directly from the registry so adding a
+        // command = automatically discoverable via /help with zero extra wiring.
+        const grouped = SLASH_COMMANDS.reduce((acc, cmd) => {
+          if (!acc[cmd.category]) acc[cmd.category] = [];
+          acc[cmd.category].push(cmd);
+          return acc;
+        }, {} as Record<string, typeof SLASH_COMMANDS>);
+        const labels: Record<string, string> = { workflows: 'Workflows', profile: 'Profile', navigation: 'Navigation' };
+        const lines: string[] = ['**Slash commands** — type `/` in the prompt box to start.', ''];
+        for (const cat of ['workflows', 'profile', 'navigation'] as const) {
+          if (!grouped[cat]?.length) continue;
+          lines.push(`**${labels[cat]}**`);
+          for (const cmd of grouped[cat]) {
+            lines.push(`- \`/${cmd.name}\` — ${cmd.description}`);
+          }
+          lines.push('');
+        }
+        setMessages(prev => [...prev, {
+          id: Date.now(),
+          role: 'assistant',
+          type: 'agent',
+          content: { text: lines.join('\n'), list: [], footer: '' },
+          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+          meta: {},
+        } as any]);
+        break;
+      }
+    }
   };
 
   // Pull a fresh Gmail access token — only if Gmail is actually connected
@@ -5297,6 +5290,7 @@ export default function ChatInterface({
                               onSearchClick={() => { }}
                               onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                               onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                              onSlashClientCommand={handleSlashClientCommand}
                               selectedEmailsCount={selectedEmails.length}
                               suggestionInput={suggestionInput}
                               showConnectBanner={false}
@@ -5545,84 +5539,6 @@ export default function ChatInterface({
                                           }
                                         }}
                                       />
-                                    )}
-
-                                    {/* PART 10: Plan Preview Card — auto-detected for complex/irreversible tasks */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planPreview && (
-                                      <PlanPreviewCard
-                                        plan={(msg as AgentMessage).meta!.planPreview! as PlanPreviewData}
-                                        onExecute={(steps: PlanPreviewStep[]) => {
-                                          // Mark card as executed
-                                          setMessages(prev => prev.map(m =>
-                                            m.id === msg.id && m.type === 'agent'
-                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planPreview: undefined } }
-                                              : m
-                                          ));
-                                          // Build structured execution message (Fix 4)
-                                          const stepLines = steps.map((s, i) =>
-                                            `${i + 1}. ${s.label} → tools: ${s.tools.join(', ')}`
-                                          ).join('\n');
-                                          const execMessage = `Execute these steps in order:\n${stepLines}\nCall request_confirmation before any write action. Report what you did at the end.`;
-                                          if (currentConversationId) {
-                                            processAIMessage(execMessage, currentConversationId, false, [], { isPlanMode: false });
-                                          }
-                                        }}
-                                        onCancel={() => {
-                                          setMessages(prev => prev.map(m =>
-                                            m.id === msg.id && m.type === 'agent'
-                                              ? { ...m, meta: { ...(m as AgentMessage).meta, planPreview: undefined } }
-                                              : m
-                                          ));
-                                        }}
-                                      />
-                                    )}
-
-                                    {/* PART 10 Fix 5: Plan Step Failed Card */}
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.planStepFailed && (
-                                      <div className="mt-3 w-full rounded-[16px] border border-amber-500/20 bg-amber-500/[0.05] overflow-hidden">
-                                        <div className="px-4 py-3">
-                                          <p className="text-[13px] font-bold text-amber-400 mb-0.5">
-                                            Step failed: {(msg as AgentMessage).meta!.planStepFailed!.failedStep}
-                                          </p>
-                                          <p className="text-[12px] text-white/50 mb-3">
-                                            {(msg as AgentMessage).meta!.planStepFailed!.reason}
-                                          </p>
-                                          {(msg as AgentMessage).meta!.planStepFailed!.remainingSteps.length > 0 && (
-                                            <p className="text-[11px] text-white/35 mb-3">
-                                              Remaining: {(msg as AgentMessage).meta!.planStepFailed!.remainingSteps.join(', ')}
-                                            </p>
-                                          )}
-                                          <div className="flex items-center gap-2">
-                                            <button
-                                              onClick={() => {
-                                                setMessages(prev => prev.map(m =>
-                                                  m.id === msg.id && m.type === 'agent'
-                                                    ? { ...m, meta: { ...(m as AgentMessage).meta, planStepFailed: undefined } }
-                                                    : m
-                                                ));
-                                                if (currentConversationId) {
-                                                  processAIMessage('Skip the failed step and continue with the remaining plan steps.', currentConversationId, false, [], { isPlanMode: false });
-                                                }
-                                              }}
-                                              className="px-3 py-1.5 rounded-lg text-[12px] font-medium bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition-colors"
-                                            >
-                                              Skip &amp; continue
-                                            </button>
-                                            <button
-                                              onClick={() => {
-                                                setMessages(prev => prev.map(m =>
-                                                  m.id === msg.id && m.type === 'agent'
-                                                    ? { ...m, meta: { ...(m as AgentMessage).meta, planStepFailed: undefined } }
-                                                    : m
-                                                ));
-                                              }}
-                                              className="px-3 py-1.5 rounded-lg text-[12px] font-medium text-white/30 hover:text-white/60 transition-colors"
-                                            >
-                                              Stop
-                                            </button>
-                                          </div>
-                                        </div>
-                                      </div>
                                     )}
 
                                     {/* Phase 2: Canvas Expansion Prompt */}
@@ -6247,7 +6163,6 @@ export default function ChatInterface({
                                         !!m.meta?.agentSpecConfirm ||
                                         !!m.meta?.agentPlanPreview ||
                                         !!m.meta?.confirmationData ||
-                                        !!m.meta?.planStepFailed ||
                                         !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
                                         !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
                                         // Pending follow-up question card attached to THIS msg
@@ -6293,7 +6208,6 @@ export default function ChatInterface({
                                       !!m.meta?.agentSpecConfirm ||
                                       !!m.meta?.agentPlanPreview ||
                                       !!m.meta?.confirmationData ||
-                                      !!m.meta?.planStepFailed ||
                                       !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
                                       !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
                                       (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
@@ -6310,7 +6224,6 @@ export default function ChatInterface({
                                         !!m.meta?.agentSpecConfirm ||
                                         !!m.meta?.agentPlanPreview ||
                                         !!m.meta?.confirmationData ||
-                                        !!m.meta?.planStepFailed ||
                                         !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
                                         !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
                                         (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
@@ -6406,6 +6319,7 @@ export default function ChatInterface({
                           onSearchClick={() => { }}
                           onAttachEmailClick={() => setIsEmailSelectionModalOpen(true)}
                           onPersonalityClick={() => setIsPersonalityModalOpen(true)}
+                          onSlashClientCommand={handleSlashClientCommand}
                           selectedEmailsCount={selectedEmails.length}
                           suggestionInput={suggestionInput}
                           onConnectClick={() => setIsIntegrationsModalOpen(true)}

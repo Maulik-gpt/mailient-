@@ -29,6 +29,17 @@ export interface ChatInputProps {
   selectedEmails?: Email[];
   onEmailSelect?: (emails: Email[]) => void;
   onEmailRemove?: (id: string) => void;
+  /**
+   * PART 46 — fired when the user submits a slash command whose `kind` is
+   * 'client'. The handler name comes from the registry in lib/arcus/skills.ts
+   * (e.g. 'openAgents', 'showHelp'). ChatInterface wires it to the real
+   * client-side action — opening a modal, clearing state, etc. Server-kind
+   * commands ('/brief', '/inbox', etc.) bypass this callback and go through
+   * onSendMessage normally so the route can expand them server-side.
+   */
+  onSlashClientCommand?: (
+    handlerName: 'openAgents' | 'openMemorySettings' | 'openSettings' | 'clearConversation' | 'showHelp',
+  ) => void;
 }
 
 export interface MessageListProps {

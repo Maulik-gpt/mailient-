@@ -6,6 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ConnectorsModal } from './connectors-modal';
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from './dropdown-menu';
 import { toast } from 'sonner';
+// PART 46 — slash commands.
+import { SlashCommandMenu } from '@/app/dashboard/agent-talk/components/SlashCommandMenu';
+import { findSlashCommand, filterSlashCommands } from '@/lib/arcus/skills';
 
 // Utility function for className merging
 const cn = (...classes: (string | undefined | null | false)[]) => classes.filter(Boolean).join(" ");
@@ -391,11 +394,17 @@ const PromptInputTextarea: React.FC<PromptInputTextareaProps & React.ComponentPr
   }, [value, maxHeight, disableAutosize]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // PART 46 — give the parent's onKeyDown first crack at the event so
+    // slash-menu navigation (↑/↓/Tab/Enter/Esc) can preventDefault to stop
+    // the built-in Enter→submit. Without this flip, hitting Enter while the
+    // slash autocomplete is open would always submit instead of selecting
+    // the focused command.
+    onKeyDown?.(e);
+    if (e.defaultPrevented) return;
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       onSubmit?.();
     }
-    onKeyDown?.(e);
   };
 
   return (
@@ -483,6 +492,17 @@ interface PromptInputBoxProps {
   currentPlan?: 'free' | 'starter' | 'pro' | 'none';
   onUpgradeClick?: () => void;
   hideShadow?: boolean;
+  /**
+   * PART 46 — fired when the user submits a slash command whose `kind` is
+   * 'client'. The handler name comes from the registry in lib/arcus/skills.ts
+   * (e.g. 'openAgents', 'showHelp'). ChatInterface wires it to the real
+   * client-side action — opening a modal, clearing state, etc. Server-kind
+   * commands (/brief, /inbox, etc.) bypass this callback and go through
+   * onSend normally so the chat route can expand them server-side.
+   */
+  onSlashClientCommand?: (
+    handlerName: 'openAgents' | 'openMemorySettings' | 'openSettings' | 'clearConversation' | 'showHelp',
+  ) => void;
 }
 
 const MODES = [
@@ -559,6 +579,11 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   const [isModelMenuOpen, setIsModelMenuOpen] = React.useState(false);
   const [isDismissedConnectBanner, setIsDismissedConnectBanner] = React.useState(false);
   const [integrationStatuses, setIntegrationStatuses] = React.useState<Record<string, boolean>>({});
+  // PART 46 — slash-command menu state. Menu opens whenever input starts
+  // with "/" and the user hasn't pressed Esc; closes when the user types a
+  // space (committing to a command) or clears the input.
+  const [slashDismissed, setSlashDismissed] = React.useState(false);
+  const [slashFocusedIndex, setSlashFocusedIndex] = React.useState(0);
 
   React.useEffect(() => {
     const fetchStatus = async () => {
@@ -670,6 +695,25 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
   const handleSubmit = () => {
     if (input.trim() || files.length > 0) {
+      const trimmed = input.trim();
+
+      // PART 46 — client-kind slash commands never hit the network. If the
+      // first token matches a registered command and its kind is 'client',
+      // short-circuit to the local handler the parent provided. Server-kind
+      // commands fall through to onSend; the chat route expands them.
+      if (trimmed.startsWith('/')) {
+        const firstWhitespace = trimmed.search(/\s/);
+        const cmdToken = firstWhitespace === -1 ? trimmed : trimmed.slice(0, firstWhitespace);
+        const cmd = findSlashCommand(cmdToken);
+        if (cmd && cmd.kind === 'client' && cmd.clientHandler) {
+          props.onSlashClientCommand?.(cmd.clientHandler);
+          setInput("");
+          setSlashDismissed(false);
+          setSlashFocusedIndex(0);
+          return;
+        }
+      }
+
       onSend(input, files, {
         isDeepThinking: activeMode === 'plan',
         isCanvas: activeMode === 'agent', // Canvas is Agent-mode only; Plan uses PlanCanvas artifact
@@ -680,8 +724,61 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
       setInput("");
       setFiles([]);
       setFilePreviews({});
+      setSlashDismissed(false);
+      setSlashFocusedIndex(0);
     }
   };
+
+  // PART 46 — derived state for the slash autocomplete menu. Open whenever
+  // the input starts with "/" AND has no whitespace yet (the user is still
+  // picking a command, not typing args) AND the user hasn't dismissed via Esc.
+  const slashOpen = !slashDismissed && input.startsWith('/') && !input.includes(' ');
+  const slashFilter = slashOpen ? input.slice(1) : '';
+  const slashFiltered = React.useMemo(
+    () => (slashOpen ? filterSlashCommands(slashFilter) : []),
+    [slashOpen, slashFilter],
+  );
+
+  const selectSlashCommand = (cmdName: string) => {
+    setInput(`/${cmdName} `);
+    setSlashDismissed(false);
+    setSlashFocusedIndex(0);
+  };
+
+  const handleSlashKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!slashOpen || slashFiltered.length === 0) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSlashFocusedIndex(i => (i + 1) % slashFiltered.length);
+      return;
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSlashFocusedIndex(i => (i - 1 + slashFiltered.length) % slashFiltered.length);
+      return;
+    }
+    if (e.key === 'Tab' || (e.key === 'Enter' && !e.shiftKey)) {
+      e.preventDefault();
+      const picked = slashFiltered[Math.max(0, Math.min(slashFocusedIndex, slashFiltered.length - 1))];
+      if (picked) selectSlashCommand(picked.name);
+      return;
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setSlashDismissed(true);
+    }
+  };
+
+  // Re-arm dismissal when the user clears the "/" — keeps the menu from
+  // staying suppressed across separate slash invocations.
+  React.useEffect(() => {
+    if (!input.startsWith('/')) {
+      if (slashDismissed) setSlashDismissed(false);
+      if (slashFocusedIndex !== 0) setSlashFocusedIndex(0);
+    } else if (slashFiltered.length > 0 && slashFocusedIndex >= slashFiltered.length) {
+      setSlashFocusedIndex(0);
+    }
+  }, [input, slashDismissed, slashFocusedIndex, slashFiltered.length]);
 
   const handleStartRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
@@ -732,6 +829,18 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
   return (
     <>
+      {/* PART 46 — wrap the input in a relative container so the
+          slash-command autocomplete can position itself ABOVE via
+          absolute bottom-full without disrupting layout below. */}
+      <div className="relative w-full">
+        <SlashCommandMenu
+          isOpen={slashOpen}
+          filter={slashFilter}
+          focusedIndex={slashFocusedIndex}
+          onFocusIndex={setSlashFocusedIndex}
+          onSelect={(cmd) => selectSlashCommand(cmd.name)}
+        />
+
       <PromptInput
         value={input}
         onValueChange={setInput}
@@ -834,6 +943,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                   : placeholder
             }
             className="text-base"
+            onKeyDown={handleSlashKeyDown}
           />
         </div>
 
@@ -1065,7 +1175,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
 
 
       </PromptInput>
-
+      </div>
 
       <ImageViewDialog imageUrl={selectedImage} onClose={() => setSelectedImage(null)} />
     </>

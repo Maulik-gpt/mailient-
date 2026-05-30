@@ -18,6 +18,7 @@ const auth: any = nextAuth;
 import { runAgentLoop } from '../../../../lib/arcus/loop';
 import { buildSystemPrompt, getConnectedIntegrations } from '../../../../lib/arcus/system-prompt';
 import { shouldDispatchParallelVAs } from '../../../../lib/arcus/inbox-pipeline';
+import { expandSlashCommand } from '../../../../lib/arcus/skills';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
 import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
@@ -277,13 +278,27 @@ export async function POST(request: NextRequest) {
   // made the LLM treat behavioral rules ("never schedule before 9am") as
   // writing-style hints. They're now two separate prompt blocks with
   // distinct semantics.
+  //
+  // PART 46 — server-side slash-command expansion. If the user's message
+  // starts with /<known-prompt-cmd>, replace it with that command's canonical
+  // template BEFORE the VA dispatcher classifies it and BEFORE the system
+  // prompt is built. The chat history (stored client-side) still carries the
+  // literal "/brief" the user typed, so the conversation log stays clean;
+  // only the LLM sees the expansion. Client-kind commands (/agents, /clear,
+  // /help) are intercepted in the browser and never reach this route — if
+  // one slips through, expandSlashCommand passes it through unchanged.
+  const { expanded: slashExpanded, matchedCommand: slashCmd } = expandSlashCommand(message);
+  if (slashCmd) {
+    log('info', 'slash_command_expanded', { name: slashCmd.name, originalLen: message.length, expandedLen: slashExpanded.length });
+  }
+
   // PART 38b — narrow the prompt's Tool inventory section in lockstep with
   // PART 39b's getAvailableTools VA filter. Same classifier (PART 37) drives
   // both: ≥2 VAs relevant → both prompt and tool surface narrow to those VAs.
   // Plan mode and zero/one-VA turns get the full inventory (no filter).
   const vaDispatch = isPlanMode
     ? { fire: false, vas: [], reason: 'none' as const }
-    : shouldDispatchParallelVAs(message);
+    : shouldDispatchParallelVAs(slashExpanded);
   const promptVAFilter = vaDispatch.fire && vaDispatch.vas.length >= 2 ? vaDispatch.vas : undefined;
 
   const systemPrompt = isPlanMode
@@ -401,7 +416,9 @@ export async function POST(request: NextRequest) {
   // fenced [ATTACHMENT — filename] blocks so the LLM can actually read them.
   // PDFs, docx, etc. are binary — left as-is for the loop to mention as
   // unreadable. Truncated to 50KB each to keep prompt size sane.
-  const messageWithAttachmentContents = await embedTextAttachments(message, attachments);
+  // (slashExpanded was already produced higher up so the VA dispatcher and
+  // system-prompt build operate on the expanded text.)
+  const messageWithAttachmentContents = await embedTextAttachments(slashExpanded, attachments);
 
   log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length, extractedTextBytes: messageWithAttachmentContents.length - message.length });
 
