@@ -78,8 +78,8 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
         'mt-3 w-full rounded-[14px] border px-4 py-2.5 flex items-center gap-2.5 text-[12px] font-medium',
         status === 'confirmed'
           ? isDark
-            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300'
-            : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            ? 'bg-white/[0.06] border-white/[0.12] text-white/80'
+            : 'bg-neutral-100 border-neutral-300 text-neutral-800'
           : isDark
             ? 'bg-white/[0.04] border-white/[0.08] text-white/35'
             : 'bg-neutral-50 border-neutral-200 text-neutral-400',
@@ -111,7 +111,7 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
         'flex items-center gap-2.5 px-4 py-3 border-b',
         isDark ? 'border-white/[0.07]' : 'border-black/[0.06]',
       )}>
-        <AlertCircle className="w-4 h-4 text-amber-400/80 flex-shrink-0" />
+        <AlertCircle className={cn('w-4 h-4 flex-shrink-0', isDark ? 'text-white/45' : 'text-neutral-500')} />
         <span className={cn(
           'text-[11px] font-bold uppercase tracking-widest',
           isDark ? 'text-white/50' : 'text-neutral-500',
@@ -165,8 +165,10 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
           onClick={() => { if (!loading) { setLoading(true); onAction('confirm'); } }}
           disabled={loading}
           className={cn(
-            'flex-1 py-2 rounded-xl text-[13px] font-bold transition-all',
-            'bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_12px_rgba(52,211,153,0.2)] disabled:opacity-60 disabled:cursor-not-allowed',
+            'flex-1 py-2 rounded-xl text-[13px] font-bold transition-all disabled:opacity-60 disabled:cursor-not-allowed',
+            isDark
+              ? 'bg-white text-black hover:bg-zinc-200'
+              : 'bg-black text-white hover:bg-neutral-800',
           )}
         >
           {loading ? 'Confirming…' : 'Confirm'}

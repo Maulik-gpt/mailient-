@@ -300,7 +300,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
         'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-emerald-500' : 'bg-neutral-300 dark:bg-neutral-800',
+        checked ? 'bg-black dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-800',
       )}
     >
       <span className={cn(
@@ -997,9 +997,9 @@ function formatDuration(ms: number | null): string | null {
 
 function statusPill(status: AgentRun['status']) {
   const map: Record<AgentRun['status'], { label: string; cls: string; icon: React.ReactNode }> = {
-    success:         { label: 'Success',  cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30',  icon: <Check className="w-3 h-3" /> },
-    error:           { label: 'Error',    cls: 'bg-red-500/10 text-red-400 border-red-500/30',              icon: <AlertCircle className="w-3 h-3" /> },
-    transient_error: { label: 'Retrying', cls: 'bg-amber-500/10 text-amber-400 border-amber-500/30',        icon: <Loader2 className="w-3 h-3 animate-spin" /> },
+    success:         { label: 'Success',  cls: 'bg-arcus-raised text-arcus-fg border-arcus-divider',           icon: <Check className="w-3 h-3" /> },
+    error:           { label: 'Error',    cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <AlertCircle className="w-3 h-3" /> },
+    transient_error: { label: 'Retrying', cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
     running:         { label: 'Running',  cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
   };
   const meta = map[status] ?? map.running;
@@ -1020,7 +1020,7 @@ function deliveryIcon(channel: 'email' | 'slack', state: AgentRun['email_deliver
       title={`${channel} delivery: ${state}`}
       className={cn(
         'inline-flex items-center justify-center w-5 h-5 rounded',
-        ok ? 'text-emerald-400' : 'text-red-400',
+        ok ? 'text-arcus-fg' : 'text-arcus-fg-muted',
       )}
     >
       <Icon className="w-3 h-3" />

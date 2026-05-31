@@ -1011,7 +1011,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
               <button
                 type="button"
                 onClick={() => setIsModeMenuOpen(!isModeMenuOpen)}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 transition-all text-[#F97316] font-bold"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-black/[0.05] dark:bg-white/5 border border-black/5 dark:border-white/10 hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20 transition-all text-black dark:text-white font-bold"
               >
                 {React.createElement(MODES.find(m => m.id === activeMode)?.icon || Workflow, { className: "w-3.5 h-3.5" })}
                 <span className="text-[12px] tracking-tight capitalize">{activeMode}</span>
@@ -1041,10 +1041,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                             )}
                           >
                             <div className="flex items-center gap-3">
-                              <mode.icon className={cn("w-4 h-4", activeMode === mode.id ? "text-[#F97316]" : "text-inherit")} />
+                              <mode.icon className={cn("w-4 h-4", activeMode === mode.id ? "text-black dark:text-white" : "text-inherit")} />
                               <span className="text-[13px] font-bold">{mode.label}</span>
                             </div>
-                            {activeMode === mode.id && <Check className="w-3.5 h-3.5 text-[#F97316]" />}
+                            {activeMode === mode.id && <Check className="w-3.5 h-3.5 text-black dark:text-white" />}
                           </button>
 
                           {/* Tooltip / Description for each mode on hover */}
@@ -1074,7 +1074,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 className={cn(
                   "flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border transition-all font-bold",
                   actionMode === 'auto'
-                    ? "bg-amber-500/15 border-amber-500/30 text-amber-300 hover:bg-amber-500/20"
+                    ? "bg-black dark:bg-white border-transparent text-white dark:text-black hover:opacity-90"
                     : "bg-black/[0.05] dark:bg-white/5 border-black/5 dark:border-white/10 text-arcus-fg-secondary hover:bg-black/10 dark:hover:bg-white/10 hover:border-black/10 dark:hover:border-white/20",
                 )}
               >
@@ -1095,7 +1095,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                     >
                       {ACTION_MODES.map((mode) => {
                         const isActive = actionMode === mode.id;
-                        const accent = mode.id === 'auto' ? 'text-amber-400' : 'text-blue-400';
+                        const accent = 'text-black dark:text-white';
                         return (
                           <button
                             key={mode.id}
