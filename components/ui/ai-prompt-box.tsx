@@ -981,10 +981,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           <PromptInputTextarea
             placeholder={
               activeMode === 'plan'
-                ? "Describe the goal for your plan..."
+                ? "Describe the goal for your plan...  ·  type / for commands"
                 : activeMode === 'agent'
-                  ? "Describe a mission for the agent..."
-                  : placeholder
+                  ? "Describe a mission for the agent...  ·  type / for commands"
+                  : `${placeholder}  ·  type / for commands`
             }
             className="text-base"
             onKeyDown={handleSlashKeyDown}

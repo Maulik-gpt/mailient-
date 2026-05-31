@@ -1,56 +1,12 @@
-/**
- * Arcus Slash-Commands Registry — PART 46.
- *
- * Single source of truth for every slash command exposed in the chat input.
- * Each command is one of two kinds:
- *
- *   - kind: 'prompt'  — the slash text is replaced server-side with a
- *                       canonical, well-tuned prompt before the LLM sees it.
- *                       Used for "do real work" commands like /brief, /inbox.
- *   - kind: 'client'  — the slash text never hits the network. The chat input
- *                       calls a local handler instead (open a modal, clear the
- *                       conversation, inject a help message). Used for
- *                       navigation + utility commands.
- *
- * Why a registry rather than scattered if/else logic:
- *   - The autocomplete menu, the server-side expander, and the /help command
- *     all read from the same list. Adding a command = one entry here.
- *   - The categories drive the visual grouping in the dropdown.
- *   - Prompt templates live next to their descriptions so when we tune one
- *     we don't have to chase the rest of the system.
- *
- * v1 ships 11 commands. v2 will likely add arg parsing (e.g. /follow-up
- * @priya) — deferred so this PR stays scoped.
- */
-
 export type SlashCategory = 'workflows' | 'profile' | 'navigation';
 
 export interface SlashCommand {
-  /** Canonical name without the leading slash. Lowercase, kebab-allowed. */
   name: string;
-  /** One-line description shown in the autocomplete menu + /help output. */
   description: string;
-  /** Category for visual grouping in the dropdown. */
   category: SlashCategory;
-  /** Emoji or icon char shown to the left of the name. Keep to 1 glyph. */
   icon: string;
-  /**
-   * 'prompt' commands get expanded server-side; 'client' commands are
-   * handled entirely in the browser via the matching handler callback.
-   */
   kind: 'prompt' | 'client';
-  /**
-   * For kind: 'prompt' — the canonical message text the LLM actually
-   * receives, replacing the literal `/cmd` the user typed. Authored to
-   * work well against the free OpenRouter models we run on (concrete,
-   * names the tools to use, structures the output).
-   */
   template?: string;
-  /**
-   * For kind: 'client' — the name of the handler the chat input should
-   * invoke. The actual callback is wired in ChatInterface.tsx; this is
-   * just the string key so the registry stays plain data.
-   */
   clientHandler?:
     | 'openAgents'
     | 'openMemorySettings'
@@ -59,8 +15,16 @@ export interface SlashCommand {
     | 'showHelp';
 }
 
+const GROUND_RULES = `
+
+GROUND RULES for this command — apply strictly, no exceptions:
+- Fetch before you claim. Every reference to real data (email, calendar, contact, Notion page) comes from a tool call THIS turn. Never invent senders, subjects, dates, names, or counts.
+- Integration awareness. If a tool's underlying integration is not connected, SKIP that step cleanly and report "<X> not connected — skipped" in the section that step belonged to. Never fabricate output from a missing integration.
+- Empty results are OK. If a search returns nothing, say so plainly ("No unread email since yesterday.") — never pad with imagined items.
+- One pass per source. Don't re-search the same source with slight query variations to fill a section that came up empty.
+- Stay on lane. This command names specific work. Do not pivot to other tasks just because you found capacity.`;
+
 export const SLASH_COMMANDS: SlashCommand[] = [
-  // ─── Workflows — five-VA "do real work" prompts ────────────────────────────
   {
     name: 'brief',
     description: 'Morning briefing across Inbox, Calendar, CRM, Comms, and Research.',
@@ -68,11 +32,8 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     icon: '☀️',
     kind: 'prompt',
     template:
-      'Give me a morning briefing. ' +
-      'Pull (in parallel): unread emails from the last 24 hours, my calendar for today and tomorrow, ' +
-      'recent Notion activity, and relevant memory signals for any client or deal mentioned in the inbox. ' +
-      'Synthesize into one cross-VA briefing organized by priority — what needs my attention first, ' +
-      'what I should know about, and what can wait. Output to Canvas if there\'s more than three bullet groups.',
+      'Give me a morning briefing. Run these in parallel: unread emails from the last 24 hours, calendar for today and tomorrow, recent Notion activity, and relevant memory signals for any client or deal mentioned. Synthesize into one cross-VA briefing organized by priority — what needs my attention first, what I should know about, what can wait. Open canvas if there is more than three bullet groups. Skip any source whose integration is not connected.'
+      + GROUND_RULES,
   },
   {
     name: 'inbox',
@@ -81,65 +42,49 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     icon: '📧',
     kind: 'prompt',
     template:
-      'Triage my inbox now. Three passes in parallel: ' +
-      '(1) digest_newsletters to summarize and offer to archive promotional / newsletter mail; ' +
-      '(2) gmail_unlimited_search for client threads needing a response (3+ exchanges in 90 days), ' +
-      'draft replies for each in my voice; ' +
-      '(3) gmail_detect_urgency on the top 20 unread to surface anything truly time-sensitive. ' +
-      'End with a tight list of what needs my decision and what got handled.',
+      'Triage my inbox now. (1) digest_newsletters to summarize promotional / newsletter mail (offer archive, do not auto-archive unless I said clear/clean). (2) For client threads needing a response (3+ exchanges in 90 days, found via gmail_unlimited_search), draft replies in my voice. (3) gmail_detect_urgency on the top 20 unread to surface anything truly time-sensitive. End with a tight list of what needs my decision and what got handled. If Gmail is not connected, say so and stop.'
+      + GROUND_RULES,
   },
   {
     name: 'follow-up',
-    description: 'Find stalled threads where I\'m waiting on a reply. Draft polite nudges.',
+    description: 'Find stalled threads where I am waiting on a reply. Draft polite nudges.',
     category: 'workflows',
     icon: '⏳',
     kind: 'prompt',
     template:
-      'Find threads where I\'m waiting on a reply — sent emails with no response for 3+ days, ' +
-      'prioritized by client status and revenue impact. ' +
-      'For each, draft a short, polite follow-up in my voice that references the prior thread context. ' +
-      'Show the list with one draft per thread; do not send anything.',
+      'Find threads where I am waiting on a reply — sent emails with no response for 3+ days, prioritized by client status and revenue impact. Use get_sent_emails and check_followups. For each, draft a short, polite follow-up in my voice that references the prior thread context. Show the list with one draft per thread; do not send anything. If there are no stalled threads, say so plainly and stop.'
+      + GROUND_RULES,
   },
   {
     name: 'prep',
-    description: 'Meeting prep doc for the next 24 hours — Canvas with one section per meeting.',
+    description: 'Meeting prep doc for the next 24 hours — Canvas, one section per meeting.',
     category: 'workflows',
     icon: '🗓️',
     kind: 'prompt',
     template:
-      'Prepare me for every meeting in the next 24 hours. For each upcoming meeting: ' +
-      'pull recent email threads with the attendees, relevant Notion pages or notes, ' +
-      'any prior meeting notes I have, and a one-line "what they likely want to discuss" based on the latest context. ' +
-      'Produce a meeting prep document in Canvas with one section per meeting, sorted chronologically.',
+      'Prepare me for every meeting in the next 24 hours. Start with calendar_unlimited_scan for the window. For each upcoming meeting: pull recent email threads with the attendees (gmail_unlimited_search), relevant Notion pages (search_notion), past memory (memory_search), and synthesize one "what they likely want to discuss" line based on the latest context. Produce a meeting prep document in Canvas with one section per meeting, sorted chronologically. If there are no upcoming meetings, say so and stop — do not invent meetings.'
+      + GROUND_RULES,
   },
   {
     name: 'weekly',
-    description: 'Weekly executive brief — done / stalled / next-week / revenue signals.',
+    description: 'Weekly executive brief: done / stalled / next week / revenue signals.',
     category: 'workflows',
     icon: '📊',
     kind: 'prompt',
     template:
-      'Generate my weekly executive brief. Cover four sections: ' +
-      '(1) Done this week — key emails sent, meetings held, decisions logged in Notion; ' +
-      '(2) Stalled — outbound conversations waiting on a reply, blocked deals or projects; ' +
-      '(3) Coming next week — calendar overview, expected priorities; ' +
-      '(4) Revenue signals — anything in inbox or Notion that smells like a deal moving forward (or sideways). ' +
-      'Output to Canvas. Be specific — name people, name companies, name numbers when you have them.',
+      'Generate my weekly executive brief. Four sections: (1) Done this week — key emails sent (get_sent_emails over 7 days), meetings held (calendar_unlimited_scan), Notion entries logged. (2) Stalled — outbound waiting on a reply 3+ days, blocked deals. (3) Coming next week — calendar overview, expected priorities. (4) Revenue signals — inbox + Notion items that smell like a deal moving. Output to Canvas. Be specific: name people, companies, numbers when the tools returned them. Empty sections are omitted, not padded.'
+      + GROUND_RULES,
   },
   {
     name: 'vip',
-    description: 'Surface what\'s waiting from high-value contacts. Don\'t act, just surface.',
+    description: 'Surface what is waiting from high-value contacts. Do not act, just surface.',
     category: 'workflows',
     icon: '⭐',
     kind: 'prompt',
     template:
-      'Show me what\'s waiting from high-value contacts — clients, investors, key partners. ' +
-      'Pull recent threads from VIPs (memory + relationship-weighted) that I have not replied to yet, ' +
-      'sorted by urgency. For each: the recipient, the subject, what they\'re asking, and how many days they\'ve been waiting. ' +
-      'Do not draft replies and do not act — this is a surface-only command.',
+      'Show me what is waiting from high-value contacts — clients, investors, key partners. Use memory_relationship_intelligence and gmail_unlimited_search. Pull recent threads from VIPs I have not replied to yet, sorted by urgency. For each: recipient, subject, what they are asking, days waiting. Do not draft replies, do not act — this is surface-only. If nothing is waiting from VIPs, say so plainly and stop.'
+      + GROUND_RULES,
   },
-
-  // ─── Profile — single-tool actions ─────────────────────────────────────────
   {
     name: 'voice',
     description: 'Rebuild my writing voice profile from the last 90 days of sent mail.',
@@ -147,77 +92,21 @@ export const SLASH_COMMANDS: SlashCommand[] = [
     icon: '🎤',
     kind: 'prompt',
     template:
-      'Rebuild my voice profile from my last 90 days of sent mail using voice_profile_generate. ' +
-      'When done, confirm with a one-line summary of the new profile\'s tone, typical greeting, and sign-off pattern.',
+      'Call voice_profile_generate to rebuild my voice profile from the last 90 days of sent mail. When the tool returns, confirm with a one-line summary of the new profile (tone + typical greeting + typical sign-off). If the tool fails or returns insufficient_sent_mail, report exactly that — do not invent a profile summary.'
+      + GROUND_RULES,
   },
-
-  // ─── Navigation — client-only, never touch the network ─────────────────────
-  {
-    name: 'agents',
-    description: 'Open the Agents panel.',
-    category: 'navigation',
-    icon: '🤖',
-    kind: 'client',
-    clientHandler: 'openAgents',
-  },
-  {
-    name: 'memory',
-    description: 'Open Settings → Memory.',
-    category: 'navigation',
-    icon: '🧠',
-    kind: 'client',
-    clientHandler: 'openMemorySettings',
-  },
-  {
-    name: 'settings',
-    description: 'Open Settings → Instructions.',
-    category: 'navigation',
-    icon: '⚙️',
-    kind: 'client',
-    clientHandler: 'openSettings',
-  },
-  {
-    name: 'clear',
-    description: 'Clear the current conversation.',
-    category: 'navigation',
-    icon: '🧹',
-    kind: 'client',
-    clientHandler: 'clearConversation',
-  },
-  {
-    name: 'help',
-    description: 'Show all slash commands.',
-    category: 'navigation',
-    icon: '❓',
-    kind: 'client',
-    clientHandler: 'showHelp',
-  },
+  { name: 'agents',   description: 'Open the Agents panel.',                category: 'navigation', icon: '🤖', kind: 'client', clientHandler: 'openAgents' },
+  { name: 'memory',   description: 'Open Settings → Memory.',               category: 'navigation', icon: '🧠', kind: 'client', clientHandler: 'openMemorySettings' },
+  { name: 'settings', description: 'Open Settings → Instructions.',         category: 'navigation', icon: '⚙️', kind: 'client', clientHandler: 'openSettings' },
+  { name: 'clear',    description: 'Clear the current conversation.',       category: 'navigation', icon: '🧹', kind: 'client', clientHandler: 'clearConversation' },
+  { name: 'help',     description: 'Show all slash commands.',              category: 'navigation', icon: '❓', kind: 'client', clientHandler: 'showHelp' },
 ];
 
-/**
- * Lookup by name (without the leading slash). Returns undefined when the
- * name doesn't match a registered command — the chat input + server expander
- * both treat that as "this isn't a slash command, send the message as-is."
- */
 export function findSlashCommand(name: string): SlashCommand | undefined {
   const normalized = name.trim().toLowerCase().replace(/^\//, '');
   return SLASH_COMMANDS.find(c => c.name === normalized);
 }
 
-/**
- * Server-side expander. Called by the chat route before passing the message
- * to runAgentLoop. If the first token is a known prompt-kind slash command,
- * returns the template; otherwise returns the message unchanged.
- *
- * The user bubble in chat history still shows the original `/brief` text —
- * only the LLM sees the expansion. That keeps the conversation log clean
- * while giving the model the full context it needs to do the work.
- *
- * Client-kind commands should NEVER reach this function — the chat input is
- * responsible for short-circuiting them in the browser. If one slips through
- * (e.g. legacy client, manual API hit), we leave the message untouched so
- * the LLM at least gets a literal "/agents" it can ask the user about.
- */
 export function expandSlashCommand(message: string): {
   expanded: string;
   matchedCommand?: SlashCommand;
@@ -225,32 +114,24 @@ export function expandSlashCommand(message: string): {
   const trimmed = message.trim();
   if (!trimmed.startsWith('/')) return { expanded: message };
 
-  // First token = command name. Anything after = args (v1 ignores args, but
-  // we still strip them off the command lookup so future arg support drops
-  // in without changing the parse).
   const firstWhitespace = trimmed.search(/\s/);
   const cmdToken = firstWhitespace === -1 ? trimmed : trimmed.slice(0, firstWhitespace);
+  const userArgs = firstWhitespace === -1 ? '' : trimmed.slice(firstWhitespace + 1).trim();
   const command = findSlashCommand(cmdToken);
 
   if (!command || command.kind !== 'prompt' || !command.template) {
     return { expanded: message };
   }
 
-  return { expanded: command.template, matchedCommand: command };
+  const expanded = userArgs
+    ? `${command.template}\n\nAdditional context from the user: ${userArgs}`
+    : command.template;
+
+  return { expanded, matchedCommand: command };
 }
 
-/**
- * Filter the registry by user-typed prefix. Used by SlashCommandMenu to
- * power the autocomplete dropdown. Empty prefix returns everything.
- *
- * Match rules:
- *   - case-insensitive
- *   - matches names that START WITH the prefix (not substring) so the menu
- *     stays predictable as the user types
- *   - preserves the order of SLASH_COMMANDS so the visual grouping is stable
- */
 export function filterSlashCommands(prefix: string): SlashCommand[] {
   const p = prefix.trim().toLowerCase().replace(/^\//, '');
   if (!p) return SLASH_COMMANDS;
-  return SLASH_COMMANDS.filter(c => c.name.startsWith(p));
+  return SLASH_COMMANDS.filter(c => c.name.includes(p));
 }
