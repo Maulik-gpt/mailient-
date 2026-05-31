@@ -56,13 +56,15 @@ export async function runAgentAsCommittee(
   const startedAt = Date.now();
   const vas = pickVAs(agent.task_description);
 
-  // Per-VA budgets — divide the total tool budget evenly with a floor of 8
-  // so even the smallest committee member can fetch + draft + report.
-  // Wall clock is SHARED — every VA gets the same deadline so the slowest
-  // bounds the whole run; the orchestrator doesn't wait for stragglers
-  // beyond the original deadline.
-  const perVAMaxCalls = Math.max(8, Math.floor(opts.maxToolCalls / vas.length));
-  const perVADeadline = Math.max(8_000, opts.deadlineMs - 6_000); // reserve 6s for aggregator + delivery
+  // Tool budget is PER-VA, not shared — VAs run in parallel so each
+  // gets its own independent count. Cap at 40 so a single VA can't
+  // monopolize the LLM pool; floor at 25 so every VA has enough room
+  // to fetch + work + compose a report (smaller budgets cause early
+  // exits before any output is emitted). Wall-clock IS shared — every
+  // VA gets the same deadline; aggregator reserves 8s for its synthesis
+  // LLM call + delivery overhead.
+  const perVAMaxCalls = Math.max(25, Math.min(40, opts.maxToolCalls));
+  const perVADeadline = Math.max(15_000, opts.deadlineMs - 8_000);
 
   const assignments: VAAssignment[] = vas.map(va => ({
     va,

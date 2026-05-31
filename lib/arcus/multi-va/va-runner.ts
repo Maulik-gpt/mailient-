@@ -211,8 +211,13 @@ export async function runVA(assignment: VAAssignment): Promise<VARunResult> {
       }
     }
 
-    const body = (canvasMarkdown || finalText || '').trim();
-    const status = !body ? 'empty' : 'success';
+    let body = (canvasMarkdown || finalText || '').trim();
+
+    if (!body && toolCalls > 0) {
+      body = `Ran ${toolCalls} tool ${toolCalls === 1 ? 'call' : 'calls'} but did not compose a summary. Re-run on the next scheduled tick — the work that DID happen is reflected in your Gmail / Calendar / Notion / Slack directly (this VA emitted tools but skipped its report-composition phase).`;
+    }
+
+    const status = !body ? (toolCalls > 0 ? 'success' : 'empty') : 'success';
     return {
       va,
       status,

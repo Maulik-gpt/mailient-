@@ -1044,12 +1044,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           }
         }
 
-        // PART 48 — committee-mode framing. When this loop is one VA of a
-        // parallel committee, prepend a short identity block so the LLM
-        // anchors on its lane and doesn't try to do work that belongs to a
-        // sibling VA. The orchestrator runs other VAs concurrently and
-        // aggregates everyone's output at the end — this VA does NOT need
-        // to summarize cross-VA, just report what it itself accomplished.
+        // PART 48 — committee-mode framing. Identifies this VA + its siblings,
+        // names the lane, and REQUIRES the LLM to compose its section per the
+        // REQUIRED OUTPUT FORMAT block at the bottom of the focus brief.
         if (committeeVA) {
           const lastMsg = messages[messages.length - 1] as any;
           const VA_LABELS: Record<ArcusVA, string> = {
@@ -1060,7 +1057,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             .filter(v => v !== committeeVA)
             .map(v => VA_LABELS[v])
             .join(', ') || 'none — you are the only VA on this run';
-          const hint = `\n\n[COMMITTEE MODE — you are the ${VA_LABELS[committeeVA]}]\nSiblings running in parallel right now: ${siblings}.\nFocus EXCLUSIVELY on ${committeeVA}-domain work — do not duplicate effort the other VAs already own. Your tool surface is already narrowed to your domain. Produce concrete artifacts (drafts, events, pages, messages) where the task implies action; otherwise return a tight summary of what you found. The chief of staff will synthesize across all VAs at the end — your job is to do YOUR work well, not to author the cross-VA briefing.`;
+          const hint = `\n\n[COMMITTEE MODE — you are the ${VA_LABELS[committeeVA]}]\nSiblings running in parallel: ${siblings}. Focus only on ${committeeVA}-domain work — your tools are already narrowed to your lane.\n\nTWO-PHASE EXECUTION (mandatory):\n  Phase A — Tool calls: execute the work the task implies, using your lane's tools.\n  Phase B — Compose your section: after Phase A, you MUST write the markdown section per the REQUIRED OUTPUT FORMAT in the focus brief above. The chief of staff inserts your section verbatim into the user's briefing — if you skip Phase B, the user sees "no work needed" even when you ran tools, and that is a failure.`;
           if (typeof lastMsg.content === 'string') {
             lastMsg.content = `${lastMsg.content}${hint}`;
           } else if (Array.isArray(lastMsg.content)) {
