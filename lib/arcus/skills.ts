@@ -29,6 +29,15 @@ GROUND RULES — apply strictly, no exceptions:
 const BRIEF = `
 COMMAND: /brief — Morning briefing across all 5 VAs (Inbox, Calendar, CRM, Comms, Research).
 
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a domain ("just inbox", "calendar only", "client work only") → restrict to that domain's fetch only, skip the rest.
+  • Args name a person / company → bias every fetch toward that entity (gmail_unlimited_search for them, memory queries about them, Notion search for them). Drop everything unrelated.
+  • Args ask a specific question ("any meetings tomorrow?", "did the SOW get signed?") → answer the question directly using minimum tools; skip the full briefing canvas.
+  • Args narrow time ("just morning", "today only") → adjust the window in your fetches.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
 PHASE 1 — Parallel context fetch (emit ALL of these tool calls in your first turn, IN PARALLEL):
   a) gmail_unlimited_search({ query: "is:unread newer_than:1d -category:promotions", maxResults: 50 })
   b) calendar_unlimited_scan({ daysAhead: 2, includeNotionCalendar: true })
@@ -72,6 +81,23 @@ EDGE CASES:
 const INBOX = `
 COMMAND: /inbox — Full inbox triage: digest newsletters, flag VIPs, draft replies, surface decisions.
 
+INTERPRET USER ARGS FIRST (this overrides default phases below):
+  • If args ask about urgency ("what is urgent", "urgent only", "priorities", "what needs me today"):
+      Run gmail_unlimited_search({ query: "is:unread newer_than:2d -category:promotions", maxResults: 50 })
+      → gmail_detect_urgency on top 20 → return ONLY urgent items (score ≥7), sorted desc. SKIP newsletter pass, SKIP batch drafting, SKIP archival. Output: ranked list of urgent threads with sender · subject · urgency reason · link. Stop after that.
+  • If args name a specific sender / company / domain:
+      gmail_unlimited_search({ query: "from:<that sender> newer_than:14d", maxResults: 25 })
+      → summarize the thread history with that sender → propose ONE action (draft / archive / no-action). SKIP all other phases.
+  • If args ask about a specific topic / project / keyword:
+      gmail_unlimited_search({ query: "<keyword> newer_than:14d", maxResults: 25 })
+      → group by sender → propose actions. SKIP all other phases.
+  • If args explicitly say "digest newsletters" / "clean newsletters" / "promotional":
+      Run only Phase 3 (newsletter pass), skip 1+2+4.
+  • If args are absent OR are a general "triage" / "handle the inbox" / "clean it up":
+      Run the FULL default workflow below (Phases 1-5).
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
 PHASE 1 — Pull the worklist (parallel):
   a) build_worklist({ agentName: "Inbox triage", gmailQuery: "is:unread newer_than:2d -category:promotions", maxResults: 60, clientDomains: [] })
   b) gmail_unlimited_search({ query: "category:promotions OR (from:newsletter OR from:digest) newer_than:7d", maxResults: 100 })
@@ -110,6 +136,15 @@ EDGE CASES:
 
 const FOLLOW_UP = `
 COMMAND: /follow-up — Find threads where the user is waiting on a reply. Draft polite nudges.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a person / company → restrict check_followups to threads with that recipient only.
+  • Args name a topic / subject keyword → filter the candidate set to threads matching that keyword.
+  • Args name a tighter window ("last 3 days", "this week") → adjust daysBack in check_followups.
+  • Args say "no drafts, just list" → skip Phase 4 (drafting). Output the list only.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
 
 PHASE 1 — Identify the candidate set:
   check_followups({ daysBack: 14, minDaysSilent: 3 })
@@ -151,6 +186,15 @@ EDGE CASES:
 
 const PREP = `
 COMMAND: /prep — Meeting prep document for the next 24 hours, one section per meeting, delivered to Canvas.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a specific meeting / attendee ("prep for the Acme call", "prep my 3pm") → prep ONLY that one meeting; skip everything else.
+  • Args name a window ("just morning meetings", "this week's externals") → adjust calendar_unlimited_scan window + filter accordingly.
+  • Args say "internal meetings too" → drop the external-only filter.
+  • Args ask "what should I read before X" → produce a reading list (recent threads + Notion pages with attendees) instead of a full prep doc.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
 
 PHASE 1 — Pull the meeting set:
   calendar_unlimited_scan({ daysAhead: 1, maxResults: 25, includeNotionCalendar: true })
@@ -214,6 +258,14 @@ EDGE CASES:
 const WEEKLY = `
 COMMAND: /weekly — Weekly executive brief. Four mandatory sections, Canvas delivery.
 
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a section ("just revenue", "what stalled", "what's next week") → output ONLY that section in chat (no canvas). Skip the other three.
+  • Args name a person / company → bias every fetch toward that entity; the brief is about THEM.
+  • Args narrow time ("just this week's wins", "since Monday") → adjust window accordingly.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
 PHASE 1 — Parallel fetch across 7-day window:
   a) gmail_unlimited_search({ query: "newer_than:7d in:sent", maxResults: 100 }) — what the user sent.
   b) calendar_unlimited_scan({ daysAhead: 7, daysBack: 7, includeNotionCalendar: true }) — meetings held + upcoming.
@@ -259,6 +311,14 @@ EDGE CASES:
 
 const VIP = `
 COMMAND: /vip — Surface what's waiting from high-value contacts. Read-only — never draft, never act.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a VIP category ("just clients", "just investors") → restrict to that category.
+  • Args name a specific VIP → restrict to that person; show full recent history with them, not just unread.
+  • Args ask "anyone urgent?" → run urgency detection on VIP threads and surface only urgency ≥8.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
 
 PHASE 1 — Identify VIPs from memory:
   memory_relationship_intelligence({ limit: 25 })
@@ -315,6 +375,14 @@ EDGE CASES:
 
 const VOICE = `
 COMMAND: /voice — Rebuild the user's writing voice profile from their recent sent mail.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args name a sample size ("30 emails only", "last 200") → pass that as sampleSize to voice_profile_generate (cap 200).
+  • Args ask "show current profile" / "what's my voice" → call get_voice_profile instead and report the existing profile. Do NOT rebuild.
+  • Args specify a refinement ("less formal", "drop 'Best, M'") → call voice_profile_update with the change, do NOT rebuild from scratch.
+  • Args absent → run the FULL default workflow below (rebuild from last 90 days).
+
+DEFAULT WORKFLOW (only when args are absent or general):
 
 PHASE 1 — Sanity check before the slow operation:
   gmail_get_profile() — confirm Gmail is connected. If the call fails with gmail_not_connected, stop here with: "Gmail isn't connected. Click connectors → Gmail, then run /voice again."
@@ -377,7 +445,7 @@ export function expandSlashCommand(message: string): {
   }
 
   const expanded = userArgs
-    ? `${command.template}\n\n═══════════════════════════════════════════════════════\nUSER ARGUMENTS (priority context — apply on top of the workflow above):\n${userArgs}`
+    ? `${command.template}\n\n═══════════════════════════════════════════════════════\nUSER ARGUMENTS — HIGHEST PRIORITY, OVERRIDES THE DEFAULT WORKFLOW:\n"${userArgs}"\n\nDo NOT run the full default workflow above when args are present. Match the args against the "INTERPRET USER ARGS FIRST" branch table at the top of the spec and execute ONLY the branch that matches. If the args narrow the scope (a specific question, a specific person, a specific topic, a specific section), answer THAT — skip phases that don't serve it. The default workflow is what to do when args are absent; with args present, the spec is a menu of options + the args pick from the menu.`
     : command.template;
 
   return { expanded, matchedCommand: command };
