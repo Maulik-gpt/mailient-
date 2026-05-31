@@ -454,6 +454,11 @@ export async function POST(request: NextRequest) {
       // PART 47 — interactive 'Auto' mode bypasses the confirmation surface.
       // Background-agent runs continue to set this via run-agent.ts.
       skipConfirmations,
+      // PART 53 — surface tone + length to the loop so the per-turn rules
+      // hint includes them; previously they were only in the userStyle block
+      // at the bottom of the system prompt and got forgotten by free models.
+      communicationStyle: stylePrefs.communicationStyle,
+      verbosity: stylePrefs.verbosity,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });
@@ -484,7 +489,10 @@ async function saveMemoryAsync(userId: string, userMessage: string, _conversatio
   }
 }
 
-/** Fetch user's Arcus personality setting from user_profiles.preferences */
+/** Fetch user's Arcus personality setting from user_profiles.preferences.
+ *  PART 53 — respects the instructionsEnabled toggle: returns '' when the
+ *  user has disabled instructions in settings, so the chat route doesn't
+ *  pass a stale personality block into the prompt. */
 async function fetchPersonality(userId: string): Promise<string> {
   try {
     const { getSupabaseAdmin } = await import('../../../../lib/supabase.js');
@@ -495,6 +503,7 @@ async function fetchPersonality(userId: string): Promise<string> {
       .ilike('user_id', userId)
       .maybeSingle();
     const prefs = (data?.preferences as Record<string, unknown>) || {};
+    if (prefs.arcus_instructions_enabled === false) return '';
     return (prefs.arcus_personality as string) || '';
   } catch {
     return '';

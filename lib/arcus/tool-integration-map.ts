@@ -96,6 +96,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   web_search: null,
   web_search_instant: null,
   create_scheduled_agent: null,
+  list_scheduled_agents: null,
   report_generate: null,
   ask_user: null,
   get_recipient_context: null,

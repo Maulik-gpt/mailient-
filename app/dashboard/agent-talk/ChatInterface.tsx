@@ -4200,14 +4200,11 @@ export default function ChatInterface({
   ) => {
     switch (handlerName) {
       case 'openAgents':
-        setDashboardTab('agents');
-        break;
       case 'openMemorySettings':
       case 'openSettings':
-        // The settings modal hosts BOTH tabs (Instructions + Memory) — opening
-        // the modal is what both /memory and /settings do. Picking a tab is
-        // on the user (the modal opens on Instructions by default).
-        setIsPersonalityModalOpen(true);
+        // PART 53 — /agents, /memory, /settings are now AI skills handled
+        // server-side; the registry entries use kind: 'prompt'. These case
+        // branches kept for type-completeness only and should never fire.
         break;
       case 'clearConversation':
         setMessages([]);

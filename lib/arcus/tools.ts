@@ -1698,6 +1698,15 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'list_scheduled_agents',
+    description:
+      'Return the user\'s scheduled background agents — name, cron schedule, output channel, status (active/paused), last_run_at, last_report_summary, next-run estimate. ' +
+      'Use when the user asks to see / inspect / manage their agents (e.g. via /agents). ' +
+      'Output: plain-text list, one agent per block, with the fields above. "No scheduled agents." when empty. ' +
+      'Errors (success:false): list_agents_failed.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
     name: 'create_scheduled_agent',
     description:
       'Register a persistent background agent. Two-stage flow:\n' +
@@ -2062,6 +2071,7 @@ export async function executeTool(
       case 'slack_send_dm':         result = await slackSendDm(userId, input, context); break;
       case 'slack_get_channels':    result = await slackGetChannels(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input, context); break;
+      case 'list_scheduled_agents': result = await listScheduledAgents(userId); break;
       case 'report_generate':       result = reportGenerate(input); break;
       case 'report_send_gmail':     result = await reportSendGmail(userId, input); break;
       case 'report_send_slack':     result = await reportSendSlack(userId, input, context); break;
@@ -5598,6 +5608,31 @@ function naturalLanguageToCron(raw: string): string | null {
   }
 
   return null;
+}
+
+async function listScheduledAgents(userId: string): Promise<ToolResult> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('arcus_agents')
+      .select('id, name, task_description, cron_schedule, output_channel, status, skip_confirmations, expires_at, last_run_at, last_report_summary, created_at')
+      .eq('user_id', normalizeUserId(userId))
+      .order('created_at', { ascending: false });
+    if (error) return failureResult(`Could not list agents: ${error.message}`, 'list_agents_failed');
+    if (!data || data.length === 0) return { output: 'No scheduled agents.', success: true };
+    const blocks = data.map((a: any) => {
+      const status = a.status || 'active';
+      const cron = a.cron_schedule || 'unknown';
+      const last = a.last_run_at ? new Date(a.last_run_at).toISOString().slice(0, 16).replace('T', ' ') + ' UTC' : 'never';
+      const lastSummary = a.last_report_summary ? `\n  last_report: ${String(a.last_report_summary).slice(0, 220).replace(/\s+/g, ' ')}` : '';
+      const expires = a.expires_at ? `\n  expires_at: ${a.expires_at}` : '';
+      const skip = a.skip_confirmations ? '\n  skip_confirmations: true' : '';
+      return `agent_id: ${a.id}\n  name: "${a.name}"\n  status: ${status}\n  cron: "${cron}"\n  output_channel: ${a.output_channel}\n  last_run_at: ${last}${skip}${expires}\n  task: ${String(a.task_description).slice(0, 280).replace(/\s+/g, ' ')}${lastSummary}`;
+    }).join('\n\n');
+    return { output: `Scheduled agents (${data.length}):\n\n${blocks}`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not list agents: ${e?.message || 'unknown error'}`, 'list_agents_failed');
+  }
 }
 
 async function createScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {

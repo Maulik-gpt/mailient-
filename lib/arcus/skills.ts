@@ -408,6 +408,121 @@ EDGE CASES:
   • voice_profile_generate timeouts: report "Rebuild timed out — try again in a minute when Gmail's API isn't busy."
   • Any other failure: report exactly what the tool said. Do NOT invent a profile summary.` + GROUND_RULES;
 
+const AGENTS_SKILL = `
+COMMAND: /agents — Inspect, manage, and create scheduled background agents directly in chat. No page navigation.
+
+INTERPRET USER ARGS FIRST:
+  • Args ask "pause <agent name>" / "stop <name>" → list_scheduled_agents first to confirm the agent exists; then tell the user the agent_id and that pause is a one-tap action in the agent card (we don't yet have a direct pause tool — be honest).
+  • Args ask "create <description>" → run create_scheduled_agent with the inferred spec (use the agent-creation flow per CORE DOCTRINE).
+  • Args ask about a specific agent's last run / next run / status → list_scheduled_agents, then surface only the matching agent in detail.
+  • Args absent → run the default workflow below.
+
+DEFAULT WORKFLOW:
+
+PHASE 1 — list_scheduled_agents()
+
+PHASE 2 — Summarize in chat (no canvas):
+
+  If 0 agents:
+    "You don't have any scheduled agents yet. A few popular ones I can set up for you:
+    - **Morning Inbox Sweep** (daily 7am) — triages overnight email, drafts replies, flags urgent
+    - **Daily VIP Digest** (daily 5pm) — surfaces what high-value contacts are waiting on
+    - **Weekly Executive Brief** (Fri 4pm) — done / stalled / next week / revenue
+    Want me to create one?"
+
+  If 1+ agents:
+    "You have <N> scheduled agents:
+
+    | Agent | Schedule | Last run | Status |
+    |---|---|---|---|
+    | <name> | <human-readable cron, e.g. 'Daily 7am'> | <last_run_at relative, 'never' if null> | <active/paused> |
+    ...
+
+    Top of mind: <if any last_report_summary mentions a deadline / decision, highlight it>.
+
+    Want to create another, pause one, or see what last <agent name>'s run delivered?"
+
+PHASE 3 — Proactive suggestion:
+  If the user has no agents touching a domain they clearly use (e.g. Notion connected but no Notion-touching agent), suggest ONE relevant agent in one sentence.` + GROUND_RULES;
+
+const MEMORY_SKILL = `
+COMMAND: /memory — Show what Arcus remembers about the user + their work. Offer to add / forget items directly in chat.
+
+INTERPRET USER ARGS FIRST:
+  • Args say "forget X" / "drop X" → memory_search to find the matching entry; tell the user the memory_id and that they can delete via the Memory tab in Settings (we don't have a direct delete tool yet — be honest).
+  • Args say "remember X" → memory_save({ content: <X>, tags: ['user'] }) immediately. Confirm with "Saved."
+  • Args ask about a specific person / topic → memory_search({ query: <args>, limit: 10 }) and report what's known about them.
+  • Args absent → run the default workflow below.
+
+DEFAULT WORKFLOW:
+
+PHASE 1 — Pull a sample of recent memories (parallel):
+  a) memory_search({ query: "[PREFERENCE]", limit: 8 })   — explicit user preferences
+  b) memory_search({ query: "[RELATIONSHIP]", limit: 8 }) — contact relationships
+  c) memory_search({ query: "[CONTEXT]", limit: 8 })      — general context
+
+PHASE 2 — Summarize in chat (no canvas):
+
+  "Here's what I remember about you and your work:
+
+  **🧭 Preferences (<N> saved)**
+  - <preference 1, plainly stated>
+  - <preference 2>
+  ...
+
+  **👥 People I know about (<N> contacts)**
+  - <contact 1>: <one-line relationship summary>
+  - <contact 2>: <one-line>
+  ...
+
+  **📓 Recent context (<N> items)**
+  - <item 1>
+  - <item 2>
+
+  Anything I have wrong? Tell me and I'll fix it. Or say 'remember X' and I'll save it."
+
+PHASE 3 — Edge cases:
+  • Zero memories: "I don't have anything saved about you yet. Tell me things you want me to remember — preferences ('always cc legal'), relationships ('Priya is our biggest client'), context ('the Q3 launch is the priority'). I'll keep them and apply them silently."
+  • Memory disabled in settings: surface "Memory is currently OFF in your settings — I can't save or recall anything until you turn it back on (Settings → Memory)."` + GROUND_RULES;
+
+const SETTINGS_SKILL = `
+COMMAND: /settings — Show the user's current Arcus settings + offer to change them via chat. No page navigation.
+
+This command does NOT require any tool call. The current settings are already visible to you in this prompt context (user instructions block, voice profile block, user style preference block, memory toggle). Read them and summarize.
+
+DEFAULT WORKFLOW (always runs; args refine the summary):
+
+PHASE 1 — Inspect current state from prompt context:
+  • Voice profile: present yes/no (from "USER VOICE PROFILE" block if it appears in this prompt)
+  • Tone (communication style): from "USER STYLE PREFERENCE" block — direct / balanced / warm
+  • Length (verbosity): from same block — brief / normal / detailed
+  • Custom instructions: present yes/no (from "USER INSTRUCTIONS — BINDING, ABSOLUTE PRIORITY" block, if it exists)
+  • Memory: implicitly on (Arcus only fails to surface this when toggle is off)
+  • Action mode (Ask / Auto): inferred from whether the "ACT MODE" overlay appears in the prompt
+
+PHASE 2 — Summarize in chat (no canvas):
+
+  "Here's how Arcus is configured for you right now:
+
+  - **Voice profile**: <built / not built — from sent mail>
+  - **Tone**: <Direct / Balanced / Warm>
+  - **Length**: <Brief / Normal / Detailed>
+  - **Action mode**: <Ask before acting / Act without asking>
+  - **Custom instructions**: <yes — preview first 80 chars / none>
+  - **Memory**: <on / off>
+
+  To change any of these:
+  - **Tone, length, action mode**: use the dropdowns in the prompt box (next to the model selector).
+  - **Custom instructions, memory**: open the gear icon in the top-right of chat → Instructions / Memory tabs.
+  - **Voice profile**: run /voice to rebuild it from your last 90 days of sent mail.
+
+  Or tell me what to change in natural language — 'be more concise', 'never use exclamation marks', 'always cc legal@x.com' — and I'll guide you to the right place to save it."
+
+PHASE 3 — Args interpretation:
+  • Args ask "what's my tone" / "what tone are you using" → answer the tone question specifically + offer to change.
+  • Args ask "change tone to X" / "make me more X" → confirm the requested change, point to the prompt-box dropdown OR offer to save the change as a custom instruction.
+  • Args ask about a specific setting → answer that one specifically.` + GROUND_RULES;
+
 export const SLASH_COMMANDS: SlashCommand[] = [
   { name: 'brief',     description: 'Morning briefing across all 5 VAs.',                                  category: 'workflows', icon: '☀️', kind: 'prompt', template: BRIEF },
   { name: 'inbox',     description: 'Triage inbox: digest newsletters, flag VIPs, draft client replies.', category: 'workflows', icon: '📧', kind: 'prompt', template: INBOX },
@@ -416,9 +531,9 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: 'weekly',    description: 'Weekly executive brief: done / stalled / next / revenue.',           category: 'workflows', icon: '📊', kind: 'prompt', template: WEEKLY },
   { name: 'vip',       description: 'Surface what high-value contacts are waiting on. Read-only.',         category: 'workflows', icon: '⭐', kind: 'prompt', template: VIP },
   { name: 'voice',     description: 'Rebuild voice profile from last 90 days of sent mail.',              category: 'profile',   icon: '🎤', kind: 'prompt', template: VOICE },
-  { name: 'agents',    description: 'Open the Agents panel.',                                              category: 'navigation', icon: '🤖', kind: 'client', clientHandler: 'openAgents' },
-  { name: 'memory',    description: 'Open Settings → Memory.',                                             category: 'navigation', icon: '🧠', kind: 'client', clientHandler: 'openMemorySettings' },
-  { name: 'settings',  description: 'Open Settings → Instructions.',                                       category: 'navigation', icon: '⚙️', kind: 'client', clientHandler: 'openSettings' },
+  { name: 'agents',    description: 'List your scheduled agents + offer to create / pause / manage.',     category: 'workflows', icon: '🤖', kind: 'prompt', template: AGENTS_SKILL },
+  { name: 'memory',    description: 'Show what Arcus remembers about you + your work.',                    category: 'workflows', icon: '🧠', kind: 'prompt', template: MEMORY_SKILL },
+  { name: 'settings',  description: 'Show your current Arcus settings + offer to change them in chat.',    category: 'workflows', icon: '⚙️', kind: 'prompt', template: SETTINGS_SKILL },
   { name: 'clear',     description: 'Clear the current conversation.',                                     category: 'navigation', icon: '🧹', kind: 'client', clientHandler: 'clearConversation' },
   { name: 'help',      description: 'Show all slash commands.',                                            category: 'navigation', icon: '❓', kind: 'client', clientHandler: 'showHelp' },
 ];

@@ -431,6 +431,11 @@ export interface LoopOptions {
    * them from the bottom of a 1000-line system prompt.
    */
   userInstructions?: string;
+  /** PART 53 — surface tone + length in the per-turn rules hint too, so the
+   *  LLM reads them on every step instead of forgetting the userStyle block
+   *  buried at the bottom of the system prompt. */
+  communicationStyle?: 'direct' | 'balanced' | 'warm';
+  verbosity?: 'brief' | 'normal' | 'detailed';
   /**
    * F12 — Attachments uploaded with the user's message. Only image types are
    * forwarded to the LLM as vision content blocks; non-image attachments are
@@ -478,15 +483,19 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   );
   const nonImageAttachments = (attachments || []).filter(a => !imageAttachments.includes(a));
 
-  // F6 — One-line reminder of the user's binding rules, appended to every
-  // user message so attention never drifts past them.
+  // F6 + PART 53 — Per-turn reminder appended to every user message so the
+  // LLM re-reads tone + length + binding rules every step instead of having
+  // to recall them from the bottom of a long system prompt. Tone/length
+  // override the prompt's voice defaults; binding rules override everything.
   const activeRulesHint = (() => {
-    if (!userInstructions || !userInstructions.trim()) return '';
-    const compact = userInstructions
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 220);
-    return `\n\n[ACTIVE RULES: ${compact}${userInstructions.length > 220 ? '…' : ''}]`;
+    const parts: string[] = [];
+    if (opts.communicationStyle) parts.push(`tone:${opts.communicationStyle}`);
+    if (opts.verbosity) parts.push(`length:${opts.verbosity}`);
+    if (userInstructions && userInstructions.trim()) {
+      const compact = userInstructions.replace(/\s+/g, ' ').trim().slice(0, 200);
+      parts.push(`rules:${compact}${userInstructions.length > 200 ? '…' : ''}`);
+    }
+    return parts.length > 0 ? `\n\n[ACTIVE — apply strictly: ${parts.join(' · ')}]` : '';
   })();
   // Tracks every successful tool call this run so PART 4 Rule 1 (draft_reply
   // requires a preceding read_email/gmail_read_thread) and Rule 3
