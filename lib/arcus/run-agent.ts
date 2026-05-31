@@ -10,6 +10,10 @@
 import { runAgentLoop } from './loop';
 import { buildSystemPrompt, getConnectedIntegrations } from './system-prompt';
 import { searchMemories, saveMemory } from './memory';
+// PART 48 — Multi-VA committee orchestrator. runAgentTask now routes through
+// runAgentAsCommittee by default; the legacy single-LLM path stays available
+// behind an env-var kill switch so we can disable in prod without redeploying.
+import { runAgentAsCommittee } from './multi-va/orchestrator';
 
 /**
  * Fetch the user's stored voice profile as a system-prompt block, so background
@@ -240,59 +244,76 @@ export interface AgentRunResult {
 }
 
 export async function runAgentTask(
-  agent: { user_id: string; task_description: string; name?: string; id?: string },
+  agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string },
   budget: AgentRunBudget = {},
 ): Promise<AgentRunResult> {
-  const args = await buildAgentLoopArgs(agent, budget);
-  const stream = runAgentLoop(args);
+  // PART 48 — route through the multi-VA committee orchestrator unless the
+  // kill switch is set. The committee fans out to up to 5 parallel VA runs,
+  // each with a focused prompt + narrowed tool surface, then aggregates
+  // into a single chief-of-staff briefing. Return shape matches the legacy
+  // single-LLM path so the cron runner doesn't need to change.
+  const useCommittee = process.env.ARCUS_DISABLE_COMMITTEE !== 'true';
+  const maxToolCalls = budget.maxToolCalls ?? 80;
+  const deadlineMs = budget.deadlineMs ?? 50_000;
 
-  const reader = stream.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  let finalText = '';
-  let currentEventType = '';
+  let report: string;
+  let toolCalls: number;
 
-  let canvasMarkdown = '';
-  let toolCalls = 0;
+  if (useCommittee) {
+    const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs });
+    report = committee.report;
+    toolCalls = committee.toolCalls;
+  } else {
+    // Legacy single-LLM path — kept verbatim so flipping the kill switch
+    // returns exactly the prior behaviour. Will be deleted in a future
+    // PART once the committee mode has soak time in prod.
+    const args = await buildAgentLoopArgs(agent, budget);
+    const stream = runAgentLoop(args);
 
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
+    const reader = stream.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let finalText = '';
+    let currentEventType = '';
+    let canvasMarkdown = '';
+    let legacyToolCalls = 0;
 
-    for (const line of lines) {
-      if (line.startsWith('event: ')) { currentEventType = line.slice(7).trim(); continue; }
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
 
-      if (line.startsWith('data: ') && currentEventType === 'message') {
-        try {
-          const data = JSON.parse(line.slice(6).trim());
-          if (data.content) finalText = data.content;
-        } catch { /* ok */ }
-        currentEventType = '';
-      }
+      for (const line of lines) {
+        if (line.startsWith('event: ')) { currentEventType = line.slice(7).trim(); continue; }
 
-      if (line.startsWith('data: ') && currentEventType === 'canvas') {
-        try {
-          const data = JSON.parse(line.slice(6).trim());
-          // Capture the full report markdown; skip scheduled_agent canvas events
-          if (data.markdown && data.type !== 'scheduled_agent') {
-            canvasMarkdown = data.markdown;
-          }
-        } catch { /* ok */ }
-        currentEventType = '';
-      }
+        if (line.startsWith('data: ') && currentEventType === 'message') {
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.content) finalText = data.content;
+          } catch { /* ok */ }
+          currentEventType = '';
+        }
 
-      if (line.startsWith('data: ') && currentEventType === 'tool_call') {
-        // Count without parsing — every emitted tool_call frame is one call.
-        toolCalls += 1;
-        currentEventType = '';
+        if (line.startsWith('data: ') && currentEventType === 'canvas') {
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.markdown && data.type !== 'scheduled_agent') canvasMarkdown = data.markdown;
+          } catch { /* ok */ }
+          currentEventType = '';
+        }
+
+        if (line.startsWith('data: ') && currentEventType === 'tool_call') {
+          legacyToolCalls += 1;
+          currentEventType = '';
+        }
       }
     }
-  }
 
-  const report = canvasMarkdown || finalText || 'Agent completed but produced no report.';
+    report = canvasMarkdown || finalText || 'Agent completed but produced no report.';
+    toolCalls = legacyToolCalls;
+  }
 
   // FIX 2: Save structured end-of-run memory so future runs can query history
   const agentName = agent.name || agent.task_description.slice(0, 60);

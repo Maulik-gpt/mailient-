@@ -437,6 +437,18 @@ export interface LoopOptions {
    * surfaced as text mentions ("file: <name>") so the model knows they exist.
    */
   attachments?: Array<{ name: string; url: string; type: string; size?: number }>;
+  /**
+   * PART 48 — Committee mode. When set, this loop instance is one VA of a
+   * background-agent committee running in parallel with other VAs. Effects:
+   *   - getAvailableTools is filtered to ONLY this VA's tools (+ utilities)
+   *   - The 5-VA parallel context sweep is SKIPPED (would be redundant —
+   *     the orchestrator already decided this VA does its own slice)
+   *   - The per-turn dispatch nudge is SKIPPED (the focus is implicit)
+   *   - The VA's name lands in the per-turn user message so the LLM knows
+   *     who it is and what siblings exist
+   * Omit entirely for interactive chat + legacy single-LLM background runs.
+   */
+  committeeMode?: { va: ArcusVA; siblingVAs: ArcusVA[] };
 }
 
 // ── Main loop ──────────────────────────────────────────────────────────────────
@@ -562,12 +574,22 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // Filter applies only on interactive turns where the dispatcher fires
   // (≥2 VAs relevant); background agents and pivot-prone follow-up turns
   // keep the full surface.
-  const vaDispatch = !isPlanMode && !isBackgroundAgent
-    ? shouldDispatchParallelVAs(userMessage)
-    : { fire: false, vas: [] as ArcusVA[], reason: 'none' as const };
-  const vaFilter: ArcusVA[] | undefined = vaDispatch.fire && vaDispatch.vas.length >= 2
-    ? vaDispatch.vas
-    : undefined;
+  //
+  // PART 48 — committeeMode overrides everything: this loop is ONE VA of a
+  // parallel committee; lock the tool surface to just that VA's tools and
+  // skip the standard 5-VA sweep + dispatch nudge (the orchestrator already
+  // handed out the work).
+  const committeeVA = opts.committeeMode?.va;
+  const vaDispatch = committeeVA
+    ? { fire: false, vas: [] as ArcusVA[], reason: 'none' as const }
+    : !isPlanMode && !isBackgroundAgent
+      ? shouldDispatchParallelVAs(userMessage)
+      : { fire: false, vas: [] as ArcusVA[], reason: 'none' as const };
+  const vaFilter: ArcusVA[] | undefined = committeeVA
+    ? [committeeVA]
+    : vaDispatch.fire && vaDispatch.vas.length >= 2
+      ? vaDispatch.vas
+      : undefined;
 
   const availableTools = (isPlanMode || suppressToolsForIntent)
     ? []
@@ -1019,6 +1041,31 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           const lastMsg = messages[messages.length - 1] as any;
           if (typeof lastMsg.content === 'string') {
             lastMsg.content = `${lastMsg.content}\n\n[AGENT PLAN APPROVED] The user has approved the agent plan. Call create_scheduled_agent NOW with the parameters from context AND include "_planApproved: true" in the input parameters. Do not show another plan preview.`;
+          }
+        }
+
+        // PART 48 — committee-mode framing. When this loop is one VA of a
+        // parallel committee, prepend a short identity block so the LLM
+        // anchors on its lane and doesn't try to do work that belongs to a
+        // sibling VA. The orchestrator runs other VAs concurrently and
+        // aggregates everyone's output at the end — this VA does NOT need
+        // to summarize cross-VA, just report what it itself accomplished.
+        if (committeeVA) {
+          const lastMsg = messages[messages.length - 1] as any;
+          const VA_LABELS: Record<ArcusVA, string> = {
+            inbox: '📧 Inbox VA', calendar: '📅 Calendar VA', crm: '📝 CRM VA',
+            comms: '💬 Comms VA', research: '🔍 Research VA',
+          };
+          const siblings = (opts.committeeMode?.siblingVAs || [])
+            .filter(v => v !== committeeVA)
+            .map(v => VA_LABELS[v])
+            .join(', ') || 'none — you are the only VA on this run';
+          const hint = `\n\n[COMMITTEE MODE — you are the ${VA_LABELS[committeeVA]}]\nSiblings running in parallel right now: ${siblings}.\nFocus EXCLUSIVELY on ${committeeVA}-domain work — do not duplicate effort the other VAs already own. Your tool surface is already narrowed to your domain. Produce concrete artifacts (drafts, events, pages, messages) where the task implies action; otherwise return a tight summary of what you found. The chief of staff will synthesize across all VAs at the end — your job is to do YOUR work well, not to author the cross-VA briefing.`;
+          if (typeof lastMsg.content === 'string') {
+            lastMsg.content = `${lastMsg.content}${hint}`;
+          } else if (Array.isArray(lastMsg.content)) {
+            const textBlock = lastMsg.content.find((b: any) => b?.type === 'text');
+            if (textBlock) textBlock.text = `${textBlock.text}${hint}`;
           }
         }
 
