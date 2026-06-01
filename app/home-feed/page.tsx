@@ -4,10 +4,12 @@ import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import SiftToday from '@/components/ui/sift-today';
+import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
 import { PricingOverlay } from '@/components/ui/pricing-overlay';
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import confetti from 'canvas-confetti';
 import { useState } from 'react';
+import { Sparkles, Inbox } from 'lucide-react';
 
 function HomeFeedContent() {
   const router = useRouter();
@@ -16,6 +18,7 @@ function HomeFeedContent() {
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
+  const [activeTab, setActiveTab] = useState<'today' | 'inbox'>('today');
 
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
@@ -218,7 +221,37 @@ function HomeFeedContent() {
 
   return (
     <div className="satoshi-home-feed w-full min-h-screen bg-white dark:bg-black relative">
-      <SiftToday />
+      {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view) */}
+      <div className="sticky top-0 z-30 backdrop-blur-xl bg-white/75 dark:bg-black/65 border-b border-black/[0.04] dark:border-white/[0.04]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-center gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('today')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors ${
+              activeTab === 'today'
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+            Today
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('inbox')}
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors ${
+              activeTab === 'inbox'
+                ? 'bg-black text-white dark:bg-white dark:text-black'
+                : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
+            }`}
+          >
+            <Inbox className="w-3.5 h-3.5" strokeWidth={2} />
+            Inbox
+          </button>
+        </div>
+      </div>
+
+      {activeTab === 'today' ? <SiftToday /> : <GmailInterfaceFixed forceTraditionalView />}
       <FloatingNavbar />
       
       {isVerifyingPayment && (

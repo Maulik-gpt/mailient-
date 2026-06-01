@@ -71,9 +71,9 @@ const URGENCY_SIGNALS = [
   /\bdeadline\b/i,
   /\boverdue\b/i,
   /\baction (required|needed)\b/i,
-  /\bplease respond\b/i,
+  /\bplease (respond|reply|review|approve|confirm)\b/i,
   /\bquick (question|ask)\b/i,
-  /\breminder\b/i,
+  /\bneed your (input|review|approval|sign[- ]?off|decision)\b/i,
 ];
 
 const REVENUE_SIGNALS = [
@@ -85,18 +85,42 @@ const REVENUE_SIGNALS = [
   /\brenewal\b/i,
   /\bSOW\b/,
   /\bMSA\b/,
+  /\bNDA\b/,
   /\bpayment\b/i,
   /\bsigned?\b/i,
-  /\boffer\b/i,
+  /\boffer letter\b/i,
+  /\bpurchase order\b/i,
+  /\bP\.O\.\b/,
 ];
 
 const MEETING_REQUEST_SIGNALS = [
-  /\bavailable\b/i,
-  /\bavailability\b/i,
-  /\bschedule\b/i,
-  /\bcalendar\b/i,
-  /\bjump on a call\b/i,
-  /\bcatch up\b/i,
+  /\bare you (free|available)\b/i,
+  /\bdo you have (time|availability)\b/i,
+  /\bcan we (chat|talk|meet|jump on|hop on)\b/i,
+  /\b(let'?s|let us) (schedule|set up|find time|meet)\b/i,
+  /\bsend (over )?(your|some) availability\b/i,
+  /\b(book|grab) a (time|call|meeting)\b/i,
+];
+
+// Senders / patterns that should NEVER reach the Decide bucket even if the
+// subject says "URGENT" — newsletters, automated digests, marketing.
+const NOISE_FROM_PATTERNS = [
+  /^no[- ]?reply@/i,
+  /^donotreply@/i,
+  /^notifications?@/i,
+  /^newsletter@/i,
+  /^digest@/i,
+  /^updates?@/i,
+  /^team@.*\.(io|app|com)$/i, // generic team@ from product newsletters
+  /^marketing@/i,
+  /^hello@.*\.(substack|beehiiv|convertkit)\.com$/i,
+];
+const NOISE_SUBJECT_PATTERNS = [
+  /\b(weekly|daily|monthly) (digest|newsletter|roundup|update|summary|brief)\b/i,
+  /\bunsubscribe\b/i,
+  /^\[.+\]\s/, // "[Newsletter Name] ..."
+  /^Re:\s*\[/, // "Re: [Newsletter]"
+  /\bissue #\d+\b/i,
 ];
 
 function parseFromHeader(fromHeader: string): { name: string; email: string } {
@@ -105,15 +129,28 @@ function parseFromHeader(fromHeader: string): { name: string; email: string } {
   return { name: fromHeader.split('@')[0] || 'Unknown', email: fromHeader };
 }
 
-function classifyDecideReason(subject: string, snippet: string): string | null {
+function isNoiseSender(fromHeader: string, subject: string): boolean {
+  for (const re of NOISE_FROM_PATTERNS) if (re.test(fromHeader)) return true;
+  for (const re of NOISE_SUBJECT_PATTERNS) if (re.test(subject)) return true;
+  return false;
+}
+
+function classifyDecideReason(subject: string, snippet: string, from: string): string | null {
+  if (isNoiseSender(from, subject)) return null;
   const text = `${subject} ${snippet}`;
-  for (const re of URGENCY_SIGNALS) if (re.test(text)) return 'Marked urgent';
+  for (const re of URGENCY_SIGNALS) if (re.test(text)) return 'Flagged urgent';
   for (const re of REVENUE_SIGNALS) if (re.test(text)) return 'Money on the line';
-  for (const re of MEETING_REQUEST_SIGNALS) if (re.test(text)) return 'Wants a meeting';
-  // Questions in the subject
-  if (/\?/.test(subject)) return 'Direct question';
-  // Replies to user — likely needs follow-through
-  if (/^Re:/i.test(subject)) return 'Reply to your thread';
+  for (const re of MEETING_REQUEST_SIGNALS) if (re.test(text)) return 'Wants time on your calendar';
+  // Direct question in the subject — but only if it's a real subject, not a
+  // marketing teaser ("Did you know?" / "Tired of X?")
+  if (/\?/.test(subject) && subject.length < 90 && !/^(did you|tired of|want to|ready to|why )/i.test(subject.trim())) {
+    return 'Direct question';
+  }
+  // Re: threads — they continue an active conversation so the user is
+  // expected to weigh in. Skip if subject looks like a marketing reply chain.
+  if (/^Re:/i.test(subject) && !/\b(unsubscribe|newsletter|digest)\b/i.test(text)) {
+    return 'Active thread waiting on you';
+  }
   return null;
 }
 
@@ -135,7 +172,7 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
     const items: DecideItem[] = [];
     for (const d of details) {
       if (!d) continue;
-      const reason = classifyDecideReason(d.subject || '', d.snippet || '');
+      const reason = classifyDecideReason(d.subject || '', d.snippet || '', d.from || '');
       if (!reason) continue;
       const sender = parseFromHeader(d.from || '');
       items.push({
@@ -148,12 +185,12 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
         gmailUrl: `https://mail.google.com/mail/u/0/#inbox/${d.threadId}`,
       });
     }
-    // Priority: revenue > urgent > question > meeting > reply
+    // Priority: revenue > urgent > question > meeting > active thread
     const rank = (r: string) => {
       if (r === 'Money on the line') return 0;
-      if (r === 'Marked urgent') return 1;
+      if (r === 'Flagged urgent') return 1;
       if (r === 'Direct question') return 2;
-      if (r === 'Wants a meeting') return 3;
+      if (r === 'Wants time on your calendar') return 3;
       return 4;
     };
     items.sort((a, b) => rank(a.reason) - rank(b.reason));

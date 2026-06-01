@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink } from 'lucide-react';
@@ -78,24 +78,28 @@ interface BucketHeaderProps {
 
 function BucketHeader({ label, count, icon }: BucketHeaderProps) {
   return (
-    <div className="flex items-center gap-2.5 mb-3">
-      <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.06] flex items-center justify-center text-black/60 dark:text-white/60">
+    <div className="flex items-center gap-2.5 mb-3.5">
+      <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-black/65 dark:text-white/65 ring-1 ring-black/[0.03] dark:ring-white/[0.04]">
         {icon}
       </div>
-      <h2 className="text-[13px] font-semibold tracking-wide uppercase text-black/55 dark:text-white/55">
+      <h2 className="text-[11.5px] font-semibold tracking-[0.14em] uppercase text-black/55 dark:text-white/55">
         {label}
       </h2>
-      <span className="text-[11px] text-black/35 dark:text-white/35">·</span>
-      <span className="text-[11px] text-black/40 dark:text-white/40">
-        {count} {count === 1 ? 'item' : 'items'}
-      </span>
+      {count > 0 && (
+        <>
+          <span className="text-[11px] text-black/25 dark:text-white/25">·</span>
+          <span className="text-[11px] tabular-nums text-black/40 dark:text-white/40 font-medium">
+            {count}
+          </span>
+        </>
+      )}
     </div>
   );
 }
 
 function EmptyBucket({ message }: { message: string }) {
   return (
-    <div className="py-5 px-4 rounded-2xl border border-dashed border-black/[0.07] dark:border-white/[0.07] text-[13px] text-black/40 dark:text-white/40">
+    <div className="py-5 px-4 rounded-2xl border border-dashed border-black/[0.06] dark:border-white/[0.06] text-[13px] text-black/35 dark:text-white/35 leading-relaxed">
       {message}
     </div>
   );
@@ -113,33 +117,34 @@ interface ItemCardProps {
 function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAction }: ItemCardProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 6 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-      className="group bg-white dark:bg-white/[0.025] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-4 hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors"
+      exit={{ opacity: 0, y: -4 }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      whileHover={{ y: -1 }}
+      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
     >
-      <div className="flex items-center justify-between gap-3 mb-1.5">
+      <div className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-full bg-black/[0.06] dark:bg-white/[0.08] flex items-center justify-center text-[11px] font-semibold text-black/65 dark:text-white/65 flex-shrink-0">
+          <div className="w-6 h-6 rounded-full bg-black/[0.05] dark:bg-white/[0.07] flex items-center justify-center text-[11px] font-semibold text-black/70 dark:text-white/70 flex-shrink-0 tracking-tight">
             {senderInitial(topLeft)}
           </div>
-          <span className="text-[13px] font-medium text-black/80 dark:text-white/80 truncate">{topLeft}</span>
+          <span className="text-[13px] font-medium text-black/80 dark:text-white/80 truncate tracking-tight">{topLeft}</span>
         </div>
         {topRight && (
-          <span className="text-[11px] text-black/35 dark:text-white/35 flex-shrink-0">{topRight}</span>
+          <span className="text-[11px] tabular-nums text-black/35 dark:text-white/35 flex-shrink-0">{topRight}</span>
         )}
       </div>
-      <h3 className="text-[14px] font-medium text-black dark:text-white truncate mb-1.5">{title}</h3>
-      <p className="text-[12px] text-black/55 dark:text-white/55 mb-3 line-clamp-1">{reason}</p>
-      <div className="flex items-center gap-2">
+      <h3 className="text-[14.5px] font-medium text-black dark:text-white truncate mb-1 tracking-tight leading-snug">{title}</h3>
+      <p className="text-[12.5px] text-black/50 dark:text-white/45 mb-3 line-clamp-1 leading-relaxed">{reason}</p>
+      <div className="flex items-center gap-1.5">
         <button
           type="button"
           onClick={primaryAction.onClick}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 transition-colors"
+          className="inline-flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full text-[12px] font-medium bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 active:scale-[0.97] transition-[background-color,transform] duration-150"
         >
           {primaryAction.label}
-          <ArrowUpRight className="w-3 h-3" strokeWidth={2} />
+          <ArrowUpRight className="w-3 h-3 group-hover:translate-x-[1px] group-hover:-translate-y-[1px] transition-transform duration-200" strokeWidth={2.25} />
         </button>
         {secondaryAction && (
           <a
@@ -154,6 +159,20 @@ function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAc
         )}
       </div>
     </motion.div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <div className="bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl px-4 py-3.5 animate-pulse">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="w-6 h-6 rounded-full bg-black/[0.06] dark:bg-white/[0.06]" />
+        <div className="h-3 w-28 rounded bg-black/[0.06] dark:bg-white/[0.06]" />
+      </div>
+      <div className="h-3.5 w-3/4 rounded bg-black/[0.06] dark:bg-white/[0.06] mb-2" />
+      <div className="h-3 w-1/2 rounded bg-black/[0.04] dark:bg-white/[0.04] mb-3" />
+      <div className="h-7 w-24 rounded-full bg-black/[0.05] dark:bg-white/[0.05]" />
+    </div>
   );
 }
 
@@ -194,41 +213,71 @@ export default function SiftToday() {
     router.push('/dashboard/agent-talk');
   };
 
-  const todayLabel = new Date().toLocaleDateString(undefined, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-  });
+  const { todayLabel, greeting } = useMemo(() => {
+    const now = new Date();
+    const label = now.toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+    const hour = now.getHours();
+    let g = 'Hello';
+    if (hour < 5) g = 'Up late';
+    else if (hour < 12) g = 'Good morning';
+    else if (hour < 17) g = 'Good afternoon';
+    else if (hour < 22) g = 'Good evening';
+    else g = 'Good night';
+    return { todayLabel: label, greeting: g };
+  }, []);
+
+  const lastUpdated = useMemo(() => (data ? formatRelative(data.generatedAt) : null), [data]);
 
   return (
     <div className="w-full min-h-screen bg-white dark:bg-black">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-16 pb-32">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
         {/* Header */}
-        <div className="flex items-end justify-between mb-10">
-          <div>
-            <p className="text-[12px] uppercase tracking-[0.15em] text-black/40 dark:text-white/40 mb-2">
+        <div className="flex items-end justify-between mb-12 gap-4">
+          <div className="min-w-0">
+            <p className="text-[11px] uppercase tracking-[0.18em] text-black/35 dark:text-white/35 mb-3 font-medium">
               {todayLabel}
             </p>
-            <h1 className="text-3xl sm:text-4xl font-semibold text-black dark:text-white tracking-tight">
-              Today, you need to —
+            <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold text-black dark:text-white tracking-[-0.025em]">
+              {greeting} —
             </h1>
+            <p className="text-[15px] mt-1.5 text-black/55 dark:text-white/55 tracking-tight">
+              here&apos;s what deserves you today.
+            </p>
           </div>
           <button
             type="button"
             onClick={load}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40"
+            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40 flex-shrink-0"
             title="Refresh"
           >
-            {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-            Refresh
+            {loading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
+            )}
+            <span className="hidden sm:inline">{lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
           </button>
         </div>
 
         {loading && !data && (
-          <div className="py-24 flex flex-col items-center justify-center text-black/40 dark:text-white/40">
-            <Loader2 className="w-5 h-5 animate-spin mb-3" />
-            <p className="text-[13px]">Reading your day…</p>
+          <div className="space-y-10">
+            {(['Decide', 'Show up', 'Chase'] as const).map((label) => (
+              <section key={label}>
+                <div className="flex items-center gap-2.5 mb-3">
+                  <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.05]" />
+                  <div className="h-3 w-20 rounded bg-black/[0.06] dark:bg-white/[0.06]" />
+                </div>
+                <div className="space-y-2.5">
+                  <SkeletonCard />
+                  <SkeletonCard />
+                </div>
+              </section>
+            ))}
           </div>
         )}
 
@@ -256,12 +305,20 @@ export default function SiftToday() {
         )}
 
         {data && data.gmailConnected && data.emptyAll && (
-          <div className="py-16 text-center">
-            <h2 className="text-xl font-medium text-black dark:text-white mb-2">…take a breath.</h2>
-            <p className="text-[14px] text-black/50 dark:text-white/50">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="py-20 text-center"
+          >
+            <div className="inline-block w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] mb-5" />
+            <h2 className="text-[20px] font-medium text-black dark:text-white mb-2 tracking-tight">
+              …take a breath.
+            </h2>
+            <p className="text-[14px] text-black/50 dark:text-white/50 max-w-sm mx-auto leading-relaxed">
               Nothing urgent in your inbox, no meetings today, no follow-ups overdue. Rare and good.
             </p>
-          </div>
+          </motion.div>
         )}
 
         {data && data.gmailConnected && !data.emptyAll && (

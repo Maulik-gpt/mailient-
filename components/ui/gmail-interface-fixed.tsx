@@ -198,7 +198,14 @@ const LoadingTimer = () => {
     );
 };
 
-export function GmailInterfaceFixed() {
+interface GmailInterfaceFixedProps {
+    /** When true, mount in traditional-inbox mode and hide the in-component
+     *  Sift/Traditional toggle. The Today/Inbox tabs on the home-feed page
+     *  drive the swap instead. */
+    forceTraditionalView?: boolean;
+}
+
+export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInterfaceFixedProps = {}) {
     const { data: session } = useSession();
     const router = useRouter();
     const [isMounted, setIsMounted] = useState(false);
@@ -206,6 +213,16 @@ export function GmailInterfaceFixed() {
     useEffect(() => {
         setIsMounted(true);
     }, []);
+
+    // Auto-fetch the traditional inbox when mounted in inbox-only mode. The
+    // home-feed page mounts this with forceTraditionalView=true under the
+    // Inbox tab, and the user expects the list to populate without a click.
+    useEffect(() => {
+        if (forceTraditionalView) {
+            fetchTraditionalEmails();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [forceTraditionalView]);
     const [insights, setInsights] = useState<SiftInsight[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -399,7 +416,7 @@ export function GmailInterfaceFixed() {
     const [viewMode, setViewMode] = useState<'home' | 'people'>('home');
 
     // Traditional View states
-    const [isTraditionalView, setIsTraditionalView] = useState(false);
+    const [isTraditionalView, setIsTraditionalView] = useState(forceTraditionalView);
     const [traditionalEmails, setTraditionalEmails] = useState<any[]>([]);
     const [isLoadingTraditional, setIsLoadingTraditional] = useState(false);
     const [selectedTraditionalEmail, setSelectedTraditionalEmail] = useState<any | null>(null);
@@ -1834,28 +1851,30 @@ export function GmailInterfaceFixed() {
                                             Updated {lastUpdated}
                                         </span>
                                     )}
-                                    <button
-                                        onClick={() => {
-                                            const nextState = !isTraditionalView;
-                                            setIsTraditionalView(nextState);
-                                            if (nextState && traditionalEmails.length === 0) {
-                                                fetchTraditionalEmails();
-                                            }
-                                        }}
-                                        className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
-                                    >
-                                        {isTraditionalView ? (
-                                            <>
-                                                <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-black dark:text-white">Switch to AI Sift</span>
-                                            </>
-                                        ) : (
-                                            <>
-                                                <LayoutList className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
-                                                <span className="text-black dark:text-white">Switch to Traditional</span>
-                                            </>
-                                        )}
-                                    </button>
+                                    {!forceTraditionalView && (
+                                        <button
+                                            onClick={() => {
+                                                const nextState = !isTraditionalView;
+                                                setIsTraditionalView(nextState);
+                                                if (nextState && traditionalEmails.length === 0) {
+                                                    fetchTraditionalEmails();
+                                                }
+                                            }}
+                                            className="h-10 px-6 bg-white dark:bg-white/[0.05] text-black dark:text-white rounded-xl text-sm font-medium flex items-center gap-3 group border border-neutral-200 dark:border-white/20 transition-all hover:bg-neutral-50 dark:hover:bg-white/[0.1] shadow-sm"
+                                        >
+                                            {isTraditionalView ? (
+                                                <>
+                                                    <Sparkles className="h-4 w-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                                                    <span className="text-black dark:text-white">Switch to AI Sift</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <LayoutList className="h-4 w-4 text-blue-500 group-hover:scale-110 transition-transform" />
+                                                    <span className="text-black dark:text-white">Switch to Traditional</span>
+                                                </>
+                                            )}
+                                        </button>
+                                    )}
 
                                     <Button
                                         onClick={() => isTraditionalView ? fetchTraditionalEmails() : fetchSiftInsights(true)}
