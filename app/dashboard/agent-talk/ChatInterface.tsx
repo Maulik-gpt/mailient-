@@ -7,6 +7,7 @@ import { signOut } from 'next-auth/react';
 import { HugeiconsIcon } from '@hugeicons/react';
 import { AddSquareIcon, Cancel01Icon, WorkHistoryIcon } from '@hugeicons/core-free-icons';
 import { ChatHistoryModal } from './components/ChatHistoryModal';
+import { SuggestionChips } from './components/SuggestionChips';
 // PART 46 — slash-command registry (for /help generation + handler typing).
 import { SLASH_COMMANDS } from '@/lib/arcus/skills';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
@@ -689,6 +690,7 @@ interface AgentMessage {
     agentNarratives?: AgentNarrative[];
     agentRunId?: string;
     agentDurationMs?: number;
+    chipSuggestions?: Array<{ label: string; prompt: string }>;
     result?: {
       type: string;
       title: string;
@@ -3318,6 +3320,24 @@ export default function ChatInterface({
                   }
                 };
               }));
+              break;
+
+            case 'suggestions':
+              if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
+                setMessages(prev => prev.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return {
+                    ...m,
+                    meta: {
+                      ...(m.meta || {}),
+                      chipSuggestions: data.suggestions
+                        .filter((s: any) => typeof s?.label === 'string' && typeof s?.prompt === 'string')
+                        .slice(0, 3)
+                        .map((s: any) => ({ label: String(s.label).slice(0, 60), prompt: String(s.prompt).slice(0, 500) })),
+                    },
+                  };
+                }));
+              }
               break;
 
             case 'error':
@@ -6177,6 +6197,23 @@ export default function ChatInterface({
                                           ));
                                         }}
                                         onViewAll={() => setIsIntegrationsModalOpen(true)}
+                                      />
+                                    )}
+
+                                    {/* PART 57 — follow-up suggestion chips. Shown below the
+                                        assistant message when the run produced chips. Clicking a
+                                        chip fires its prompt as the user's next message. */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.chipSuggestions && !((msg as AgentMessage).meta?.isStreaming) && !((msg as AgentMessage).meta?.hasError) && (
+                                      <SuggestionChips
+                                        chips={(msg as AgentMessage).meta!.chipSuggestions as Array<{ label: string; prompt: string }>}
+                                        disabled={isLoading || isAgentLoopActive}
+                                        onPick={(prompt) => {
+                                          if (currentConversationId) {
+                                            processAgentLoopMessage(prompt, currentConversationId, false);
+                                          } else {
+                                            handleSend(prompt);
+                                          }
+                                        }}
                                       />
                                     )}
 
