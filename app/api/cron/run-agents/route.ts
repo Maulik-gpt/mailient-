@@ -25,6 +25,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { runAgentTask } from '../../../../lib/arcus/run-agent';
 import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
+import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
@@ -205,20 +206,42 @@ export async function GET(request: NextRequest) {
 
         const runHasPending = await hasPendingActions(agent.id);
 
-        // Delivery (email + Slack) in parallel per agent — capture per-channel
-        // results so we can record which worked.
-        const [emailResult, slackResult] = await Promise.allSettled([
-          sendEmailReport(agent.user_id, agent.name, report, runHasPending),
-          sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
-        ]);
+        // PART 60 — Signal-density gate. Score the report; if it's below the
+        // threshold AND the agent's policy is 'suppress' (default) AND there
+        // are no pending approval actions, skip delivery. Pending actions
+        // ALWAYS override — the user can't approve what they don't see.
+        const signal = scoreReportSignal(report);
+        const policy = (agent.quiet_day_policy as 'suppress' | 'always_send' | undefined) ?? 'suppress';
+        const decision = decideDelivery({
+          score: signal.score,
+          policy,
+          hasPending: runHasPending,
+        });
+
+        let emailResult: PromiseSettledResult<void> | { status: 'skipped' } = { status: 'skipped' };
+        let slackResult: PromiseSettledResult<void> | { status: 'skipped' } = { status: 'skipped' };
+
+        if (decision.deliver) {
+          // Delivery (email + Slack) in parallel per agent — capture per-channel
+          // results so we can record which worked.
+          [emailResult, slackResult] = await Promise.allSettled([
+            sendEmailReport(agent.user_id, agent.name, report, runHasPending),
+            sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
+          ]);
+        } else {
+          results.push(`Suppressed (quiet day, score ${signal.score}): ${agent.name}`);
+        }
 
         const completedAt = new Date();
+        const quietSuffix = decision.deliver
+          ? ''
+          : ` · Quiet day (signal ${signal.score}/10) — not delivered.`;
         await supabase
           .from('arcus_agents')
           .update({
             status: 'active',
             last_run_at: now.toISOString(),
-            last_report_summary: report.slice(0, 500),
+            last_report_summary: (report.slice(0, 460) + quietSuffix).slice(0, 500),
           })
           .eq('id', agent.id);
 
@@ -226,6 +249,8 @@ export async function GET(request: NextRequest) {
         // PART 35 — also persist tool_calls + artifact_links (defined in the
         // migration but previously left empty), so the Recent runs UI can
         // surface "drafted 8 / booked 2 / 47 tool calls" at a glance.
+        // PART 60 — also persist signal_score + delivery_decision so the
+        // dashboard can show "suppressed: quiet day" instead of a silent gap.
         if (runRecordId) {
           try {
             const artifactLinks = extractArtifactLinks(report);
@@ -238,11 +263,17 @@ export async function GET(request: NextRequest) {
                 tool_calls: toolCalls,
                 artifact_links: artifactLinks,
                 report_summary: report.slice(0, 500),
-                email_delivery: emailResult.status === 'fulfilled' ? 'sent' : 'failed',
-                slack_delivery: slackResult.status === 'fulfilled' ? 'sent' : 'failed',
+                email_delivery: decision.deliver
+                  ? (emailResult.status === 'fulfilled' ? 'sent' : 'failed')
+                  : 'suppressed',
+                slack_delivery: decision.deliver
+                  ? (slackResult.status === 'fulfilled' ? 'sent' : 'failed')
+                  : 'suppressed',
+                signal_score: signal.score,
+                delivery_decision: `${decision.reason} · ${signal.reasons.slice(0, 3).join(' | ')}`.slice(0, 500),
               })
               .eq('id', runRecordId);
-          } catch { /* non-fatal */ }
+          } catch { /* non-fatal — migration may not be applied */ }
         }
 
         return agent.name;
