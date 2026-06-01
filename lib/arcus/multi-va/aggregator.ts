@@ -1,38 +1,3 @@
-/**
- * Committee-report aggregator — PART 48.
- *
- * Takes the per-VA results from runVA() × N and produces ONE cohesive
- * markdown briefing the cron runner ships via email + Slack. The structure
- * mirrors the existing single-LLM report so delivery + the agent_runs UI
- * keep working unchanged:
- *
- *   <opening line — what got done across the whole committee>
- *
- *   # <Agent Name> — Committee Briefing
- *
- *   ## 📧 Inbox VA   (success · 12 tool calls · 4.3s)
- *   <VA body>
- *
- *   ## 📅 Calendar VA   (success · 5 tool calls · 2.1s)
- *   <VA body>
- *
- *   ... etc per VA ...
- *
- *   ## ⚠️ Needs Your Attention
- *   <only if any VA flagged something OR a VA failed>
- *
- *   ## 🔗 All Links
- *   <merged across all VAs, per bucket>
- *
- *   Sent by Arcus · <agent name> · <run time>
- *
- * The cross-VA "opening line" is the only synthesis step that touches the
- * LLM here — a tiny call that turns the per-VA summaries into a single
- * "Processed 31 emails, drafted 8 replies, booked 2 meetings, logged 5
- * contacts to Notion" headline. Cached behind a feature flag; falls back
- * to a deterministic concatenation when the LLM is unavailable.
- */
-
 import { callLLM, getText } from '../engine';
 import type { ArcusVA } from '../tool-integration-map';
 import type {
@@ -49,9 +14,61 @@ const VA_LABELS: Record<ArcusVA, string> = {
   research: '🔍 Research VA',
 };
 
-// Order VAs deterministically in the final briefing — matches the system
-// prompt's enumeration so users see the same ordering across runs.
 const VA_ORDER: ArcusVA[] = ['inbox', 'calendar', 'crm', 'comms', 'research'];
+
+interface ParsedSections {
+  revenue: string[];
+  client: string[];
+  operations: string[];
+  needsAttention: string[];
+  crossVA: string[];
+  links: string;
+  raw: string;
+}
+
+const SECTION_RE = /^##\s+(Revenue|Client|Operations|Needs Attention|Cross-VA|Links)\s*$/im;
+
+function parseVASections(body: string): ParsedSections {
+  const empty: ParsedSections = { revenue: [], client: [], operations: [], needsAttention: [], crossVA: [], links: '', raw: body };
+  if (!body || !body.trim()) return empty;
+
+  if (/^\s*No work in your lane this run\.\s*$/im.test(body)) return empty;
+
+  const out: ParsedSections = { ...empty };
+  const lines = body.split('\n');
+  let currentKey: keyof Omit<ParsedSections, 'raw' | 'links'> | 'links' | null = null;
+  let linksBuf: string[] = [];
+
+  for (const rawLine of lines) {
+    const m = rawLine.match(SECTION_RE);
+    if (m) {
+      const label = m[1].toLowerCase();
+      if (label === 'revenue') currentKey = 'revenue';
+      else if (label === 'client') currentKey = 'client';
+      else if (label === 'operations') currentKey = 'operations';
+      else if (label === 'needs attention') currentKey = 'needsAttention';
+      else if (label === 'cross-va') currentKey = 'crossVA';
+      else if (label === 'links') currentKey = 'links';
+      continue;
+    }
+    if (!currentKey) continue;
+    if (currentKey === 'links') {
+      linksBuf.push(rawLine);
+      continue;
+    }
+    const trimmed = rawLine.trim();
+    if (!trimmed) continue;
+    if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('•')) {
+      out[currentKey].push(trimmed.replace(/^[-*•]\s*/, ''));
+    } else if (out[currentKey].length > 0) {
+      out[currentKey][out[currentKey].length - 1] += ' ' + trimmed;
+    } else {
+      out[currentKey].push(trimmed);
+    }
+  }
+  out.links = linksBuf.join('\n').trim();
+  return out;
+}
 
 function mergeArtifacts(results: VARunResult[]): ArtifactBuckets {
   const merged: ArtifactBuckets = {};
@@ -67,10 +84,10 @@ function mergeArtifacts(results: VARunResult[]): ArtifactBuckets {
 
 function statusBadge(r: VARunResult): string {
   switch (r.status) {
-    case 'success': return 'success';
-    case 'empty':   return 'no work needed';
-    case 'timeout': return '⏱ timed out';
-    case 'error':   return '⚠ failed';
+    case 'success': return 'ran';
+    case 'empty':   return 'nothing in lane';
+    case 'timeout': return 'timed out';
+    case 'error':   return 'failed';
   }
 }
 
@@ -79,79 +96,88 @@ function formatDuration(ms: number): string {
   return `${(ms / 1000).toFixed(1)}s`;
 }
 
-function vaSection(r: VARunResult): string {
-  const meta = `*${statusBadge(r)} · ${r.toolCalls} tool ${r.toolCalls === 1 ? 'call' : 'calls'} · ${formatDuration(r.durationMs)}*`;
-  if (r.status === 'error') {
-    return [`## ${VA_LABELS[r.va]}`, meta, '', `> ${r.error || 'No error message returned.'}`, ''].join('\n');
+function mergedSection(
+  title: string,
+  perVAItems: Array<{ va: ArcusVA; items: string[] }>,
+): string {
+  const lines: string[] = [];
+  for (const { va, items } of perVAItems) {
+    if (items.length === 0) continue;
+    for (const item of items) {
+      lines.push(`- ${item} _<small>via ${VA_LABELS[va]}</small>_`);
+    }
   }
-  if (r.status === 'timeout') {
-    return [`## ${VA_LABELS[r.va]}`, meta, '', '> Hit the per-VA time budget before completing — partial work above (if any).', ''].join('\n');
-  }
-  if (r.status === 'empty') {
-    return [`## ${VA_LABELS[r.va]}`, meta, '', `_${r.summary}_`, ''].join('\n');
-  }
-  return [`## ${VA_LABELS[r.va]}`, meta, '', r.body.trim(), ''].join('\n');
+  if (lines.length === 0) return '';
+  return [`## ${title}`, '', ...lines, ''].join('\n');
 }
 
-function linksSection(artifacts: ArtifactBuckets): string {
+function linksSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusVA; links: string }>): string {
+  const lines: string[] = ['## 🔗 All Links', ''];
   const buckets: Array<[string, ArtifactBuckets[keyof ArtifactBuckets]]> = [
     ['📧 Gmail', artifacts.gmail],
     ['📅 Calendar', artifacts.calendar],
     ['📝 Notion', artifacts.notion],
     ['💬 Slack', artifacts.slack],
   ];
-  const lines: string[] = [];
+  let hadAny = false;
   for (const [label, list] of buckets) {
     if (!list?.length) continue;
+    hadAny = true;
     lines.push(`**${label}**`);
     for (const item of list) lines.push(`- [${item.label}](${item.url})`);
     lines.push('');
   }
-  if (lines.length === 0) return '';
-  return ['## 🔗 All Links', '', ...lines].join('\n');
+  const perVABlocks = perVALinks
+    .filter(p => p.links.trim())
+    .map(p => `_From ${VA_LABELS[p.va]}:_\n${p.links}`);
+  if (perVABlocks.length) {
+    if (hadAny) lines.push('---', '');
+    lines.push(...perVABlocks);
+    hadAny = true;
+  }
+  return hadAny ? lines.join('\n') : '';
 }
 
-function needsAttentionSection(results: VARunResult[]): string {
-  const items: string[] = [];
-  for (const r of results) {
-    if (r.status === 'error') {
-      items.push(`- **${VA_LABELS[r.va]} failed.** ${r.error || 'No error message returned.'}`);
-    } else if (r.status === 'timeout') {
-      items.push(`- **${VA_LABELS[r.va]} timed out.** Re-running on next scheduled tick should pick up where it stopped.`);
-    }
+function runFooter(results: VARunResult[]): string {
+  const lines: string[] = ['## Run details', ''];
+  for (const va of VA_ORDER) {
+    const r = results.find(x => x.va === va);
+    if (!r) continue;
+    lines.push(`- ${VA_LABELS[va]}: ${statusBadge(r)} · ${r.toolCalls} tool ${r.toolCalls === 1 ? 'call' : 'calls'} · ${formatDuration(r.durationMs)}${r.error ? ` · ${r.error}` : ''}`);
   }
-  if (items.length === 0) return '';
-  return ['## ⚠️ Needs Your Attention', '', ...items, ''].join('\n');
+  return lines.join('\n');
 }
 
-/**
- * Tiny LLM call: turn the per-VA summaries into one cohesive opening
- * sentence the user reads at the top of the briefing. Falls back to a
- * deterministic concatenation if the LLM is unavailable / times out.
- *
- * 1 LLM call per run is acceptable cost — the entire reason we ran 5 VAs
- * in parallel is to give the chief of staff a coordinated cross-domain
- * view. Concatenating summaries with bullets would defeat that purpose.
- */
-async function synthesizeOpeningLine(results: VARunResult[], agentName: string): Promise<string> {
-  const lines = results.map(r => `- ${VA_LABELS[r.va]} (${statusBadge(r)}, ${r.toolCalls} tool calls): ${r.summary}`).join('\n');
-  const successful = results.filter(r => r.status === 'success').length;
-  if (successful === 0) {
-    // No useful work to synthesize — return a deterministic line.
-    return `${agentName}: ${results.length} VA${results.length === 1 ? '' : 's'} ran, none produced actionable output this turn.`;
+async function synthesizeHeadline(
+  results: VARunResult[],
+  agentName: string,
+  parsed: Map<ArcusVA, ParsedSections>,
+): Promise<string> {
+  const totalRevenue = Array.from(parsed.values()).reduce((s, p) => s + p.revenue.length, 0);
+  const totalClient = Array.from(parsed.values()).reduce((s, p) => s + p.client.length, 0);
+  const totalOps = Array.from(parsed.values()).reduce((s, p) => s + p.operations.length, 0);
+  const totalAttention = Array.from(parsed.values()).reduce((s, p) => s + p.needsAttention.length, 0);
+
+  if (totalRevenue + totalClient + totalOps + totalAttention === 0) {
+    return `${agentName}: quiet run — no actionable work surfaced across any lane.`;
   }
+
+  const summaries = results.map(r => `- ${VA_LABELS[r.va]} (${statusBadge(r)}, ${r.toolCalls} calls): ${r.summary}`).join('\n');
   try {
     const res = await callLLM(
       [
         {
           role: 'system',
           content:
-            'You write ONE concrete opening sentence for an executive briefing. ' +
-            'Input is a list of per-VA summaries from a parallel committee run. ' +
-            'Output: a single sentence (max 220 chars) naming the top-line outcome — counts, key actions, key blockers — in past tense, first person ("I").  ' +
-            'Skip filler ("Successfully", "I am pleased to"). No emojis. No closing question. End with a period.',
+            'You write ONE opening sentence for an executive briefing. ' +
+            'Input: per-VA summaries from a parallel committee run. ' +
+            'Output: a single past-tense first-person sentence (≤220 chars) naming concrete outcomes — counts, key actions, key blockers. ' +
+            'No filler ("successfully", "pleased to"). No emojis. No closing question. End with a period.',
         },
-        { role: 'user', content: `Agent: ${agentName}\n\nPer-VA summaries:\n${lines}\n\nWrite the opening sentence.` },
+        {
+          role: 'user',
+          content: `Agent: ${agentName}\n\nTotals: revenue=${totalRevenue} client=${totalClient} ops=${totalOps} needs_attention=${totalAttention}\n\nPer-VA summaries:\n${summaries}\n\nWrite the opening sentence.`,
+        },
       ],
       [],
       { maxTokens: 120, temperature: 0.2 },
@@ -159,44 +185,53 @@ async function synthesizeOpeningLine(results: VARunResult[], agentName: string):
     const raw = getText(res.content).trim();
     const oneLine = raw.split(/\n+/)[0].replace(/^[-*•]\s*/, '').trim();
     if (oneLine.length >= 12 && oneLine.length <= 280) return oneLine;
-  } catch { /* fall through to deterministic line */ }
-  return `${agentName} committee: ${successful} of ${results.length} VAs reported actionable work this run.`;
+  } catch { /* fall through */ }
+
+  const successCount = results.filter(r => r.status === 'success').length;
+  return `${agentName}: ${successCount} of ${results.length} VAs reported work this run. ${totalAttention > 0 ? `${totalAttention} item${totalAttention === 1 ? '' : 's'} need${totalAttention === 1 ? 's' : ''} your attention.` : 'Nothing flagged for your attention.'}`;
 }
 
 export async function buildCommitteeReport(
   results: VARunResult[],
   agent: { name?: string },
 ): Promise<CommitteeReport> {
-  // Order results deterministically + drop VAs we didn't actually run.
   const ordered = VA_ORDER
     .map(va => results.find(r => r.va === va))
     .filter((r): r is VARunResult => r !== undefined);
+
+  const parsed = new Map<ArcusVA, ParsedSections>();
+  for (const r of ordered) parsed.set(r.va, parseVASections(r.body));
+
+  const collect = (key: 'revenue' | 'client' | 'operations' | 'needsAttention' | 'crossVA') =>
+    ordered.map(r => ({ va: r.va, items: parsed.get(r.va)?.[key] ?? [] }));
 
   const totalToolCalls = ordered.reduce((sum, r) => sum + r.toolCalls, 0);
   const artifactLinks = mergeArtifacts(ordered);
   const agentName = agent.name || 'Arcus';
 
-  const opening = await synthesizeOpeningLine(ordered, agentName);
-  const vaSections = ordered.map(vaSection).join('\n');
-  const attention = needsAttentionSection(ordered);
-  const links = linksSection(artifactLinks);
+  const headline = await synthesizeHeadline(ordered, agentName, parsed);
 
-  const report = [
-    opening,
+  const sections: string[] = [
+    headline,
     '',
-    `# ${agentName} — Committee Briefing`,
+    `# ${agentName} — Executive Briefing`,
     '',
-    vaSections,
-    attention,
-    links,
+    mergedSection('💰 Revenue & Opportunities', collect('revenue')),
+    mergedSection('🤝 Client & Relationship Updates', collect('client')),
+    mergedSection('⚙️ Operations', collect('operations')),
+    mergedSection('⚠️ Needs Your Attention', collect('needsAttention')),
+    mergedSection('🔄 Cross-VA Observations', collect('crossVA')),
+    linksSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
+    '',
     '---',
+    '',
+    runFooter(ordered),
+    '',
     `_Sent by Arcus · ${agentName} · ${new Date().toUTCString()}_`,
-  ]
-    .filter(Boolean)
-    .join('\n');
+  ].filter(Boolean);
 
   return {
-    report,
+    report: sections.join('\n'),
     toolCalls: totalToolCalls,
     artifactLinks,
     vaResults: ordered,
