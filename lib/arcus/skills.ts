@@ -409,12 +409,19 @@ EDGE CASES:
   • Any other failure: report exactly what the tool said. Do NOT invent a profile summary.` + GROUND_RULES;
 
 const AGENTS_SKILL = `
-COMMAND: /agents — Inspect, manage, and create scheduled background agents directly in chat. No page navigation.
+COMMAND: /agents — Inspect, pause, resume, delete, or create scheduled background agents directly in chat. No page navigation. Every operation is a tool call you make in this turn.
 
-INTERPRET USER ARGS FIRST:
-  • Args ask "pause <agent name>" / "stop <name>" → list_scheduled_agents first to confirm the agent exists; then tell the user the agent_id and that pause is a one-tap action in the agent card (we don't yet have a direct pause tool — be honest).
+INTERPRET USER ARGS FIRST (these are direct actions — do them, don't redirect to a settings page):
+  • Args say "pause <name>" / "stop <name>" / "turn off <name>":
+      list_scheduled_agents → identify the agent → pause_scheduled_agent({ match_name: "<name>" }) (or agent_id if you already have it). Report "Paused: <name>." Done. No confirmation needed (pause is reversible).
+  • Args say "resume <name>" / "start <name>" / "turn on <name>" / "unpause <name>":
+      list_scheduled_agents → resume_scheduled_agent({ match_name: "<name>" }). Report "Resumed: <name>."
+  • Args say "delete <name>" / "remove <name>" / "kill <name>":
+      list_scheduled_agents → request_confirmation({ action: "Delete scheduled agent", description: "Permanently remove the <name> agent — it won't fire again.", details: { Agent: "<name>", Schedule: "<cron>" } }). STOP. After user confirms, on the next turn: delete_scheduled_agent({ match_name: "<name>" }).
+  • Args say "pause all" / "stop all":
+      list_scheduled_agents → loop pause_scheduled_agent({ agent_id }) over every active one. Report the count paused.
   • Args ask "create <description>" → run create_scheduled_agent with the inferred spec (use the agent-creation flow per CORE DOCTRINE).
-  • Args ask about a specific agent's last run / next run / status → list_scheduled_agents, then surface only the matching agent in detail.
+  • Args ask about a specific agent's last run / status / report → list_scheduled_agents, then surface only the matching agent's last_report_summary in chat.
   • Args absent → run the default workflow below.
 
 DEFAULT WORKFLOW:
@@ -440,18 +447,21 @@ PHASE 2 — Summarize in chat (no canvas):
 
     Top of mind: <if any last_report_summary mentions a deadline / decision, highlight it>.
 
-    Want to create another, pause one, or see what last <agent name>'s run delivered?"
+    To act on these: just say 'pause <name>', 'resume <name>', 'delete <name>', or 'create <description>' — I'll do it in chat."
 
 PHASE 3 — Proactive suggestion:
   If the user has no agents touching a domain they clearly use (e.g. Notion connected but no Notion-touching agent), suggest ONE relevant agent in one sentence.` + GROUND_RULES;
 
 const MEMORY_SKILL = `
-COMMAND: /memory — Show what Arcus remembers about the user + their work. Offer to add / forget items directly in chat.
+COMMAND: /memory — Show what Arcus remembers, add new memories, and forget items — all in chat. Every operation is a tool call you make in this turn.
 
-INTERPRET USER ARGS FIRST:
-  • Args say "forget X" / "drop X" → memory_search to find the matching entry; tell the user the memory_id and that they can delete via the Memory tab in Settings (we don't have a direct delete tool yet — be honest).
-  • Args say "remember X" → memory_save({ content: <X>, tags: ['user'] }) immediately. Confirm with "Saved."
-  • Args ask about a specific person / topic → memory_search({ query: <args>, limit: 10 }) and report what's known about them.
+INTERPRET USER ARGS FIRST (these are direct actions — do them):
+  • Args say "forget X" / "drop X" / "stop remembering X":
+      memory_search({ query: "<X>", limit: 8 }) → show the user what matched in 2-3 lines → request_confirmation({ action: "Forget memory", description: "Permanently delete <N> memor(y|ies) matching '<X>'.", details: { Match: "<X>", Count: "<N>" } }). STOP. On the next turn after confirmation: forget_memory({ match_text: "<X>", max_delete: <N+1> }).
+      If the user named a specific memory_id from a prior search, skip search + skip confirmation and call forget_memory({ memory_id }) directly.
+  • Args say "remember X" / "note that X" / "save X":
+      remember({ content: "<X>", tags: ["user"] }) immediately. Confirm with the tool's output. No search, no confirmation needed (writing memories is reversible via forget_memory).
+  • Args ask about a specific person / topic → memory_search({ query: <args>, limit: 10 }) and report what's known.
   • Args absent → run the default workflow below.
 
 DEFAULT WORKFLOW:
@@ -479,7 +489,7 @@ PHASE 2 — Summarize in chat (no canvas):
   - <item 1>
   - <item 2>
 
-  Anything I have wrong? Tell me and I'll fix it. Or say 'remember X' and I'll save it."
+  Anything I have wrong? Say 'forget <thing>' and I'll drop it. Say 'remember <thing>' and I'll add it."
 
 PHASE 3 — Edge cases:
   • Zero memories: "I don't have anything saved about you yet. Tell me things you want me to remember — preferences ('always cc legal'), relationships ('Priya is our biggest client'), context ('the Q3 launch is the priority'). I'll keep them and apply them silently."
@@ -523,16 +533,144 @@ PHASE 3 — Args interpretation:
   • Args ask "change tone to X" / "make me more X" → confirm the requested change, point to the prompt-box dropdown OR offer to save the change as a custom instruction.
   • Args ask about a specific setting → answer that one specifically.` + GROUND_RULES;
 
+const TODAY = `
+COMMAND: /today — What deserves the user's attention TODAY. Tight, focused, executive-grade. Narrower than /brief — only what blocks or rewards action in the next ~8 hours.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args ask "before noon" / "this morning" / "by EOD" → adjust the time framing in the output but keep the same fetches.
+  • Args name a domain ("just inbox", "just meetings") → restrict to that domain.
+  • Args name a person → bias every fetch toward that person; the answer is "what matters today *for them*".
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
+PHASE 1 — Parallel fetch (emit ALL of these in your first turn):
+  a) gmail_unlimited_search({ query: "is:unread newer_than:1d -category:promotions", maxResults: 30 })
+  b) calendar_unlimited_scan({ daysAhead: 1, includeNotionCalendar: true })  — today + first half of tomorrow
+  c) check_followups({ daysBack: 10, minDaysSilent: 3 })
+  d) surface_proactive_signals({ window: "today" })
+
+PHASE 2 — Triage + sort:
+  • Run gmail_detect_urgency over the top 8 from (a). Keep only urgency ≥7.
+  • From (b), keep only meetings in the next 8 hours.
+  • From (c), keep at most 3 most-overdue threads with revenue keywords in original subject.
+  • From (d), keep DEADLINE / VIP_WAITING items only.
+
+PHASE 3 — Compose the report (chat reply, NO Canvas — must fit in one glance):
+
+  Top of mind for today:
+
+  **🔴 Decide / act**
+  - <item · one-line ask · link>
+  - <item · one-line ask · link>
+
+  **📅 Today's meetings**
+  - <time> · <title> · <prep state — "prepped" or "no prep yet, want /prep?">
+  - ...
+
+  **⏳ Waiting on you**
+  - <thread · waiting <N> days · link>
+
+  (Omit any bucket with zero items. Maximum 3 items per bucket — pick the heaviest.)
+
+  Close with ONE sentence: the single most important thing.
+
+EDGE CASES:
+  • Nothing urgent + no meetings: "Today's clear on my side. Nothing in the inbox is urgent, no meetings scheduled. Quiet day — good time for deep work."
+  • Integration missing: skip that bucket cleanly.` + GROUND_RULES;
+
+const DONE = `
+COMMAND: /done — What the user accomplished today. Recap, recognition, light-touch. NOT a productivity dashboard — a warm "good work today" summary.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args narrow time ("this week", "since Monday", "this month") → adjust the window accordingly. Default is "today" (since 00:00 local).
+  • Args name a domain ("just emails", "just meetings") → restrict to that domain.
+  • Args absent → run the FULL default workflow below.
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
+PHASE 1 — Parallel fetch (today's window):
+  a) gmail_unlimited_search({ query: "in:sent newer_than:1d", maxResults: 50 })  — what the user sent
+  b) calendar_unlimited_scan({ daysAhead: 0, daysBack: 0, includeNotionCalendar: true })  — meetings that happened today
+  c) search_notion({ query: "created today edited today", maxResults: 10 })  — Notion activity today
+
+PHASE 2 — Synthesize the recap (chat reply, NO Canvas — short, warm):
+
+  Today's haul:
+
+  - **📧 <N> emails sent** — <top 3 recipients/subjects, comma-separated. Skip if N<3.>
+  - **📅 <N> meetings held** — <quick names if 3 or fewer; "back-to-back from X to Y" if more>
+  - **📝 <N> Notion updates** — <top 2 page titles if any>
+
+  <Then ONE warm closing sentence — e.g. "Solid day on the SOW side." or "Heaviest meeting day this week — go take a break." Make it specific to what was DONE, not generic.>
+
+EDGE CASES:
+  • Truly nothing today (zero sent, zero meetings, zero Notion): "Quiet day on the books. Either you were deep in non-email work, or the day's just getting started. Either way — nothing to recap yet."
+  • Integration missing: omit that bullet cleanly.
+  • The tone is recognition, not assessment. Never say "you should have done X" or "missed Y".` + GROUND_RULES;
+
+const DIGEST = `
+COMMAND: /digest — Condense the user's newsletter / promotional / digest inbox into ONE Canvas page. Offer to archive after.
+
+INTERPRET USER ARGS FIRST (override default scope when present):
+  • Args narrow time ("last 3 days", "this week") → pass daysBack to digest_newsletters (cap 30).
+  • Args narrow source ("just Substack", "just LinkedIn") → after the digest_newsletters call, filter the surfaced threads to only that source before composing.
+  • Args say "and archive" / "clean them up too" → first call digest_newsletters with archive:false, THEN call request_confirmation, THEN on next turn call digest_newsletters with archive:true.
+  • Args absent → run the FULL default workflow below (read-only, ask before archiving).
+
+DEFAULT WORKFLOW (only when args are absent or general):
+
+PHASE 1 — Run the digest (read-only first; never archive without confirmation):
+  digest_newsletters({ daysBack: 7, archive: false, sendEmail: false })
+
+PHASE 2 — Compose the chat reply:
+
+  Digested <N> newsletters from the last 7 days. The Canvas has the full summary.
+
+  Headline reads:
+  - <bullet 1: the 2-3 most-worth-reading items from the digest, by topic, one line each>
+  - <bullet 2>
+  - <bullet 3>
+
+  Want me to archive these <N> emails out of the inbox? (Reply yes and I'll clear them.)
+
+PHASE 3 — On user "yes" / "archive them":
+  request_confirmation({ action: "Archive newsletters", description: "Archive the <N> newsletters out of the inbox and mark them read.", details: { Count: "<N>", Window: "Last 7 days" } }). STOP. On confirm: digest_newsletters({ daysBack: 7, archive: true, sendEmail: false }).
+
+EDGE CASES:
+  • Zero newsletters: "Inbox is already clean — no newsletters from the last 7 days. Nothing to digest."
+  • Gmail not connected: stop immediately with the reconnect prompt.` + GROUND_RULES;
+
+const REMEMBER_SKILL = `
+COMMAND: /remember — Save a fact, preference, contact note, or working agreement to memory. The args ARE the content — write them down verbatim, with light polish.
+
+INTERPRET USER ARGS FIRST (this skill is args-driven — empty args is an edge case):
+  • Args present (the normal case):
+      remember({ content: "<args, lightly polished into a clear standalone statement>", tags: <infer from content: ["preference"] if it's a "always / never / I prefer" statement, ["contact"] if it names a specific person/company, ["rule"] for working agreements, otherwise omit tags> })
+      Confirm with the tool's output text. ONE additional sentence — e.g. "Got it. I'll apply this going forward." or "Saved. I'll surface this whenever it's relevant."
+  • Args absent (user typed just "/remember"):
+      Ask ONE short question: "What would you like me to remember? Examples: 'always cc legal on enterprise contracts', 'Priya at Acme is our biggest client', 'never schedule meetings on Friday afternoons'."
+
+OUTPUT RULES:
+  • Use the remember tool, NOT memory_save — remember writes with source="user" so it persists even when the auto-memory toggle is off.
+  • Write the content in the third person about the user when appropriate ("User prefers concise Slack replies, no greetings") — that's how it reads best when surfaced later.
+  • Never paraphrase to the point of changing meaning. If the user said "always cc legal@x.com on contracts", save THAT, not "user wants legal in the loop".
+  • One tool call, one short reply. Don't chain into further questions unless args were absent.` + GROUND_RULES;
+
 export const SLASH_COMMANDS: SlashCommand[] = [
   { name: 'brief',     description: 'Morning briefing across all 5 VAs.',                                  category: 'workflows', icon: '☀️', kind: 'prompt', template: BRIEF },
+  { name: 'today',     description: 'What deserves your attention in the next 8 hours.',                  category: 'workflows', icon: '🎯', kind: 'prompt', template: TODAY },
   { name: 'inbox',     description: 'Triage inbox: digest newsletters, flag VIPs, draft client replies.', category: 'workflows', icon: '📧', kind: 'prompt', template: INBOX },
   { name: 'follow-up', description: 'Find stalled threads. Draft polite nudges.',                          category: 'workflows', icon: '⏳', kind: 'prompt', template: FOLLOW_UP },
   { name: 'prep',      description: 'Meeting prep doc for the next 24 hours.',                             category: 'workflows', icon: '🗓️', kind: 'prompt', template: PREP },
+  { name: 'digest',    description: 'Condense newsletters into one Canvas page.',                          category: 'workflows', icon: '📰', kind: 'prompt', template: DIGEST },
   { name: 'weekly',    description: 'Weekly executive brief: done / stalled / next / revenue.',           category: 'workflows', icon: '📊', kind: 'prompt', template: WEEKLY },
+  { name: 'done',      description: 'Today\'s recap — what you got done.',                                  category: 'workflows', icon: '✅', kind: 'prompt', template: DONE },
   { name: 'vip',       description: 'Surface what high-value contacts are waiting on. Read-only.',         category: 'workflows', icon: '⭐', kind: 'prompt', template: VIP },
   { name: 'voice',     description: 'Rebuild voice profile from last 90 days of sent mail.',              category: 'profile',   icon: '🎤', kind: 'prompt', template: VOICE },
-  { name: 'agents',    description: 'List your scheduled agents + offer to create / pause / manage.',     category: 'workflows', icon: '🤖', kind: 'prompt', template: AGENTS_SKILL },
-  { name: 'memory',    description: 'Show what Arcus remembers about you + your work.',                    category: 'workflows', icon: '🧠', kind: 'prompt', template: MEMORY_SKILL },
+  { name: 'agents',    description: 'List, pause, resume, delete, or create scheduled agents.',           category: 'workflows', icon: '🤖', kind: 'prompt', template: AGENTS_SKILL },
+  { name: 'memory',    description: 'See, add, or forget memories — all in chat.',                         category: 'workflows', icon: '🧠', kind: 'prompt', template: MEMORY_SKILL },
+  { name: 'remember',  description: 'Save a fact, preference, or contact note to memory.',                 category: 'workflows', icon: '📌', kind: 'prompt', template: REMEMBER_SKILL },
   { name: 'settings',  description: 'Show your current Arcus settings + offer to change them in chat.',    category: 'workflows', icon: '⚙️', kind: 'prompt', template: SETTINGS_SKILL },
   { name: 'clear',     description: 'Clear the current conversation.',                                     category: 'navigation', icon: '🧹', kind: 'client', clientHandler: 'clearConversation' },
   { name: 'help',      description: 'Show all slash commands.',                                            category: 'navigation', icon: '❓', kind: 'client', clientHandler: 'showHelp' },

@@ -123,6 +123,7 @@ export async function saveMemory(
 }
 
 export interface RawMemoryItem {
+  id?: string;
   text: string;
   score?: number;
   timestamp?: string;
@@ -144,7 +145,7 @@ export async function searchMemoriesRaw(userId: string, query: string, limit = 8
     const q = (query || '').trim();
     let req = supabase
       .from('arcus_memories')
-      .select('content, tags, created_at')
+      .select('id, content, tags, created_at')
       .eq('user_id', normalizeUserId(userId))
       .order('created_at', { ascending: false })
       .limit(limit * 2);
@@ -157,6 +158,7 @@ export async function searchMemoriesRaw(userId: string, query: string, limit = 8
     const { data } = await req;
     for (const row of (data || []) as any[]) {
       supabaseItems.push({
+        id: row.id,
         text: String(row.content || '').slice(0, 600),
         timestamp: row.created_at,
         tags: Array.isArray(row.tags) ? row.tags : undefined,

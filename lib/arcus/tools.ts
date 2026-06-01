@@ -1707,6 +1707,84 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     input_schema: { type: 'object', properties: {} },
   },
   {
+    name: 'pause_scheduled_agent',
+    description:
+      'Pause a scheduled background agent — it stops firing on its cron until resumed. The agent row stays in the database with status="paused". ' +
+      'Required identifier: pass agent_id (preferred — get it from list_scheduled_agents output) OR match_name (case-insensitive substring of the agent\'s name; only matches a single agent unambiguously). ' +
+      'Output: "Paused agent: <name>." with the row\'s new status. ' +
+      'Errors (success:false): validation_error (missing both identifiers), not_found, ambiguous_match (match_name matched more than one), pause_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agent_id: { type: 'string', description: 'UUID of the agent to pause (from list_scheduled_agents).' },
+        match_name: { type: 'string', description: 'Alternative: case-insensitive substring of the agent\'s name. Must match exactly one agent.' },
+      },
+    },
+  },
+  {
+    name: 'resume_scheduled_agent',
+    description:
+      'Resume a paused background agent — it starts firing on its cron again. Sets status="active". ' +
+      'Required identifier: agent_id OR match_name (same rules as pause_scheduled_agent). ' +
+      'Output: "Resumed agent: <name>." ' +
+      'Errors (success:false): validation_error, not_found, ambiguous_match, resume_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agent_id: { type: 'string', description: 'UUID of the agent to resume.' },
+        match_name: { type: 'string', description: 'Alternative: case-insensitive substring of the agent\'s name.' },
+      },
+    },
+  },
+  {
+    name: 'delete_scheduled_agent',
+    description:
+      'Permanently delete a scheduled background agent — removes the row from the database. This is destructive; you MUST call request_confirmation FIRST and only call this after the user approves. ' +
+      'Required identifier: agent_id OR match_name. ' +
+      'Output: "Deleted agent: <name>." ' +
+      'Errors (success:false): validation_error, not_found, ambiguous_match, confirmation_required (when called without prior approval), delete_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        agent_id: { type: 'string', description: 'UUID of the agent to delete.' },
+        match_name: { type: 'string', description: 'Alternative: case-insensitive substring of the agent\'s name.' },
+      },
+    },
+  },
+  {
+    name: 'forget_memory',
+    description:
+      'Delete a stored memory from arcus_memories. Use when the user says "forget X", "stop remembering Y", or asks to clean up specific memory items. ' +
+      'Two modes: pass memory_id (preferred — exact UUID from memory_search output) OR match_text (case-insensitive substring; deletes ALL memories whose content contains it, up to max_delete rows). ' +
+      'Destructive — for match_text mode, call memory_search first to show the user what matches, then request_confirmation before this call. ' +
+      'Output: "Forgot N memor(y|ies)." with the count deleted and a short preview of each removed item. ' +
+      'Errors (success:false): validation_error (neither id nor text), not_found, forget_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        memory_id: { type: 'string', description: 'UUID of the memory row to delete (from memory_search).' },
+        match_text: { type: 'string', description: 'Alternative: case-insensitive substring of the memory content. Deletes every memory whose content contains it.' },
+        max_delete: { type: 'number', description: 'Safety cap for match_text mode (default 5). Refuses if more rows match than this.' },
+      },
+    },
+  },
+  {
+    name: 'remember',
+    description:
+      'Save an explicit, user-driven memory — fact, preference, contact note, working agreement. Use when the user says "remember that…", "note that…", "keep in mind…", or via /remember slash. ' +
+      'Different from memory_save: this writes with source="user", so it persists even when the user has the auto-memory toggle off — explicit asks always honored. ' +
+      'Output: "Remembered: <preview>" with tags if provided. ' +
+      'Errors (success:false): validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        content: { type: 'string', description: 'The fact, preference, or note to remember. Be specific — write it the way you\'d want to find it back later (e.g. "User prefers concise Slack replies, no greetings" rather than "User likes short messages").' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional categorization labels (e.g. ["preference"], ["contact","client"], ["rule"]).' },
+      },
+      required: ['content'],
+    },
+  },
+  {
     name: 'create_scheduled_agent',
     description:
       'Register a persistent background agent. Two-stage flow:\n' +
@@ -2072,6 +2150,11 @@ export async function executeTool(
       case 'slack_get_channels':    result = await slackGetChannels(userId, input); break;
       case 'create_scheduled_agent': result = await createScheduledAgent(userId, input, context); break;
       case 'list_scheduled_agents': result = await listScheduledAgents(userId); break;
+      case 'pause_scheduled_agent':  result = await pauseScheduledAgent(userId, input); break;
+      case 'resume_scheduled_agent': result = await resumeScheduledAgent(userId, input); break;
+      case 'delete_scheduled_agent': result = await deleteScheduledAgent(userId, input, context); break;
+      case 'forget_memory':          result = await forgetMemory(userId, input); break;
+      case 'remember':               result = await rememberTool(userId, input); break;
       case 'report_generate':       result = reportGenerate(input); break;
       case 'report_send_gmail':     result = await reportSendGmail(userId, input); break;
       case 'report_send_slack':     result = await reportSendSlack(userId, input, context); break;
@@ -4704,6 +4787,7 @@ async function memorySearchTool(userId: string, input: any): Promise<ToolResult>
 
   const lines = items.map((m: any, i: number) => {
     const meta: string[] = [];
+    if (m.id) meta.push(`id: ${m.id}`);
     if (typeof m.score === 'number') meta.push(`score: ${m.score.toFixed(2)}`);
     if (m.timestamp) meta.push(`when: ${m.timestamp}`);
     if (m.tags?.length) meta.push(`tags: ${m.tags.join(',')}`);
@@ -5632,6 +5716,167 @@ async function listScheduledAgents(userId: string): Promise<ToolResult> {
     return { output: `Scheduled agents (${data.length}):\n\n${blocks}`, success: true };
   } catch (e: any) {
     return failureResult(`Could not list agents: ${e?.message || 'unknown error'}`, 'list_agents_failed');
+  }
+}
+
+async function resolveAgent(userId: string, input: any): Promise<{ row?: any; error?: ToolResult }> {
+  const agentId = (input?.agent_id || '').trim();
+  const matchName = (input?.match_name || '').trim();
+  if (!agentId && !matchName) {
+    return { error: failureResult('Provide agent_id (preferred — from list_scheduled_agents) or match_name.', 'validation_error') };
+  }
+  const supabase = getSupabaseAdmin();
+  if (agentId) {
+    const { data, error } = await supabase
+      .from('arcus_agents')
+      .select('id, name, status, cron_schedule')
+      .eq('user_id', normalizeUserId(userId))
+      .eq('id', agentId)
+      .maybeSingle();
+    if (error) return { error: failureResult(`Could not look up agent: ${error.message}`, 'pause_failed') };
+    if (!data) return { error: failureResult(`No agent with id ${agentId}.`, 'not_found') };
+    return { row: data };
+  }
+  const { data, error } = await supabase
+    .from('arcus_agents')
+    .select('id, name, status, cron_schedule')
+    .eq('user_id', normalizeUserId(userId))
+    .ilike('name', `%${matchName}%`);
+  if (error) return { error: failureResult(`Could not look up agent: ${error.message}`, 'pause_failed') };
+  if (!data || data.length === 0) return { error: failureResult(`No agent name matches "${matchName}".`, 'not_found') };
+  if (data.length > 1) {
+    const names = data.map((r: any) => `"${r.name}"`).join(', ');
+    return { error: failureResult(`Multiple agents match "${matchName}": ${names}. Use agent_id from list_scheduled_agents.`, 'ambiguous_match') };
+  }
+  return { row: data[0] };
+}
+
+async function pauseScheduledAgent(userId: string, input: any): Promise<ToolResult> {
+  const resolved = await resolveAgent(userId, input);
+  if (resolved.error) return resolved.error;
+  const row = resolved.row;
+  if (row.status === 'paused') return { output: `Agent "${row.name}" is already paused.`, success: true };
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from('arcus_agents')
+      .update({ status: 'paused' })
+      .eq('id', row.id)
+      .eq('user_id', normalizeUserId(userId));
+    if (error) return failureResult(`Could not pause agent: ${error.message}`, 'pause_failed');
+    return { output: `Paused agent: "${row.name}" (was ${row.status || 'active'}, now paused). Cron "${row.cron_schedule}" will not fire until you resume it.`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not pause agent: ${e?.message || 'unknown error'}`, 'pause_failed');
+  }
+}
+
+async function resumeScheduledAgent(userId: string, input: any): Promise<ToolResult> {
+  const resolved = await resolveAgent(userId, input);
+  if (resolved.error) return resolved.error;
+  const row = resolved.row;
+  if (row.status === 'active') return { output: `Agent "${row.name}" is already active.`, success: true };
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from('arcus_agents')
+      .update({ status: 'active' })
+      .eq('id', row.id)
+      .eq('user_id', normalizeUserId(userId));
+    if (error) return failureResult(`Could not resume agent: ${error.message}`, 'resume_failed');
+    return { output: `Resumed agent: "${row.name}". Next fire is the next "${row.cron_schedule}" boundary.`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not resume agent: ${e?.message || 'unknown error'}`, 'resume_failed');
+  }
+}
+
+async function deleteScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to delete — current state is ${context.runState}. Call request_confirmation first with action "Delete scheduled agent" and the agent name in details, then retry after the user confirms.`,
+      'confirmation_required',
+    );
+  }
+  const resolved = await resolveAgent(userId, input);
+  if (resolved.error) return resolved.error;
+  const row = resolved.row;
+  try {
+    const supabase = getSupabaseAdmin();
+    const { error } = await supabase
+      .from('arcus_agents')
+      .delete()
+      .eq('id', row.id)
+      .eq('user_id', normalizeUserId(userId));
+    if (error) return failureResult(`Could not delete agent: ${error.message}`, 'delete_failed');
+    return { output: `Deleted agent: "${row.name}" (id ${row.id}). It will no longer fire on its cron.`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not delete agent: ${e?.message || 'unknown error'}`, 'delete_failed');
+  }
+}
+
+async function forgetMemory(userId: string, input: any): Promise<ToolResult> {
+  const memoryId = (input?.memory_id || '').trim();
+  const matchText = (input?.match_text || '').trim();
+  const maxDelete = Math.max(1, Math.min(50, Number(input?.max_delete) || 5));
+  if (!memoryId && !matchText) {
+    return failureResult('Provide memory_id (from memory_search) or match_text.', 'validation_error');
+  }
+  try {
+    const supabase = getSupabaseAdmin();
+    if (memoryId) {
+      const { data: row, error: selErr } = await supabase
+        .from('arcus_memories')
+        .select('id, content')
+        .eq('user_id', normalizeUserId(userId))
+        .eq('id', memoryId)
+        .maybeSingle();
+      if (selErr) return failureResult(`Could not look up memory: ${selErr.message}`, 'forget_failed');
+      if (!row) return failureResult(`No memory with id ${memoryId}.`, 'not_found');
+      const { error } = await supabase
+        .from('arcus_memories')
+        .delete()
+        .eq('id', row.id)
+        .eq('user_id', normalizeUserId(userId));
+      if (error) return failureResult(`Could not delete memory: ${error.message}`, 'forget_failed');
+      const preview = String(row.content || '').slice(0, 120).replace(/\s+/g, ' ');
+      return { output: `Forgot 1 memory: "${preview}${(row.content || '').length > 120 ? '…' : ''}".`, success: true };
+    }
+    const { data: rows, error: selErr } = await supabase
+      .from('arcus_memories')
+      .select('id, content')
+      .eq('user_id', normalizeUserId(userId))
+      .ilike('content', `%${matchText.slice(0, 200)}%`)
+      .limit(maxDelete + 1);
+    if (selErr) return failureResult(`Could not search memories: ${selErr.message}`, 'forget_failed');
+    if (!rows || rows.length === 0) return failureResult(`No memory contains "${matchText}".`, 'not_found');
+    if (rows.length > maxDelete) {
+      return failureResult(`Too many matches for "${matchText}" — found at least ${rows.length}, cap is ${maxDelete}. Narrow the text or raise max_delete.`, 'forget_failed');
+    }
+    const ids = rows.map((r: any) => r.id);
+    const { error } = await supabase
+      .from('arcus_memories')
+      .delete()
+      .in('id', ids)
+      .eq('user_id', normalizeUserId(userId));
+    if (error) return failureResult(`Could not delete memories: ${error.message}`, 'forget_failed');
+    const previews = rows.map((r: any) => `• "${String(r.content || '').slice(0, 100).replace(/\s+/g, ' ')}${(r.content || '').length > 100 ? '…' : ''}"`).join('\n');
+    return { output: `Forgot ${rows.length} memor${rows.length === 1 ? 'y' : 'ies'} matching "${matchText}":\n${previews}`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not forget memory: ${e?.message || 'unknown error'}`, 'forget_failed');
+  }
+}
+
+async function rememberTool(userId: string, input: any): Promise<ToolResult> {
+  const content = (input?.content || '').trim();
+  if (!content) return failureResult('content is required.', 'validation_error');
+  const tags = Array.isArray(input?.tags) ? input.tags.filter((t: any) => typeof t === 'string' && t.trim()).map((t: string) => t.trim()) : [];
+  try {
+    // @ts-ignore — JS module path
+    const { saveMemory } = await import('./memory');
+    await saveMemory(userId, content, tags.length ? tags : undefined, 'user');
+    const preview = content.slice(0, 120).replace(/\s+/g, ' ');
+    return { output: `Remembered: "${preview}${content.length > 120 ? '…' : ''}"${tags.length ? ` (tags: ${tags.join(', ')})` : ''}`, success: true };
+  } catch (e: any) {
+    return failureResult(`Could not save memory: ${e?.message || 'unknown error'}`, 'memory_save_failed');
   }
 }
 
