@@ -38,6 +38,11 @@ export async function GET() {
       // Users who trust Arcus pick 'auto' — writes execute immediately, no
       // preview, no confirmation. Persists so the choice survives reload.
       actionMode: (prefs.arcus_action_mode as string) || 'ask',
+      // PART 61 — pre-meeting prep. Default on with a 25-minute lead time.
+      meetingPrepEnabled: prefs.arcus_meeting_prep_enabled !== false,
+      meetingPrepLeadMinutes: typeof prefs.arcus_meeting_prep_lead_minutes === 'number'
+        ? prefs.arcus_meeting_prep_lead_minutes
+        : 25,
     });
   } catch {
     return NextResponse.json({
@@ -47,6 +52,8 @@ export async function GET() {
       communicationStyle: 'warm',
       verbosity: 'normal',
       actionMode: 'ask',
+      meetingPrepEnabled: true,
+      meetingPrepLeadMinutes: 25,
     });
   }
 }
@@ -63,6 +70,8 @@ export async function POST(request: NextRequest) {
   let communicationStyle: string | undefined;
   let verbosity: string | undefined;
   let actionMode: string | undefined;
+  let meetingPrepEnabled: boolean | undefined;
+  let meetingPrepLeadMinutes: number | undefined;
   try {
     const body = await request.json();
     personality = (body.personality as string) || '';
@@ -77,6 +86,12 @@ export async function POST(request: NextRequest) {
     }
     if (typeof body.actionMode === 'string' && ['ask', 'auto'].includes(body.actionMode)) {
       actionMode = body.actionMode;
+    }
+    if (typeof body.meetingPrepEnabled === 'boolean') {
+      meetingPrepEnabled = body.meetingPrepEnabled;
+    }
+    if (typeof body.meetingPrepLeadMinutes === 'number' && body.meetingPrepLeadMinutes >= 5 && body.meetingPrepLeadMinutes <= 120) {
+      meetingPrepLeadMinutes = Math.round(body.meetingPrepLeadMinutes);
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -105,6 +120,12 @@ export async function POST(request: NextRequest) {
     }
     if (actionMode !== undefined) {
       updatedPrefs.arcus_action_mode = actionMode;
+    }
+    if (meetingPrepEnabled !== undefined) {
+      updatedPrefs.arcus_meeting_prep_enabled = meetingPrepEnabled;
+    }
+    if (meetingPrepLeadMinutes !== undefined) {
+      updatedPrefs.arcus_meeting_prep_lead_minutes = meetingPrepLeadMinutes;
     }
 
     if (existing) {
