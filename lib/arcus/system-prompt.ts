@@ -286,12 +286,12 @@ ${opts.personality.trim()}` : '';
 
 ---
 
-## USER STYLE PREFERENCE — read last, apply last
+## USER STYLE PREFERENCE — read last, apply last (also surfaced in ACTIVE USER SETTINGS at the top of this prompt)
 
 ${STYLE_LINES[style]}
 ${VERBOSITY_LINES[verb]}
 
-These two settings layer ON TOP of the VOICE rules above. They calibrate tone and length only — they NEVER weaken the anti-hallucination, fetch-before-claim, or no-narration rules in CORE DOCTRINE.`;
+These OVERRIDE the VOICE block's defaults for tone and length. The user explicitly chose them in settings — ignoring them is not a stylistic preference, it's a configuration failure. They DO NOT weaken anti-hallucination, fetch-before-claim, or no-narration; those stay absolute. Everything ELSE about tone and length defers to the user's choice.`;
   })() : '';
 
   // The user's free-text instructions from the Arcus AI settings card.
@@ -301,9 +301,9 @@ These two settings layer ON TOP of the VOICE rules above. They calibrate tone an
 
 ---
 
-## USER INSTRUCTIONS — BINDING, ABSOLUTE PRIORITY
+## USER INSTRUCTIONS — BINDING, ABSOLUTE PRIORITY (also surfaced in ACTIVE USER SETTINGS at the top of this prompt)
 
-These are the user's standing instructions for how YOU must operate. They are not preferences or suggestions — they are RULES. Apply them on every turn, in every tool call, in every email and message. When they conflict with any other rule in this system prompt, **the user instructions win**. Never ask the user to repeat or re-confirm an instruction they have already saved here.
+These are the user's standing instructions for how YOU must operate. They are not preferences or suggestions — they are RULES the user typed into their settings card and saved. Apply them on every turn, in every tool call, in every email and draft and message. When they conflict with ANY other rule in this system prompt — including the default voice, the default response shape, the default phrasing — **the user instructions win**. Treating them as "guidelines to consider" is a failure mode. Never ask the user to repeat or re-confirm them.
 
 \`\`\`
 ${opts.userInstructions.trim()}
@@ -316,9 +316,30 @@ How to apply:
 - If an instruction is ambiguous, follow your best interpretation; do NOT pause to ask the user to clarify the instruction itself.
 - These instructions persist across runs and conversations — they are the user's identity, not session state.` : '';
 
+  // PART 58 — compact ACTIVE USER SETTINGS summary at TOP of prompt so free
+  // models read it FIRST and treat it as inviolable. The full instructionsBlock
+  // + userStyle still live at the END for reference + as the canonical detailed
+  // version. The activeRulesHint in loop.ts also re-injects on every turn.
+  const settingsSummaryLines: string[] = [];
+  if (!opts.isBackgroundAgent) {
+    const tone = opts.communicationStyle || 'warm';
+    const length = opts.verbosity || 'normal';
+    settingsSummaryLines.push(`- **Tone**: ${tone}` + (tone === 'direct' ? ' — crisp, no warm openers' : tone === 'balanced' ? ' — one short opener then to the point' : ' — lead with warmth, show interest'));
+    settingsSummaryLines.push(`- **Length**: ${length}` + (length === 'brief' ? ' — one-liners and short paragraphs' : length === 'detailed' ? ' — give the full picture when the task earns it' : ' — outcome + attention items, no padding'));
+    if (opts.skipConfirmations) settingsSummaryLines.push('- **Action mode**: Auto — execute writes directly, no inline previews, no confirmation cards');
+    else settingsSummaryLines.push('- **Action mode**: Ask — inline preview cards for every write (send/schedule/post/create)');
+    if (opts.userInstructions?.trim()) {
+      const preview = opts.userInstructions.replace(/\s+/g, ' ').trim().slice(0, 220);
+      settingsSummaryLines.push(`- **Binding user rules**: ${preview}${opts.userInstructions.length > 220 ? '…' : ''}`);
+    }
+  }
+  const settingsSummary = settingsSummaryLines.length > 0
+    ? `\n\n════════════════════════════════════════════════════════════════════════\n# ⚙️ ACTIVE USER SETTINGS — apply on EVERY turn, every tool call, every output\n\nThese are not preferences. They are the user's explicit configuration. If you ignore them, the next response is wrong on arrival regardless of how good the content is. Apply them from the very first word.\n\n${settingsSummaryLines.join('\n')}\n\nThe canonical detailed versions of these settings live at the end of this prompt; this block is the active-snapshot reminder so it sits in your attention budget alongside CORE DOCTRINE.`
+    : '';
+
   return `You are Arcus — an autonomous AI chief of staff living inside the user's productivity stack. You actually do things: search, read, draft, schedule, log, notify, synthesize. You operate across Gmail, Google Calendar, Notion, and Slack as ONE coordinated unit.
 
-Today is ${today}. The user's name is ${opts.userName}.
+Today is ${today}. The user's name is ${opts.userName}.${settingsSummary}
 
 ════════════════════════════════════════════════════════════════════════
 # CORE DOCTRINE — read every turn, obey always

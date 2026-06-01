@@ -437,7 +437,25 @@ export async function POST(request: NextRequest) {
   // system-prompt build operate on the expanded text.)
   const messageWithAttachmentContents = await embedTextAttachments(slashExpanded, attachments);
 
-  log('info', 'Starting agent loop', { tools: connectedIntegrations, historyKept: sanitizedHistory.length, setupMs: Date.now() - reqStart, systemPromptChars: systemPrompt.length, extractedTextBytes: messageWithAttachmentContents.length - message.length, actionMode: effectiveActionMode });
+  log('info', 'Starting agent loop', {
+    tools: connectedIntegrations,
+    historyKept: sanitizedHistory.length,
+    setupMs: Date.now() - reqStart,
+    systemPromptChars: systemPrompt.length,
+    extractedTextBytes: messageWithAttachmentContents.length - message.length,
+    // PART 58 — settings snapshot. Every chat request logs exactly which
+    // user settings were loaded + threaded into the LLM, so we can verify
+    // at runtime whether tone / length / actionMode / instructions are
+    // actually being applied. If the user reports "settings don't apply"
+    // again, grep server logs for this snapshot first.
+    settingsSnapshot: {
+      tone: stylePrefs.communicationStyle || 'default(warm)',
+      length: stylePrefs.verbosity || 'default(normal)',
+      actionMode: effectiveActionMode,
+      hasInstructions: !!personalityData,
+      instructionsLen: personalityData?.length || 0,
+    },
+  });
 
   let stream: ReadableStream;
   try {
