@@ -98,4 +98,21 @@ export class CalendarService {
             throw error;
         }
     }
+
+    /**
+     * List events between timeMin and timeMax on the primary calendar.
+     * Returns a normalized shape used by the home-feed today surface.
+     */
+    async listEvents({ timeMin, timeMax, maxResults = 20 }: { timeMin: string; timeMax: string; maxResults?: number }) {
+        const calendar = google.calendar({ version: 'v3', auth: this.getAuth() });
+        const response = await calendar.events.list({
+            calendarId: 'primary',
+            timeMin,
+            timeMax,
+            singleEvents: true,
+            orderBy: 'startTime',
+            maxResults,
+        });
+        return response.data.items || [];
+    }
 }

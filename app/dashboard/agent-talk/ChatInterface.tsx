@@ -1980,6 +1980,18 @@ export default function ChatInterface({
   const router = useRouter();
   const [message, setMessage] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
+
+  // SiftToday → Arcus prefill bridge. The home-feed action buttons stash a
+  // prompt in sessionStorage before navigating here; we drain it on mount.
+  useEffect(() => {
+    try {
+      const prefill = sessionStorage.getItem('arcus_prefill');
+      if (prefill) {
+        sessionStorage.removeItem('arcus_prefill');
+        setMessage(prefill);
+      }
+    } catch { /* sessionStorage unavailable — ignore */ }
+  }, []);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
   const [regenerateModal, setRegenerateModal] = useState<{ isOpen: boolean, msgId: number | null }>({ isOpen: false, msgId: null });

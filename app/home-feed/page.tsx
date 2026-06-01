@@ -3,7 +3,7 @@
 import { useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
-import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
+import SiftToday from '@/components/ui/sift-today';
 import { PricingOverlay } from '@/components/ui/pricing-overlay';
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import confetti from 'canvas-confetti';
@@ -217,8 +217,8 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full h-screen bg-white dark:bg-black relative">
-      <GmailInterfaceFixed />
+    <div className="satoshi-home-feed w-full min-h-screen bg-white dark:bg-black relative">
+      <SiftToday />
       <FloatingNavbar />
       
       {isVerifyingPayment && (
