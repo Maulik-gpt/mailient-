@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2 } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon } from 'lucide-react';
 
 interface DecideItem {
   id: string;
@@ -209,9 +210,23 @@ function SkeletonCard() {
 
 export default function SiftToday() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [data, setData] = useState<TodayPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const firstName = useMemo(() => {
+    const raw = session?.user?.name?.trim();
+    if (raw) return raw.split(/\s+/)[0];
+    const email = session?.user?.email;
+    if (email) {
+      const local = email.split('@')[0];
+      // Strip common separators, take first chunk, capitalize
+      const first = local.split(/[._\-+]/)[0];
+      if (first) return first.charAt(0).toUpperCase() + first.slice(1);
+    }
+    return '';
+  }, [session]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -244,7 +259,7 @@ export default function SiftToday() {
     router.push('/dashboard/agent-talk');
   };
 
-  const { todayLabel, greeting } = useMemo(() => {
+  const { todayLabel, greeting, GreetingIcon } = useMemo(() => {
     const now = new Date();
     const label = now.toLocaleDateString(undefined, {
       weekday: 'long',
@@ -253,13 +268,15 @@ export default function SiftToday() {
     });
     const hour = now.getHours();
     let g = 'Hello';
-    if (hour < 5) g = 'Up late';
-    else if (hour < 12) g = 'Good morning';
-    else if (hour < 17) g = 'Good afternoon';
-    else if (hour < 22) g = 'Good evening';
-    else g = 'Good night';
-    return { todayLabel: label, greeting: g };
-  }, []);
+    let Icon: typeof Sun = Sun;
+    if (hour < 5)        { g = 'Up late';        Icon = Moon; }
+    else if (hour < 12)  { g = 'Good morning';   Icon = Sunrise; }
+    else if (hour < 17)  { g = 'Good afternoon'; Icon = Sun; }
+    else if (hour < 22)  { g = 'Good evening';   Icon = Sunset; }
+    else                 { g = 'Good night';     Icon = Moon; }
+    const personalized = firstName ? `${g}, ${firstName}` : g;
+    return { todayLabel: label, greeting: personalized, GreetingIcon: Icon };
+  }, [firstName]);
 
   const lastUpdated = useMemo(() => (data ? formatRelative(data.generatedAt) : null), [data]);
 
@@ -342,13 +359,20 @@ export default function SiftToday() {
             transition={{ duration: 0.3 }}
             className="py-20 text-center"
           >
-            <div className="inline-block w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.06] mb-5" />
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-black/[0.04] dark:bg-white/[0.05] ring-1 ring-black/[0.04] dark:ring-white/[0.05] text-black/55 dark:text-white/55 mb-5">
+              <GreetingIcon className="w-5 h-5" strokeWidth={1.5} />
+            </div>
             <h2 className="text-[20px] font-medium text-black dark:text-white mb-2 tracking-tight">
-              …take a breath.
+              …take a breath{firstName ? `, ${firstName}` : ''}.
             </h2>
             <p className="text-[14px] text-black/50 dark:text-white/50 max-w-sm mx-auto leading-relaxed">
-              Nothing urgent in your inbox, no meetings today, no follow-ups overdue. Rare and good.
+              Just scanned your inbox, calendar, and follow-ups — nothing urgent, no meetings, nothing overdue. Rare and good.
             </p>
+            {data.generatedAt && (
+              <p className="mt-4 text-[11px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
+                Live data · checked {formatRelative(data.generatedAt)} ago
+              </p>
+            )}
           </motion.div>
         )}
 

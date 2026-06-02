@@ -1820,8 +1820,16 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                         )}
                     </div>
 
-                    {/* The Curvy Content Area */}
-                    <div className="mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar">
+                    {/* The Curvy Content Area.
+                        PART 69 — when mounted as the Inbox tab (forceTraditionalView),
+                        drop the inner card chrome (rounded corners, border, shadow)
+                        so the tab body shares the same flat background as the Today
+                        tab and the swap doesn't feel like jumping into a different
+                        app. Keeps the chrome for legacy direct-mount paths. */}
+                    <div className={forceTraditionalView
+                        ? 'min-h-screen overflow-y-auto custom-scrollbar bg-white dark:bg-black'
+                        : 'mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar'
+                    }>
                         <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 transition-all duration-500`}>
 
                             {/* Header */}
@@ -1833,14 +1841,23 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                     >
                                         <Menu className="w-6 h-6" />
                                     </button>
-                                    {viewMode === 'people' ? (
-                                        <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
-                                    ) : (
-                                        <Home className="w-5 h-5 text-[#666666] dark:text-neutral-400" strokeWidth={1.5} />
+                                    {/* PART 69 — when mounted as the Inbox tab inside the
+                                        home-feed page, the parent already shows a Today/Inbox
+                                        tab bar that serves as the page identifier. The
+                                        duplicate "Home" heading here looked inconsistent
+                                        between the two tabs, so we hide it in that mode. */}
+                                    {!forceTraditionalView && (
+                                        <>
+                                            {viewMode === 'people' ? (
+                                                <Users className="w-6 h-6 text-[#fafafa]" strokeWidth={1.5} />
+                                            ) : (
+                                                <Home className="w-5 h-5 text-[#666666] dark:text-neutral-400" strokeWidth={1.5} />
+                                            )}
+                                            <h1 className="text-2xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
+                                                {viewMode === 'people' ? 'People' : 'Home'}
+                                            </h1>
+                                        </>
                                     )}
-                                    <h1 className="text-2xl font-semibold text-[#1A1A1A] dark:text-white tracking-tight">
-                                        {viewMode === 'people' ? 'People' : 'Home'}
-                                    </h1>
                                 </div>
 
                                 <div className="flex flex-wrap items-center gap-3 md:gap-6 w-full md:w-auto">

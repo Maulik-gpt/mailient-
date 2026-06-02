@@ -8,17 +8,37 @@ import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
 import { PricingOverlay } from '@/components/ui/pricing-overlay';
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import confetti from 'canvas-confetti';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Sparkles, Inbox } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+type TabId = 'today' | 'inbox';
 
 function HomeFeedContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
-  const [activeTab, setActiveTab] = useState<'today' | 'inbox'>('today');
+
+  // PART 69 — Tab is URL-backed (?tab=inbox) so reload preserves the
+  // user's last choice. Defaults to 'today' when no tab param is present.
+  const tabFromUrl = searchParams.get('tab');
+  const initialTab: TabId = tabFromUrl === 'inbox' ? 'inbox' : 'today';
+  const [activeTab, setActiveTab] = useState<TabId>(initialTab);
+
+  const switchTab = useCallback((next: TabId) => {
+    setActiveTab(next);
+    // Mirror to URL without scrolling or triggering a full nav.
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    if (next === 'today') params.delete('tab');
+    else params.set('tab', next);
+    const q = params.toString();
+    const url = q ? `?${q}` : window.location.pathname;
+    window.history.replaceState(null, '', url);
+  }, [searchParams]);
 
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
@@ -167,9 +187,8 @@ function HomeFeedContent() {
     document.title = 'Mailient - AI Inbox';
   }, []);
 
-  // Check for welcome query param and trigger confetti
-  const searchParams = useSearchParams();
-
+  // Check for welcome query param and trigger confetti (reuses searchParams
+  // already declared above for the tab state).
   useEffect(() => {
     const welcome = searchParams.get('welcome');
     if (welcome === 'true') {
@@ -221,37 +240,60 @@ function HomeFeedContent() {
 
   return (
     <div className="satoshi-home-feed w-full min-h-screen bg-white dark:bg-black relative">
-      {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view) */}
-      <div className="sticky top-0 z-30 backdrop-blur-xl bg-white/75 dark:bg-black/65 border-b border-black/[0.04] dark:border-white/[0.04]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-center gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveTab('today')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors ${
-              activeTab === 'today'
-                ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
-            }`}
-          >
-            <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
-            Today
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('inbox')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors ${
-              activeTab === 'inbox'
-                ? 'bg-black text-white dark:bg-white dark:text-black'
-                : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04]'
-            }`}
-          >
-            <Inbox className="w-3.5 h-3.5" strokeWidth={2} />
-            Inbox
-          </button>
+      {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view).
+          PART 69: sliding pill highlight via Framer layoutId so the
+          selected-tab background animates between buttons instead of
+          snapping. */}
+      <div className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 dark:bg-black/70 border-b border-black/[0.04] dark:border-white/[0.04]">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-center">
+          <div className="relative inline-flex items-center gap-1 p-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.04]">
+            {([
+              { id: 'today' as TabId, Icon: Sparkles, label: 'Today' },
+              { id: 'inbox' as TabId, Icon: Inbox,    label: 'Inbox' },
+            ]).map(({ id, Icon, label }) => {
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => switchTab(id)}
+                  className={`relative inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-200 ${
+                    isActive
+                      ? 'text-white dark:text-black'
+                      : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="home-tab-pill"
+                      className="absolute inset-0 rounded-full bg-black dark:bg-white"
+                      transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                    />
+                  )}
+                  <Icon className="w-3.5 h-3.5 relative z-10" strokeWidth={2} />
+                  <span className="relative z-10">{label}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {activeTab === 'today' ? <SiftToday /> : <GmailInterfaceFixed forceTraditionalView />}
+      {/* Animated tab body. Crossfade + tiny vertical slide so the swap
+          feels intentional, not a hard cut. AnimatePresence mode="wait"
+          ensures the outgoing panel finishes its exit before the incoming
+          mounts — prevents layout overlap during the transition. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTab}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -6 }}
+          transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        >
+          {activeTab === 'today' ? <SiftToday /> : <GmailInterfaceFixed forceTraditionalView />}
+        </motion.div>
+      </AnimatePresence>
       <FloatingNavbar />
       
       {isVerifyingPayment && (
