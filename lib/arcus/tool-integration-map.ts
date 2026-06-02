@@ -102,6 +102,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   delete_scheduled_agent: null,
   forget_memory: null,
   remember: null,
+  log_meeting_notes: null,
   report_generate: null,
   ask_user: null,
   get_recipient_context: null,

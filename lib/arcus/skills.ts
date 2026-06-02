@@ -641,6 +641,27 @@ EDGE CASES:
   • Zero newsletters: "Inbox is already clean — no newsletters from the last 7 days. Nothing to digest."
   • Gmail not connected: stop immediately with the reconnect prompt.` + GROUND_RULES;
 
+const LOG = `
+COMMAND: /log — Save notes from a recent meeting. Extract action items + key facts via LLM. Stores both on the meeting row in arcus_meeting_events and saves rich [CONTEXT] memories tagged with attendee emails so future preps with the same people surface them automatically.
+
+INTERPRET USER ARGS FIRST (this skill is args-driven):
+  • Args contain notes (the normal case — anything beyond a single meeting title):
+      log_meeting_notes({ notes: "<args verbatim>", meeting_title: <only if args explicitly name a meeting like "Acme call", otherwise omit> })
+      Immediate save. No clarifying question.
+  • Args name a meeting ONLY ("the Acme call", "today's standup", with nothing else):
+      Ask ONE short question: "What did you want me to log from that meeting?"
+  • Args absent (user typed just "/log"):
+      Ask ONE short question: "Which meeting + what should I log? Or paste the notes and I'll attach them to your most recent meeting."
+
+DEFAULT WORKFLOW:
+  Call log_meeting_notes. It looks up the most recent past meeting OR the one matching meeting_title, runs an LLM extraction over the notes, and saves: (a) raw user_notes, (b) structured action_items with optional due dates, (c) [MEETING_NOTES] memory tagged with attendees, (d) one [CONTEXT] memory per key fact extracted. Action items with due dates within 48h surface automatically in the user's /today bucket.
+
+OUTPUT RULES:
+  • Reuse the tool's output verbatim — it's already formatted (confirmation + action items list + key facts count + "/today" mention).
+  • Do NOT echo the raw notes back to the user.
+  • If 0 action items extracted, the tool says so — don't add extra apology.
+  • One tool call per turn. Don't chain into "want me to also draft a follow-up?" — keep it tight.` + GROUND_RULES;
+
 const REMEMBER_SKILL = `
 COMMAND: /remember — Save a fact, preference, contact note, or working agreement to memory. The args ARE the content — write them down verbatim, with light polish.
 
@@ -671,6 +692,7 @@ export const SLASH_COMMANDS: SlashCommand[] = [
   { name: 'agents',    description: 'List, pause, resume, delete, or create scheduled agents.',           category: 'workflows', icon: '🤖', kind: 'prompt', template: AGENTS_SKILL },
   { name: 'memory',    description: 'See, add, or forget memories — all in chat.',                         category: 'workflows', icon: '🧠', kind: 'prompt', template: MEMORY_SKILL },
   { name: 'remember',  description: 'Save a fact, preference, or contact note to memory.',                 category: 'workflows', icon: '📌', kind: 'prompt', template: REMEMBER_SKILL },
+  { name: 'log',       description: 'Log notes from a recent meeting — extract action items + key facts.',  category: 'workflows', icon: '📝', kind: 'prompt', template: LOG },
   { name: 'settings',  description: 'Show your current Arcus settings + offer to change them in chat.',    category: 'workflows', icon: '⚙️', kind: 'prompt', template: SETTINGS_SKILL },
   { name: 'clear',     description: 'Clear the current conversation.',                                     category: 'navigation', icon: '🧹', kind: 'client', clientHandler: 'clearConversation' },
   { name: 'help',      description: 'Show all slash commands.',                                            category: 'navigation', icon: '❓', kind: 'client', clientHandler: 'showHelp' },

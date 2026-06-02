@@ -1785,6 +1785,25 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'log_meeting_notes',
+    description:
+      'Save user-written notes from a recent meeting and extract structured action items + key facts via LLM. ' +
+      'Attaches to a row in arcus_meeting_events (the most recent past meeting OR the one matching meeting_title). ' +
+      'Action items can have optional due dates parsed from the notes ("by Thursday" / "next week" → ISO date). ' +
+      'Key facts are saved as their own [CONTEXT] memories tagged with attendee emails so future meeting preps with the same people surface them automatically. ' +
+      'Use when the user says "log my notes from <meeting>", "here\'s what we discussed at <meeting>", or via /log slash command. ' +
+      'Output: confirmation + list of extracted action items (with due dates) + count of key facts saved. ' +
+      'Errors (success:false): validation_error (empty notes), not_found (no matching meeting), log_meeting_failed.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        notes: { type: 'string', description: 'The user\'s free-form notes about the meeting — paragraph, bullets, or stream-of-consciousness all fine.' },
+        meeting_title: { type: 'string', description: 'Optional: case-insensitive substring of the meeting title to attach notes to. If omitted, attaches to the most recent past meeting.' },
+      },
+      required: ['notes'],
+    },
+  },
+  {
     name: 'create_scheduled_agent',
     description:
       'Register a persistent background agent. Two-stage flow:\n' +
@@ -2155,6 +2174,7 @@ export async function executeTool(
       case 'delete_scheduled_agent': result = await deleteScheduledAgent(userId, input, context); break;
       case 'forget_memory':          result = await forgetMemory(userId, input); break;
       case 'remember':               result = await rememberTool(userId, input); break;
+      case 'log_meeting_notes':      result = await logMeetingNotes(userId, input); break;
       case 'report_generate':       result = reportGenerate(input); break;
       case 'report_send_gmail':     result = await reportSendGmail(userId, input); break;
       case 'report_send_slack':     result = await reportSendSlack(userId, input, context); break;
@@ -5877,6 +5897,165 @@ async function rememberTool(userId: string, input: any): Promise<ToolResult> {
     return { output: `Remembered: "${preview}${content.length > 120 ? '…' : ''}"${tags.length ? ` (tags: ${tags.join(', ')})` : ''}`, success: true };
   } catch (e: any) {
     return failureResult(`Could not save memory: ${e?.message || 'unknown error'}`, 'memory_save_failed');
+  }
+}
+
+async function logMeetingNotes(userId: string, input: any): Promise<ToolResult> {
+  const notes = String(input?.notes || '').trim();
+  if (!notes) return failureResult('notes are required — paste what you want to log.', 'validation_error');
+  const matchTitle = String(input?.meeting_title || '').trim();
+
+  try {
+    const supabase = getSupabaseAdmin();
+    const normalizedUser = normalizeUserId(userId);
+
+    let meeting: any = null;
+    if (matchTitle) {
+      const { data, error } = await supabase
+        .from('arcus_meeting_events')
+        .select('id, title, event_start, attendees, action_items')
+        .eq('user_id', normalizedUser)
+        .ilike('title', `%${matchTitle}%`)
+        .order('event_start', { ascending: false })
+        .limit(1);
+      if (error?.code === '42P01') return failureResult('arcus_meeting_events table missing — apply the migration.', 'log_meeting_failed');
+      if (error) return failureResult(`Could not look up meeting: ${error.message}`, 'log_meeting_failed');
+      meeting = data?.[0] || null;
+      if (!meeting) return failureResult(`No meeting matches "${matchTitle}".`, 'not_found');
+    } else {
+      const { data, error } = await supabase
+        .from('arcus_meeting_events')
+        .select('id, title, event_start, attendees, action_items')
+        .eq('user_id', normalizedUser)
+        .lte('event_start', new Date().toISOString())
+        .order('event_start', { ascending: false })
+        .limit(1);
+      if (error?.code === '42P01') return failureResult('arcus_meeting_events table missing — apply the migration.', 'log_meeting_failed');
+      if (error) return failureResult(`Could not look up meeting: ${error.message}`, 'log_meeting_failed');
+      meeting = data?.[0] || null;
+      if (!meeting) return failureResult('No past meetings found to attach notes to.', 'not_found');
+    }
+
+    const attendees = Array.isArray(meeting.attendees) ? meeting.attendees : [];
+    const attendeeEmails: string[] = attendees.map((a: any) => a?.email).filter((e: any) => typeof e === 'string');
+    const attendeeBlock = attendeeEmails.length ? attendeeEmails.join(', ') : '(no attendees on file)';
+
+    // LLM extraction — structured action items + key facts
+    let actionItems: Array<{ text: string; due_at?: string; done: boolean; created_at: string }> = [];
+    let keyFacts: string[] = [];
+    try {
+      const { callLLM, getText } = await import('./engine');
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await callLLM(
+        [
+          {
+            role: 'system',
+            content:
+              'You extract structured action items + key facts from raw meeting notes. ' +
+              'Output STRICT JSON: { "actionItems": [{ "text": string, "dueAt": string | null }], "keyFacts": string[] }.\n\n' +
+              'RULES:\n' +
+              '- actionItems: things the USER (not attendees) must do. ≤ 100 chars each. Imperative verbs.\n' +
+              '- dueAt: ISO datetime (YYYY-MM-DD or full ISO). Parse natural phrases relative to TODAY: "tomorrow" / "by Thu" / "next week" / "Friday" / "end of month". Use null if no date is mentioned.\n' +
+              '- keyFacts: things worth remembering for FUTURE meetings with these people. Skip ephemeral details. ≤ 200 chars each.\n' +
+              '- Be conservative — extract ONLY what is clearly in the notes. Skip vague mentions. Empty arrays are valid.\n' +
+              'TODAY IS: ' + today,
+          },
+          {
+            role: 'user',
+            content:
+              `MEETING: "${meeting.title || '(untitled)'}" on ${String(meeting.event_start).slice(0, 10)} with ${attendeeBlock}\n\n` +
+              `NOTES:\n${notes.slice(0, 4000)}\n\n` +
+              'Extract now.',
+          },
+        ],
+        [],
+        { maxTokens: 600, temperature: 0.2 },
+      );
+
+      const raw = getText(res.content).trim();
+      const jsonMatch = raw.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        const now = new Date().toISOString();
+        if (Array.isArray(parsed.actionItems)) {
+          actionItems = parsed.actionItems
+            .filter((a: any) => typeof a?.text === 'string' && a.text.trim())
+            .slice(0, 10)
+            .map((a: any) => {
+              const text = a.text.trim().slice(0, 200);
+              let due_at: string | undefined;
+              if (typeof a.dueAt === 'string' && a.dueAt.length >= 10) {
+                const d = new Date(a.dueAt);
+                if (!isNaN(d.getTime())) due_at = d.toISOString();
+              }
+              return { text, due_at, done: false, created_at: now };
+            });
+        }
+        if (Array.isArray(parsed.keyFacts)) {
+          keyFacts = parsed.keyFacts
+            .filter((s: any) => typeof s === 'string' && s.trim())
+            .slice(0, 6)
+            .map((s: string) => s.trim().slice(0, 300));
+        }
+      }
+    } catch { /* LLM unavailable — save raw notes only */ }
+
+    // Merge with existing action items (preserve done status of prior ones)
+    const existingItems = Array.isArray(meeting.action_items) ? meeting.action_items : [];
+    const mergedItems = [...existingItems, ...actionItems];
+
+    const { error: updateErr } = await supabase
+      .from('arcus_meeting_events')
+      .update({
+        user_notes: notes.slice(0, 8000),
+        action_items: mergedItems,
+      })
+      .eq('id', meeting.id);
+    if (updateErr) return failureResult(`Could not save notes: ${updateErr.message}`, 'log_meeting_failed');
+
+    // Memory writes — best-effort, fire-and-forget pattern
+    try {
+      // @ts-ignore — JS module path
+      const { saveMemory } = await import('./memory');
+      const dateStr = String(meeting.event_start).slice(0, 10);
+      await saveMemory(
+        userId,
+        `[MEETING_NOTES] ${dateStr} — "${meeting.title}" with ${attendeeBlock}. Notes: ${notes.slice(0, 600).replace(/\s+/g, ' ')}`,
+        ['meeting', 'notes', ...attendeeEmails],
+        'user',
+      );
+      for (const fact of keyFacts) {
+        await saveMemory(
+          userId,
+          `[CONTEXT] About ${attendeeBlock}: ${fact}`,
+          ['context', ...attendeeEmails],
+          'user',
+        );
+      }
+    } catch { /* best-effort */ }
+
+    // Compose user-facing output
+    const out: string[] = [];
+    out.push(`Logged notes for "${meeting.title}" (${attendeeEmails.length} attendee${attendeeEmails.length === 1 ? '' : 's'}).`);
+    if (actionItems.length > 0) {
+      out.push(``);
+      out.push(`Action items extracted (${actionItems.length}):`);
+      for (const item of actionItems) {
+        const due = item.due_at ? ` — due ${item.due_at.slice(0, 10)}` : '';
+        out.push(`- ${item.text}${due}`);
+      }
+    } else {
+      out.push(`No action items extracted from these notes.`);
+    }
+    if (keyFacts.length > 0) {
+      out.push(``);
+      out.push(`Saved ${keyFacts.length} key fact${keyFacts.length === 1 ? '' : 's'} about ${attendeeBlock} to memory — future preps with them will surface this.`);
+    }
+    out.push(``);
+    out.push(`Action items will show in your /today bucket when their deadline is within 48h.`);
+    return { output: out.join('\n'), success: true };
+  } catch (e: any) {
+    return failureResult(`Could not log meeting notes: ${e?.message || 'unknown error'}`, 'log_meeting_failed');
   }
 }
 

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2 } from 'lucide-react';
 
 interface DecideItem {
   id: string;
@@ -33,14 +33,45 @@ interface ChaseItem {
   sentAt: string;
   gmailUrl: string;
 }
+interface ActionItem {
+  id: string;
+  text: string;
+  dueAt: string | null;
+  isOverdue: boolean;
+  meetingTitle: string | null;
+  attendees: string[];
+}
 interface TodayPayload {
   decide: DecideItem[];
   showUp: ShowUpItem[];
   chase: ChaseItem[];
+  actionItems: ActionItem[];
   emptyAll: boolean;
   generatedAt: string;
   gmailConnected: boolean;
   calendarConnected: boolean;
+}
+
+function formatDueLabel(dueAt: string | null, isOverdue: boolean): string {
+  if (!dueAt) return 'no deadline';
+  if (isOverdue) {
+    try {
+      const days = Math.floor((Date.now() - new Date(dueAt).getTime()) / (24 * 60 * 60 * 1000));
+      return days >= 1 ? `${days}d overdue` : 'overdue';
+    } catch {
+      return 'overdue';
+    }
+  }
+  try {
+    const d = new Date(dueAt);
+    const ms = d.getTime() - Date.now();
+    const hours = Math.round(ms / (60 * 60 * 1000));
+    if (hours < 24) return hours <= 1 ? 'due now' : `due in ${hours}h`;
+    const days = Math.round(hours / 24);
+    return days === 1 ? 'due tomorrow' : `due in ${days}d`;
+  } catch {
+    return 'due soon';
+  }
 }
 
 function formatStartTime(iso: string): string {
@@ -323,6 +354,41 @@ export default function SiftToday() {
 
         {data && data.gmailConnected && !data.emptyAll && (
           <div className="space-y-10">
+            {/* PROMISED (action items from /log) */}
+            {data.actionItems.length > 0 && (
+              <section>
+                <BucketHeader
+                  label="Promised"
+                  count={data.actionItems.length}
+                  icon={<CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />}
+                />
+                <div className="space-y-2.5">
+                  <AnimatePresence>
+                    {data.actionItems.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        topLeft={item.meetingTitle || 'from your notes'}
+                        topRight={formatDueLabel(item.dueAt, item.isOverdue)}
+                        title={item.text}
+                        reason={item.attendees.length > 0
+                          ? `Promised after meeting with ${item.attendees.slice(0, 2).join(', ')}${item.attendees.length > 2 ? ` +${item.attendees.length - 2}` : ''}.`
+                          : 'From your meeting notes.'}
+                        primaryAction={{
+                          label: item.isOverdue ? 'Handle now' : 'Open',
+                          onClick: () => {
+                            const ctx = item.attendees.length > 0
+                              ? ` (linked to ${item.attendees.join(', ')})`
+                              : '';
+                            openArcus(`Help me with this action item from "${item.meetingTitle || 'my notes'}"${ctx}: ${item.text}`);
+                          },
+                        }}
+                      />
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </section>
+            )}
+
             {/* DECIDE */}
             <section>
               <BucketHeader

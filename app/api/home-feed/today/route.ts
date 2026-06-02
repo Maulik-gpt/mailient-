@@ -13,7 +13,8 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
-import { DatabaseService } from '@/lib/supabase.js';
+// @ts-ignore
+import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail';
 import { CalendarService } from '@/lib/calendar';
@@ -22,6 +23,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
 
 const MAX_PER_BUCKET = 3;
+const ACTION_ITEM_HORIZON_HOURS = 48;
 
 interface DecideItem {
   id: string;
@@ -54,10 +56,20 @@ interface ChaseItem {
   gmailUrl: string;
 }
 
+interface ActionItem {
+  id: string;              // <meeting_row_id>:<index> — addressable for future "mark done"
+  text: string;
+  dueAt: string | null;
+  isOverdue: boolean;
+  meetingTitle: string | null;
+  attendees: string[];
+}
+
 interface TodayResponse {
   decide: DecideItem[];
   showUp: ShowUpItem[];
   chase: ChaseItem[];
+  actionItems: ActionItem[];
   emptyAll: boolean;
   generatedAt: string;
   gmailConnected: boolean;
@@ -289,6 +301,66 @@ async function fetchChase(gmail: GmailService, userEmail: string): Promise<Chase
   }
 }
 
+async function fetchActionItems(userEmail: string): Promise<ActionItem[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('arcus_meeting_events')
+      .select('id, title, attendees, event_start, action_items')
+      .ilike('user_id', userEmail)
+      .not('action_items', 'is', null)
+      .order('event_start', { ascending: false })
+      .limit(25);
+    if (error) {
+      if (error.code === '42P01') return []; // table missing — silent
+      console.warn('[home-feed/today] action items fetch error:', error.message);
+      return [];
+    }
+    if (!data?.length) return [];
+
+    const now = Date.now();
+    const horizonMs = now + ACTION_ITEM_HORIZON_HOURS * 60 * 60 * 1000;
+    const items: ActionItem[] = [];
+
+    for (const row of data) {
+      const ai = Array.isArray(row.action_items) ? row.action_items : [];
+      for (let i = 0; i < ai.length; i++) {
+        const a = ai[i];
+        if (!a || typeof a.text !== 'string' || !a.text.trim()) continue;
+        if (a.done === true) continue;
+        const dueMs = a.due_at ? new Date(a.due_at).getTime() : null;
+        // Dated items only show when ≤48h away (or overdue). Undated items
+        // are surfaced as backlog so the user doesn't forget them.
+        if (dueMs !== null && dueMs > horizonMs) continue;
+        const isOverdue = dueMs !== null && dueMs < now;
+        items.push({
+          id: `${row.id}:${i}`,
+          text: a.text.slice(0, 200),
+          dueAt: a.due_at || null,
+          isOverdue,
+          meetingTitle: row.title || null,
+          attendees: Array.isArray(row.attendees)
+            ? row.attendees.map((x: any) => x?.email).filter((e: any) => typeof e === 'string')
+            : [],
+        });
+      }
+    }
+
+    items.sort((a, b) => {
+      if (a.isOverdue !== b.isOverdue) return a.isOverdue ? -1 : 1;
+      if (a.dueAt && b.dueAt) return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+      if (a.dueAt && !b.dueAt) return -1;
+      if (!a.dueAt && b.dueAt) return 1;
+      return 0;
+    });
+
+    return items.slice(0, MAX_PER_BUCKET);
+  } catch (err: any) {
+    console.warn('[home-feed/today] action items fetch failed:', err?.message);
+    return [];
+  }
+}
+
 export async function GET(_req: Request) {
   try {
     // @ts-ignore
@@ -315,8 +387,12 @@ export async function GET(_req: Request) {
     }
 
     if (!accessToken) {
+      // Even without Gmail, action items from /log persist via Supabase and
+      // can still surface. Fetch them so the user sees their commitments.
+      const actionItems = await fetchActionItems(userEmail);
       const empty: TodayResponse = {
-        decide: [], showUp: [], chase: [], emptyAll: true,
+        decide: [], showUp: [], chase: [], actionItems,
+        emptyAll: actionItems.length === 0,
         generatedAt: new Date().toISOString(),
         gmailConnected: false, calendarConnected: false,
       };
@@ -327,17 +403,19 @@ export async function GET(_req: Request) {
     (gmail as any).setUserEmail?.(userEmail);
     const cal = new CalendarService(accessToken, refreshToken || '');
 
-    const [decide, showUp, chase] = await Promise.all([
+    const [decide, showUp, chase, actionItems] = await Promise.all([
       fetchDecide(gmail),
       fetchShowUp(cal, userEmail),
       fetchChase(gmail, userEmail),
+      fetchActionItems(userEmail),
     ]);
 
     const payload: TodayResponse = {
       decide,
       showUp,
       chase,
-      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0,
+      actionItems,
+      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0,
       generatedAt: new Date().toISOString(),
       gmailConnected: true,
       calendarConnected: true,
