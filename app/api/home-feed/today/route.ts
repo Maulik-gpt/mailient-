@@ -169,12 +169,13 @@ function classifyDecideReason(subject: string, snippet: string, from: string): s
   if (/^Re:/i.test(subject) && !/\b(unsubscribe|newsletter|digest)\b/i.test(text)) {
     return 'Active thread waiting on you';
   }
-  return null;
+  // Fallback for human emails to ensure the AI always has something to show
+  return 'Needs your attention';
 }
 
 async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
   try {
-    const res = await (gmail as any).getEmails(30, 'is:unread newer_than:1d -category:promotions -category:social');
+    const res = await (gmail as any).getEmails(30, 'is:unread newer_than:3d -category:promotions -category:social');
     const ids: string[] = (res?.messages || []).map((m: any) => m.id).slice(0, 30);
     if (!ids.length) return [];
     const details = await Promise.all(
@@ -222,11 +223,12 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
 async function fetchShowUp(cal: CalendarService, userEmail: string): Promise<ShowUpItem[]> {
   try {
     const now = new Date();
-    const endOfDay = new Date(now);
-    endOfDay.setHours(23, 59, 59, 999);
+    const endOfWindow = new Date(now);
+    endOfWindow.setDate(endOfWindow.getDate() + 1);
+    endOfWindow.setHours(23, 59, 59, 999);
     const events = await cal.listEvents({
       timeMin: now.toISOString(),
-      timeMax: endOfDay.toISOString(),
+      timeMax: endOfWindow.toISOString(),
       maxResults: 20,
     });
     const items: ShowUpItem[] = [];

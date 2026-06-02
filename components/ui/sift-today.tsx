@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle } from 'lucide-react';
+import { DraftReplyBox } from '@/app/dashboard/agent-talk/components/DraftReplyBox';
 
 interface DecideItem {
   id: string;
@@ -215,6 +216,66 @@ export default function SiftToday() {
   const [data, setData] = useState<TodayPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [activeDraft, setActiveDraft] = useState<any>(null);
+  const [isDraftingNudgeId, setIsDraftingNudgeId] = useState<string | null>(null);
+
+  const handleDraftNudge = async (item: ChaseItem) => {
+    setIsDraftingNudgeId(item.id);
+    try {
+      const response = await fetch('/api/email/draft-reply?stream=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailId: item.id,
+          category: 'follow-up',
+          emailContent: `Draft a polite follow-up nudge to ${item.recipient.name || item.recipient.email} on the thread "${item.subject}" — they haven't replied in ${item.daysSilent} days. Reference the original ask and end with one concrete CTA. Match my voice.`,
+          emailSubject: item.subject,
+          emailFrom: item.recipient.email
+        })
+      });
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+        }
+      }
+      
+      setActiveDraft({
+        content: accumulated.trim(),
+        recipientName: item.recipient.name || item.recipient.email.split('@')[0] || 'Recipient',
+        recipientEmail: item.recipient.email,
+        senderName: session?.user?.name || '',
+        subject: item.subject.startsWith('Re:') ? item.subject : `Re: ${item.subject}`,
+        threadId: item.threadId,
+      });
+    } catch (e) {
+       console.error('Failed to generate draft nudge:', e);
+    } finally {
+       setIsDraftingNudgeId(null);
+    }
+  };
+
+  const handleSendDraft = async (draftData: any) => {
+    const response = await fetch('/api/gmail/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: draftData.recipientEmail,
+        subject: draftData.subject,
+        body: draftData.content,
+        threadId: draftData.threadId,
+        isHtml: true,
+      })
+    });
+    if (!response.ok) throw new Error("Failed to send");
+  };
 
   const firstName = useMemo(() => {
     const raw = session?.user?.name?.trim();
@@ -530,9 +591,8 @@ export default function SiftToday() {
                         title={item.subject}
                         reason="You sent this. They haven't replied."
                         primaryAction={{
-                          label: 'Draft nudge',
-                          onClick: () =>
-                            openArcus(`Draft a polite follow-up nudge to ${item.recipient.name || item.recipient.email} on the thread "${item.subject}" — they haven't replied in ${item.daysSilent} days. Reference the original ask and end with one concrete CTA. Match my voice.`),
+                          label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
+                          onClick: () => handleDraftNudge(item),
                         }}
                         secondaryAction={{ label: 'Open thread', href: item.gmailUrl }}
                       />
@@ -541,6 +601,20 @@ export default function SiftToday() {
                 </div>
               )}
             </section>
+          </div>
+        )}
+
+        {/* Draft Reply Modal */}
+        {activeDraft && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+            <div className="w-full max-w-2xl relative">
+              <DraftReplyBox
+                draftData={activeDraft}
+                onSendReply={handleSendDraft}
+                onDismiss={() => setActiveDraft(null)}
+                isVisible={true}
+              />
+            </div>
           </div>
         )}
       </div>
