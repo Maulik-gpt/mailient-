@@ -2,9 +2,9 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle } from 'lucide-react';
 
 interface DecideItem {
   id: string;
@@ -51,6 +51,7 @@ interface TodayPayload {
   generatedAt: string;
   gmailConnected: boolean;
   calendarConnected: boolean;
+  needsReconnect?: { gmail?: boolean; calendar?: boolean };
 }
 
 function formatDueLabel(dueAt: string | null, isOverdue: boolean): string {
@@ -335,7 +336,37 @@ export default function SiftToday() {
           </div>
         )}
 
-        {data && !data.gmailConnected && (
+        {data && data.needsReconnect && (data.needsReconnect.gmail || data.needsReconnect.calendar) && (
+          <motion.div
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25 }}
+            className="py-10 px-6 text-center rounded-3xl border border-amber-500/15 dark:border-amber-400/15 bg-amber-500/[0.04] dark:bg-amber-400/[0.04]"
+          >
+            <div className="inline-flex items-center justify-center w-11 h-11 rounded-full bg-amber-500/[0.08] dark:bg-amber-400/[0.08] text-amber-600 dark:text-amber-400 mb-4">
+              <AlertTriangle className="w-5 h-5" strokeWidth={1.75} />
+            </div>
+            <h2 className="text-[16px] font-medium text-black dark:text-white mb-1.5 tracking-tight">
+              {data.needsReconnect.gmail && data.needsReconnect.calendar
+                ? 'Google sign-in expired'
+                : data.needsReconnect.gmail
+                  ? 'Gmail sign-in expired'
+                  : 'Calendar sign-in expired'}
+            </h2>
+            <p className="text-[13.5px] text-black/55 dark:text-white/55 mb-5 max-w-sm mx-auto leading-relaxed">
+              I tried to refresh in the background but Google rejected the token. Sign in again and I'll pick up right where we left off.
+            </p>
+            <button
+              type="button"
+              onClick={() => signIn('google', { callbackUrl: window.location.href, redirect: true })}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 transition-colors active:scale-[0.97]"
+            >
+              Sign in with Google
+            </button>
+          </motion.div>
+        )}
+
+        {data && !data.gmailConnected && !data.needsReconnect && (
           <div className="py-12 px-6 text-center rounded-3xl border border-black/[0.06] dark:border-white/[0.06]">
             <Mail className="w-6 h-6 mx-auto mb-3 text-black/40 dark:text-white/40" strokeWidth={1.5} />
             <h2 className="text-[15px] font-medium text-black dark:text-white mb-1.5">Connect Gmail to see your day</h2>
@@ -344,7 +375,7 @@ export default function SiftToday() {
             </p>
             <button
               type="button"
-              onClick={() => router.push('/onboarding')}
+              onClick={() => signIn('google', { callbackUrl: window.location.href, redirect: true })}
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-medium bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 transition-colors"
             >
               Connect Gmail

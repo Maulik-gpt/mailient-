@@ -9,7 +9,12 @@
       "Bash(git push *)",
       "PowerShell(git commit -F .commit-msg.tmp)",
       "PowerShell(git push origin main)",
-      "PowerShell(git add -A)"
+      "PowerShell(git add -A)",
+      "Bash(git checkout *)",
+      "Bash(grep -n \"instructionsBlock}\\\\\\\\\\\\`;\" c:/Users/hp/Mailent/lib/arcus/system-prompt.ts)",
+      "Bash(grep -nE \"PersonalitySettingsModal|fetch\\\\\\\\\\('/api/agent-talk/personality'\" c:/Users/hp/Mailent/app/dashboard/agent-talk/ChatInterface.tsx)",
+      "Bash(npx next *)",
+      "Bash(echo \"EXIT $?\")"
     ]
   }
 }

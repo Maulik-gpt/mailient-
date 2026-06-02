@@ -114,8 +114,32 @@ export async function GET(request) {
   } catch (error) {
     console.error('=== ERROR IN TRADITIONAL MESSAGES API ===');
     console.error('Error:', error);
+    const msg = String(error?.message || '').toLowerCase();
+    const isTokenExpired =
+      msg.includes('token expired') ||
+      msg.includes('expired and refresh failed') ||
+      msg.includes('no refresh token available') ||
+      msg.includes('invalid_grant') ||
+      msg.includes('401');
+    if (isTokenExpired) {
+      try {
+        const session2 = await auth();
+        const uid = session2?.user?.email?.toLowerCase();
+        if (uid) {
+          const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
+          await markIntegrationNeedsReauth(uid, 'gmail');
+        }
+      } catch {}
+      return Response.json(
+        {
+          error: 'gmail_token_expired',
+          message: 'Gmail sign-in expired. Reconnect to keep reading mail.',
+        },
+        { status: 401 },
+      );
+    }
     return Response.json(
-      { error: 'Failed to fetch emails', details: error.message },
+      { error: 'fetch_failed', message: 'Failed to fetch emails', details: error.message },
       { status: 500 }
     );
   }

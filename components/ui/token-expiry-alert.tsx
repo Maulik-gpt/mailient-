@@ -4,8 +4,7 @@ import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, RefreshCw, LogOut, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useRouter } from 'next/navigation';
-import { signOut } from 'next-auth/react';
+import { signIn } from 'next-auth/react';
 
 interface TokenExpiryAlertProps {
     isVisible: boolean;
@@ -13,11 +12,8 @@ interface TokenExpiryAlertProps {
 }
 
 export function TokenExpiryAlert({ isVisible, onClose }: TokenExpiryAlertProps) {
-    const router = useRouter();
-
     const handleReauthenticate = async () => {
-        // Sign out to force re-auth through Google
-        await signOut({ callbackUrl: '/auth/signin' });
+        await signIn('google', { callbackUrl: window.location.href, redirect: true });
     };
 
     return (

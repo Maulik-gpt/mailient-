@@ -2235,6 +2235,23 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                         ) : null}
                                     </div>
                                 </div>
+                            ) : isTokenExpired ? (
+                                <div className="text-center py-16 px-6 max-w-lg mx-auto rounded-3xl border border-amber-500/20 dark:border-amber-400/15 bg-amber-500/[0.04] dark:bg-amber-400/[0.04]">
+                                    <div className="inline-flex items-center justify-center w-14 h-14 rounded-full bg-amber-500/[0.10] dark:bg-amber-400/[0.10] text-amber-600 dark:text-amber-400 mb-5">
+                                        <AlertCircle className="w-6 h-6" strokeWidth={1.75} />
+                                    </div>
+                                    <h3 className="text-xl font-medium text-black dark:text-white mb-2 tracking-tight">Gmail sign-in expired</h3>
+                                    <p className="text-sm text-black/55 dark:text-white/55 max-w-sm mx-auto mb-7 leading-relaxed">
+                                        I tried refreshing in the background but Google rejected the token. One quick re-sign-in and we're back.
+                                    </p>
+                                    <Button
+                                        onClick={() => signIn('google', { callbackUrl: window.location.href, redirect: true })}
+                                        className="h-11 px-6 bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 rounded-full font-medium inline-flex items-center gap-2 active:scale-[0.97]"
+                                    >
+                                        <RefreshCw className="w-4 h-4" />
+                                        Sign in with Google
+                                    </Button>
+                                </div>
                             ) : !isGmailConnected ? (
                                 /* Gmail not connected — show connect card */
                                 <div className="text-center py-20 px-6 max-w-lg mx-auto bg-white/50 dark:bg-white/[0.02] border border-neutral-200 dark:border-white/5 rounded-[3rem] backdrop-blur-3xl shadow-2xl relative overflow-hidden group">

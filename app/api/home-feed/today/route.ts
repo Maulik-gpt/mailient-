@@ -74,6 +74,12 @@ interface TodayResponse {
   generatedAt: string;
   gmailConnected: boolean;
   calendarConnected: boolean;
+  needsReconnect?: { gmail?: boolean; calendar?: boolean };
+}
+
+function isTokenExpiredErr(err: any): boolean {
+  const m = String(err?.message || '').toLowerCase();
+  return m.includes('expired') || m.includes('invalid_grant') || m.includes('401') || m.includes('refresh failed');
 }
 
 const URGENCY_SIGNALS = [
@@ -403,22 +409,49 @@ export async function GET(_req: Request) {
     (gmail as any).setUserEmail?.(userEmail);
     const cal = new CalendarService(accessToken, refreshToken || '');
 
-    const [decide, showUp, chase, actionItems] = await Promise.all([
-      fetchDecide(gmail),
-      fetchShowUp(cal, userEmail),
-      fetchChase(gmail, userEmail),
+    const wrap = async <T,>(fn: () => Promise<T>, tag: 'gmail' | 'calendar'): Promise<{ value: T | null; expired: boolean }> => {
+      try {
+        return { value: await fn(), expired: false };
+      } catch (e: any) {
+        if (isTokenExpiredErr(e)) {
+          try {
+            const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
+            await markIntegrationNeedsReauth(userEmail.toLowerCase(), tag === 'gmail' ? 'gmail' : 'gcal');
+          } catch {}
+          return { value: null, expired: true };
+        }
+        console.warn(`[home-feed/today] ${tag} fetch failed:`, e?.message);
+        return { value: null, expired: false };
+      }
+    };
+
+    const [decideR, showUpR, chaseR, actionItems] = await Promise.all([
+      wrap(() => fetchDecide(gmail), 'gmail'),
+      wrap(() => fetchShowUp(cal, userEmail), 'calendar'),
+      wrap(() => fetchChase(gmail, userEmail), 'gmail'),
       fetchActionItems(userEmail),
     ]);
+
+    const gmailExpired = decideR.expired || chaseR.expired;
+    const calendarExpired = showUpR.expired;
+    const decide = decideR.value || [];
+    const showUp = showUpR.value || [];
+    const chase = chaseR.value || [];
+
+    const needsReconnect = (gmailExpired || calendarExpired)
+      ? { gmail: gmailExpired, calendar: calendarExpired }
+      : undefined;
 
     const payload: TodayResponse = {
       decide,
       showUp,
       chase,
       actionItems,
-      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0,
+      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && !needsReconnect,
       generatedAt: new Date().toISOString(),
-      gmailConnected: true,
-      calendarConnected: true,
+      gmailConnected: !gmailExpired,
+      calendarConnected: !calendarExpired,
+      needsReconnect,
     };
     return NextResponse.json({ success: true, ...payload });
   } catch (err: any) {
