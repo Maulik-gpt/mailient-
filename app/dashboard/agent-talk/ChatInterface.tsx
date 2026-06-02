@@ -6218,11 +6218,27 @@ export default function ChatInterface({
                                           setIsIntegrationsModalOpen(true);
                                         }}
                                         onSkip={() => {
+                                          // Mark the card dismissed so it
+                                          // disappears from the chat.
                                           setMessages(prev => prev.map(m =>
                                             m.id === msg.id
                                               ? { ...m, meta: { ...(m as AgentMessage).meta, connectorRequired: { ...(m as AgentMessage).meta!.connectorRequired!, dismissed: true } } }
                                               : m
                                           ));
+                                          // PART 68: Skip should be INTERNAL — the AI
+                                          // continues without that integration, not just
+                                          // stop. We send a follow-up user message that
+                                          // tells the loop to work with what's available.
+                                          // The chat looks like: card → "Skip <X>" bubble →
+                                          // AI keeps going with the other tools.
+                                          const required = (msg as AgentMessage).meta?.connectorRequired;
+                                          const names = (required?.connectors || [])
+                                            .filter((c) => !c.connected)
+                                            .map((c) => c.name);
+                                          if (names.length === 0) return;
+                                          const list = names.join(', ');
+                                          const skipMsg = `Skip ${list} — continue with what you can do without ${names.length === 1 ? 'it' : 'them'}. Don't try to use ${names.length === 1 ? 'that integration' : 'those integrations'} this turn.`;
+                                          handleSend(skipMsg);
                                         }}
                                         onApply={() => {
                                           setMessages(prev => prev.map(m =>

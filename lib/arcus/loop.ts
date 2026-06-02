@@ -1656,6 +1656,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     if (code === 'gmail_scope_missing') {
                       invalidateGmailScope(userId).catch(() => { /* non-fatal */ });
                     }
+                    // PART 68: mark stale Google integration rows as
+                    // needs_reauth so the prompt-box icon and integrations
+                    // modal stop showing "Connected" when the token is broken.
+                    if (code === 'gmail_scope_missing' || code === 'gcal_scope_missing') {
+                      const provider = code === 'gmail_scope_missing' ? 'gmail' : 'gcal';
+                      import('./tools/http-tokens')
+                        .then(m => m.markIntegrationNeedsReauth(userId, provider))
+                        .catch(() => { /* non-fatal */ });
+                    }
                     emit('connector_required', {
                       connectors: [{
                         ...connectorMeta,

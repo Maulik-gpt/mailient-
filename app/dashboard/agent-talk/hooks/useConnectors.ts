@@ -149,6 +149,12 @@ export function useConnectors(options: UseConnectorsOptions) {
   const disconnect = useCallback(async (accountIdOrConnectorId: string) => {
     if (!userId) return;
 
+    // Dynamic-import the toast so the hook stays UI-agnostic but the user
+    // still gets visible feedback on success/failure. PART 68 — without a
+    // toast the disconnect button was silently failing in some cases and
+    // the user couldn't tell whether to click again or wait.
+    const toastApi = await import('sonner').then(m => m.toast).catch(() => null);
+
     try {
       setError(null);
 
@@ -158,6 +164,7 @@ export function useConnectors(options: UseConnectorsOptions) {
         a => a.id === accountIdOrConnectorId || a.connectorId === accountIdOrConnectorId,
       );
       const provider = account?.connectorId || accountIdOrConnectorId;
+      const displayName = account?.name || provider;
 
       const response = await fetch('/api/arcus/connectors/disconnect', {
         method: 'POST',
@@ -167,7 +174,23 @@ export function useConnectors(options: UseConnectorsOptions) {
 
       if (!response.ok) {
         const errBody = await response.json().catch(() => ({}));
-        throw new Error(errBody.error || 'Failed to disconnect');
+        const msg = errBody.error || `Failed to disconnect (status ${response.status})`;
+        toastApi?.error(msg);
+        throw new Error(msg);
+      }
+
+      // PART 68 — verify the delete actually freed the row. The server
+      // returns deleted counts per table; a 200 with totalRows=0 means the
+      // row wasn't under this user's key shape (legacy email vs Supabase
+      // uuid). Surface that so the user knows to try a different path.
+      const body = await response.json().catch(() => ({} as any));
+      const totalRows = body.totalRows ?? 0;
+      if (totalRows === 0) {
+        toastApi?.warning(
+          `Couldn't find a ${displayName} row to remove. The integration may already be cleared — refreshing the list now.`,
+        );
+      } else {
+        toastApi?.success(`Disconnected ${displayName}.`);
       }
 
       // Local state — drop ANY account whose connectorId matches the provider.
@@ -178,6 +201,7 @@ export function useConnectors(options: UseConnectorsOptions) {
     } catch (err) {
       setError(err as Error);
       options.onError?.(err as Error);
+      toastApi?.error(`Couldn't disconnect: ${(err as Error).message}`);
     }
   }, [userId, supabase, options, connectedAccounts, loadAccounts]);
 

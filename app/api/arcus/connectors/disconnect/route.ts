@@ -73,42 +73,62 @@ export async function POST(request: NextRequest) {
   const { arcusKeys, legacyKeys, clearGoogleTokens } = getDeletionKeys(provider);
   const supabase = getSupabaseAdmin();
 
+  // PART 68 — Resolve all possible user-key shapes. Different flows wrote
+  // rows under (a) the user's email, (b) the lowercased email, (c) the
+  // Supabase auth uuid. A disconnect that only targets one shape leaves
+  // orphan rows under the others, which is why the button "doesn't
+  // disconnect" from the user's POV — the row keeps coming back.
+  const userKeys = new Set<string>([userId, userId.toLowerCase(), userId.toUpperCase()]);
+  try {
+    const { data: profile } = await supabase
+      .from('user_profiles')
+      .select('user_id, supabase_user_id')
+      .ilike('user_id', userId)
+      .maybeSingle();
+    if (profile?.user_id) userKeys.add(profile.user_id);
+    if (profile?.supabase_user_id) userKeys.add(profile.supabase_user_id);
+  } catch { /* user_profiles may not exist or have those columns — non-fatal */ }
+  const userKeyList = Array.from(userKeys);
+
   const deletions = {
     arcus_integrations: 0,
     integration_credentials: 0,
     user_tokens: 0,
   };
 
-  // 1. arcus_integrations (newer)
+  // 1. arcus_integrations (newer) — delete by every resolved key shape.
   try {
     for (const key of arcusKeys) {
-      const { count } = await supabase
-        .from('arcus_integrations')
-        .delete({ count: 'exact' })
-        .eq('user_id', userId)
-        .eq('provider', key);
-      if (count) deletions.arcus_integrations += count;
+      for (const uk of userKeyList) {
+        const { count } = await supabase
+          .from('arcus_integrations')
+          .delete({ count: 'exact' })
+          .eq('user_id', uk)
+          .eq('provider', key);
+        if (count) deletions.arcus_integrations += count;
+      }
     }
   } catch (err: any) {
     console.warn('[Disconnect] arcus_integrations delete failed:', err.message);
   }
 
-  // 2. integration_credentials (legacy)
+  // 2. integration_credentials (legacy) — delete by both columns AND every key.
   try {
     for (const key of legacyKeys) {
-      // Some rows use user_email, others use user_id — try both columns.
-      const { count: c1 } = await supabase
-        .from('integration_credentials')
-        .delete({ count: 'exact' })
-        .eq('user_email', userId)
-        .eq('provider', key);
-      if (c1) deletions.integration_credentials += c1;
-      const { count: c2 } = await supabase
-        .from('integration_credentials')
-        .delete({ count: 'exact' })
-        .eq('user_id', userId)
-        .eq('provider', key);
-      if (c2) deletions.integration_credentials += c2;
+      for (const uk of userKeyList) {
+        const { count: c1 } = await supabase
+          .from('integration_credentials')
+          .delete({ count: 'exact' })
+          .eq('user_email', uk)
+          .eq('provider', key);
+        if (c1) deletions.integration_credentials += c1;
+        const { count: c2 } = await supabase
+          .from('integration_credentials')
+          .delete({ count: 'exact' })
+          .eq('user_id', uk)
+          .eq('provider', key);
+        if (c2) deletions.integration_credentials += c2;
+      }
     }
   } catch (err: any) {
     console.warn('[Disconnect] integration_credentials delete failed:', err.message);

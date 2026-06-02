@@ -255,6 +255,49 @@ export const CALENDAR_SCOPE_MESSAGE =
   'Open the connectors button in the prompt box, pick Google Calendar, finish the Google sign-in, and ask me again.';
 
 /**
+ * PART 68 — When a Google product (Gmail or Calendar) consistently returns a
+ * scope error after a refresh attempt, the integration row is stale and the
+ * UI is wrongly showing "Connected." Mark it as needs-reauth so the next
+ * /api/connectors fetch reports the truth and the prompt-box icon updates.
+ *
+ * We don't delete the row outright (the user may have other Google products
+ * still working off the same OAuth grant); we set status='needs_reauth' and
+ * stamp last_scope_error_at. The /api/connectors endpoint treats
+ * needs_reauth as "show as disconnected with a reconnect prompt."
+ */
+export async function markIntegrationNeedsReauth(userId: string, provider: 'gmail' | 'gcal'): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const uid = normalizeUserId(userId);
+    const nowIso = new Date().toISOString();
+    // arcus_integrations is the source of truth for the prompt-box UI.
+    await supabase
+      .from('arcus_integrations')
+      .update({ status: 'needs_reauth', updated_at: nowIso })
+      .eq('user_id', uid)
+      .eq('provider', provider);
+    // Belt-and-braces — also mark the legacy table if a row lives there.
+    const legacyKey = provider === 'gmail' ? 'google' : 'google_calendar';
+    await supabase
+      .from('integration_credentials')
+      .update({ status: 'needs_reauth', updated_at: nowIso })
+      .eq('user_id', uid)
+      .eq('provider', legacyKey);
+    // Invalidate scope-probe cache so the next chat turn re-checks.
+    if (provider === 'gmail') {
+      try {
+        const { invalidateGmailScope } = await import('../gmail-scope');
+        await invalidateGmailScope(uid);
+      } catch { /* non-fatal */ }
+    }
+  } catch (err) {
+    // Best-effort — UI still shows the connector_required card from the
+    // emitted SSE event, so the user has a path forward either way.
+    console.warn('[Arcus:tokens] markIntegrationNeedsReauth failed:', (err as any)?.message);
+  }
+}
+
+/**
  * Gmail returns 403 when the OAuth token does not carry one of the Gmail
  * scopes the call requires (e.g. gmail.readonly, gmail.modify, gmail.send).
  * Most often this hits users who connected Google Sign-In before Arcus added
