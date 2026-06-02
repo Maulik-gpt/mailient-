@@ -5,31 +5,57 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   ChevronDown, ChevronRight,
-  Search, Mail, Send, Calendar, Database,
-  Globe, MessageSquare, Inbox, PenLine, Clock,
-  LayoutTemplate, Terminal, AlertCircle, CheckCircle2,
+  Globe, Clock, LayoutTemplate, Terminal, AlertCircle, CheckCircle2,
 } from 'lucide-react';
 import type { AgentStep, AgentNarrative } from './AgentExecutionTimeline';
+import { GmailIcon, NotionIcon, GoogleCalendarIcon, SlackIcon } from './BrandIcon';
 
 // ─── Tool icon + label map ────────────────────────────────────────────────────
+//
+// For tools that hit a real third-party app, show the BRAND mark — that's
+// what the user recognizes ("Arcus is touching my Notion"). For utility
+// tools (canvas, web fetch, etc.) we fall back to Lucide icons.
 
 const TOOL_META: Record<string, { icon: React.ReactNode; verb: string }> = {
-  search_gmail:        { icon: <Mail className="w-3.5 h-3.5" />,           verb: 'Search Gmail' },
-  search_inbox:        { icon: <Search className="w-3.5 h-3.5" />,         verb: 'Search inbox' },
-  read_email:          { icon: <Mail className="w-3.5 h-3.5" />,           verb: 'Read email' },
-  get_sent_emails:     { icon: <Inbox className="w-3.5 h-3.5" />,          verb: 'Fetch sent emails' },
-  draft_reply:         { icon: <PenLine className="w-3.5 h-3.5" />,        verb: 'Draft reply' },
-  save_draft:          { icon: <PenLine className="w-3.5 h-3.5" />,        verb: 'Save draft' },
-  send_email:          { icon: <Send className="w-3.5 h-3.5" />,           verb: 'Send email' },
-  schedule_meeting:    { icon: <Calendar className="w-3.5 h-3.5" />,       verb: 'Schedule meeting' },
-  get_calendar_events: { icon: <Clock className="w-3.5 h-3.5" />,          verb: 'Check calendar' },
-  search_notion:       { icon: <Database className="w-3.5 h-3.5" />,       verb: 'Search Notion' },
-  create_notion_page:  { icon: <Database className="w-3.5 h-3.5" />,       verb: 'Create Notion page' },
+  // Gmail
+  search_gmail:        { icon: <GmailIcon />, verb: 'Search Gmail' },
+  search_inbox:        { icon: <GmailIcon />, verb: 'Search inbox' },
+  read_email:          { icon: <GmailIcon />, verb: 'Read email' },
+  get_sent_emails:     { icon: <GmailIcon />, verb: 'Fetch sent emails' },
+  draft_reply:         { icon: <GmailIcon />, verb: 'Draft reply' },
+  save_draft:          { icon: <GmailIcon />, verb: 'Save draft' },
+  send_email:          { icon: <GmailIcon />, verb: 'Send email' },
+  digest_newsletters:  { icon: <GmailIcon />, verb: 'Digest newsletters' },
+  check_followups:     { icon: <GmailIcon />, verb: 'Check follow-ups' },
+  gmail_unlimited_search: { icon: <GmailIcon />, verb: 'Scan Gmail' },
+  gmail_bulk_read_threads: { icon: <GmailIcon />, verb: 'Read threads' },
+  gmail_batch_draft_replies: { icon: <GmailIcon />, verb: 'Draft replies' },
+  gmail_archive_thread: { icon: <GmailIcon />, verb: 'Archive thread' },
+  gmail_auto_label_threads: { icon: <GmailIcon />, verb: 'Label threads' },
+  // Google Calendar
+  schedule_meeting:    { icon: <GoogleCalendarIcon />, verb: 'Schedule meeting' },
+  get_calendar_events: { icon: <GoogleCalendarIcon />, verb: 'Check calendar' },
+  calendar_get_availability: { icon: <GoogleCalendarIcon />, verb: 'Check availability' },
+  calendar_unlimited_scan: { icon: <GoogleCalendarIcon />, verb: 'Scan calendar' },
+  calendar_cancel_event: { icon: <GoogleCalendarIcon />, verb: 'Cancel event' },
+  // Notion
+  search_notion:       { icon: <NotionIcon />, verb: 'Search Notion' },
+  create_notion_page:  { icon: <NotionIcon />, verb: 'Create Notion page' },
+  notion_read_page:    { icon: <NotionIcon />, verb: 'Read Notion page' },
+  notion_create_task:  { icon: <NotionIcon />, verb: 'Create Notion task' },
+  fetch_notion_schema: { icon: <NotionIcon />, verb: 'Read Notion schema' },
+  // Slack
+  send_slack_message:  { icon: <SlackIcon />, verb: 'Send Slack message' },
+  slack_send_dm:       { icon: <SlackIcon />, verb: 'Send Slack DM' },
+  slack_find_user:     { icon: <SlackIcon />, verb: 'Find Slack user' },
+  slack_get_channels:  { icon: <SlackIcon />, verb: 'List Slack channels' },
+  // Utility — Lucide
   open_canvas:         { icon: <LayoutTemplate className="w-3.5 h-3.5" />, verb: 'Open canvas' },
-  web_search:          { icon: <Globe className="w-3.5 h-3.5" />,          verb: 'Web search' },
-  send_web_request:    { icon: <Globe className="w-3.5 h-3.5" />,          verb: 'Fetch web page' },
-  send_slack_message:  { icon: <MessageSquare className="w-3.5 h-3.5" />,  verb: 'Send Slack message' },
-  read_browser_page:   { icon: <Globe className="w-3.5 h-3.5" />,          verb: 'Read page' },
+  update_canvas:       { icon: <LayoutTemplate className="w-3.5 h-3.5" />, verb: 'Update canvas' },
+  web_search:          { icon: <Globe className="w-3.5 h-3.5" />, verb: 'Web search' },
+  web_search_instant:  { icon: <Globe className="w-3.5 h-3.5" />, verb: 'Web search' },
+  send_web_request:    { icon: <Globe className="w-3.5 h-3.5" />, verb: 'Fetch web page' },
+  read_browser_page:   { icon: <Globe className="w-3.5 h-3.5" />, verb: 'Read page' },
 };
 
 function getToolMeta(tool?: string) {
