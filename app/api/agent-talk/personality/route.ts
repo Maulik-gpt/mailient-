@@ -43,6 +43,8 @@ export async function GET() {
       meetingPrepLeadMinutes: typeof prefs.arcus_meeting_prep_lead_minutes === 'number'
         ? prefs.arcus_meeting_prep_lead_minutes
         : 25,
+      // PART 62 — post-meeting follow-up draft. Default on.
+      meetingFollowupEnabled: prefs.arcus_meeting_followup_enabled !== false,
     });
   } catch {
     return NextResponse.json({
@@ -54,6 +56,7 @@ export async function GET() {
       actionMode: 'ask',
       meetingPrepEnabled: true,
       meetingPrepLeadMinutes: 25,
+      meetingFollowupEnabled: true,
     });
   }
 }
@@ -72,6 +75,7 @@ export async function POST(request: NextRequest) {
   let actionMode: string | undefined;
   let meetingPrepEnabled: boolean | undefined;
   let meetingPrepLeadMinutes: number | undefined;
+  let meetingFollowupEnabled: boolean | undefined;
   try {
     const body = await request.json();
     personality = (body.personality as string) || '';
@@ -92,6 +96,9 @@ export async function POST(request: NextRequest) {
     }
     if (typeof body.meetingPrepLeadMinutes === 'number' && body.meetingPrepLeadMinutes >= 5 && body.meetingPrepLeadMinutes <= 120) {
       meetingPrepLeadMinutes = Math.round(body.meetingPrepLeadMinutes);
+    }
+    if (typeof body.meetingFollowupEnabled === 'boolean') {
+      meetingFollowupEnabled = body.meetingFollowupEnabled;
     }
   } catch {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
@@ -126,6 +133,9 @@ export async function POST(request: NextRequest) {
     }
     if (meetingPrepLeadMinutes !== undefined) {
       updatedPrefs.arcus_meeting_prep_lead_minutes = meetingPrepLeadMinutes;
+    }
+    if (meetingFollowupEnabled !== undefined) {
+      updatedPrefs.arcus_meeting_followup_enabled = meetingFollowupEnabled;
     }
 
     if (existing) {
