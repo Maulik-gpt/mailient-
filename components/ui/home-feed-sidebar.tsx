@@ -140,7 +140,7 @@ export function HomeFeedSidebar({
                         mass: 1,
                         restDelta: 0.001
                     } : { duration: 0 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F9F8F6] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                    className={`fixed left-0 top-0 h-screen bg-[#F4F5F8] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>
@@ -210,7 +210,7 @@ export function HomeFeedSidebar({
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.1, x: 2 }}
                                 onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F9F8F6] dark:bg-black border border-[#EBE9E2] dark:border-white/[0.1] rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
+                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F4F5F8] dark:bg-black border border-[#EBE9E2] dark:border-white/[0.1] rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
                              >
                                 <PanelLeft className="w-3.5 h-3.5 rotate-180" />
                              </motion.button>

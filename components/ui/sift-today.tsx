@@ -343,7 +343,7 @@ export default function SiftToday() {
   const lastUpdated = useMemo(() => (data ? formatRelative(data.generatedAt) : null), [data]);
 
   return (
-    <div className="w-full min-h-screen bg-white dark:bg-black">
+    <div className="w-full min-h-screen bg-transparent dark:bg-black">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
         {/* Header */}
         <div className="flex items-end justify-between mb-12 gap-4">

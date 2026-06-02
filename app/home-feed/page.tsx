@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import { useState, useCallback } from 'react';
 import { Sparkles, Inbox } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HomeFeedSidebar } from '@/components/ui/home-feed-sidebar';
 
 type TabId = 'today' | 'inbox';
 
@@ -22,6 +23,7 @@ function HomeFeedContent() {
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // PART 69 — Tab is URL-backed (?tab=inbox) so reload preserves the
   // user's last choice. Defaults to 'today' when no tab param is present.
@@ -239,8 +241,10 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full min-h-screen bg-white dark:bg-black relative">
-      {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view).
+    <div className="satoshi-home-feed w-full min-h-screen bg-[#F4F5F8] dark:bg-black relative flex">
+      <HomeFeedSidebar onCollapse={setIsSidebarCollapsed} />
+      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+        {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view).
           PART 69: sliding pill highlight via Framer layoutId so the
           selected-tab background animates between buttons instead of
           snapping. */}
@@ -341,7 +345,8 @@ function HomeFeedContent() {
           </div>
       )}
       
-      {!isVerifyingPayment && <PricingOverlay isOpen={showPricing} onClose={() => setShowPricing(false)} />}
+        {!isVerifyingPayment && <PricingOverlay isOpen={showPricing} onClose={() => setShowPricing(false)} />}
+      </div>
     </div>
   );
 }
