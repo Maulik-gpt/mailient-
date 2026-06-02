@@ -691,6 +691,14 @@ interface AgentMessage {
     agentRunId?: string;
     agentDurationMs?: number;
     chipSuggestions?: Array<{ label: string; prompt: string }>;
+    /**
+     * PART 66 — interactive question card persisted on the assistant message.
+     * Set when the AI calls ask_user. Cleared (set to undefined) once the user
+     * submits or dismisses. Persisted via localStorage so the card survives
+     * page reload — the conversation re-opens with the card right where the
+     * user left it.
+     */
+    pendingQuestion?: { questions: AskQuestion[]; runId: string };
     result?: {
       type: string;
       title: string;
@@ -3378,9 +3386,24 @@ export default function ChatInterface({
               // AI needs user input — stream stops intentionally here
               streamFinishedNormally = true;
               hadQuestionEvent = true;
-              setPendingQuestion({
+              const qPayload = {
                 questions: data.questions || [],
                 runId: data.runId || '',
+              };
+              setPendingQuestion(qPayload);
+              // PART 66 — also persist on the latest assistant message so the
+              // card survives reload. The conversation autosave writes the
+              // whole messages[] array to localStorage; pendingQuestion is
+              // now part of that meta, so reopening the chat restores the
+              // card right where the user left it.
+              setMessages(msgs => {
+                if (!msgs.length) return msgs;
+                const last = msgs[msgs.length - 1];
+                if (last.type !== 'agent') return msgs;
+                return [
+                  ...msgs.slice(0, -1),
+                  { ...last, meta: { ...last.meta, pendingQuestion: qPayload } },
+                ];
               });
               setIsLoading(false);
               setIsAgentLoopActive(false);
@@ -6245,6 +6268,7 @@ export default function ChatInterface({
                                         !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
                                         !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
                                         // Pending follow-up question card attached to THIS msg
+                                        !!m.meta?.pendingQuestion ||
                                         (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
                                       // Agent loop still streaming this assistant turn
                                       const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
@@ -6305,6 +6329,7 @@ export default function ChatInterface({
                                         !!m.meta?.confirmationData ||
                                         !!(m.meta?.connectorRequired && m.meta.connectorRequired.waitingForUser && !m.meta.connectorRequired.dismissed) ||
                                         !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
+                                        !!m.meta?.pendingQuestion ||
                                         (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
                                       const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
                                       if (isStillAskingUser || isThisMsgActive) return null;
@@ -6364,22 +6389,48 @@ export default function ChatInterface({
                             </motion.div>
                           )}
                         </AnimatePresence>
-                        {/* Ask User Card — appears when AI needs clarification */}
-                        <AnimatePresence>
-                          {pendingQuestion && (
-                            <AskUserCard
-                              questions={pendingQuestion.questions}
-                              onSubmit={(answers) => {
-                                setPendingQuestion(null);
-                                const formatted = pendingQuestion.questions
-                                  .map((q, i) => `Q: ${q.text}\nA: ${answers[i]}`)
-                                  .join('\n\n');
-                                handleSend(formatted);
-                              }}
-                              onDismiss={() => setPendingQuestion(null)}
-                            />
-                          )}
-                        </AnimatePresence>
+                        {/* Ask User Card — appears when AI needs clarification.
+                            PART 66: persisted on the last assistant message's
+                            meta so it survives reload. We surface the card if
+                            EITHER live state holds a question (fresh stream)
+                            OR the last assistant message has an unanswered one
+                            (reopened conversation). Same render path. */}
+                        {(() => {
+                          const lastMsg = messages[messages.length - 1];
+                          const persistedQ = (lastMsg?.type === 'agent' && lastMsg.meta?.pendingQuestion) || null;
+                          const activeQ = pendingQuestion || persistedQ;
+                          if (!activeQ) return null;
+
+                          const clearQuestion = () => {
+                            setPendingQuestion(null);
+                            setMessages(msgs => {
+                              if (!msgs.length) return msgs;
+                              const last = msgs[msgs.length - 1];
+                              if (last.type !== 'agent' || !last.meta?.pendingQuestion) return msgs;
+                              const { pendingQuestion: _, ...restMeta } = last.meta;
+                              return [
+                                ...msgs.slice(0, -1),
+                                { ...last, meta: restMeta },
+                              ];
+                            });
+                          };
+
+                          return (
+                            <AnimatePresence>
+                              <AskUserCard
+                                questions={activeQ.questions}
+                                onSubmit={(answers) => {
+                                  clearQuestion();
+                                  const formatted = activeQ.questions
+                                    .map((q, i) => `Q: ${q.text}\nA: ${answers[i]}`)
+                                    .join('\n\n');
+                                  handleSend(formatted);
+                                }}
+                                onDismiss={clearQuestion}
+                              />
+                            </AnimatePresence>
+                          );
+                        })()}
 
                         {/* Task progress — collapsed by default, expands upward above prompt */}
                         {liveTaskList && (
