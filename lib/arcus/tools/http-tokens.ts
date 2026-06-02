@@ -251,8 +251,8 @@ export async function getSlackToken(userId: string): Promise<string | null> {
  * (no calendar.events scope). The fix is a dedicated Calendar reconnect.
  */
 export const CALENDAR_SCOPE_MESSAGE =
-  'Google Calendar access needs to be re-authorized. The current Google connection only has email permissions, not calendar permissions. ' +
-  'Tell the user: "I need calendar access to do that. Click the connectors button in the prompt box, choose Google Calendar, and complete the Google sign-in — then ask me again."';
+  'I need calendar access to do that. The current Google connection only has email permissions. ' +
+  'Open the connectors button in the prompt box, pick Google Calendar, finish the Google sign-in, and ask me again.';
 
 /**
  * Gmail returns 403 when the OAuth token does not carry one of the Gmail
@@ -262,8 +262,8 @@ export const CALENDAR_SCOPE_MESSAGE =
  * modal, which re-runs the OAuth consent screen with the missing scopes.
  */
 export const GMAIL_SCOPE_MESSAGE =
-  'Gmail access needs to be re-authorized. The current Google token is missing the required Gmail permissions. ' +
-  'Tell the user: "I need Gmail access to do that. Click the connectors button in the prompt box, choose Gmail, and complete the Google sign-in — then ask me again."';
+  'I need Gmail access to do that. The current Google token is missing the required Gmail permissions. ' +
+  'Open the connectors button in the prompt box, pick Gmail, finish the Google sign-in, and ask me again.';
 
 export function isScopeError(status: number): boolean {
   return status === 403 || status === 401;

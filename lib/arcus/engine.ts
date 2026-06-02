@@ -588,6 +588,63 @@ export function sanitizeModelText(text: string): string {
     clean = clean.replace(re, '');
   }
 
+  // PART 67 — Strip raw tool-call source the LLM emits as text instead of a
+  // proper tool_use block. Some free models on OpenRouter literally type out
+  // `request_confirmation({ "message": "..." })` as a chat message. Match a
+  // line that is JUST a snake_case identifier followed by parens around a
+  // JSON-looking blob. Multiline-safe because the JSON often spans lines.
+  // Conservative on identifier (must end in _confirmation / _user / _email /
+  // etc. — known tool-name suffixes) so we don't accidentally strip user
+  // code snippets.
+  const KNOWN_TOOL_NAMES = [
+    'request_confirmation', 'ask_user', 'send_email', 'schedule_meeting',
+    'search_gmail', 'search_inbox', 'read_email', 'draft_reply', 'save_draft',
+    'send_slack_message', 'slack_send_dm', 'search_notion', 'create_notion_page',
+    'notion_create_task', 'open_canvas', 'update_canvas', 'web_search',
+    'create_scheduled_agent', 'list_scheduled_agents', 'pause_scheduled_agent',
+    'resume_scheduled_agent', 'delete_scheduled_agent', 'forget_memory',
+    'remember', 'log_meeting_notes', 'memory_search', 'memory_save',
+    'get_calendar_events', 'calendar_get_availability', 'calendar_cancel_event',
+    'check_followups', 'digest_newsletters', 'voice_profile_generate',
+    'get_voice_profile', 'report_generate', 'report_send_gmail', 'report_send_slack',
+  ];
+  const TOOL_CALL_RE = new RegExp(
+    `(^|\\n)\\s*(?:${KNOWN_TOOL_NAMES.join('|')})\\s*\\(\\s*\\{[\\s\\S]*?\\}\\s*\\)\\s*(?=\\n|$)`,
+    'g',
+  );
+  clean = clean.replace(TOOL_CALL_RE, (m, sep) => sep || '');
+
+  // Catch-all: any standalone `snake_case_identifier({...})` line. More
+  // permissive than the explicit list but still requires the underscore +
+  // JSON-shaped body, so it doesn't hit normal prose.
+  clean = clean.replace(
+    /(^|\n)\s*[a-z][a-z0-9_]*_[a-z][a-z0-9_]*\s*\(\s*\{[\s\S]{1,2000}?\}\s*\)\s*(?=\n|$)/g,
+    (m, sep) => sep || '',
+  );
+
+  // PART 67 — Strip residual "Tell the user:" / "Tell user:" / "Inform the user:"
+  // prefixes wherever they survived from older tool messages. The phrase is
+  // an internal instruction template; the user-facing version reads cleaner
+  // when we just remove the prefix and keep the quoted content.
+  clean = clean.replace(
+    /\b(?:Tell|Inform|Notify|Let)\s+(?:the\s+)?user\s*[:\-—]\s*["']?/gi,
+    '',
+  );
+  // Closing quote left dangling after the prefix strip
+  clean = clean.replace(/^(\s*[^"'\n]*[.!?])\s*["']\s*$/gm, '$1');
+
+  // PART 67 — Strip the LLM's meta-commentary about its own output. Pattern
+  // seen in the wild: "The message appears to garbled." / "My output looks
+  // corrupted." / "It seems my response was cut off." These are leaked
+  // self-corrections that should never reach the user.
+  const META_COMMENTARY = [
+    /(?:^|\n)\s*(?:The (?:message|response|output|reply) (?:appears to be|seems|looks) (?:garbled|corrupted|cut[- ]off|broken)\.?)/gi,
+    /(?:^|\n)\s*(?:It (?:seems|appears|looks like) my (?:response|output|reply|message) (?:was|got|is) (?:cut[- ]off|garbled|corrupted|broken)\.?)/gi,
+    /(?:^|\n)\s*(?:Apologies (?:for )?(?:the|my) (?:garbled|corrupted|broken|messy) (?:output|response|reply)\.?)/gi,
+    /(?:^|\n)\s*(?:Sorry,?\s+let me (?:try again|restart|retry)\.?)\s*$/gi,
+  ];
+  for (const re of META_COMMENTARY) clean = clean.replace(re, '');
+
   // G1/G2 — Rewrite blunt refusal openings into action-first phrasing. The
   // system prompt already tells the LLM to never say "I can't" / "I'm
   // unable to" / "Unfortunately, …", but defence-in-depth: if it slips

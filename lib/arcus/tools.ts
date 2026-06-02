@@ -5559,7 +5559,7 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
     });
     if (previouslyDeclined) {
       return failureResult(
-        `You already asked the user to confirm "${input.action}" with this exact target earlier in this conversation, and they declined. Do NOT ask again. Tell the user: "I asked about this earlier and you declined — let me know if you want to revisit it differently." Then stop.`,
+        `You already asked the user to confirm "${input.action}" with this exact target earlier in this conversation, and they declined. Do NOT ask again. Reply with: "I asked about this earlier and you declined — let me know if you want to revisit it differently." Then stop.`,
         'already_declined',
       );
     }
@@ -6495,7 +6495,7 @@ async function digestNewsletters(userId: string, input: any): Promise<ToolResult
   }
 
   if (r.count === 0) {
-    return { output: `No newsletters found in the last ${r.daysBack} days — the inbox is already clear of them. Tell the user there was nothing to digest.` };
+    return { output: `No newsletters found in the last ${r.daysBack} days — the inbox is already clear of them. Reply with: "Nothing to digest — your inbox is already clear of newsletters from the last ${r.daysBack} days."` };
   }
 
   const lines = [
