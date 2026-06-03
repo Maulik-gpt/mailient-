@@ -1830,7 +1830,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                         ? 'min-h-screen overflow-y-auto custom-scrollbar bg-white dark:bg-black'
                         : 'mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar'
                     }>
-                        <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 transition-all duration-500`}>
+                        <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 duration-500`}>
 
                             {/* Header */}
                             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 mb-12 md:mb-16">
@@ -2020,7 +2020,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                 <div className="flex gap-6 min-h-[700px] animate-in fade-in slide-in-from-bottom-2 duration-500">
 
                                     {/* Left Column: Contact Sidebar (Hidden on Mobile/Tablet) */}
-                                    <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col transition-all duration-500 border-dashed">
+                                    <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col duration-500 border-dashed">
                                         {!selectedContactEmail ? (
                                             <div className="flex-1 flex items-center justify-center p-8 opacity-20">
                                                 <div className="w-px h-12 bg-white/20" />
@@ -2058,7 +2058,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                     </div>
 
                                     {/* Middle Column: Conversation List */}
-                                    <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm transition-all duration-300`}>
+                                    <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm duration-300`}>
                                         <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
                                             <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600 dark:text-neutral-500">Recently Contacted</h3>
                                             <div className="relative">
@@ -2124,7 +2124,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                     </div>
 
                                     {/* Right Column: Profile Details */}
-                                    <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl transition-all">
+                                    <div className="w-[400px] flex flex-col bg-neutral-900/40 border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden shadow-2xl">
                                         {!selectedContactEmail ? (
                                             <div className="flex-1 flex flex-col items-center justify-center p-12 text-center">
                                                 <div className="w-20 h-20 bg-black/[0.02] dark:bg-white/[0.02] border border-white/[0.05] rounded-full flex items-center justify-center mb-6">

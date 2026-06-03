@@ -288,7 +288,8 @@ export default function SiftToday() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to generate draft nudge');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || 'Failed to generate draft nudge');
       }
       
       const reader = response.body?.getReader();
@@ -337,7 +338,8 @@ export default function SiftToday() {
       });
       
       if (!response.ok) {
-        throw new Error('Failed to generate draft reply');
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error || errData.message || 'Failed to generate draft reply');
       }
       
       const reader = response.body?.getReader();
