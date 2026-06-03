@@ -6,14 +6,21 @@ import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight, ArrowLeft, Check, Loader2, ShieldCheck, Sparkles, X,
-  Mail, CalendarClock, Clock, Wand2, AtSign,
+  Mail, CalendarClock, AtSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import PricingSection3 from '@/components/ui/pricing-section-3';
 
 type StepId = 0 | 1 | 2 | 3;
 const STEPS: StepId[] = [0, 1, 2, 3];
-const STEP_LABELS = ['Connect', 'Identity', 'Tone', 'Ready'];
+const STEP_LABELS = ['Connect', 'Identity', 'Tone', 'Plan'];
+
+const POLAR_CHECKOUT_URLS: Record<'monthly' | 'annual' | 'lifetime', string> = {
+  monthly:  'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61',
+  annual:   'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej',
+  lifetime: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61',
+};
 
 type Tone = 'direct' | 'balanced' | 'warm';
 const TONES: Array<{ id: Tone; title: string; tagline: string; example: string }> = [
@@ -97,7 +104,7 @@ export default function SiftOnboardingPage() {
     signIn('google', { callbackUrl: `${window.location.pathname}?step=1`, redirect: true });
   };
 
-  const handleFinish = async () => {
+  const handleFinish = async (plan: 'free' | 'monthly' | 'annual' | 'lifetime') => {
     setIsSubmitting(true);
     try {
       await fetch('/api/agent-talk/personality', {
@@ -115,12 +122,21 @@ export default function SiftOnboardingPage() {
           profileName: profileName.trim() || firstName,
           bio: bio.trim() || null,
           avatarUrl: session?.user?.image || null,
-          plan: 'free',
+          plan,
           personality: tone,
         }),
       }).catch(() => {});
 
       localStorage.setItem('onboarding_completed', 'true');
+
+      if (plan !== 'free') {
+        try {
+          localStorage.setItem('pending_plan', plan);
+          localStorage.setItem('pending_plan_timestamp', String(Date.now()));
+        } catch {}
+        window.location.href = POLAR_CHECKOUT_URLS[plan];
+        return;
+      }
 
       try {
         confetti({
@@ -146,11 +162,11 @@ export default function SiftOnboardingPage() {
       return u.length >= 3 && usernameAvailable !== false && !checkingUsername;
     }
     if (step === 2) return true;
-    return true;
+    return false;
   })();
 
   const handleContinue = () => {
-    if (step === 3) { handleFinish(); return; }
+    if (step === 3) return;
     if (!canContinue) return;
     goto((step + 1) as StepId);
   };
@@ -193,7 +209,7 @@ export default function SiftOnboardingPage() {
       </header>
 
       <main className="flex-1 flex items-center justify-center px-6 py-12">
-        <div className="w-full max-w-xl">
+        <div className={cn('w-full', step === 3 ? 'max-w-6xl' : 'max-w-xl')}>
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
@@ -220,7 +236,14 @@ export default function SiftOnboardingPage() {
                 />
               )}
               {step === 2 && <StepTone tone={tone} setTone={setTone} />}
-              {step === 3 && <StepReady firstName={firstName} tone={tone} />}
+              {step === 3 && (
+                <StepPricing
+                  firstName={firstName}
+                  isSubmitting={isSubmitting}
+                  onSelect={(planId) => handleFinish(planId)}
+                  onStartFree={() => handleFinish('free')}
+                />
+              )}
             </motion.div>
           </AnimatePresence>
         </div>
@@ -253,39 +276,45 @@ export default function SiftOnboardingPage() {
             </span>
           )}
 
-          <button
-            type="button"
-            onClick={step === 0 ? handleConnectGoogle : handleContinue}
-            disabled={!canContinue || isSubmitting}
-            className={cn(
-              'inline-flex items-center gap-2 pl-4 pr-3 py-2 rounded-full text-[13.5px] font-semibold transition-[background-color,transform] duration-150 active:scale-[0.97]',
-              !canContinue || isSubmitting
-                ? 'bg-black/[0.08] dark:bg-white/[0.08] text-black/40 dark:text-white/40 cursor-not-allowed'
-                : 'bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85',
-            )}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                Setting up…
-              </>
-            ) : step === 0 ? (
-              <>
-                Continue with Google
-                <ArrowRight className="w-3.5 h-3.5" />
-              </>
-            ) : step === 3 ? (
-              <>
-                Take me home
-                <ArrowRight className="w-3.5 h-3.5" />
-              </>
-            ) : (
-              <>
-                Continue
-                <ArrowRight className="w-3.5 h-3.5" />
-              </>
-            )}
-          </button>
+          {step === 3 ? (
+            <button
+              type="button"
+              onClick={() => handleFinish('free')}
+              disabled={isSubmitting}
+              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
+            >
+              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>Start free <ArrowRight className="w-3.5 h-3.5" /></>}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={step === 0 ? handleConnectGoogle : handleContinue}
+              disabled={!canContinue || isSubmitting}
+              className={cn(
+                'inline-flex items-center gap-2 pl-4 pr-3 py-2 rounded-full text-[13.5px] font-semibold transition-[background-color,transform] duration-150 active:scale-[0.97]',
+                !canContinue || isSubmitting
+                  ? 'bg-black/[0.08] dark:bg-white/[0.08] text-black/40 dark:text-white/40 cursor-not-allowed'
+                  : 'bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85',
+              )}
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  Setting up…
+                </>
+              ) : step === 0 ? (
+                <>
+                  Continue with Google
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </>
+              )}
+            </button>
+          )}
         </div>
       </footer>
     </div>
@@ -499,46 +528,56 @@ function StepTone({ tone, setTone }: { tone: Tone; setTone: (t: Tone) => void })
   );
 }
 
-function StepReady({ firstName, tone }: { firstName: string; tone: Tone }) {
+function StepPricing({
+  firstName,
+  isSubmitting,
+  onSelect,
+  onStartFree,
+}: {
+  firstName: string;
+  isSubmitting: boolean;
+  onSelect: (planId: 'monthly' | 'annual' | 'lifetime') => void;
+  onStartFree: () => void;
+}) {
   return (
-    <div className="text-center">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-black/[0.04] dark:bg-white/[0.05] ring-1 ring-black/[0.04] dark:ring-white/[0.05] text-black/70 dark:text-white/70 mb-6">
-        <Check className="w-6 h-6" strokeWidth={2.25} />
+    <div className="relative">
+      <div className="text-center mb-10">
+        <p className="text-[11px] uppercase tracking-[0.18em] text-black/40 dark:text-white/40 font-medium mb-3">
+          Step 4 of 4 · Pick a plan
+        </p>
+        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold tracking-[-0.025em] mb-3 text-black dark:text-white">
+          {firstName ? `Welcome aboard, ${firstName}.` : 'Welcome aboard.'}
+        </h1>
+        <p className="text-[15px] text-black/55 dark:text-white/55 max-w-md mx-auto leading-relaxed">
+          Pick what fits. You can change it anytime, and you can skip with Start free below.
+        </p>
       </div>
-      <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold tracking-[-0.025em] mb-3">
-        {firstName ? `You're in, ${firstName}.` : "You're in."}
-      </h1>
-      <p className="text-[15px] text-black/55 dark:text-white/55 max-w-md mx-auto leading-relaxed mb-8">
-        Your home shows what deserves you today. Inbox is one tap away. Arcus learns as you go.
-      </p>
 
-      <div className="max-w-md mx-auto text-left rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-white/[0.02] overflow-hidden">
-        <div className="px-5 py-4 border-b border-black/[0.05] dark:border-white/[0.05]">
-          <p className="text-[11px] uppercase tracking-[0.16em] text-black/40 dark:text-white/40 font-medium">Preview</p>
-          <p className="text-[16px] font-semibold tracking-tight mt-1">Today</p>
+      {isSubmitting && (
+        <div className="absolute inset-0 z-20 backdrop-blur-sm bg-black/30 rounded-3xl flex items-center justify-center">
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-white text-black font-medium text-[13px]">
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Setting up your account…
+          </div>
         </div>
-        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
-          <PreviewRow icon={<Mail className="w-3.5 h-3.5" />} label="Decide" sub="Unread mail that moves the business" />
-          <PreviewRow icon={<CalendarClock className="w-3.5 h-3.5" />} label="Show up" sub="Today's meetings with prep" />
-          <PreviewRow icon={<Clock className="w-3.5 h-3.5" />} label="Chase" sub="Threads waiting on a reply" />
-          <PreviewRow icon={<Wand2 className="w-3.5 h-3.5" />} label="Promised" sub={`Action items — voiced ${tone}`} />
-        </ul>
+      )}
+
+      <div className="relative bg-[#030303] rounded-[28px] border border-white/[0.06] overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)]">
+        <PricingSection3 handleSelectPlan={(planId) => onSelect(planId)} />
+      </div>
+
+      <div className="mt-8 text-center">
+        <button
+          type="button"
+          onClick={onStartFree}
+          disabled={isSubmitting}
+          className="text-[13px] text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
+        >
+          Not ready? <span className="underline underline-offset-4">Start free</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
-  );
-}
-
-function PreviewRow({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
-  return (
-    <li className="px-5 py-3 flex items-center gap-3">
-      <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-black/65 dark:text-white/65">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-[13.5px] font-semibold tracking-tight text-black dark:text-white">{label}</p>
-        <p className="text-[12px] text-black/50 dark:text-white/50 truncate">{sub}</p>
-      </div>
-    </li>
   );
 }
 
