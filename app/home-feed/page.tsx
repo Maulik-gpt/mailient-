@@ -243,7 +243,7 @@ function HomeFeedContent() {
   return (
     <div className="satoshi-home-feed w-full min-h-screen bg-[#F4F5F8] dark:bg-black relative flex">
       <HomeFeedSidebar onCollapse={setIsSidebarCollapsed} />
-      <div className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+      <div className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
         {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view).
           PART 69: sliding pill highlight via Framer layoutId so the
           selected-tab background animates between buttons instead of

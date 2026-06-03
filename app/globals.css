@@ -116,7 +116,7 @@ select,
   box-shadow: none !important;
 }
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Animated border effect - single light flowing around */
 @keyframes borderFlow {
