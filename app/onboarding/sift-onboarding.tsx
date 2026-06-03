@@ -1,1134 +1,554 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useSession, signIn } from 'next-auth/react';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Zap,
-  Sparkles,
-  Check,
-  ArrowRight,
-  Loader2,
-  ShieldCheck,
-  ChevronRight,
-  Play,
-  Bot,
-  Inbox,
-  Send,
-  StickyNote,
-  Lock,
-  User,
-  Briefcase,
-  GraduationCap,
-  AlertCircle,
-  Clock,
-  Mail,
-  MessageSquare,
-  Layout,
-  Star,
-  RefreshCw,
-  Shield,
-  EyeOff,
-  CheckCircle2,
-} from "lucide-react";
-import confetti from "canvas-confetti";
-import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
-import { PricingCard } from "@/components/ui/pricing";
-import posthog from "posthog-js";
-import { LiquidButton } from "@/components/ui/liquid-glass-button";
+  ArrowRight, ArrowLeft, Check, Loader2, ShieldCheck, Sparkles, X,
+  Mail, CalendarClock, Clock, Wand2, AtSign,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import confetti from 'canvas-confetti';
 
-const STEPS = [
-  "Positioning",
-  "Identity",
-  "Strategy",
-  "Scanning",
-  "Snapshot",
-  "Win",
-  "Trust",
-  "Profile",
-  "Pricing",
-  "Ready"
+type StepId = 0 | 1 | 2 | 3;
+const STEPS: StepId[] = [0, 1, 2, 3];
+const STEP_LABELS = ['Connect', 'Identity', 'Tone', 'Ready'];
+
+type Tone = 'direct' | 'balanced' | 'warm';
+const TONES: Array<{ id: Tone; title: string; tagline: string; example: string }> = [
+  { id: 'direct',   title: 'Direct',   tagline: 'Crisp. Action first.',           example: '"Drafted — open in Gmail to send."' },
+  { id: 'balanced', title: 'Balanced', tagline: 'One warm opener, then go.',      example: '"Got it. Drafted the reply to Priya."' },
+  { id: 'warm',     title: 'Warm',     tagline: 'Lead with care, stay grounded.', example: '"Love it — drafted the renewal note for Priya."' },
 ];
 
-const ROLES = [
-  { id: "founder", title: "Founder" },
-  { id: "freelancer", title: "Freelancer" },
-  { id: "business_owner", title: "Business Owner" },
-  { id: "student", title: "Student" },
-];
-
-const DRAIN_OPTIONS = [
-  "Sales inquiries",
-  "Client revisions",
-  "Team coordination",
-  "Cold outreach",
-  "Support",
-  "Academic emails",
-];
-
-const PERSONALITY_LABELS = [
-  "Minimal & Direct",
-  "Strategic & Thoughtful",
-  "Friendly & Warm",
-  "Assertive & Sharp",
-];
-
-const MATTERS_MOST = [
-  "Save time",
-  "Close more deals",
-  "Reduce mental clutter",
-  "Never miss important emails",
-];
-
-const POLAR_CHECKOUT_URLS = {
-  monthly: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61',
-  annual: 'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej',
-  lifetime: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61'
-};
-
-const plans = [
-  {
-    name: "Monthly",
-    info: "Full AI-powered inbox, billed monthly",
-    price: { monthly: 29, yearly: 29 },
-    features: [
-      { text: "Unlimited AI Drafts" },
-      { text: "Unlimited Sift Analysis" },
-      { text: "Unlimited Arcus AI" },
-      { text: "Secure Google OAuth" },
-      { text: "Gold Founding Badge" }
-    ],
-    btn: { text: "Subscribe Monthly", href: "#" }
-  },
-  {
-    name: "Annual",
-    info: "Save 40% — billed as $199/year upfront",
-    price: { monthly: 16.58, yearly: 199 },
-    features: [
-      { text: "Everything in Monthly" },
-      { text: "40% annual savings" },
-      { text: "Priority AI Processing" },
-      { text: "Gold Founding Badge" },
-      { text: "Priority Support" }
-    ],
-    btn: { text: "Subscribe Annual", href: "#" },
-    highlighted: true
-  },
-  {
-    name: "Lifetime Founder",
-    info: "Pay once, own forever — $499 one-time",
-    price: { monthly: 499, yearly: 499 },
-    features: [
-      { text: "Everything in Annual" },
-      { text: "Lifetime access — zero recurring fees" },
-      { text: "Diamond Founding Badge" },
-      { text: "VIP Diamond Slack channel" },
-      { text: "Dedicated founder support SLA" }
-    ],
-    btn: { text: "Own Mailient Forever", href: "#" }
-  }
-];
+function slugifyHandle(raw: string): string {
+  return raw
+    .toLowerCase()
+    .replace(/[^a-z0-9_]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 24);
+}
 
 export default function SiftOnboardingPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { data: session, status } = useSession();
-  const [currentStep, setCurrentStep] = useState(() => {
-    const stepFromUrl = searchParams?.get('step');
-    return stepFromUrl ? parseInt(stepFromUrl, 10) : 0;
-  });
+  const { data: session } = useSession();
 
-  // Identity state
-  const [role, setRole] = useState<string | null>(null);
-  const [drainingEmails, setDrainingEmails] = useState<string[]>([]);
-  const [personalityIdx, setPersonalityIdx] = useState(1);
-  const [primaryGoal, setPrimaryGoal] = useState<string | null>(null);
-  const [customInstruction, setCustomInstruction] = useState("");
-  const [identityStep, setIdentityStep] = useState(0);
-  const [strategyMode, setStrategyMode] = useState<string | null>(null);
-  const [focusArea, setFocusArea] = useState<string | null>(null);
+  const stepFromUrl = Number(searchParams?.get('step') || 0) as StepId;
+  const [step, setStep] = useState<StepId>(
+    STEPS.includes(stepFromUrl) ? stepFromUrl : 0,
+  );
 
-  // Voice Profile Manual Setup State
-  const [vpFormality, setVpFormality] = useState<number>(50);
-  const [vpHabits, setVpHabits] = useState<string[]>([]);
-  const [vpSignOff, setVpSignOff] = useState<string>("");
+  const firstName = useMemo(() => {
+    const raw = session?.user?.name?.trim();
+    if (raw) return raw.split(/\s+/)[0];
+    const local = session?.user?.email?.split('@')[0] || '';
+    const first = local.split(/[._\-+]/)[0];
+    return first ? first.charAt(0).toUpperCase() + first.slice(1) : '';
+  }, [session]);
 
-  // Profile state
-  const [profileName, setProfileName] = useState("");
-  const [username, setUsername] = useState("");
-  const [bio, setBio] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState("");
-  const [bannerUrl, setBannerUrl] = useState("");
+  const [profileName, setProfileName] = useState('');
+  const [username, setUsername] = useState('');
+  const [bio, setBio] = useState('');
   const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
+  const [tone, setTone] = useState<Tone>('balanced');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Init profile from session
   useEffect(() => {
-    if (session?.user) {
-      if (session.user.name && !profileName) setProfileName(session.user.name);
-      if (session.user.image && !avatarUrl) setAvatarUrl(session.user.image);
-    }
-  }, [session, profileName, avatarUrl]);
+    if (session?.user?.name && !profileName) setProfileName(session.user.name);
+    if (session?.user?.email && !username) setUsername(slugifyHandle(session.user.email.split('@')[0]));
+  }, [session, profileName, username]);
 
-  // Username check
   useEffect(() => {
-    if (!username || username.trim().length < 3) {
-      setUsernameAvailable(null);
-      return;
-    }
-    const check = async () => {
-      setCheckingUsername(true);
+    const u = username.trim();
+    if (u.length < 3) { setUsernameAvailable(null); return; }
+    let cancelled = false;
+    setCheckingUsername(true);
+    const t = setTimeout(async () => {
       try {
-        const res = await fetch("/api/onboarding/check-username", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username: username.trim() })
+        const res = await fetch('/api/onboarding/check-username', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: u }),
         });
         const data = await res.json();
-        setUsernameAvailable(data.available);
+        if (!cancelled) setUsernameAvailable(!!data.available);
       } catch {
-        setUsernameAvailable(null);
+        if (!cancelled) setUsernameAvailable(null);
       } finally {
-        setCheckingUsername(false);
+        if (!cancelled) setCheckingUsername(false);
       }
-    };
-    const timer = setTimeout(check, 500);
-    return () => clearTimeout(timer);
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
   }, [username]);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [scannedEmails, setScannedEmails] = useState<any[]>([]);
-  const [isScanning, setIsScanning] = useState(false);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [scanNeedsReauth, setScanNeedsReauth] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<any>(null);
-  const [selectedEmailForAction, setSelectedEmailForAction] = useState<any>(null);
-  const [actionType, setActionType] = useState<"summary" | "reply" | "ask" | null>(null);
-  const [aiQuestion, setAiQuestion] = useState<string>("");
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionResult, setActionResult] = useState<string | null>(null);
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const goto = useCallback((next: StepId) => {
+    setStep(next);
+    const params = new URLSearchParams(Array.from(searchParams?.entries() || []));
+    if (next === 0) params.delete('step'); else params.set('step', String(next));
+    const q = params.toString();
+    window.history.replaceState(null, '', q ? `?${q}` : window.location.pathname);
+  }, [searchParams]);
 
-  // Auto-advance Step 0 logic
-  useEffect(() => {
-    if (currentStep === 0) {
-      const timer = setTimeout(() => {
-        handleNext();
-      }, 10000); // 10s max as per request
-      return () => clearTimeout(timer);
-    }
-  }, [currentStep]);
-
-  // Save step to database as user progresses
-  useEffect(() => {
-    if (status === "authenticated" && session?.user?.email) {
-      const saveStep = async () => {
-        try {
-          await fetch("/api/onboarding/step", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ step: currentStep }),
-          });
-        } catch (error) {
-          console.error("Failed to save onboarding step:", error);
-        }
-      };
-      saveStep();
-    }
-  }, [currentStep, status, session]);
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
-  }, [status, router]);
-
-  const handleNext = () => {
-    if (currentStep < STEPS.length - 1) {
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-      router.push(`/onboarding?step=${nextStep}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+  const handleConnectGoogle = () => {
+    signIn('google', { callbackUrl: `${window.location.pathname}?step=1`, redirect: true });
   };
 
-  const handleBack = () => {
-    if (currentStep > 0) {
-      const prevStep = currentStep - 1;
-      setCurrentStep(prevStep);
-      router.push(`/onboarding?step=${prevStep}`);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  // Step 2 Logic: Advances through sub-steps
-  const handleIdentityNext = () => {
-    if (identityStep < 9) {
-      setIdentityStep(prev => prev + 1);
-    } else {
-      handleNext();
-    }
-  };
-
-  // Step 3: Scan Logic
-  useEffect(() => {
-    if (currentStep === 2) {
-      startScan();
-    }
-  }, [currentStep]);
-
-  const startScan = async () => {
-    setIsScanning(true);
-    setScanError(null);
-    setScanNeedsReauth(false);
-    try {
-      // Perceived value: increased scanning time to make it feel more "thorough"
-      const delayPromise = new Promise(resolve => setTimeout(resolve, 8000));
-      const fetchPromise = fetch("/api/onboarding/emails").then(async (res) => {
-        let data: any = {};
-        try { data = await res.json(); } catch { data = {}; }
-        if (!res.ok) {
-          const err: any = new Error(data?.details || data?.error || `Failed to fetch emails (${res.status})`);
-          err.needsReauth = !!data?.needsReauth;
-          throw err;
-        }
-        return data;
-      });
-
-      const [_, data] = await Promise.all([delayPromise, fetchPromise]);
-      if (data.emails && data.emails.length > 0) {
-        setScannedEmails(data.emails);
-        setAnalysisResult({
-          toReply: data.analysis?.toReply || [],
-          unanswered: data.analysis?.unanswered || []
-        });
-      } else {
-        setScannedEmails([]);
-        setAnalysisResult({ toReply: [], unanswered: [] });
-      }
-      handleNext();
-    } catch (error: any) {
-      console.error("Scan failed:", error);
-      if (error?.needsReauth) {
-        setScanNeedsReauth(true);
-        setScanError("Gmail permissions need to be refreshed. Please reconnect Gmail.");
-        return;
-      }
-      setScanError(error?.message || "Failed to fetch emails.");
-    } finally {
-      setIsScanning(false);
-    }
-  };
-
-  const handleAction = async (type: "summary" | "reply" | "ask", email: any, question?: string) => {
-    if (!email?.id) return;
-    setActionType(type);
-    setSelectedEmailForAction(email);
-    setActionLoading(true);
-    setActionResult(null);
-    setEmailSent(false);
-
-    try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      const requestBody: any = {
-        emailId: email.id,
-        actionType: type,
-        context: { role, goals: [primaryGoal], userName: session?.user?.name || "there" }
-      };
-      if (type === "ask" && question) requestBody.question = question;
-
-      const response = await fetch("/api/onboarding/ai-action", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Failed");
-      setActionResult(data.result);
-    } catch (error: any) {
-      setActionResult("Error: " + error.message);
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleSendReply = async () => {
-    if (!selectedEmailForAction || !actionResult) return;
-    setIsSendingEmail(true);
-    try {
-      const to = selectedEmailForAction.from.match(/<([^>]+)>/)?.[1] || selectedEmailForAction.from;
-      const response = await fetch("/api/gmail/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to, subject: `Re: ${selectedEmailForAction.subject}`, body: actionResult })
-      });
-      if (!response.ok) throw new Error("Send failed");
-      confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-      setEmailSent(true);
-      setTimeout(handleNext, 1200);
-    } catch (error) {
-      console.error(error);
-    } finally {
-      setIsSendingEmail(false);
-    }
-  };
-
-  const handleSelectPlan = async (plan: string) => {
-    setSelectedPlan(plan);
+  const handleFinish = async () => {
     setIsSubmitting(true);
     try {
-      const finalUsername = username.trim() || session?.user?.name?.toLowerCase().replace(/\s/g, '_') || session?.user?.email?.split('@')[0] || 'user';
-      const response = await fetch("/api/onboarding/complete", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      await fetch('/api/agent-talk/personality', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ communicationStyle: tone }),
+      }).catch(() => {});
+
+      const finalUsername = username.trim() || slugifyHandle(firstName || 'mailient_user');
+      await fetch('/api/onboarding/complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           username: finalUsername,
-          profileName,
-          bio,
-          avatarUrl,
-          bannerUrl,
-          plan,
-          role,
-          personality: PERSONALITY_LABELS[personalityIdx],
-          goals: [primaryGoal],
-          customInstruction
+          profileName: profileName.trim() || firstName,
+          bio: bio.trim() || null,
+          avatarUrl: session?.user?.image || null,
+          plan: 'free',
+          personality: tone,
         }),
-      });
-      if (!response.ok) throw new Error("Failed");
+      }).catch(() => {});
 
       localStorage.setItem('onboarding_completed', 'true');
-      
-      // Save manual voice profile settings
-      try {
-        await fetch("/api/user/voice-profile", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tone: { formality: vpFormality, detail: 50, warmth: 50, confidence: 50 },
-            habits: [...vpHabits, vpSignOff ? `Signs off with "${vpSignOff}"` : ''].filter(Boolean),
-            customInstructions: customInstruction,
-            learning: { autoImprove: true },
-            activeProfile: 'work'
-          })
-        });
-      } catch (e) {
-        console.error("Failed to save voice profile:", e);
-      }
 
-      if (plan === 'free') {
-        router.push('/home-feed');
-        return;
-      }
-      const checkoutUrl = POLAR_CHECKOUT_URLS[plan as keyof typeof POLAR_CHECKOUT_URLS];
-      if (checkoutUrl) {
-        window.location.href = `${checkoutUrl}?customer_email=${session?.user?.email}&success_url=${window.location.origin}/payment-success`;
-      } else {
-        router.push("/home-feed");
-      }
-    } catch (error) {
-      console.error(error);
+      try {
+        confetti({
+          particleCount: 60,
+          spread: 70,
+          origin: { y: 0.55 },
+          colors: ['#ffffff', '#e4e4e7', '#a1a1aa'],
+          ticks: 80,
+          gravity: 0.7,
+        });
+      } catch {}
+
+      setTimeout(() => router.push('/home-feed?welcome=true'), 350);
+    } catch {
       setIsSubmitting(false);
     }
   };
 
-  const containerVariants: any = {
-    hidden: { opacity: 0, filter: "blur(4px)", y: 10 },
-    visible: { opacity: 1, filter: "blur(0px)", y: 0, transition: { duration: 0.8, ease: "circOut" } },
-    exit: { opacity: 0, filter: "blur(4px)", y: -10, transition: { duration: 0.4 } }
-  };
-
-  const renderStep = () => {
-    switch (currentStep) {
-      case 0: // POSITIONING
-        return (
-          <motion.div key="step-0" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12 text-center max-w-3xl mx-auto px-6">
-            <div className="space-y-6">
-              <h1 className="text-5xl md:text-7xl font-medium tracking-tight text-white leading-[1.1] font-sans">
-                Your inbox is not your job.<br />
-                <span className="text-zinc-500 italic">It’s your leverage.</span>
-              </h1>
-              <p className="text-xl md:text-2xl text-zinc-400 font-light leading-relaxed max-w-2xl mx-auto">
-                Mailient learns how you think and handles your email like you would - but faster.
-              </p>
-            </div>
-            <div className="pt-8 flex justify-center">
-              <LiquidButton
-                onClick={handleNext}
-                className="group relative h-16 px-12 text-lg font-medium text-white transition-all hover:scale-105 active:scale-95"
-              >
-                <div className="flex items-center gap-3">
-                  <span>Start Onboarding</span>
-                  <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
-                </div>
-              </LiquidButton>
-            </div>
-          </motion.div>
-        );
-
-      case 1: // IDENTITY CAPTURE
-        return (
-          <motion.div key="step-1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto px-6 w-full">
-            <AnimatePresence mode="wait">
-              {identityStep === 0 && (
-                <motion.div key="q1" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 1 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">What are you?</h2>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {ROLES.map((r) => (
-                      <button
-                        key={r.id}
-                        onClick={() => { setRole(r.id); setTimeout(handleIdentityNext, 400); }}
-                        className={cn(
-                          "group p-6 rounded-3xl border text-left transition-all duration-300",
-                          role === r.id
-                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
-                        )}
-                      >
-                        <span className="text-xl font-medium">{r.title}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 1 && (
-                <motion.div key="q2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 2 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">What kind of emails drain you?</h2>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {DRAIN_OPTIONS.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => {
-                          setDrainingEmails(prev => prev.includes(opt) ? prev.filter(i => i !== opt) : [...prev, opt]);
-                        }}
-                        className={cn(
-                          "group p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between",
-                          drainingEmails.includes(opt)
-                            ? "bg-white/10 border-white/40 text-white"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/10"
-                        )}
-                      >
-                        <span className="text-lg">{opt}</span>
-                        {drainingEmails.includes(opt) && <Check className="w-5 h-5" />}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-6">
-                    <LiquidButton
-                      onClick={handleIdentityNext}
-                      disabled={drainingEmails.length === 0}
-                      className="w-full h-14 text-white font-bold disabled:opacity-30"
-                    >
-                      Continue
-                    </LiquidButton>
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 2 && (
-                <motion.div key="q3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-12">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 3 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">How should Mailient sound?</h2>
-                  </div>
-                  <div className="space-y-12 py-10">
-                    <div className="relative">
-                      <input
-                        type="range" min="0" max="3" step="1"
-                        value={personalityIdx}
-                        onChange={(e) => setPersonalityIdx(parseInt(e.target.value))}
-                        className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-white"
-                      />
-                      <div className="flex justify-between mt-6">
-                        {PERSONALITY_LABELS.map((label, idx) => (
-                          <div key={label} className={cn("text-xs uppercase tracking-tighter transition-colors max-w-[80px] text-center", personalityIdx === idx ? "text-white font-bold" : "text-zinc-600")}>
-                            {label}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="p-8 apple-glass-liquid-dark rounded-[2.5rem] border border-white/5 text-center italic text-zinc-400">
-                      "I'll adopt a <span className="text-white font-medium">{PERSONALITY_LABELS[personalityIdx]}</span> tone when drafting your replies."
-                    </div>
-                  </div>
-                  <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                    Looks Good
-                  </LiquidButton>
-                </motion.div>
-              )}
-
-              {identityStep === 3 && (
-                <motion.div key="q4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 4 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">What matters most?</h2>
-                  </div>
-                  <div className="grid grid-cols-1 gap-4">
-                    {MATTERS_MOST.map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => { setPrimaryGoal(opt); setTimeout(handleIdentityNext, 400); }}
-                        className={cn(
-                          "group p-6 rounded-3xl border text-left transition-all duration-300",
-                          primaryGoal === opt
-                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
-                        )}
-                      >
-                        <span className="text-xl font-medium">{opt}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 4 && (
-                <motion.div key="q5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 5 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">Select your strategy</h2>
-                    <p className="text-zinc-500">How aggressive should Mailient be with follow-ups?</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      { id: 'shark', title: 'Shark', desc: 'Highly proactive & persistent' },
-                      { id: 'owl', title: 'Owl', desc: 'Strategic & observational' },
-                      { id: 'eagle', title: 'Eagle', desc: 'Precise & high-level only' },
-                      { id: 'dolphin', title: 'Dolphin', desc: 'Collaborative & friendly' },
-                    ].map((s) => (
-                      <button
-                        key={s.id}
-                        onClick={() => { setStrategyMode(s.id); setTimeout(handleIdentityNext, 400); }}
-                        className={cn(
-                          "group p-6 rounded-3xl border text-left transition-all duration-300",
-                          strategyMode === s.id
-                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
-                        )}
-                      >
-                        <div className="text-xl font-medium">{s.title}</div>
-                        <div className="text-sm opacity-60 mt-1">{s.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 5 && (
-                <motion.div key="q6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 6 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">Focus Workflow</h2>
-                    <p className="text-zinc-500">Pick an area for AI deeper optimization.</p>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    {['Network Growth', 'Operational Efficiency', 'Deal Closing', 'Project Sync'].map((area) => (
-                      <button
-                        key={area}
-                        onClick={() => { setFocusArea(area); setTimeout(handleIdentityNext, 400); }}
-                        className={cn(
-                          "group p-6 rounded-3xl border text-center transition-all duration-300",
-                          focusArea === area
-                            ? "bg-white border-white text-black shadow-[0_0_30px_rgba(255,255,255,0.1)]"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/20 hover:bg-zinc-900/50"
-                        )}
-                      >
-                        <span className="text-lg font-medium">{area}</span>
-                      </button>
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 6 && (
-                <motion.div key="q7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Question 7 of 7</span>
-                    <h2 className="text-4xl font-medium text-white">One custom instruction:</h2>
-                    <p className="text-zinc-500">How should Mailient think before replying?</p>
-                  </div>
-                  <div className="space-y-6">
-                    <textarea
-                      value={customInstruction}
-                      onChange={(e) => setCustomInstruction(e.target.value)}
-                      placeholder="e.g. 'Never agree to calls before checking my calendar.' or 'Be concise but never rude.'"
-                      className="w-full p-6 bg-zinc-950/50 border border-white/10 rounded-[2rem] text-white text-lg min-h-[160px] focus:outline-none focus:border-white/30 transition-all placeholder:text-zinc-700"
-                    />
-                    <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                      Next
-                    </LiquidButton>
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 7 && (
-                <motion.div key="q8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (1/3)</span>
-                    <h2 className="text-4xl font-medium text-white">How formal are you at work?</h2>
-                    <p className="text-zinc-500">This sets the baseline tone for AI drafts.</p>
-                  </div>
-                  <div className="space-y-12 py-10">
-                    <div className="relative">
-                      <input
-                        type="range" min="0" max="100" step="1"
-                        value={vpFormality}
-                        onChange={(e) => setVpFormality(parseInt(e.target.value))}
-                        className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-[#7db4f5]"
-                      />
-                      <div className="flex justify-between mt-6 text-zinc-500 text-sm">
-                        <span>Very Casual</span>
-                        <span>Professional</span>
-                        <span>Highly Formal</span>
-                      </div>
-                    </div>
-                  </div>
-                  <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                    Next
-                  </LiquidButton>
-                </motion.div>
-              )}
-
-              {identityStep === 8 && (
-                <motion.div key="q9" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (2/3)</span>
-                    <h2 className="text-4xl font-medium text-white">What are your writing habits?</h2>
-                    <p className="text-zinc-500">Select any formatting quirks you typically use.</p>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {[
-                      "Uses bullet points often",
-                      "Starts with pleasantries",
-                      "Gets straight to the point",
-                      "Uses emojis sparingly",
-                      "Keeps it strictly under 5 sentences"
-                    ].map((habit) => (
-                      <button
-                        key={habit}
-                        onClick={() => {
-                          setVpHabits(prev => prev.includes(habit) ? prev.filter(h => h !== habit) : [...prev, habit]);
-                        }}
-                        className={cn(
-                          "group p-4 rounded-2xl border text-left transition-all duration-300 flex items-center justify-between",
-                          vpHabits.includes(habit)
-                            ? "bg-white/10 border-white/40 text-white"
-                            : "bg-zinc-950/20 border-white/5 text-zinc-400 hover:border-white/10"
-                        )}
-                      >
-                        <span className="text-sm">{habit}</span>
-                        {vpHabits.includes(habit) && <Check className="w-4 h-4" />}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="pt-4">
-                    <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                      Next
-                    </LiquidButton>
-                  </div>
-                </motion.div>
-              )}
-
-              {identityStep === 9 && (
-                <motion.div key="q10" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="space-y-10">
-                  <div className="space-y-2">
-                    <span className="text-xs uppercase tracking-widest text-[#7db4f5] font-bold">Voice Profile Setup (3/3)</span>
-                    <h2 className="text-4xl font-medium text-white">What's your typical sign-off?</h2>
-                    <p className="text-zinc-500">e.g. "Best,", "Cheers,", "Thanks,"</p>
-                  </div>
-                  <div className="space-y-6">
-                    <input
-                      type="text"
-                      value={vpSignOff}
-                      onChange={(e) => setVpSignOff(e.target.value)}
-                      placeholder="e.g. Best,"
-                      className="w-full p-6 bg-zinc-950/50 border border-white/10 rounded-[2rem] text-white text-xl focus:outline-none focus:border-white/30 transition-all placeholder:text-zinc-700"
-                    />
-                    <LiquidButton onClick={handleIdentityNext} className="w-full h-14 text-white font-bold">
-                      Complete Identity Setup
-                    </LiquidButton>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.div>
-        );
-
-      case 2: // SCANNING
-        return (
-          <motion.div key="step-2" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto text-center space-y-12">
-            <div className="relative w-40 h-40 mx-auto">
-              <motion.div
-                animate={{ rotate: 360 }}
-                transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                className="absolute inset-0 border-t-2 border-white/20 rounded-full"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Mail className="w-10 h-10 text-white animate-pulse" />
-              </div>
-            </div>
-            <div className="space-y-4">
-              <h2 className="text-3xl font-medium text-white italic">Performing Deep Intelligence Scan</h2>
-              <div className="flex flex-col gap-2 max-w-xs mx-auto">
-                <ScanningLabel label="Analyzing your inbox architecture..." delay={0} />
-                <ScanningLabel label="Identifying high-value stakeholders..." delay={1.5} />
-                <ScanningLabel label="Parsing communication semantic intent..." delay={3} />
-                <ScanningLabel label="Mapping relationship velocity..." delay={4.5} />
-                <ScanningLabel label="Synthesizing neural reply patterns..." delay={6} />
-              </div>
-            </div>
-          </motion.div>
-        );
-
-      case 3: // SNAPSHOT
-        return (
-          <motion.div key="step-3" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-4xl mx-auto px-6 w-full space-y-12">
-            <div className="text-center space-y-4">
-              <h2 className="text-4xl font-medium text-white">Inbox Snapshot</h2>
-              <p className="text-zinc-500">Real-time insights from your latest threads.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <StatCard label="Total Analyzed" value={scannedEmails.length} icon={Inbox} color="text-blue-400" />
-              <StatCard label="Needs Action" value={analysisResult?.toReply?.length || 0} icon={Bot} color="text-yellow-400" />
-              <StatCard label="Missed Opportunities" value={analysisResult?.unanswered?.length || 0} icon={Zap} color="text-purple-400" />
-            </div>
-            <div className="flex justify-center pt-8">
-              <LiquidButton onClick={handleNext} className="h-14 px-12 text-white font-bold">
-                Continue to Hand Offs
-              </LiquidButton>
-            </div>
-          </motion.div>
-        );
-
-      case 4: // IMMEDIATE WIN
-        const delegationEmails = analysisResult?.toReply?.slice(0, 3) || [];
-        return (
-          <motion.div key="step-4" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-4xl mx-auto px-6 w-full space-y-12 pb-20">
-            <div className="text-center space-y-4">
-              <h2 className="text-4xl font-medium text-white">The Immediate Win</h2>
-              <p className="text-zinc-500">Here are 3 emails you can hand off right now.</p>
-            </div>
-
-            <div className="space-y-6">
-              {delegationEmails.map((email: any, idx: number) => (
-                <DelegationRow
-                  key={email.id}
-                  email={email}
-                  onSend={handleSendReply}
-                  loading={isSendingEmail && selectedEmailForAction?.id === email.id}
-                  sent={emailSent && selectedEmailForAction?.id === email.id}
-                  onAction={() => handleAction("reply", email)}
-                  result={selectedEmailForAction?.id === email.id ? actionResult : null}
-                  actionLoading={actionLoading && selectedEmailForAction?.id === email.id}
-                />
-              ))}
-              {delegationEmails.length === 0 && (
-                <div className="p-12 text-center text-zinc-600 border border-white/5 rounded-[2.5rem] italic">
-                  No delegatable threads found in recent history.
-                </div>
-              )}
-            </div>
-
-            <div className="flex justify-center pt-8">
-              <button
-                onClick={handleNext}
-                className="text-zinc-500 hover:text-white transition-colors underline underline-offset-4"
-              >
-                Skip to Dashboard
-              </button>
-            </div>
-          </motion.div>
-        );
-
-      case 5: // CONTROL & TRUST
-        return (
-          <motion.div key="step-5" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-3xl mx-auto px-6 text-center space-y-12">
-            <div className="space-y-6">
-              <h2 className="text-5xl font-medium text-white">Control & Trust</h2>
-              <p className="text-xl text-zinc-500">Built for high-stakes workflows where privacy is default.</p>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-left">
-              <TrustItem icon={Shield} title="Approval First" desc="Mailient never sends without your explicit signal." />
-              <TrustItem icon={EyeOff} title="Data Privacy" desc="Your email content is never shared or used to train public models." />
-              <TrustItem icon={User} title="You Own Personality" desc="Switch AI off or adjust tone at any moment." />
-              <TrustItem icon={Lock} title="Encrypted & Secure" desc="Enterprise-grade security for your Workspace data." />
-            </div>
-            <LiquidButton onClick={handleNext} className="h-16 px-14 text-white text-lg font-bold shadow-xl">
-              I Trust Mailient
-            </LiquidButton>
-          </motion.div>
-        );
-
-case 6: // PROFILE SETUP
-        return (
-          <motion.div key="step-6" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-2xl mx-auto px-6 w-full space-y-8 pb-20">
-            <div className="text-center space-y-4">
-              <h2 className="text-5xl font-medium text-white">Your Identity</h2>
-              <p className="text-zinc-500 text-lg">Set up how you appear to others.</p>
-            </div>
-
-            <div className="space-y-8 bg-zinc-950/40 border border-white/5 p-8 sm:p-10 rounded-[2.5rem] shadow-2xl">
-              <div className="space-y-3">
-                <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Banner URL <span className="text-zinc-700">(Optional)</span></label>
-                <input
-                  type="text"
-                  value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  placeholder="Paste an image URL..."
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all text-sm"
-                />
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-8 items-start">
-                <div className="space-y-4 flex-shrink-0 w-full sm:w-auto flex flex-col items-center">
-                  <div className="w-28 h-28 rounded-full border border-white/10 overflow-hidden bg-zinc-900 flex items-center justify-center relative group shadow-xl">
-                    {avatarUrl ? (
-                      <img src={avatarUrl} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <User className="w-10 h-10 text-zinc-600" />
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={avatarUrl}
-                    onChange={(e) => setAvatarUrl(e.target.value)}
-                    placeholder="Avatar URL"
-                    className="w-full max-w-[150px] text-xs bg-transparent border-b border-white/10 text-center text-zinc-400 focus:outline-none focus:border-white focus:text-white pb-2"
-                  />
-                </div>
-
-                <div className="space-y-6 flex-1 w-full">
-                  <div className="space-y-3">
-                    <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Display Name</label>
-                    <input
-                      type="text"
-                      value={profileName}
-                      onChange={(e) => setProfileName(e.target.value)}
-                      placeholder="e.g. Jane Doe"
-                      className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all text-sm"
-                    />
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex justify-between items-center">
-                      <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold">Custom Handle</label>
-                      {username && username.length >= 3 && (
-                        <span className={cn(
-                          "text-xs font-bold uppercase tracking-wider",
-                          checkingUsername ? "text-zinc-500" :
-                            usernameAvailable ? "text-emerald-400" : "text-red-400"
-                        )}>
-                          {checkingUsername ? "Checking..." : usernameAvailable ? "Available" : "Taken"}
-                        </span>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <span className="absolute left-5 top-1/2 -translate-y-1/2 text-zinc-500 font-medium">@</span>
-                      <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
-                        placeholder="username"
-                        className={cn(
-                          "w-full bg-zinc-900/50 border rounded-2xl pl-10 pr-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none transition-all text-sm",
-                          !checkingUsername && usernameAvailable === false ? "border-red-500/50 focus:border-red-500" : "border-white/5 focus:border-white/20"
-                        )}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs uppercase tracking-widest text-zinc-500 font-bold block">Bio <span className="text-zinc-700">(Optional)</span></label>
-                <textarea
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Tell the world what you're building..."
-                  rows={3}
-                  className="w-full bg-zinc-900/50 border border-white/5 rounded-2xl px-5 py-4 text-white placeholder:text-zinc-600 focus:outline-none focus:border-white/20 transition-all resize-none text-sm leading-relaxed"
-                />
-              </div>
-            </div>
-
-            <div className="flex justify-center pt-6">
-              <LiquidButton
-                onClick={handleNext}
-                disabled={!username || usernameAvailable === false || checkingUsername || !profileName}
-                className="w-full sm:w-auto min-w-[240px] h-14 text-white font-bold disabled:opacity-30 disabled:pointer-events-none"
-              >
-                Continue to Plans
-              </LiquidButton>
-            </div>
-          </motion.div>
-        );
-
-      case 7: // PRICING
-        return (
-          <motion.div key="step-7" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="w-full max-w-6xl mx-auto px-4 pb-20">
-            <div className="text-center mb-16 space-y-4">
-              <h2 className="text-5xl font-medium text-white tracking-tight leading-tight">
-                Choose your path
-              </h2>
-              <p className="text-zinc-500 text-lg">Select the plan that fits your leverage today.</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => (
-                <PricingCard
-                  key={plan.name}
-                  plan={plan as any}
-                  isHighlighted={plan.highlighted}
-                  onPlanSelect={() => handleSelectPlan(plan.name.toLowerCase())}
-                />
-              ))}
-            </div>
-          </motion.div>
-        );
-
-      case 8: // READY
-        return (
-          <motion.div key="step-8" variants={containerVariants} initial="hidden" animate="visible" exit="exit" className="max-w-xl mx-auto text-center space-y-12 py-20">
-            <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ type: "spring", stiffness: 200, damping: 15 }}
-              className="w-32 h-32 bg-white rounded-full mx-auto flex items-center justify-center shadow-[0_0_60px_rgba(255,255,255,0.2)]"
-            >
-              <CheckCircle2 className="w-16 h-16 text-black" strokeWidth={3} />
-            </motion.div>
-            <div className="space-y-4">
-              <h2 className="text-6xl font-medium text-white italic">You're ready to go!</h2>
-              <p className="text-xl text-zinc-500">Your leverage has arrived.</p>
-            </div>
-            <LiquidButton
-              onClick={() => router.push("/home-feed")}
-              className="h-16 px-14 text-white text-lg font-bold animate-pulse hover:animate-none"
-            >
-              I'm readyyy!
-            </LiquidButton>
-          </motion.div>
-        );
-
-      default:
-        return null;
+  const canContinue = (() => {
+    if (step === 0) return true;
+    if (step === 1) {
+      const u = username.trim();
+      return u.length >= 3 && usernameAvailable !== false && !checkingUsername;
     }
+    if (step === 2) return true;
+    return true;
+  })();
+
+  const handleContinue = () => {
+    if (step === 3) { handleFinish(); return; }
+    if (!canContinue) return;
+    goto((step + 1) as StepId);
   };
 
   return (
-    <div className="min-h-screen bg-black bg-grain text-white selection:bg-white selection:text-black font-sans flex flex-col items-center justify-center py-10">
-      {/* HUD Progress */}
-      {currentStep < 9 && (
-        <div className="fixed top-12 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-3">
-          {STEPS.map((s, i) => (
-            <div
-              key={s}
-              className={cn(
-                "h-1 rounded-full transition-all duration-700",
-                i === currentStep ? "w-8 bg-white" : i < currentStep ? "w-4 bg-white/40" : "w-1 bg-white/10"
-              )}
-            />
-          ))}
+    <div className="min-h-screen bg-white dark:bg-black text-black dark:text-white font-satoshi flex flex-col">
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/75 dark:bg-black/65 border-b border-black/[0.04] dark:border-white/[0.04]">
+        <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5" strokeWidth={2.25} />
+            </div>
+            <span className="text-[13px] font-semibold tracking-tight">Mailient</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            {STEPS.map((s) => (
+              <div
+                key={s}
+                className={cn(
+                  'h-1 rounded-full transition-all duration-300',
+                  s === step
+                    ? 'w-8 bg-black dark:bg-white'
+                    : s < step
+                      ? 'w-1.5 bg-black/40 dark:bg-white/40'
+                      : 'w-1.5 bg-black/10 dark:bg-white/10',
+                )}
+              />
+            ))}
+          </div>
+          {step > 0 && step < 3 ? (
+            <button
+              type="button"
+              onClick={() => goto(3)}
+              className="text-[12px] text-black/50 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+            >
+              Skip
+            </button>
+          ) : <span className="w-12" />}
         </div>
-      )}
+      </header>
 
-      <AnimatePresence mode="wait">
-        {renderStep()}
-      </AnimatePresence>
+      <main className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-xl">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.26, ease: [0.16, 1, 0.3, 1] }}
+            >
+              {step === 0 && (
+                <StepWelcome firstName={firstName} onConnect={handleConnectGoogle} onSkip={() => goto(1)} />
+              )}
+              {step === 1 && (
+                <StepIdentity
+                  firstName={firstName}
+                  profileName={profileName}
+                  setProfileName={setProfileName}
+                  username={username}
+                  setUsername={setUsername}
+                  bio={bio}
+                  setBio={setBio}
+                  checking={checkingUsername}
+                  available={usernameAvailable}
+                  avatar={session?.user?.image || null}
+                />
+              )}
+              {step === 2 && <StepTone tone={tone} setTone={setTone} />}
+              {step === 3 && <StepReady firstName={firstName} tone={tone} />}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
 
-      {/* Footer Branding */}
-      <div className="fixed bottom-12 left-8 z-[60] flex items-center gap-2 text-white/20 select-none">
-        <Bot className="w-4 h-4" />
-        <span className="text-[10px] uppercase tracking-widest font-black">Mailient Onboarding / v2.1</span>
-      </div>
-    </div>
-  );
-}
-
-function StatCard({ label, value, icon: Icon, color }: any) {
-  return (
-    <div className="p-8 apple-glass-liquid-dark rounded-[2.5rem] border border-white/5 space-y-4 text-center">
-      <div className={cn("w-12 h-12 mx-auto flex items-center justify-center rounded-2xl bg-white/5", color)}>
-        <Icon className="w-6 h-6" />
-      </div>
-      <div>
-        <div className="text-4xl font-sans font-medium">{value}</div>
-        <div className="text-xs uppercase tracking-widest text-zinc-600 mt-1">{label}</div>
-      </div>
-    </div>
-  );
-}
-
-function DelegationRow({ email, loading, sent, onSend, onAction, result, actionLoading }: any) {
-  return (
-    <div className="apple-glass-liquid-dark rounded-[2.5rem] border border-white/5 p-8 flex flex-col md:flex-row items-center gap-8 transition-all hover:bg-white/[0.02]">
-      <div className="flex-1 space-y-2 min-w-0 w-full">
-        <h4 className="text-lg font-medium text-white truncate">{email.subject}</h4>
-        <p className="text-sm text-zinc-500 truncate">From: {email.from}</p>
-        <div className="pt-4 text-sm text-zinc-400 border-t border-white/5 mt-4 line-clamp-2 italic">"{email.snippet}"</div>
-      </div>
-      <div className="flex flex-col gap-3 w-full md:w-auto md:min-w-[180px]">
-        {sent ? (
-          <div className="flex items-center gap-2 text-emerald-400 font-bold px-6 py-4 justify-center">
-            <Check className="w-5 h-5" />
-            Sent
-          </div>
-        ) : result ? (
-          <div className="space-y-4">
-            <div className="p-4 bg-white/5 rounded-2xl text-[13px] text-zinc-300 border border-white/10 line-clamp-4 leading-relaxed">
-              {result}
-            </div>
-            <div className="flex gap-2">
-              <LiquidButton onClick={onSend} className="flex-1 h-12 text-white text-xs font-black uppercase tracking-widest">
-                {loading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Send with Mailient"}
-              </LiquidButton>
-            </div>
-          </div>
-        ) : (
-          <LiquidButton
-            disabled={actionLoading}
-            onClick={onAction}
-            className="w-full h-14 text-white text-xs font-black uppercase tracking-widest"
+      <footer className="sticky bottom-0 z-30 backdrop-blur-xl bg-white/75 dark:bg-black/65 border-t border-black/[0.04] dark:border-white/[0.04]">
+        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
+          <button
+            type="button"
+            onClick={() => step > 0 && goto((step - 1) as StepId)}
+            disabled={step === 0}
+            className={cn(
+              'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-colors',
+              step === 0
+                ? 'opacity-30 cursor-not-allowed text-black/55 dark:text-white/55'
+                : 'text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04]',
+            )}
           >
-            {actionLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Hand Off to AI"}
-          </LiquidButton>
+            <ArrowLeft className="w-3.5 h-3.5" />
+            Back
+          </button>
+
+          {step === 0 ? (
+            <span className="text-[12px] text-black/40 dark:text-white/40 hidden sm:block">
+              Step 1 of 4 · Connect to begin
+            </span>
+          ) : (
+            <span className="text-[12px] text-black/40 dark:text-white/40 hidden sm:block">
+              {STEP_LABELS[step]} · {step + 1} of {STEPS.length}
+            </span>
+          )}
+
+          <button
+            type="button"
+            onClick={step === 0 ? handleConnectGoogle : handleContinue}
+            disabled={!canContinue || isSubmitting}
+            className={cn(
+              'inline-flex items-center gap-2 pl-4 pr-3 py-2 rounded-full text-[13.5px] font-semibold transition-[background-color,transform] duration-150 active:scale-[0.97]',
+              !canContinue || isSubmitting
+                ? 'bg-black/[0.08] dark:bg-white/[0.08] text-black/40 dark:text-white/40 cursor-not-allowed'
+                : 'bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85',
+            )}
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                Setting up…
+              </>
+            ) : step === 0 ? (
+              <>
+                Continue with Google
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : step === 3 ? (
+              <>
+                Take me home
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              <>
+                Continue
+                <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            )}
+          </button>
+        </div>
+      </footer>
+    </div>
+  );
+}
+
+function StepWelcome({ firstName, onConnect, onSkip }: { firstName: string; onConnect: () => void; onSkip: () => void }) {
+  return (
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-black/[0.04] dark:bg-white/[0.05] ring-1 ring-black/[0.04] dark:ring-white/[0.05] text-black/70 dark:text-white/70 mb-6">
+        <Sparkles className="w-6 h-6" strokeWidth={1.75} />
+      </div>
+      <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold tracking-[-0.025em] mb-3">
+        {firstName ? `Welcome, ${firstName} —` : 'Welcome —'}
+      </h1>
+      <p className="text-[15px] text-black/55 dark:text-white/55 max-w-md mx-auto leading-relaxed mb-10">
+        One Google sign-in connects your inbox and calendar. Mailient reads only what it needs to surface what matters today.
+      </p>
+
+      <button
+        type="button"
+        onClick={onConnect}
+        className="inline-flex items-center gap-2.5 px-5 py-3 rounded-full text-[14px] font-semibold bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 transition-[background-color,transform] duration-150 active:scale-[0.97]"
+      >
+        <GoogleMark />
+        Continue with Google
+      </button>
+
+      <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-md mx-auto">
+        <Promise icon={<Mail className="w-3.5 h-3.5" strokeWidth={1.75} />} label="Gmail" sub="Read & draft" />
+        <Promise icon={<CalendarClock className="w-3.5 h-3.5" strokeWidth={1.75} />} label="Calendar" sub="Prep meetings" />
+        <Promise icon={<ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />} label="Encrypted" sub="Yours alone" />
+      </div>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        className="mt-8 text-[12px] text-black/40 dark:text-white/40 hover:text-black/65 dark:hover:text-white/65 transition-colors"
+      >
+        I'll connect later
+      </button>
+    </div>
+  );
+}
+
+function Promise({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-white/[0.02]">
+      <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-black/65 dark:text-white/65 flex-shrink-0">
+        {icon}
+      </div>
+      <div className="text-left min-w-0">
+        <p className="text-[12.5px] font-semibold tracking-tight text-black dark:text-white truncate">{label}</p>
+        <p className="text-[11px] text-black/45 dark:text-white/45 truncate">{sub}</p>
+      </div>
+    </div>
+  );
+}
+
+function StepIdentity(props: {
+  firstName: string;
+  profileName: string; setProfileName: (s: string) => void;
+  username: string; setUsername: (s: string) => void;
+  bio: string; setBio: (s: string) => void;
+  checking: boolean;
+  available: boolean | null;
+  avatar: string | null;
+}) {
+  const { firstName, profileName, setProfileName, username, setUsername, bio, setBio, checking, available, avatar } = props;
+  const initial = (profileName || firstName || '?').trim()[0]?.toUpperCase() || '?';
+
+  return (
+    <div>
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-[-0.025em] mb-2">Who are you?</h1>
+      <p className="text-[15px] text-black/55 dark:text-white/55 mb-8">
+        Used in messages from Arcus and on your shareable handle.
+      </p>
+
+      <div className="flex items-center gap-4 mb-6">
+        {avatar ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={avatar} alt="" className="w-14 h-14 rounded-full object-cover ring-1 ring-black/[0.06] dark:ring-white/[0.06]" />
+        ) : (
+          <div className="w-14 h-14 rounded-full bg-black/[0.06] dark:bg-white/[0.06] flex items-center justify-center text-[18px] font-semibold tracking-tight text-black/70 dark:text-white/70">
+            {initial}
+          </div>
         )}
+        <div className="min-w-0">
+          <p className="text-[13px] uppercase tracking-[0.14em] text-black/40 dark:text-white/40 font-medium">Display name</p>
+          <input
+            type="text"
+            value={profileName}
+            onChange={(e) => setProfileName(e.target.value)}
+            placeholder={firstName || 'Your name'}
+            className="mt-1 w-full bg-transparent border-none focus:outline-none text-[20px] font-semibold tracking-tight text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30"
+            maxLength={60}
+          />
+        </div>
+      </div>
+
+      <FieldLabel>Handle</FieldLabel>
+      <div className="relative">
+        <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-black/35 dark:text-white/35 pointer-events-none">
+          <AtSign className="w-4 h-4" />
+        </span>
+        <input
+          type="text"
+          value={username}
+          onChange={(e) => setUsername(slugifyHandle(e.target.value))}
+          placeholder="yourname"
+          className="w-full h-12 pl-10 pr-12 rounded-xl bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-[15px] text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black/30 dark:focus:border-white/25 transition-colors"
+          maxLength={24}
+        />
+        <span className="absolute right-3.5 top-1/2 -translate-y-1/2">
+          {checking ? (
+            <Loader2 className="w-4 h-4 animate-spin text-black/35 dark:text-white/35" />
+          ) : available === true ? (
+            <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.25} />
+          ) : available === false ? (
+            <X className="w-4 h-4 text-rose-500" strokeWidth={2.25} />
+          ) : null}
+        </span>
+      </div>
+      <p className="mt-1.5 text-[12px] text-black/40 dark:text-white/40">
+        {username.length < 3
+          ? '3 characters minimum.'
+          : available === false
+            ? `"${username}" is taken — try another.`
+            : available === true
+              ? `mailient.xyz/u/${username}`
+              : `Will live at mailient.xyz/u/${username || 'yourname'}`}
+      </p>
+
+      <div className="mt-6">
+        <FieldLabel>Bio <span className="ml-1 text-black/30 dark:text-white/30 font-normal">(optional)</span></FieldLabel>
+        <textarea
+          value={bio}
+          onChange={(e) => setBio(e.target.value)}
+          placeholder="Founder of X. Building Y. Talking to Z."
+          rows={3}
+          maxLength={160}
+          className="w-full px-4 py-3 rounded-xl bg-white dark:bg-white/[0.02] border border-black/[0.08] dark:border-white/[0.08] text-[14px] text-black dark:text-white placeholder:text-black/30 dark:placeholder:text-white/30 focus:outline-none focus:border-black/30 dark:focus:border-white/25 transition-colors resize-none leading-relaxed"
+        />
+        <p className="mt-1.5 text-[12px] text-black/40 dark:text-white/40 text-right tabular-nums">{bio.length}/160</p>
       </div>
     </div>
   );
 }
 
-function TrustItem({ icon: Icon, title, desc }: any) {
+function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <Icon className="w-5 h-5 text-white/40" />
-        <h4 className="text-lg font-medium text-white">{title}</h4>
+    <label className="block text-[11.5px] uppercase tracking-[0.14em] font-medium text-black/40 dark:text-white/40 mb-1.5">
+      {children}
+    </label>
+  );
+}
+
+function StepTone({ tone, setTone }: { tone: Tone; setTone: (t: Tone) => void }) {
+  return (
+    <div>
+      <h1 className="text-3xl sm:text-4xl font-semibold tracking-[-0.025em] mb-2">How should Arcus talk?</h1>
+      <p className="text-[15px] text-black/55 dark:text-white/55 mb-8">
+        Change anytime in settings. Affects how replies and reports read — not what gets done.
+      </p>
+
+      <div className="space-y-2.5">
+        {TONES.map((t) => {
+          const active = t.id === tone;
+          return (
+            <motion.button
+              key={t.id}
+              type="button"
+              onClick={() => setTone(t.id)}
+              whileTap={{ scale: 0.99 }}
+              className={cn(
+                'w-full text-left rounded-2xl px-4 py-3.5 border transition-[border-color,background-color] duration-200',
+                active
+                  ? 'bg-black text-white dark:bg-white dark:text-black border-black dark:border-white'
+                  : 'bg-white dark:bg-white/[0.02] border-black/[0.08] dark:border-white/[0.08] text-black dark:text-white hover:border-black/[0.16] dark:hover:border-white/[0.16]',
+              )}
+            >
+              <div className="flex items-center gap-3">
+                <div className={cn(
+                  'w-4 h-4 rounded-full border-2 flex-shrink-0 transition-colors',
+                  active
+                    ? 'border-white dark:border-black bg-white dark:bg-black'
+                    : 'border-black/30 dark:border-white/25',
+                )} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-baseline gap-2">
+                    <span className={cn(
+                      'text-[15px] font-semibold tracking-tight',
+                      active ? 'text-white dark:text-black' : 'text-black dark:text-white',
+                    )}>{t.title}</span>
+                    <span className={cn(
+                      'text-[12px]',
+                      active ? 'text-white/65 dark:text-black/65' : 'text-black/45 dark:text-white/45',
+                    )}>{t.tagline}</span>
+                  </div>
+                  <p className={cn(
+                    'mt-1 text-[13px] italic',
+                    active ? 'text-white/75 dark:text-black/75' : 'text-black/50 dark:text-white/50',
+                  )}>{t.example}</p>
+                </div>
+              </div>
+            </motion.button>
+          );
+        })}
       </div>
-      <p className="text-sm text-zinc-500 leading-relaxed">{desc}</p>
     </div>
   );
 }
 
-function ScanningLabel({ label, delay }: { label: string, delay: number }) {
+function StepReady({ firstName, tone }: { firstName: string; tone: Tone }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, x: -10 }}
-      animate={{ opacity: 1, x: 0 }}
-      transition={{ delay, duration: 1 }}
-      className="flex items-center gap-3 text-sm text-zinc-500"
-    >
-      <div className="w-1.5 h-1.5 rounded-full bg-white/20 animate-pulse" />
-      {label}
-    </motion.div>
+    <div className="text-center">
+      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-black/[0.04] dark:bg-white/[0.05] ring-1 ring-black/[0.04] dark:ring-white/[0.05] text-black/70 dark:text-white/70 mb-6">
+        <Check className="w-6 h-6" strokeWidth={2.25} />
+      </div>
+      <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold tracking-[-0.025em] mb-3">
+        {firstName ? `You're in, ${firstName}.` : "You're in."}
+      </h1>
+      <p className="text-[15px] text-black/55 dark:text-white/55 max-w-md mx-auto leading-relaxed mb-8">
+        Your home shows what deserves you today. Inbox is one tap away. Arcus learns as you go.
+      </p>
+
+      <div className="max-w-md mx-auto text-left rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-white dark:bg-white/[0.02] overflow-hidden">
+        <div className="px-5 py-4 border-b border-black/[0.05] dark:border-white/[0.05]">
+          <p className="text-[11px] uppercase tracking-[0.16em] text-black/40 dark:text-white/40 font-medium">Preview</p>
+          <p className="text-[16px] font-semibold tracking-tight mt-1">Today</p>
+        </div>
+        <ul className="divide-y divide-black/[0.05] dark:divide-white/[0.05]">
+          <PreviewRow icon={<Mail className="w-3.5 h-3.5" />} label="Decide" sub="Unread mail that moves the business" />
+          <PreviewRow icon={<CalendarClock className="w-3.5 h-3.5" />} label="Show up" sub="Today's meetings with prep" />
+          <PreviewRow icon={<Clock className="w-3.5 h-3.5" />} label="Chase" sub="Threads waiting on a reply" />
+          <PreviewRow icon={<Wand2 className="w-3.5 h-3.5" />} label="Promised" sub={`Action items — voiced ${tone}`} />
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+function PreviewRow({ icon, label, sub }: { icon: React.ReactNode; label: string; sub: string }) {
+  return (
+    <li className="px-5 py-3 flex items-center gap-3">
+      <div className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] flex items-center justify-center text-black/65 dark:text-white/65">
+        {icon}
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-[13.5px] font-semibold tracking-tight text-black dark:text-white">{label}</p>
+        <p className="text-[12px] text-black/50 dark:text-white/50 truncate">{sub}</p>
+      </div>
+    </li>
+  );
+}
+
+function GoogleMark() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.6-6 8-11.3 8a12 12 0 1 1 0-24c3 0 5.8 1.1 7.9 3l5.7-5.7A20 20 0 1 0 24 44c11 0 20-9 20-20 0-1.2-.1-2.4-.4-3.5z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 13 24 13c3 0 5.8 1.1 7.9 3l5.7-5.7A20 20 0 0 0 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5 0 9.6-1.9 13.1-5l-6.1-5c-2 1.4-4.4 2-7 2-5.3 0-9.7-3.4-11.3-8l-6.5 5A20 20 0 0 0 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.2-4.3 5.5l6.1 5C40 35 44 30 44 24c0-1.2-.1-2.4-.4-3.5z"/>
+    </svg>
   );
 }
