@@ -34,10 +34,16 @@ REQUIRED OUTPUT FORMAT — non-negotiable. Emit this exact tagged-section struct
 If you have ZERO actionable work this run, emit ONLY:
 "No work in your lane this run." and nothing else. The aggregator handles the rest.
 
+HARD RULE — section emptiness:
+If a section (Revenue / Client / Operations / Needs Attention / Cross-VA / Links) has no real content for THIS run, OMIT THE SECTION HEADER ENTIRELY. Do NOT emit:
+  • A header followed by no bullets
+  • A header followed by an empty "- " bullet
+  • A header followed by a placeholder bullet ("- none", "- nothing to report", "- N/A", "- (empty)")
+Every bullet you emit must name a real, concrete item with at minimum a recipient/company/topic + a one-line context. If you can't write that one line, don't emit the bullet — drop the whole section.
+
 GROUND RULES:
 - Fetch before claim. Every URL + every named recipient + every count came from a real tool call this turn.
 - Integration awareness. Tool from a disconnected integration → skip it; do NOT invent results.
-- Empty bullets are valid signal — say so plainly, never pad.
 - Cross-VA notes are observations only, not instructions to act.`;
 
 const PROMPTS: Record<ArcusVA, string> = {

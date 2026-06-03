@@ -84,7 +84,6 @@ export function scoreReportSignal(report: string): SignalScore {
 
   const wordCount = report.split(/\s+/).filter(Boolean).length;
 
-  // 1. Actionable section headers with content underneath.
   for (const header of ACTIONABLE_SECTION_HEADERS) {
     const re = new RegExp(`^##+\\s+(?:[^\\w\\s]+\\s+)?${header}\\b`, 'im');
     const m = re.exec(report);
@@ -92,14 +91,31 @@ export function scoreReportSignal(report: string): SignalScore {
     const after = report.slice(m.index + m[0].length);
     const nextHeader = after.search(/\n##\s+/);
     const section = nextHeader === -1 ? after : after.slice(0, nextHeader);
-    const bulletCount = (section.match(/^\s*[-*+]\s+\S/gm) || []).length;
+    const bulletLines = (section.match(/^\s*[-*+]\s+.+$/gm) || [])
+      .map(l => l.replace(/^[\s\-*+]+/, '').trim())
+      .filter(l => {
+        const stripped = l
+          .replace(/_<small>via[^<]+<\/small>_/gi, '')
+          .replace(/via\s+[\w📝📅📧💬🔍\s]+VA/gi, '')
+          .trim();
+        if (stripped.length < 6) return false;
+        if (/^(none|nothing|n\/a|tbd)\.?$/i.test(stripped)) return false;
+        return true;
+      });
     const tableRows = (section.match(/^\|[^|]+\|[^|]+\|/gm) || []).length;
-    const items = bulletCount + tableRows;
+    const items = bulletLines.length + tableRows;
     if (items > 0) {
       const add = Math.min(2.5, 1 + items * 0.4);
       score += add;
       reasons.push(`section "${header}": ${items} items (+${add.toFixed(1)})`);
     }
+  }
+
+  const viaOnlyMatches = (report.match(/^\s*[-*+]\s*_?<?small>?via\s+[\w\s📝📅📧💬🔍]+VA<?\/?small>?_?\s*$/gim) || []).length;
+  if (viaOnlyMatches >= 2) {
+    const penalty = Math.min(4, viaOnlyMatches * 1);
+    score -= penalty;
+    reasons.push(`${viaOnlyMatches} empty 'via X VA' lines (-${penalty})`);
   }
 
   // 2. Action verbs with non-zero counts ("drafted 5", "sent 3").

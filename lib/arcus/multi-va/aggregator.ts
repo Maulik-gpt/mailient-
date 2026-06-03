@@ -59,15 +59,25 @@ function parseVASections(body: string): ParsedSections {
     const trimmed = rawLine.trim();
     if (!trimmed) continue;
     if (trimmed.startsWith('-') || trimmed.startsWith('*') || trimmed.startsWith('•')) {
-      out[currentKey].push(trimmed.replace(/^[-*•]\s*/, ''));
+      const stripped = trimmed.replace(/^[-*•]\s*/, '').trim();
+      if (looksLikeRealContent(stripped)) out[currentKey].push(stripped);
     } else if (out[currentKey].length > 0) {
       out[currentKey][out[currentKey].length - 1] += ' ' + trimmed;
-    } else {
+    } else if (looksLikeRealContent(trimmed)) {
       out[currentKey].push(trimmed);
     }
   }
   out.links = linksBuf.join('\n').trim();
   return out;
+}
+
+function looksLikeRealContent(s: string): boolean {
+  const t = s.trim();
+  if (t.length < 6) return false;
+  if (/^(none|nothing|n\/a|tbd|no (items|content|updates|activity|signal|results))\.?$/i.test(t)) return false;
+  if (/^(no|nothing) .{0,40} (to report|found|noted|flagged|today|this run)\.?$/i.test(t)) return false;
+  if (/^_?\(?(empty|placeholder|tbd)\)?_?$/i.test(t)) return false;
+  return true;
 }
 
 function mergeArtifacts(results: VARunResult[]): ArtifactBuckets {
@@ -102,9 +112,10 @@ function mergedSection(
 ): string {
   const lines: string[] = [];
   for (const { va, items } of perVAItems) {
-    if (items.length === 0) continue;
     for (const item of items) {
-      lines.push(`- ${item} _<small>via ${VA_LABELS[va]}</small>_`);
+      const cleaned = item.trim();
+      if (!looksLikeRealContent(cleaned)) continue;
+      lines.push(`- ${cleaned} _<small>via ${VA_LABELS[va]}</small>_`);
     }
   }
   if (lines.length === 0) return '';
