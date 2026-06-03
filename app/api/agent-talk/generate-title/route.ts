@@ -5,9 +5,7 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 15;
 
 const FREE_MODELS = [
-  'google/gemini-2.0-flash-exp:free',
-  'meta-llama/llama-3.2-3b-instruct:free',
-  'qwen/qwen-2-7b-instruct:free',
+  'liquid/lfm-2.5-1.2b-thinking:free',
 ];
 
 function getKeys(): string[] {

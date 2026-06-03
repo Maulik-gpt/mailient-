@@ -103,7 +103,7 @@ export async function POST(request) {
                 case 'summary':
                     result = {
                         type: 'summary',
-                        content: await aiService.generateEmailSummary(emailContent, false, context, { timeout: 8000, model: 'google/gemini-2.0-flash-exp:free' })
+                        content: await aiService.generateEmailSummary(emailContent, false, context, { timeout: 8000, model: 'liquid/lfm-2.5-1.2b-thinking:free' })
                     };
                     break;
                 case 'reply':
