@@ -45,6 +45,23 @@ export default function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
+            try {
+              var theme = localStorage.getItem('theme') || 'dark';
+              var isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+              if (isDark) {
+                document.documentElement.classList.add('dark');
+                document.documentElement.style.colorScheme = 'dark';
+                document.documentElement.style.backgroundColor = '#000000';
+              } else {
+                document.documentElement.classList.remove('dark');
+                document.documentElement.style.colorScheme = 'light';
+                document.documentElement.style.backgroundColor = '#f7f8f8';
+              }
+            } catch(e) {}
+          })();
+        ` }} />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function() {
             window.addEventListener('error', function(e) {
               const target = e.target;
               if (target && target.tagName === 'SCRIPT' && target.src && (target.src.indexOf('/_next/static/') !== -1 || target.src.indexOf('/chunks/') !== -1)) {
