@@ -217,7 +217,7 @@ function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAc
         <button
           type="button"
           onClick={primaryAction.onClick}
-          className="inline-flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full text-[12px] font-medium bg-black text-white dark:bg-white dark:text-black hover:bg-black/85 dark:hover:bg-white/85 active:scale-[0.97] transition-[background-color,transform] duration-150"
+          className="inline-flex items-center gap-1.5 pl-3 pr-2.5 py-1.5 rounded-full text-[12px] font-medium !bg-black !text-white dark:!bg-white dark:!text-black hover:opacity-85 active:scale-[0.97] transition-all duration-150"
         >
           {primaryAction.label}
           <ArrowUpRight className="w-3 h-3 group-hover:translate-x-[1px] group-hover:-translate-y-[1px] transition-transform duration-200" strokeWidth={2.25} />
@@ -453,7 +453,7 @@ export default function SiftToday() {
               {todayLabel}
             </p>
             <h1 className="text-3xl sm:text-[40px] sm:leading-[1.05] font-semibold text-black dark:text-white tracking-[-0.025em]">
-              {greeting} —
+              {greeting}
             </h1>
             <p className="text-[15px] mt-1.5 text-black/55 dark:text-white/55 tracking-tight">
               here&apos;s what deserves you today.

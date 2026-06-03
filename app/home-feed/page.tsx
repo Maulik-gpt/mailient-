@@ -263,14 +263,14 @@ function HomeFeedContent() {
                   onClick={() => switchTab(id)}
                   className={`relative inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12.5px] font-medium transition-colors duration-200 ${
                     isActive
-                      ? 'text-white dark:text-black'
-                      : 'text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white'
+                      ? '!text-white dark:!text-black'
+                      : 'text-neutral-500 hover:text-black dark:hover:text-white'
                   }`}
                 >
                   {isActive && (
                     <motion.span
                       layoutId="home-tab-pill"
-                      className="absolute inset-0 rounded-full bg-black dark:bg-white"
+                      className="absolute inset-0 rounded-full !bg-black dark:!bg-white"
                       transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                     />
                   )}
