@@ -164,30 +164,42 @@ async function synthesizeHeadline(
   agentName: string,
   parsed: Map<ArcusVA, ParsedSections>,
 ): Promise<string> {
-  const totalRevenue = Array.from(parsed.values()).reduce((s, p) => s + p.revenue.length, 0);
-  const totalClient = Array.from(parsed.values()).reduce((s, p) => s + p.client.length, 0);
-  const totalOps = Array.from(parsed.values()).reduce((s, p) => s + p.operations.length, 0);
-  const totalAttention = Array.from(parsed.values()).reduce((s, p) => s + p.needsAttention.length, 0);
-
-  if (totalRevenue + totalClient + totalOps + totalAttention === 0) {
-    return `${agentName}: quiet run — no actionable work surfaced across any lane.`;
+  const concreteBullets: string[] = [];
+  for (const [, sections] of parsed) {
+    for (const key of ['needsAttention', 'revenue', 'client', 'operations', 'crossVA'] as const) {
+      for (const item of sections[key]) {
+        const t = item.trim();
+        if (t.length < 12) continue;
+        if (/^(none|nothing|n\/a|tbd|empty)/i.test(t)) continue;
+        concreteBullets.push(t.slice(0, 200));
+      }
+    }
   }
 
-  const summaries = results.map(r => `- ${VA_LABELS[r.va]} (${statusBadge(r)}, ${r.toolCalls} calls): ${r.summary}`).join('\n');
+  if (concreteBullets.length === 0) return '';
+
+  const topBullets = concreteBullets.slice(0, 6);
   try {
     const res = await callLLM(
       [
         {
           role: 'system',
           content:
-            'You write ONE opening sentence for an executive briefing. ' +
-            'Input: per-VA summaries from a parallel committee run. ' +
-            'Output: a single past-tense first-person sentence (≤220 chars) naming concrete outcomes — counts, key actions, key blockers. ' +
-            'No filler ("successfully", "pleased to"). No emojis. No closing question. End with a period.',
+            'You write ONE opening sentence for an executive briefing. The reader is the founder; they only have 5 seconds before scrolling. ' +
+            'Input: the actual items the agent surfaced this run, as bullet text. ' +
+            'Output: a single past-tense first-person sentence (≤220 chars) that NAMES the 1-2 most specific real items — recipients, companies, topics, dollar amounts. ' +
+            'RULES:\n' +
+            '- Never read out raw counts ("logged 1 revenue, 1 client") — those sound like mock data. Always name the actual thing.\n' +
+            '- Never invent specifics not in the input.\n' +
+            '- No filler ("successfully", "pleased to", "I have processed"). No emojis. No closing question.\n' +
+            '- Start with a past-tense verb ("Surfaced", "Drafted", "Flagged", "Logged", "Caught").\n' +
+            '- End with a period.\n\n' +
+            'GOOD: "Surfaced Priya\'s SOW redlines for sign-off and flagged the stalled Acme thread."\n' +
+            'BAD: "I logged revenue 1, secured 1 client, completed 1 ops task, flagged 1 need-attention item."',
         },
         {
           role: 'user',
-          content: `Agent: ${agentName}\n\nTotals: revenue=${totalRevenue} client=${totalClient} ops=${totalOps} needs_attention=${totalAttention}\n\nPer-VA summaries:\n${summaries}\n\nWrite the opening sentence.`,
+          content: `Agent: ${agentName}\n\nReal items this run:\n${topBullets.map(b => `- ${b}`).join('\n')}\n\nWrite the opening sentence.`,
         },
       ],
       [],
@@ -195,11 +207,18 @@ async function synthesizeHeadline(
     );
     const raw = getText(res.content).trim();
     const oneLine = raw.split(/\n+/)[0].replace(/^[-*•]\s*/, '').trim();
-    if (oneLine.length >= 12 && oneLine.length <= 280) return oneLine;
+    if (
+      oneLine.length >= 20
+      && oneLine.length <= 280
+      && !/\b(revenue|client|ops|operations|needs[- ]attention)\s+\d+/i.test(oneLine)
+      && !/\bexecuted\s+\d+\s+\w+\s+tool\s+calls?/i.test(oneLine)
+    ) {
+      return oneLine;
+    }
   } catch { /* fall through */ }
 
-  const successCount = results.filter(r => r.status === 'success').length;
-  return `${agentName}: ${successCount} of ${results.length} VAs reported work this run. ${totalAttention > 0 ? `${totalAttention} item${totalAttention === 1 ? '' : 's'} need${totalAttention === 1 ? 's' : ''} your attention.` : 'Nothing flagged for your attention.'}`;
+  const top = topBullets[0]?.split(/[.!?]/)[0]?.trim().slice(0, 180);
+  return top ? `Surfaced: ${top}.` : '';
 }
 
 export async function buildCommitteeReport(

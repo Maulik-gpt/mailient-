@@ -1263,24 +1263,41 @@ function ArcusErrorCard({
   /** When the error is an auth problem this opens the integrations modal. */
   onReconnect?: () => void;
 }) {
+  const [attempt, setAttempt] = useState(0);
   const [retrying, setRetrying] = useState(false);
+  const [nextRetryInMs, setNextRetryInMs] = useState<number | null>(null);
 
   const kind = classifyArcusError(errorMessage);
-
-  // Auto-retry once after a short delay when models are rate-limited
   const isExhausted = kind === 'warning';
+
+  const RETRY_DELAYS_MS = [5000, 12000, 30000];
+  const MAX_ATTEMPTS = RETRY_DELAYS_MS.length;
+  const exhaustedAttempts = attempt >= MAX_ATTEMPTS;
+
   useEffect(() => {
-    if (isExhausted && !retrying) {
-      const t = setTimeout(() => {
-        setRetrying(true);
-        onRetry();
-      }, 3000);
-      return () => clearTimeout(t);
-    }
+    setRetrying(false);
+  }, [errorMessage]);
+
+  useEffect(() => {
+    if (!isExhausted || retrying || exhaustedAttempts) return;
+    const delay = RETRY_DELAYS_MS[attempt];
+    setNextRetryInMs(delay);
+    const tick = setInterval(() => {
+      setNextRetryInMs(prev => prev !== null && prev > 1000 ? prev - 1000 : prev);
+    }, 1000);
+    const fire = setTimeout(() => {
+      clearInterval(tick);
+      setNextRetryInMs(null);
+      setRetrying(true);
+      setAttempt(a => a + 1);
+      onRetry();
+    }, delay);
+    return () => { clearTimeout(fire); clearInterval(tick); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt, isExhausted, retrying, errorMessage]);
 
   const handleRetry = () => {
+    setAttempt(0);
     setRetrying(true);
     onRetry();
   };
@@ -1289,15 +1306,25 @@ function ArcusErrorCard({
     kind === 'auth'
       ? "I can't reach that integration."
       : kind === 'warning'
-        ? 'Arcus is taking a moment.'
+        ? exhaustedAttempts
+          ? 'Models are slammed right now.'
+          : 'Arcus is taking a moment.'
         : 'Arcus was unable to reply.';
 
-  const subtitle =
-    kind === 'warning' && isExhausted
-      ? 'All models busy — retrying in 3 seconds…'
-      : errorMessage && errorMessage.length < 240
-        ? errorMessage
-        : 'Something went wrong. Please try again.';
+  const subtitle = (() => {
+    if (kind === 'auth' || kind === 'error') {
+      return errorMessage && errorMessage.length < 240 ? errorMessage : 'Something went wrong. Please try again.';
+    }
+    if (exhaustedAttempts) {
+      return `Tried ${MAX_ATTEMPTS} times — OpenRouter's free pool is saturated. Try again in a minute or upgrade for paid model fallback.`;
+    }
+    if (retrying) return `Retry attempt ${attempt} running…`;
+    if (nextRetryInMs !== null) {
+      const sec = Math.max(1, Math.ceil(nextRetryInMs / 1000));
+      return `All models busy — retry ${attempt + 1} of ${MAX_ATTEMPTS} in ${sec}s…`;
+    }
+    return 'All models busy — retrying…';
+  })();
 
   // Border + icon palette per kind
   const palette = kind === 'auth'
