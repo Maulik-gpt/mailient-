@@ -7,7 +7,6 @@ export const maxDuration = 15;
 const FREE_MODELS = [
   'google/gemini-2.0-flash-exp:free',
   'meta-llama/llama-3.2-3b-instruct:free',
-  'mistralai/mistral-7b-instruct:free',
   'qwen/qwen-2-7b-instruct:free',
 ];
 

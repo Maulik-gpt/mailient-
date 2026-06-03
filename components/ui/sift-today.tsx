@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle } from 'lucide-react';
-import { DraftReplyBox } from '@/app/dashboard/agent-talk/components/DraftReplyBox';
+import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
 
 interface DecideItem {
@@ -104,6 +104,47 @@ function formatRelative(iso: string): string {
 function senderInitial(name: string): string {
   return (name || '?').trim()[0]?.toUpperCase() || '?';
 }
+
+function linkify(text: string) {
+    if (!text) return '';
+    const urlRegex = /(https?:\/\/[^\s<]+[^.,;?!)\]\s<])/g;
+    return text.replace(urlRegex, (url) => {
+        const displayUrl = url.length > 55 ? url.substring(0, 52) + '...' : url;
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-500/30 transition-all font-medium">${displayUrl}</a>`;
+    });
+}
+
+const renderMarkdown = (text: string): string => {
+    if (!text) return text;
+    text = text.replace(/<br\s*\/?>/gi, '\n');
+
+    const paragraphs = text.split(/\n\n+/);
+    const renderedParagraphs = paragraphs.map(para => {
+        let processedPara = para.replace(/\*\*(.*?)\*\*/g, '<strong class="font-bold text-black dark:text-white brightness-125">$1</strong>');
+
+        if (processedPara.includes('\n- ') || processedPara.startsWith('- ') || processedPara.includes('\n* ') || processedPara.startsWith('* ')) {
+            const lines = processedPara.split('\n');
+            const listItems = lines.map(line => {
+                const match = line.match(/^[\s]*[-*]\s*(.*)$/);
+                if (match) {
+                    return `<li>${match[1]}</li>`;
+                }
+                return line;
+            });
+
+            let joinedList = listItems.join('\n');
+            joinedList = joinedList.replace(/(<li>[\s\S]*?<\/li>(?:\n<li>[\s\S]*?<\/li>)*)/g, '<ul class="list-disc list-inside my-4 space-y-2">$1</ul>');
+            return joinedList;
+        }
+
+        processedPara = linkify(processedPara);
+        processedPara = processedPara.replace(/\n/g, '<br/>');
+
+        return `<p class="mb-4 last:mb-0">${processedPara}</p>`;
+    });
+
+    return renderedParagraphs.join('');
+};
 
 interface BucketHeaderProps {
   label: string;
@@ -259,7 +300,7 @@ export default function SiftToday() {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
-          setActiveDraft((prev: any) => prev ? { ...prev, content: accumulated } : null);
+          setActiveDraft((prev: any) => prev ? { ...prev, content: renderMarkdown(accumulated) } : null);
         }
       }
     } catch (e) {
@@ -308,7 +349,7 @@ export default function SiftToday() {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
-          setActiveDraft((prev: any) => prev ? { ...prev, content: accumulated } : null);
+          setActiveDraft((prev: any) => prev ? { ...prev, content: renderMarkdown(accumulated) } : null);
         }
       }
     } catch (e) {
@@ -663,16 +704,12 @@ export default function SiftToday() {
 
         {/* Draft Reply Modal */}
         {activeDraft && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-            <div className="w-full max-w-2xl relative">
-              <DraftReplyBox
-                draftData={activeDraft}
-                onSendReply={handleSendDraft}
-                onDismiss={() => setActiveDraft(null)}
-                isVisible={true}
-              />
-            </div>
-          </div>
+          <SiftDraftModal
+            draftData={activeDraft}
+            onSendReply={handleSendDraft}
+            onDismiss={() => setActiveDraft(null)}
+            isVisible={true}
+          />
         )}
       </div>
     </div>
