@@ -6,6 +6,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle } from 'lucide-react';
 import { DraftReplyBox } from '@/app/dashboard/agent-talk/components/DraftReplyBox';
+import { toast } from 'sonner';
 
 interface DecideItem {
   id: string;
@@ -219,9 +220,19 @@ export default function SiftToday() {
 
   const [activeDraft, setActiveDraft] = useState<any>(null);
   const [isDraftingNudgeId, setIsDraftingNudgeId] = useState<string | null>(null);
+  const [isDraftingDecideId, setIsDraftingDecideId] = useState<string | null>(null);
 
   const handleDraftNudge = async (item: ChaseItem) => {
     setIsDraftingNudgeId(item.id);
+    setActiveDraft({
+      content: '',
+      recipientName: item.recipient.name || item.recipient.email.split('@')[0] || 'Recipient',
+      recipientEmail: item.recipient.email,
+      senderName: session?.user?.name || '',
+      subject: item.subject.startsWith('Re:') ? item.subject : `Re: ${item.subject}`,
+      threadId: item.threadId,
+    });
+
     try {
       const response = await fetch('/api/email/draft-reply?stream=true', {
         method: 'POST',
@@ -235,6 +246,10 @@ export default function SiftToday() {
         })
       });
       
+      if (!response.ok) {
+        throw new Error('Failed to generate draft nudge');
+      }
+      
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
@@ -244,21 +259,64 @@ export default function SiftToday() {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
+          setActiveDraft((prev: any) => prev ? { ...prev, content: accumulated } : null);
         }
       }
-      
-      setActiveDraft({
-        content: accumulated.trim(),
-        recipientName: item.recipient.name || item.recipient.email.split('@')[0] || 'Recipient',
-        recipientEmail: item.recipient.email,
-        senderName: session?.user?.name || '',
-        subject: item.subject.startsWith('Re:') ? item.subject : `Re: ${item.subject}`,
-        threadId: item.threadId,
-      });
     } catch (e) {
        console.error('Failed to generate draft nudge:', e);
+       setActiveDraft(null);
+       toast.error('Failed to generate draft nudge');
     } finally {
        setIsDraftingNudgeId(null);
+    }
+  };
+
+  const handleDraftDecide = async (item: DecideItem) => {
+    setIsDraftingDecideId(item.id);
+    setActiveDraft({
+      content: '',
+      recipientName: item.sender.name || item.sender.email.split('@')[0] || 'Recipient',
+      recipientEmail: item.sender.email,
+      senderName: session?.user?.name || '',
+      subject: item.subject.startsWith('Re:') ? item.subject : `Re: ${item.subject}`,
+      threadId: item.threadId,
+    });
+
+    try {
+      const response = await fetch('/api/email/draft-reply?stream=true', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          emailId: item.id,
+          category: 'general',
+          emailContent: `Draft a reply to ${item.sender.name || item.sender.email} about "${item.subject}". Match my voice profile and keep it under 4 sentences.`,
+          emailSubject: item.subject,
+          emailFrom: item.sender.email
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to generate draft reply');
+      }
+      
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+      
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          accumulated += decoder.decode(value, { stream: true });
+          setActiveDraft((prev: any) => prev ? { ...prev, content: accumulated } : null);
+        }
+      }
+    } catch (e) {
+       console.error('Failed to generate draft reply:', e);
+       setActiveDraft(null);
+       toast.error('Failed to generate draft reply');
+    } finally {
+       setIsDraftingDecideId(null);
     }
   };
 
@@ -525,9 +583,8 @@ export default function SiftToday() {
                         title={item.subject}
                         reason={item.reason}
                         primaryAction={{
-                          label: 'Draft reply',
-                          onClick: () =>
-                            openArcus(`Draft a reply to ${item.sender.name || item.sender.email} about "${item.subject}". Match my voice profile and keep it under 4 sentences.`),
+                          label: isDraftingDecideId === item.id ? 'Drafting...' : 'Draft reply',
+                          onClick: () => handleDraftDecide(item),
                         }}
                         secondaryAction={{ label: 'Open thread', href: item.gmailUrl }}
                       />

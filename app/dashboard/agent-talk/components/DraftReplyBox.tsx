@@ -362,7 +362,12 @@ export function DraftReplyBox({
                                 {editedContent.slice(selection.end)}
                             </>
                         ) : (
-                            editedContent
+                            editedContent || (
+                                <div className="flex flex-col items-center justify-center py-8 text-zinc-500 text-sm gap-3">
+                                    <div className="w-6.5 h-6.5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
+                                    <span className="font-mono text-[10.5px] uppercase tracking-[0.15em] text-zinc-400">Arcus is writing...</span>
+                                </div>
+                            )
                         )}
                     </div>
                 )}
