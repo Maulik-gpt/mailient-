@@ -229,7 +229,7 @@ export function LinearLanding() {
   }, []);
 
   useEffect(() => {
-    document.title = "Mailient";
+    document.title = "Mailient — The future isn't faster communication. The future is communication that no longer requires you.";
   }, []);
 
   // Google One Tap — shows the native prompt to unauthenticated visitors.

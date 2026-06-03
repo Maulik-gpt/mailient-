@@ -4,7 +4,7 @@ import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
-  title: "Mailient",
+  title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
   description: "Stop dreading your inbox. AI surfaces the deals and urgent replies hiding in the noise. Draft faster in your voice. Know exactly what needs your attention without the Sunday night panic of what did I miss.",
   metadataBase: new URL('https://mailient.xyz'),
   icons: {
@@ -15,7 +15,7 @@ export const metadata = {
     apple: "/apple-touch-icon.png?v=10",
   },
   openGraph: {
-    title: "Mailient — AI inbox that works for you.",
+    title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
     description: "Auto-organize, surface opportunities, and reply 10x faster. Smart Prioritization, Automate AI agents, 10x Faster Replies.",
     url: "https://mailient.xyz",
     siteName: "Mailient",
@@ -32,7 +32,7 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mailient — AI inbox that works for you.",
+    title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
     description: "Auto-organize, surface opportunities, and reply 10x faster.",
     images: ["/og-image.png"],
   },
