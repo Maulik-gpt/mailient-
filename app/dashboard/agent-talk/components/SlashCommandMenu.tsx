@@ -43,8 +43,8 @@ export function SlashCommandMenu({
         className={cn(
           'absolute bottom-full left-0 right-0 mb-2 z-30',
           'max-h-[360px] overflow-y-auto',
-          'bg-[#1a1a1a] dark:bg-[#1a1a1a]',
-          'border border-white/[0.08]',
+          'bg-white dark:bg-[#1a1a1a]',
+          'border border-black/[0.08] dark:border-white/[0.08]',
           'rounded-2xl shadow-2xl',
           'py-2',
         )}
@@ -52,8 +52,8 @@ export function SlashCommandMenu({
         aria-label="Slash commands"
       >
         {filtered.length === 0 ? (
-          <div className="px-4 py-3 text-[13px] text-white/40">
-            No commands match /<span className="text-white/60">{filter}</span>
+          <div className="px-4 py-3 text-[13px] text-black/40 dark:text-white/40">
+            No commands match /<span className="text-black/60 dark:text-white/60">{filter}</span>
           </div>
         ) : (
           filtered.map((cmd, i) => {
@@ -70,8 +70,8 @@ export function SlashCommandMenu({
                 className={cn(
                   'w-full text-left px-5 py-2 text-[15px] transition-colors',
                   isFocused
-                    ? 'bg-white/[0.06] text-white'
-                    : 'text-white/85 hover:bg-white/[0.04]',
+                    ? 'bg-black/[0.05] dark:bg-white/[0.06] text-black dark:text-white'
+                    : 'text-black/80 dark:text-white/85 hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
                 )}
               >
                 /{cmd.name}
