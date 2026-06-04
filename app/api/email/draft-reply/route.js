@@ -38,20 +38,30 @@ export async function POST(request) {
             });
         }
 
-        // Build email content from frontend data (fast) or fallback to minimal data
         let emailContent;
         if (emailContentFromFrontend) {
-            // Use content already loaded in frontend - SKIPS Gmail API call entirely!
             const cleanBody = emailContentFromFrontend
-                .replace(/<[^>]*>?/gm, '')
-                .replace(/\s+/g, ' ')
+                .replace(/<style[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[\s\S]*?<\/script>/gi, '')
+                .replace(/<!--[\s\S]*?-->/g, '')
+                .replace(/<[^>]+>/g, ' ')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&#?\w+;/g, '')
+                .replace(/\{[^{}\n]{20,}\}/g, ' ')
+                .replace(/[A-Za-z_-]+\s*:\s*[^;{}\n]+;/g, ' ')
+                .replace(/[ \t]+/g, ' ')
+                .replace(/\n{2,}/g, '\n')
+                .replace(/\s{2,}/g, ' ')
                 .trim()
-                .substring(0, 5000);
-            
-            emailContent = `
-Subject: ${emailSubject || 'Re:'}
+                .substring(0, 4000);
+
+            emailContent = `Subject: ${emailSubject || 'Re:'}
 From: ${emailFrom || 'Sender'}
-Snippet: ${emailSnippet || ''}
 Body: ${cleanBody}`;
         } else {
             // Fallback - minimal content to unblock the flow

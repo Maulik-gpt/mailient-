@@ -375,7 +375,7 @@ export default function SiftToday() {
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let accumulated = '';
-      
+
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
@@ -383,6 +383,17 @@ export default function SiftToday() {
           accumulated += decoder.decode(value, { stream: true });
           setActiveDraft((prev: any) => prev ? { ...prev, content: renderMarkdown(accumulated) } : null);
         }
+      }
+
+      if (!accumulated.trim()) {
+        setActiveDraft((prev: any) => prev ? {
+          ...prev,
+          content: renderMarkdown(`Hi ${(item.sender.name || item.sender.email).split(' ')[0]},\n\nGot your message — let me think on this and follow up shortly.\n\nBest,`),
+        } : null);
+        toast.warning('The AI struggled to draft a reply', {
+          description: 'Showing a starter you can edit. Try again in a minute if the model was rate-limited.',
+          duration: 5000,
+        });
       }
     } catch (e) {
        console.error('Failed to generate draft reply:', e);
