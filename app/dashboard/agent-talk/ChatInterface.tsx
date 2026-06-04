@@ -1695,8 +1695,8 @@ const MessageActionButtons = ({ msg, onFeedback, onRegenerate, isLoading, onShar
   // Regenerate spin animation is driven by onRegenerate triggering the modal
 
   return (
-    <div className={cn("mt-5 flex items-center gap-2 transition-opacity", isLoading ? "opacity-30 pointer-events-none" : "group-hover/msg:opacity-100")}>
-      <div className="flex items-center gap-1.5 p-1.5 bg-arcus-elevated border border-arcus-border rounded-full backdrop-blur-md">
+    <div className={cn("mt-5 flex flex-wrap items-center gap-2 max-w-full transition-opacity", isLoading ? "opacity-30 pointer-events-none" : "group-hover/msg:opacity-100")}>
+      <div className="inline-flex items-center gap-1.5 p-1.5 bg-arcus-elevated border border-arcus-border rounded-full backdrop-blur-md">
         {/* Copy Button */}
         <Tooltip delayDuration={200}>
           <TooltipTrigger asChild>

@@ -315,6 +315,14 @@ export async function POST(request: NextRequest) {
       : stylePrefs.actionMode ?? 'ask';
   const skipConfirmations = effectiveActionMode === 'auto';
 
+  let ruleFocus: string | null = null;
+  if (!isPlanMode) {
+    try {
+      const { getRecentViolationFocus } = await import('@/lib/arcus/rule-violations');
+      ruleFocus = await getRecentViolationFocus(userId, 24);
+    } catch { /* telemetry table optional */ }
+  }
+
   const systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
     : buildSystemPrompt({
@@ -325,12 +333,10 @@ export async function POST(request: NextRequest) {
         personality: voiceContext || undefined,
         userInstructions: personalityData || undefined,
         relevantVAs: promptVAFilter,
-        // PART 45 — user-tunable voice + length overlay.
         communicationStyle: stylePrefs.communicationStyle,
         verbosity: stylePrefs.verbosity,
-        // PART 47 — Auto mode flips the system prompt into "execute writes
-        // directly" mode for this run.
         skipConfirmations,
+        ruleFocus,
       });
 
   // Auto-extract "remember X" / "save this" / "from now on..." from the

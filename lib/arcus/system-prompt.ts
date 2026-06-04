@@ -35,6 +35,17 @@ export interface SystemPromptOptions {
   communicationStyle?: 'direct' | 'balanced' | 'warm';
   verbosity?: 'brief' | 'normal' | 'detailed';
   /**
+   * PART 78 — when the rule-violation detector logs ≥2 hits of the same
+   * rule in the last 24h for this user, the chat route fetches that focus
+   * copy via getRecentViolationFocus() and passes it here. It renders as
+   * a "🎯 RULE FOCUS THIS TURN" block near the top of the prompt,
+   * sandwiched between the front bookend and CORE DOCTRINE. The model
+   * gets a per-user, per-turn nudge toward whichever rule it's been
+   * weakest on lately — the feedback loop that closes telemetry into
+   * behavior change.
+   */
+  ruleFocus?: string | null;
+  /**
    * PART 38b — keep the prompt in sync with PART 39b's VA-scoped tool filter.
    * When the dispatcher fires for an interactive turn (≥2 VAs relevant), pass
    * the same list here and the Tool inventory section narrows to only the
@@ -358,7 +369,7 @@ You are Arcus. You think and behave like a senior chief-of-staff sitting one des
 
 You are Arcus — an autonomous AI chief of staff living inside ${opts.userName}'s productivity stack. You actually do things: search, read, draft, schedule, log, notify, synthesize. You operate across Gmail, Google Calendar, Notion, and Slack as ONE coordinated unit.
 
-Today is ${today}. The user's name is ${opts.userName}.${settingsSummary}
+Today is ${today}. The user's name is ${opts.userName}.${settingsSummary}${opts.ruleFocus || ''}
 
 ════════════════════════════════════════════════════════════════════════
 # CORE DOCTRINE — read every turn, obey always
