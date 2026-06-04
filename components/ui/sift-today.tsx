@@ -105,6 +105,36 @@ function senderInitial(name: string): string {
   return (name || '?').trim()[0]?.toUpperCase() || '?';
 }
 
+function aiErrorToToast(err: unknown): { title: string; description: string; durationMs: number } {
+  const msg = String((err as any)?.message || err || '').toLowerCase();
+  if (msg.includes('429') || msg.includes('daily rate-limited') || msg.includes('free-models-per-day') || msg.includes('limit exceeded')) {
+    return {
+      title: 'AI quota hit for today',
+      description: "OpenRouter's free pool reset at midnight UTC. Tap the email in Gmail directly, or upgrade for paid model fallback.",
+      durationMs: 7000,
+    };
+  }
+  if (msg.includes('rate limit') || msg.includes('models are currently busy') || msg.includes('all keys')) {
+    return {
+      title: 'Models are slammed right now',
+      description: 'Try again in a minute — Google\'s API is throttling the free pool.',
+      durationMs: 5000,
+    };
+  }
+  if (msg.includes('token expired') || msg.includes('invalid_grant') || msg.includes('refresh failed')) {
+    return {
+      title: 'Gmail sign-in expired',
+      description: 'Reconnect Google from the prompt-box connectors to keep drafting.',
+      durationMs: 7000,
+    };
+  }
+  return {
+    title: 'Failed to generate draft reply',
+    description: 'Close and try again. If it persists, the issue is on the model side.',
+    durationMs: 4500,
+  };
+}
+
 function linkify(text: string) {
     if (!text) return '';
     const urlRegex = /(https?:\/\/[^\s<]+[^.,;?!)\]\s<])/g;
@@ -357,7 +387,8 @@ export default function SiftToday() {
     } catch (e) {
        console.error('Failed to generate draft reply:', e);
        setActiveDraft(null);
-       toast.error('Failed to generate draft reply');
+       const t = aiErrorToToast(e);
+       toast.error(t.title, { description: t.description, duration: t.durationMs });
     } finally {
        setIsDraftingDecideId(null);
     }

@@ -1203,9 +1203,34 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
             forceFetchUsage();
         } catch (error: any) {
             console.error('Error generating draft:', error);
-            toast.error('Failed to generate draft reply. Please try again.');
-            // Show error in draft editor instead of blank screen
-            setDraftContent('<p>Failed to generate draft. Please close and try again.</p>');
+            const msg = String(error?.message || '').toLowerCase();
+            const isDailyLimit = msg.includes('429') || msg.includes('daily rate-limited') || msg.includes('free-models-per-day');
+            const isBusy = !isDailyLimit && (msg.includes('rate limit') || msg.includes('models are currently busy') || msg.includes('all keys'));
+            const isTokenExpired = msg.includes('token expired') || msg.includes('invalid_grant') || msg.includes('refresh failed');
+            if (isDailyLimit) {
+                toast.error('AI quota hit for today', {
+                    description: "OpenRouter's free pool resets at midnight UTC. Open the email in Gmail directly, or upgrade for paid model fallback.",
+                    duration: 7000,
+                });
+                setDraftContent('<p>The free AI model quota is exhausted for today. Open the email in Gmail to reply manually, or upgrade for paid fallback.</p>');
+            } else if (isBusy) {
+                toast.error('Models are slammed right now', {
+                    description: 'Try again in a minute — Google\'s API is throttling the free pool.',
+                    duration: 5000,
+                });
+                setDraftContent('<p>Models are busy right now. Close and try again in a minute.</p>');
+            } else if (isTokenExpired) {
+                toast.error('Gmail sign-in expired', {
+                    description: 'Reconnect Google from the prompt-box connectors.',
+                    duration: 7000,
+                });
+                setDraftContent('<p>Gmail sign-in expired. Reconnect from the connectors button to continue.</p>');
+            } else {
+                toast.error('Failed to generate draft reply', {
+                    description: 'Close and try again. If it persists, the issue is on the model side.',
+                });
+                setDraftContent('<p>Failed to generate draft. Please close and try again.</p>');
+            }
         } finally {
             setIsDrafting(false);
             setIsGenerating(false);

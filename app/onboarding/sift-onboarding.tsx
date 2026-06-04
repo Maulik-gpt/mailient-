@@ -104,7 +104,7 @@ export default function SiftOnboardingPage() {
     signIn('google', { callbackUrl: `${window.location.pathname}?step=1`, redirect: true });
   };
 
-  const handleFinish = async (plan: 'free' | 'monthly' | 'annual' | 'lifetime') => {
+  const handleFinish = async (plan: 'monthly' | 'annual' | 'lifetime') => {
     setIsSubmitting(true);
     try {
       await fetch('/api/agent-talk/personality', {
@@ -129,27 +129,11 @@ export default function SiftOnboardingPage() {
 
       localStorage.setItem('onboarding_completed', 'true');
 
-      if (plan !== 'free') {
-        try {
-          localStorage.setItem('pending_plan', plan);
-          localStorage.setItem('pending_plan_timestamp', String(Date.now()));
-        } catch {}
-        window.location.href = POLAR_CHECKOUT_URLS[plan];
-        return;
-      }
-
       try {
-        confetti({
-          particleCount: 60,
-          spread: 70,
-          origin: { y: 0.55 },
-          colors: ['#ffffff', '#e4e4e7', '#a1a1aa'],
-          ticks: 80,
-          gravity: 0.7,
-        });
+        localStorage.setItem('pending_plan', plan);
+        localStorage.setItem('pending_plan_timestamp', String(Date.now()));
       } catch {}
-
-      setTimeout(() => router.push('/home-feed?welcome=true'), 350);
+      window.location.href = POLAR_CHECKOUT_URLS[plan];
     } catch {
       setIsSubmitting(false);
     }
@@ -176,8 +160,9 @@ export default function SiftOnboardingPage() {
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-white/75 dark:bg-black/65 border-b border-black/[0.04] dark:border-white/[0.04]">
         <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-black text-white dark:bg-white dark:text-black flex items-center justify-center">
-              <Sparkles className="w-3.5 h-3.5" strokeWidth={2.25} />
+            <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-black/[0.06] dark:ring-white/[0.08]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/mailient-logo-premium.png" alt="Mailient" className="w-full h-full object-cover" />
             </div>
             <span className="text-[13px] font-semibold tracking-tight">Mailient</span>
           </div>
@@ -241,7 +226,6 @@ export default function SiftOnboardingPage() {
                   firstName={firstName}
                   isSubmitting={isSubmitting}
                   onSelect={(planId) => handleFinish(planId)}
-                  onStartFree={() => handleFinish('free')}
                 />
               )}
             </motion.div>
@@ -277,14 +261,9 @@ export default function SiftOnboardingPage() {
           )}
 
           {step === 3 ? (
-            <button
-              type="button"
-              onClick={() => handleFinish('free')}
-              disabled={isSubmitting}
-              className="inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium text-black/65 dark:text-white/65 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors"
-            >
-              {isSubmitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <>Start free <ArrowRight className="w-3.5 h-3.5" /></>}
-            </button>
+            <span className="text-[12px] text-black/40 dark:text-white/40 hidden sm:inline">
+              Tap a plan above to continue
+            </span>
           ) : (
             <button
               type="button"
@@ -532,12 +511,10 @@ function StepPricing({
   firstName,
   isSubmitting,
   onSelect,
-  onStartFree,
 }: {
   firstName: string;
   isSubmitting: boolean;
   onSelect: (planId: 'monthly' | 'annual' | 'lifetime') => void;
-  onStartFree: () => void;
 }) {
   return (
     <div className="relative">
@@ -549,7 +526,7 @@ function StepPricing({
           {firstName ? `Welcome aboard, ${firstName}.` : 'Welcome aboard.'}
         </h1>
         <p className="text-[15px] text-black/55 dark:text-white/55 max-w-md mx-auto leading-relaxed">
-          Pick what fits. You can change it anytime, and you can skip with Start free below.
+          Pick the plan that fits. Change anytime in settings.
         </p>
       </div>
 
@@ -564,18 +541,6 @@ function StepPricing({
 
       <div className="relative bg-[#030303] rounded-[28px] border border-white/[0.06] overflow-hidden shadow-[0_30px_80px_-20px_rgba(0,0,0,0.5)]">
         <PricingSection3 handleSelectPlan={(planId) => onSelect(planId)} />
-      </div>
-
-      <div className="mt-8 text-center">
-        <button
-          type="button"
-          onClick={onStartFree}
-          disabled={isSubmitting}
-          className="text-[13px] text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors inline-flex items-center gap-1.5"
-        >
-          Not ready? <span className="underline underline-offset-4">Start free</span>
-          <ArrowRight className="w-3.5 h-3.5" />
-        </button>
       </div>
     </div>
   );
