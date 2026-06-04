@@ -50,10 +50,24 @@ export async function GET(request: NextRequest) {
 
   const { data, error } = await query;
 
-  // Table not migrated yet — return an empty list instead of a 500 so the
-  // UI can render "No runs yet" cleanly until the migration is applied.
   if (error?.code === '42P01') return NextResponse.json({ runs: [] });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ runs: data ?? [] });
+  const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+  const nowMs = Date.now();
+  const runs = (data ?? []).map((r: any) => {
+    if (r.status !== 'running') return r;
+    const startedMs = r.started_at ? new Date(r.started_at).getTime() : nowMs;
+    if (!Number.isFinite(startedMs) || nowMs - startedMs < STUCK_THRESHOLD_MS) return r;
+    const minutes = Math.floor((nowMs - startedMs) / 60000);
+    return {
+      ...r,
+      status: 'error',
+      duration_ms: r.duration_ms ?? (nowMs - startedMs),
+      error_message: r.error_message
+        || `Run never reported completion (started ${minutes}m ago). Likely a Vercel timeout or a DB write failure mid-update — the next scheduled tick will retry.`,
+    };
+  });
+
+  return NextResponse.json({ runs });
 }

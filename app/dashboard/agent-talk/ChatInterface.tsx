@@ -1396,8 +1396,8 @@ function ArcusErrorCard({
           <Icon />
         </div>
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-white/85 leading-tight">{headline}</p>
-          <p className="text-[12px] text-white/45 mt-0.5 leading-snug break-words">{subtitle}</p>
+          <p className="text-[13px] font-semibold text-arcus-fg leading-tight">{headline}</p>
+          <p className="text-[12px] text-arcus-fg-tertiary mt-0.5 leading-snug break-words">{subtitle}</p>
         </div>
       </div>
 
@@ -1416,8 +1416,8 @@ function ArcusErrorCard({
           className={cn(
             'flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm',
             showReconnect
-              ? 'border border-white/12 text-white/75 hover:text-white hover:bg-white/8'
-              : 'bg-white text-black hover:bg-white/90',
+              ? 'border border-arcus-border text-arcus-fg-secondary hover:text-arcus-fg hover:bg-arcus-surface-hover'
+              : 'bg-arcus-fg text-arcus-fg-inverse hover:bg-arcus-fg/90',
           )}
         >
           {retrying ? (

@@ -211,7 +211,7 @@ export async function GET(request: NextRequest) {
         // are no pending approval actions, skip delivery. Pending actions
         // ALWAYS override — the user can't approve what they don't see.
         const signal = scoreReportSignal(report);
-        const policy = (agent.quiet_day_policy as 'suppress' | 'always_send' | undefined) ?? 'suppress';
+        const policy = (agent.quiet_day_policy as 'suppress' | 'always_send' | undefined) ?? 'always_send';
         const decision = decideDelivery({
           score: signal.score,
           policy,
@@ -252,28 +252,41 @@ export async function GET(request: NextRequest) {
         // PART 60 — also persist signal_score + delivery_decision so the
         // dashboard can show "suppressed: quiet day" instead of a silent gap.
         if (runRecordId) {
+          const artifactLinks = extractArtifactLinks(report);
+          const coreUpdate = {
+            completed_at: completedAt.toISOString(),
+            duration_ms: completedAt.getTime() - runStartedAt.getTime(),
+            status: 'success',
+            tool_calls: toolCalls,
+            artifact_links: artifactLinks,
+            report_summary: report.slice(0, 500),
+            email_delivery: decision.deliver
+              ? (emailResult.status === 'fulfilled' ? 'sent' : 'failed')
+              : 'suppressed',
+            slack_delivery: decision.deliver
+              ? (slackResult.status === 'fulfilled' ? 'sent' : 'failed')
+              : 'suppressed',
+          };
           try {
-            const artifactLinks = extractArtifactLinks(report);
+            const { error: coreErr } = await supabase
+              .from('arcus_agent_runs')
+              .update(coreUpdate)
+              .eq('id', runRecordId);
+            if (coreErr) {
+              console.warn('[Cron] run-record core update failed:', coreErr.message);
+            }
+          } catch (e: any) {
+            console.warn('[Cron] run-record core update threw:', e?.message);
+          }
+          try {
             await supabase
               .from('arcus_agent_runs')
               .update({
-                completed_at: completedAt.toISOString(),
-                duration_ms: completedAt.getTime() - runStartedAt.getTime(),
-                status: 'success',
-                tool_calls: toolCalls,
-                artifact_links: artifactLinks,
-                report_summary: report.slice(0, 500),
-                email_delivery: decision.deliver
-                  ? (emailResult.status === 'fulfilled' ? 'sent' : 'failed')
-                  : 'suppressed',
-                slack_delivery: decision.deliver
-                  ? (slackResult.status === 'fulfilled' ? 'sent' : 'failed')
-                  : 'suppressed',
                 signal_score: signal.score,
                 delivery_decision: `${decision.reason} · ${signal.reasons.slice(0, 3).join(' | ')}`.slice(0, 500),
               })
               .eq('id', runRecordId);
-          } catch { /* non-fatal — migration may not be applied */ }
+          } catch { /* PART 60 columns may not be migrated — non-fatal */ }
         }
 
         return agent.name;
