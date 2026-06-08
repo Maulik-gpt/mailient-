@@ -138,9 +138,12 @@ function ScheduledAgentSidebar({
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
     (async () => {
       try {
-        const res = await fetch('/api/arcus/agents');
+        const res = await fetch('/api/arcus/agents', { signal: controller.signal });
+        if (cancelled) return;
         const json = await res.json();
         const agent = (json.agents || []).find((a: any) => a.id === data.id);
         if (!cancelled && agent) {
@@ -152,13 +155,14 @@ function ScheduledAgentSidebar({
           });
         }
       } catch {
-        /* keep card-provided values */
+        /* keep card-provided values on error */
       } finally {
+        clearTimeout(timeoutId);
         if (!cancelled) setLoadingRuns(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [data.id, data.status]);
+    return () => { cancelled = true; controller.abort(); clearTimeout(timeoutId); };
+  }, [data.id]);
 
   const toggleSkip = async () => {
     const next = !skip;
