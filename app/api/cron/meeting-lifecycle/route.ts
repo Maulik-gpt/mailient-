@@ -35,7 +35,10 @@ import { composeMeetingFollowUp } from '../../../../lib/arcus/meeting-followup';
 import { saveMemory } from '../../../../lib/arcus/memory';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+// Vercel Pro allows up to 300s. Meeting prep + follow-up compose LLM drafts
+// per attendee; on free models with retries that can exceed 60s. 300s gives
+// headroom so prep emails actually send instead of dying mid-compose.
+export const maxDuration = 300;
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';

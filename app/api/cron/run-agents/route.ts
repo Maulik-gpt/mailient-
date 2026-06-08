@@ -41,7 +41,15 @@ const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.x
 const STALE_LOCK_MIN = 60;
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60; // Vercel Hobby caps functions at 60s; runs that exceed it are retried via stale-lock recovery
+// Vercel Pro allows up to 300s. Committee runs (5 parallel VAs, 20-80 tool
+// calls, free-model retries) routinely need 90-180s — the old 60s cap killed
+// them mid-run, leaving status='running' with no report ever delivered. This
+// is the single biggest reliability win for scheduled agents.
+// cron-job.org's own request timeout must also be raised (job → Advanced →
+// Timeout) to at least 60s so it doesn't disconnect before we respond; the
+// run continues server-side regardless, but a longer client timeout lets it
+// capture the response in job history.
+export const maxDuration = 300;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cron entry
@@ -74,12 +82,13 @@ export async function GET(request: NextRequest) {
   const results: string[] = [];
   let ran = 0;
 
-  // Vercel kills this function at maxDuration (60s). Reserve a safety margin
-  // for report delivery (Gmail/Slack) and DB writes, then split the rest
-  // across the agents that actually need to run this tick so none gets
-  // killed mid-loop and silently produces nothing.
-  const FUNCTION_BUDGET_MS = 58_000;
-  const DELIVERY_RESERVE_MS = 9_000;
+  // Vercel kills this function at maxDuration (300s). Reserve a generous
+  // margin for report delivery (Gmail/Slack) + DB writes, then split the
+  // remaining wall-clock across the agents due this tick so the committee
+  // self-terminates and writes its report BEFORE Vercel pulls the plug.
+  // 285s budget leaves 15s of headroom under the 300s hard cap.
+  const FUNCTION_BUDGET_MS = 285_000;
+  const DELIVERY_RESERVE_MS = 20_000;
   const cronStartedAt = Date.now();
   const timeLeftMs = () => FUNCTION_BUDGET_MS - (Date.now() - cronStartedAt);
 
