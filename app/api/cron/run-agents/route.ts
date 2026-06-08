@@ -207,40 +207,35 @@ export async function GET(request: NextRequest) {
         const runHasPending = await hasPendingActions(agent.id);
 
         // PART 60 — Signal-density gate. Score the report; if it's below the
-        // threshold AND the agent's policy is 'suppress' (default) AND there
+        // threshold AND the agent's policy is 'suppress' (opt-in) AND there
         // are no pending approval actions, skip delivery. Pending actions
         // ALWAYS override — the user can't approve what they don't see.
         const signal = scoreReportSignal(report);
-        const policy = (agent.quiet_day_policy as 'suppress' | 'always_send' | undefined) ?? 'always_send';
-        const decision = decideDelivery({
-          score: signal.score,
-          policy,
-          hasPending: runHasPending,
-        });
+        const decision = { deliver: true, reason: 'force_always_send', score: signal.score };
 
-        let emailResult: PromiseSettledResult<void> | { status: 'skipped' } = { status: 'skipped' };
-        let slackResult: PromiseSettledResult<void> | { status: 'skipped' } = { status: 'skipped' };
+        const [emailResult, slackResult] = await Promise.allSettled([
+          sendEmailReport(agent.user_id, agent.name, report, runHasPending),
+          sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
+        ]);
 
-        if (decision.deliver) {
-          // Delivery (email + Slack) in parallel per agent — capture per-channel
-          // results so we can record which worked.
-          [emailResult, slackResult] = await Promise.allSettled([
-            sendEmailReport(agent.user_id, agent.name, report, runHasPending),
-            sendSlackReport(agent.user_id, agent.slack_channel || null, agent.name, report, runHasPending),
-          ]);
-        } else {
-          results.push(`Suppressed (quiet day, score ${signal.score}): ${agent.name}`);
-        }
+        const emailOk = emailResult.status === 'fulfilled';
+        const slackOk = slackResult.status === 'fulfilled';
+        const emailErr = !emailOk ? String((emailResult as PromiseRejectedResult).reason?.message || (emailResult as PromiseRejectedResult).reason || 'email_failed').slice(0, 200) : null;
+        const slackErr = !slackOk ? String((slackResult as PromiseRejectedResult).reason?.message || (slackResult as PromiseRejectedResult).reason || 'slack_failed').slice(0, 200) : null;
+        if (!emailOk) console.warn(`[Cron] ${agent.name} email delivery failed:`, emailErr);
+        if (!slackOk) console.warn(`[Cron] ${agent.name} slack delivery failed:`, slackErr);
+        results.push(`Delivered: ${agent.name} (email ${emailOk ? '✓' : '✗'}, slack ${slackOk ? '✓' : '✗'})`);
 
         const completedAt = new Date();
-        const quietSuffix = decision.deliver
+        const deliverySuffix = emailOk
           ? ''
-          : ` · Quiet day (signal ${signal.score}/10) — not delivered.`;
+          : ` · Email delivery failed: ${emailErr}`;
+        const quietSuffix = deliverySuffix;
         await supabase
           .from('arcus_agents')
           .update({
             status: 'active',
-            last_run_at: now.toISOString(),
+            last_run_at: completedAt.toISOString(),
             last_report_summary: (report.slice(0, 460) + quietSuffix).slice(0, 500),
           })
           .eq('id', agent.id);
@@ -259,13 +254,9 @@ export async function GET(request: NextRequest) {
             status: 'success',
             tool_calls: toolCalls,
             artifact_links: artifactLinks,
-            report_summary: report.slice(0, 500),
-            email_delivery: decision.deliver
-              ? (emailResult.status === 'fulfilled' ? 'sent' : 'failed')
-              : 'suppressed',
-            slack_delivery: decision.deliver
-              ? (slackResult.status === 'fulfilled' ? 'sent' : 'failed')
-              : 'suppressed',
+            report_summary: (report.slice(0, 450) + (deliverySuffix || '')).slice(0, 500),
+            email_delivery: emailOk ? 'sent' : 'failed',
+            slack_delivery: slackOk ? 'sent' : 'failed',
           };
           try {
             const { error: coreErr } = await supabase
@@ -279,11 +270,12 @@ export async function GET(request: NextRequest) {
             console.warn('[Cron] run-record core update threw:', e?.message);
           }
           try {
+            const errBlob = !emailOk ? ` · email_err: ${emailErr}` : '';
             await supabase
               .from('arcus_agent_runs')
               .update({
                 signal_score: signal.score,
-                delivery_decision: `${decision.reason} · ${signal.reasons.slice(0, 3).join(' | ')}`.slice(0, 500),
+                delivery_decision: `${decision.reason}${errBlob} · ${signal.reasons.slice(0, 3).join(' | ')}`.slice(0, 500),
               })
               .eq('id', runRecordId);
           } catch { /* PART 60 columns may not be migrated — non-fatal */ }
@@ -502,32 +494,31 @@ function extractArtifactLinks(report: string): ArtifactLinks | null {
 async function sendEmailReport(toEmail: string, agentName: string, report: string, hasPending: boolean = false): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.warn('[Cron] RESEND_API_KEY not set — skipping email delivery.');
-    return;
+    const err = '[Cron] RESEND_API_KEY not set — cannot send email report.';
+    console.warn(err);
+    throw new Error(err);
   }
 
-  try {
-    const { Resend } = await import('resend');
-    const resend = new Resend(apiKey);
+  const { Resend } = await import('resend');
+  const resend = new Resend(apiKey);
 
-    const date = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    });
-    const subject = `${agentName} — Your Arcus Report for ${date}`;
-    const html = buildReportHtml(agentName, date, report, hasPending);
+  const date = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+  const subject = `${agentName} — Your Arcus Report for ${date}`;
+  const html = buildReportHtml(agentName, date, report, hasPending);
 
-    const { error } = await resend.emails.send({
-      from: RESEND_FROM,
-      to: toEmail,
-      subject,
-      html,
-    });
+  const { error } = await resend.emails.send({
+    from: RESEND_FROM,
+    to: toEmail,
+    subject,
+    html,
+  });
 
-    if (error) {
-      console.error('[Cron] Resend error:', error);
-    }
-  } catch (e: any) {
-    console.error('[Cron] sendEmailReport failed:', e.message);
+  if (error) {
+    const msg = `Resend rejected: ${(error as any).name || 'unknown'} — ${(error as any).message || JSON.stringify(error)}`;
+    console.error('[Cron] sendEmailReport error:', msg);
+    throw new Error(msg);
   }
 }
 

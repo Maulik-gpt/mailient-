@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   if (error?.code === '42P01') return NextResponse.json({ runs: [] });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const STUCK_THRESHOLD_MS = 10 * 60 * 1000;
+  const STUCK_THRESHOLD_MS = 5 * 60 * 1000;
   const nowMs = Date.now();
   const runs = (data ?? []).map((r: any) => {
     if (r.status !== 'running') return r;

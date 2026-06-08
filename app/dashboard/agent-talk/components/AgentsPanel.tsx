@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -1115,22 +1115,41 @@ function RecentRuns({ agentId, expanded }: { agentId: string; expanded: boolean 
   const [runs, setRuns] = useState<AgentRun[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
-    if (!expanded || runs !== null || loading) return;
+    if (!expanded || fetchedRef.current) return;
+    fetchedRef.current = true;
     let cancelled = false;
     setLoading(true);
-    fetch(`/api/arcus/agents/runs?agentId=${encodeURIComponent(agentId)}&limit=7`)
+    setErr(null);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    fetch(`/api/arcus/agents/runs?agentId=${encodeURIComponent(agentId)}&limit=7`, {
+      signal: controller.signal,
+    })
       .then(async r => {
-        const j = await r.json().catch(() => ({}));
+        clearTimeout(timeoutId);
         if (cancelled) return;
+        const j = await r.json().catch(() => ({}));
         if (!r.ok) { setErr(j.error || `HTTP ${r.status}`); setRuns([]); return; }
         setRuns(Array.isArray(j.runs) ? j.runs : []);
       })
-      .catch(e => { if (!cancelled) { setErr(String(e?.message || e)); setRuns([]); } })
+      .catch(e => {
+        clearTimeout(timeoutId);
+        if (!cancelled) {
+          const msg = e.name === 'AbortError' ? 'Request timed out' : String(e?.message || e);
+          setErr(msg);
+          setRuns([]);
+        }
+      })
       .finally(() => { if (!cancelled) setLoading(false); });
-    return () => { cancelled = true; };
-  }, [expanded, agentId, runs, loading]);
+    return () => { cancelled = true; clearTimeout(timeoutId); controller.abort(); };
+  }, [expanded, agentId]);
+
+  useEffect(() => {
+    if (!expanded) fetchedRef.current = false;
+  }, [expanded]);
 
   if (!expanded) return null;
 
