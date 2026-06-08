@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   if (error?.code === '42P01') return NextResponse.json({ runs: [] });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const STUCK_THRESHOLD_MS = 5 * 60 * 1000;
+  const STUCK_THRESHOLD_MS = 2 * 60 * 1000;
   const nowMs = Date.now();
   const runs = (data ?? []).map((r: any) => {
     if (r.status !== 'running') return r;
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       status: 'error',
       duration_ms: r.duration_ms ?? (nowMs - startedMs),
       error_message: r.error_message
-        || `Run never reported completion (started ${minutes}m ago). Likely a Vercel timeout or a DB write failure mid-update — the next scheduled tick will retry.`,
+        || `Run never reported completion (started ${minutes}m ago). Vercel killed the function at 60s, or a DB write failed mid-update. cron-job.org will retrigger on the next scheduled tick.`,
     };
   });
 

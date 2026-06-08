@@ -16,8 +16,11 @@
  *   RESEND_API_KEY          — Resend API key
  *   RESEND_FROM_EMAIL       — Verified sender
  *
- * Optional:
- *   CRON_SECRET             — Bearer for non-Vercel invocations
+ *   CRON_SECRET             — REQUIRED. cron-job.org sends this as
+ *                             `Authorization: Bearer <CRON_SECRET>` on every
+ *                             trigger. Configure in cron-job.org → job →
+ *                             Headers, AND in Vercel env vars with the same
+ *                             value.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -43,12 +46,13 @@ const FOLLOWUP_MAX_MINUTES_AGO = 90;      // ignore meetings that ended longer a
 const POST_LOOKBACK_MINUTES = 240;        // fetch a wide window, filter by end time
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
-    const vercelCron = request.headers.get('x-vercel-cron');
-    if (vercelCron !== '1') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const authHeader = request.headers.get('authorization') || '';
+  const isCronJobOrg =
+    authHeader === `Bearer ${CRON_SECRET}` ||
+    request.headers.get('x-arcus-cron-secret') === CRON_SECRET;
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  if (!isCronJobOrg && !isVercelCron) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabase = getSupabaseAdmin();

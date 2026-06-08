@@ -18,7 +18,11 @@
  *   ARCUS_SLACK_BOT_TOKEN   — Slack bot token for the Mailient workspace.
  *                             If set, used for all Slack delivery instead of
  *                             the user's personal Slack OAuth token.
- *   CRON_SECRET             — Bearer secret for non-Vercel invocations (default: arcus-cron-secret)
+ *   CRON_SECRET             — REQUIRED. cron-job.org sends this as
+ *                             `Authorization: Bearer <CRON_SECRET>` on every
+ *                             trigger. Set it in cron-job.org → job →
+ *                             Headers → "Authorization: Bearer <value>" and
+ *                             in Vercel env vars as the same value.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -44,12 +48,13 @@ export const maxDuration = 60; // Vercel Hobby caps functions at 60s; runs that 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  if (authHeader !== `Bearer ${CRON_SECRET}`) {
-    const vercelCron = request.headers.get('x-vercel-cron');
-    if (vercelCron !== '1') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+  const authHeader = request.headers.get('authorization') || '';
+  const isCronJobOrg =
+    authHeader === `Bearer ${CRON_SECRET}` ||
+    request.headers.get('x-arcus-cron-secret') === CRON_SECRET;
+  const isVercelCron = request.headers.get('x-vercel-cron') === '1';
+  if (!isCronJobOrg && !isVercelCron) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const supabase = getSupabaseAdmin();
