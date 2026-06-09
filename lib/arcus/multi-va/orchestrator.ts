@@ -41,6 +41,12 @@ export interface RunCommitteeOptions {
   maxToolCalls: number;
   /** Wall-clock budget in ms for the whole committee (slowest VA bounds it). */
   deadlineMs: number;
+  /**
+   * The arcus_agent_runs.id this committee belongs to. Passed to every VA so
+   * all their tool calls log against one run (Bug B fix). Optional — the "Run
+   * now" streaming path may not have created a run row.
+   */
+  agentRunId?: string;
 }
 
 export async function runAgentAsCommittee(
@@ -72,6 +78,7 @@ export async function runAgentAsCommittee(
     agent,
     maxToolCalls: perVAMaxCalls,
     deadlineMs: perVADeadline,
+    agentRunId: opts.agentRunId,
   }));
 
   // Parallel fan-out. Promise.allSettled because we want EVERY VA's result

@@ -246,12 +246,15 @@ export interface AgentRunResult {
 export async function runAgentTask(
   agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string },
   budget: AgentRunBudget = {},
+  agentRunId?: string,
 ): Promise<AgentRunResult> {
   // PART 48 — route through the multi-VA committee orchestrator unless the
   // kill switch is set. The committee fans out to up to 5 parallel VA runs,
   // each with a focused prompt + narrowed tool surface, then aggregates
   // into a single chief-of-staff briefing. Return shape matches the legacy
   // single-LLM path so the cron runner doesn't need to change.
+  // agentRunId (the arcus_agent_runs.id) flows down to every VA loop so all
+  // their tool calls log against the one run the user sees.
   const useCommittee = process.env.ARCUS_DISABLE_COMMITTEE !== 'true';
   const maxToolCalls = budget.maxToolCalls ?? 80;
   const deadlineMs = budget.deadlineMs ?? 50_000;
@@ -260,7 +263,7 @@ export async function runAgentTask(
   let toolCalls: number;
 
   if (useCommittee) {
-    const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs });
+    const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs, agentRunId });
     report = committee.report;
     toolCalls = committee.toolCalls;
   } else {
@@ -268,7 +271,7 @@ export async function runAgentTask(
     // returns exactly the prior behaviour. Will be deleted in a future
     // PART once the committee mode has soak time in prod.
     const args = await buildAgentLoopArgs(agent, budget);
-    const stream = runAgentLoop(args);
+    const stream = runAgentLoop({ ...args, agentRunId });
 
     const reader = stream.getReader();
     const decoder = new TextDecoder();

@@ -216,7 +216,7 @@ export async function GET(request: NextRequest) {
         const { report, toolCalls } = await runAgentTask(agent, {
           maxToolCalls: perAgentToolCalls,
           deadlineMs: sharedBudget,
-        });
+        }, runRecordId || undefined);
 
         const runHasPending = await hasPendingActions(agent.id);
 

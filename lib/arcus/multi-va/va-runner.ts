@@ -162,6 +162,7 @@ export async function runVA(assignment: VAAssignment): Promise<VARunResult> {
       isBackgroundAgent: true,
       skipConfirmations: agent.skip_confirmations ?? false,
       agentId: agent.id,
+      agentRunId: assignment.agentRunId,
       maxToolCalls,
       deadlineMs,
       committeeMode: { va, siblingVAs: assignment.siblingVAs },

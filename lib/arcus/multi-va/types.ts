@@ -42,6 +42,8 @@ export interface VAAssignment {
   maxToolCalls: number;
   /** Per-VA wall-clock deadline (ms from start). Slowest VA defines run length. */
   deadlineMs: number;
+  /** The arcus_agent_runs.id; shared by all VAs so audit logs join to one run. */
+  agentRunId?: string;
 }
 
 /**

@@ -426,6 +426,16 @@ export interface LoopOptions {
   skipConfirmations?: boolean;
   agentId?: string;
   /**
+   * The arcus_agent_runs.id this loop belongs to. When provided, it is used as
+   * the audit-log run_id so every tool call written to arcus_audit_log joins
+   * back to the exact run the user sees in "Recent runs". Without it the loop
+   * mints its own random UUID and the per-tool detail is orphaned from the run
+   * record (the bug behind "1 tool call" with no drill-down). In committee
+   * mode every VA shares the SAME agentRunId so all VAs' tool calls roll up to
+   * one run.
+   */
+  agentRunId?: string;
+  /**
    * F6 — Free-text user instructions from the settings card. The loop uses
    * the FIRST 220 chars as a per-turn reminder appended to the user message
    * so the LLM re-reads the rules every step instead of having to recall
@@ -473,6 +483,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     isBackgroundAgent,
     skipConfirmations,
     agentId,
+    agentRunId,
     userInstructions,
     attachments,
   } = opts;
@@ -623,7 +634,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     typeof maxToolCalls === 'number' && maxToolCalls > 0
       ? Math.min(maxToolCalls, hardCap)
       : hardCap;
-  const runId = crypto.randomUUID();
+  // Use the agent-run id when provided so audit logs join back to the run the
+  // user sees; otherwise mint a throwaway id (interactive chat has no run row).
+  const runId = agentRunId || crypto.randomUUID();
   const startedAt = Date.now();
   const deadlineAt =
     typeof deadlineMs === 'number' && deadlineMs > 0 ? startedAt + deadlineMs : Infinity;
