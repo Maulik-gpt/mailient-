@@ -4,9 +4,10 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface DecideItem {
   id: string;
@@ -44,11 +45,22 @@ interface ActionItem {
   meetingTitle: string | null;
   attendees: string[];
 }
+interface AgentRunItem {
+  id: string;
+  agentName: string;
+  status: 'success' | 'error' | 'transient_error' | 'running';
+  summary: string | null;
+  toolCalls: number;
+  ranAt: string;
+  artifactCounts: { gmail: number; calendar: number; notion: number; slack: number };
+}
+
 interface TodayPayload {
   decide: DecideItem[];
   showUp: ShowUpItem[];
   chase: ChaseItem[];
   actionItems: ActionItem[];
+  agentRuns?: AgentRunItem[];
   emptyAll: boolean;
   generatedAt: string;
   gmailConnected: boolean;
@@ -279,6 +291,84 @@ function SkeletonCard() {
       <div className="h-3 w-1/2 rounded bg-black/[0.04] dark:bg-white/[0.04] mb-3" />
       <div className="h-7 w-24 rounded-full bg-black/[0.05] dark:bg-white/[0.05]" />
     </div>
+  );
+}
+
+// "While you were away" — the command-center section. Surfaces what the user's
+// scheduled agents did recently, so the FIRST thing a founder sees on HomeFeed
+// is their agents' work, not just their inbox. This is the spec's core promise.
+function AgentRunsSection({ runs, onOpen }: { runs: AgentRunItem[]; onOpen: () => void }) {
+  const artifactChips = (c: AgentRunItem['artifactCounts']) => {
+    const chips: Array<{ icon: any; n: number; label: string }> = [
+      { icon: Mail, n: c.gmail, label: c.gmail === 1 ? 'draft' : 'drafts' },
+      { icon: CalendarClock, n: c.calendar, label: c.calendar === 1 ? 'event' : 'events' },
+      { icon: FileText, n: c.notion, label: c.notion === 1 ? 'note' : 'notes' },
+      { icon: MessageSquare, n: c.slack, label: 'Slack' },
+    ].filter(x => x.n > 0);
+    return chips;
+  };
+
+  return (
+    <section className="mb-10">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-black/[0.04] dark:bg-white/[0.05] text-black/55 dark:text-white/55">
+          <Sparkles className="w-4 h-4" strokeWidth={1.75} />
+        </div>
+        <h2 className="text-[13px] font-semibold tracking-tight text-black dark:text-white">While you were away</h2>
+      </div>
+      <div className="space-y-2.5">
+        {runs.map((run) => {
+          const failed = run.status === 'error' || run.status === 'transient_error';
+          const running = run.status === 'running';
+          const chips = artifactChips(run.artifactCounts);
+          return (
+            <motion.button
+              key={run.id}
+              type="button"
+              onClick={onOpen}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25 }}
+              className="w-full text-left bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl px-4 py-3.5 hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors group"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className={cn(
+                  'inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0',
+                  failed
+                    ? 'text-amber-600 dark:text-amber-400'
+                    : running
+                      ? 'text-black/40 dark:text-white/40'
+                      : 'text-emerald-600 dark:text-emerald-400',
+                )}>
+                  {failed ? <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />
+                    : running ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    : <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />}
+                </span>
+                <span className="text-[13px] font-semibold text-black dark:text-white truncate">{run.agentName}</span>
+                <span className="text-[11px] text-black/35 dark:text-white/35 flex-shrink-0">{formatRelative(run.ranAt)} ago</span>
+                <ArrowUpRight className="w-3.5 h-3.5 text-black/0 group-hover:text-black/30 dark:group-hover:text-white/30 transition-colors ml-auto flex-shrink-0" strokeWidth={2} />
+              </div>
+              {run.summary && (
+                <p className="text-[12.5px] text-black/60 dark:text-white/60 leading-relaxed line-clamp-2 pl-7">{run.summary}</p>
+              )}
+              {(chips.length > 0 || run.toolCalls > 0) && (
+                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 pl-7">
+                  {chips.map((chip, i) => (
+                    <span key={i} className="inline-flex items-center gap-1 text-[11px] text-black/45 dark:text-white/45">
+                      <chip.icon className="w-3 h-3" strokeWidth={1.75} />
+                      {chip.n} {chip.label}
+                    </span>
+                  ))}
+                  {chips.length === 0 && run.toolCalls > 0 && (
+                    <span className="text-[11px] text-black/40 dark:text-white/40">{run.toolCalls} {run.toolCalls === 1 ? 'action' : 'actions'} taken</span>
+                  )}
+                </div>
+              )}
+            </motion.button>
+          );
+        })}
+      </div>
+    </section>
   );
 }
 
@@ -516,6 +606,13 @@ export default function SiftToday() {
             <span className="hidden sm:inline">{lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
           </button>
         </div>
+
+        {/* Command center: what the user's agents did while they were away.
+            Renders first, independent of inbox buckets — this is the spec's
+            "open HomeFeed, understand everything in 10 seconds" promise. */}
+        {data && data.agentRuns && data.agentRuns.length > 0 && (
+          <AgentRunsSection runs={data.agentRuns} onOpen={() => router.push('/dashboard?tab=agents')} />
+        )}
 
         {loading && !data && (
           <div className="space-y-10">

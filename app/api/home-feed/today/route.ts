@@ -18,6 +18,7 @@ import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail';
 import { CalendarService } from '@/lib/calendar';
+import { cleanRunSummary } from '@/lib/arcus/report-summary';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 30;
@@ -65,11 +66,25 @@ interface ActionItem {
   attendees: string[];
 }
 
+// "While you were away" — what the user's scheduled agents did recently. This
+// is what makes HomeFeed a command center: every agent's work flows through it,
+// not just inbox-derived items. Sourced from arcus_agent_runs.
+interface AgentRunItem {
+  id: string;
+  agentName: string;
+  status: 'success' | 'error' | 'transient_error' | 'running';
+  summary: string | null;     // clean one-line preview of the run report
+  toolCalls: number;
+  ranAt: string;              // completed_at, or started_at if still running
+  artifactCounts: { gmail: number; calendar: number; notion: number; slack: number };
+}
+
 interface TodayResponse {
   decide: DecideItem[];
   showUp: ShowUpItem[];
   chase: ChaseItem[];
   actionItems: ActionItem[];
+  agentRuns: AgentRunItem[];
   emptyAll: boolean;
   generatedAt: string;
   gmailConnected: boolean;
@@ -369,6 +384,59 @@ async function fetchActionItems(userEmail: string): Promise<ActionItem[]> {
   }
 }
 
+// "While you were away" — the user's scheduled-agent runs from the last ~14h,
+// joined to agent names. This is the spec's core HomeFeed promise: every agent's
+// work is visible the moment the founder opens the app. Pure DB read, no LLM.
+async function fetchAgentRuns(userEmail: string): Promise<AgentRunItem[]> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const sinceIso = new Date(Date.now() - 14 * 60 * 60 * 1000).toISOString();
+
+    const { data: runs, error } = await supabase
+      .from('arcus_agent_runs')
+      .select('id, agent_id, status, report_summary, tool_calls, completed_at, started_at, artifact_links')
+      .eq('user_id', userEmail)
+      .gte('started_at', sinceIso)
+      .order('started_at', { ascending: false })
+      .limit(MAX_PER_BUCKET);
+
+    // Table not migrated yet, or any error — degrade silently, never break the feed.
+    if (error || !runs?.length) return [];
+
+    // Resolve agent names in one query.
+    const agentIds = Array.from(new Set(runs.map((r: any) => r.agent_id).filter(Boolean)));
+    const nameById = new Map<string, string>();
+    if (agentIds.length) {
+      const { data: agents } = await supabase
+        .from('arcus_agents')
+        .select('id, name')
+        .in('id', agentIds);
+      for (const a of (agents || []) as any[]) nameById.set(a.id, a.name);
+    }
+
+    const countBucket = (links: any, key: string): number =>
+      Array.isArray(links?.[key]) ? links[key].length : 0;
+
+    return (runs as any[]).map((r) => ({
+      id: r.id,
+      agentName: nameById.get(r.agent_id) || 'Agent',
+      status: (r.status as AgentRunItem['status']) || 'success',
+      summary: cleanRunSummary(r.report_summary, 160) || null,
+      toolCalls: r.tool_calls ?? 0,
+      ranAt: r.completed_at || r.started_at,
+      artifactCounts: {
+        gmail: countBucket(r.artifact_links, 'gmail'),
+        calendar: countBucket(r.artifact_links, 'calendar'),
+        notion: countBucket(r.artifact_links, 'notion'),
+        slack: countBucket(r.artifact_links, 'slack'),
+      },
+    }));
+  } catch (err: any) {
+    console.warn('[home-feed/today] agent runs fetch failed:', err?.message);
+    return [];
+  }
+}
+
 export async function GET(_req: Request) {
   try {
     // @ts-ignore
@@ -395,12 +463,16 @@ export async function GET(_req: Request) {
     }
 
     if (!accessToken) {
-      // Even without Gmail, action items from /log persist via Supabase and
-      // can still surface. Fetch them so the user sees their commitments.
-      const actionItems = await fetchActionItems(userEmail);
+      // Even without Gmail, action items from /log AND scheduled-agent runs
+      // persist via Supabase and can still surface. Fetch them so the user sees
+      // their commitments and overnight agent work.
+      const [actionItems, agentRuns] = await Promise.all([
+        fetchActionItems(userEmail),
+        fetchAgentRuns(userEmail),
+      ]);
       const empty: TodayResponse = {
-        decide: [], showUp: [], chase: [], actionItems,
-        emptyAll: actionItems.length === 0,
+        decide: [], showUp: [], chase: [], actionItems, agentRuns,
+        emptyAll: actionItems.length === 0 && agentRuns.length === 0,
         generatedAt: new Date().toISOString(),
         gmailConnected: false, calendarConnected: false,
       };
@@ -427,11 +499,12 @@ export async function GET(_req: Request) {
       }
     };
 
-    const [decideR, showUpR, chaseR, actionItems] = await Promise.all([
+    const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
       wrap(() => fetchDecide(gmail), 'gmail'),
       wrap(() => fetchShowUp(cal, userEmail), 'calendar'),
       wrap(() => fetchChase(gmail, userEmail), 'gmail'),
       fetchActionItems(userEmail),
+      fetchAgentRuns(userEmail),
     ]);
 
     const gmailExpired = decideR.expired || chaseR.expired;
@@ -449,7 +522,8 @@ export async function GET(_req: Request) {
       showUp,
       chase,
       actionItems,
-      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && !needsReconnect,
+      agentRuns,
+      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && agentRuns.length === 0 && !needsReconnect,
       generatedAt: new Date().toISOString(),
       gmailConnected: !gmailExpired,
       calendarConnected: !calendarExpired,
