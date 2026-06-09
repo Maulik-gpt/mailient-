@@ -27,7 +27,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
-import { runAgentTask } from '../../../../lib/arcus/run-agent';
+import { runAgentTask, generateRunPlan } from '../../../../lib/arcus/run-agent';
 import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
 
@@ -210,6 +210,20 @@ export async function GET(request: NextRequest) {
       } catch (e: any) {
         // Table may not be migrated yet — non-fatal, run still proceeds.
         console.warn(`[Cron:Runs] Could not insert run record: ${e.message}`);
+      }
+
+      // Layer 1 — generate a short plain-English plan before executing, store it
+      // on the run record so the UI can show "intended vs did". Best-effort: a
+      // planning failure (or unmigrated `plan` column) never blocks the run.
+      if (runRecordId) {
+        try {
+          const plan = await generateRunPlan(agent);
+          if (plan) {
+            await supabase.from('arcus_agent_runs').update({ plan }).eq('id', runRecordId);
+          }
+        } catch (e: any) {
+          console.warn(`[Cron:Runs] Plan generation/store failed: ${e?.message}`);
+        }
       }
 
       try {

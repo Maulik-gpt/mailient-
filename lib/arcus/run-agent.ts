@@ -243,6 +243,56 @@ export interface AgentRunResult {
   toolCalls: number;
 }
 
+/**
+ * Layer 1 — generate a short plain-English plan for a background run BEFORE it
+ * executes. Pulls the agent's own past-run history so the plan reflects what
+ * the agent learned last time ("last run found 12 meeting requests; this run
+ * I'll check for new ones since then"). Cheap: one small LLM call, capped
+ * tokens, never throws — a planning failure must not block the run.
+ *
+ * Returns '' on any failure; callers store whatever comes back (empty = the UI
+ * simply omits the plan block).
+ */
+export async function generateRunPlan(
+  agent: { user_id: string; task_description: string; name?: string },
+): Promise<string> {
+  try {
+    const { callLLM, getText } = await import('./engine');
+    const selfHistory = await searchMemories(
+      agent.user_id,
+      `[AGENT_RUN] ${agent.name || agent.task_description.slice(0, 80)}`,
+      2,
+    ).catch(() => '');
+
+    const res = await callLLM(
+      [
+        {
+          role: 'system',
+          content:
+            'You write a SHORT execution plan for an autonomous email/calendar agent that is about to run with no user present. ' +
+            'Output 2-4 plain-English steps, each one line, starting with a verb (Scan, Read, Draft, Check, Book, Log, Flag). ' +
+            'No preamble, no numbering styles beyond "- ", no markdown headings, no closing remarks. ' +
+            'If past-run context is given, reflect it (e.g. "Check for requests newer than last run"). ' +
+            'Keep the whole thing under 80 words.',
+        },
+        {
+          role: 'user',
+          content:
+            `Agent: ${agent.name || 'Background agent'}\n` +
+            `Task: ${agent.task_description}\n` +
+            (selfHistory ? `\nPast-run context:\n${selfHistory.slice(0, 600)}\n` : '') +
+            '\nWrite the plan.',
+        },
+      ],
+      [],
+      { maxTokens: 200, temperature: 0.2 },
+    );
+    return getText(res.content).trim().slice(0, 1000);
+  } catch {
+    return '';
+  }
+}
+
 export async function runAgentTask(
   agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string },
   budget: AgentRunBudget = {},

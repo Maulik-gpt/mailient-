@@ -53,6 +53,7 @@ interface AgentRun {
     notion?: ArtifactLink[];
     slack?: ArtifactLink[];
   } | null;
+  plan: string | null;
 }
 
 // ── Cron helpers ───────────────────────────────────────────────────────────────
@@ -1093,6 +1094,16 @@ function RunRow({ run }: { run: AgentRun }) {
           {deliveryIcon('slack', run.slack_delivery)}
         </div>
       </div>
+
+      {run.plan ? (
+        <details className="mt-2 group/plan">
+          <summary className="text-[11px] font-semibold text-arcus-fg-muted/80 cursor-pointer select-none hover:text-arcus-fg-secondary list-none flex items-center gap-1">
+            <ChevronDown className="w-3 h-3 transition-transform group-open/plan:rotate-180" />
+            Plan
+          </summary>
+          <p className="mt-1.5 pl-4 text-[11.5px] text-arcus-fg-muted/90 leading-relaxed whitespace-pre-line border-l border-arcus-divider/50">{run.plan}</p>
+        </details>
+      ) : null}
 
       {run.status === 'error' && run.error_message ? (
         <p className="mt-2 text-[12px] text-red-400 leading-relaxed line-clamp-2">{run.error_message}</p>

@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const supabase = getSupabaseAdmin();
   let query = supabase
     .from('arcus_agent_runs')
-    .select('id, agent_id, started_at, completed_at, duration_ms, status, tool_calls, report_summary, error_message, email_delivery, slack_delivery, artifact_links')
+    .select('id, agent_id, started_at, completed_at, duration_ms, status, tool_calls, report_summary, error_message, email_delivery, slack_delivery, artifact_links, plan')
     .eq('user_id', userId)
     .order('started_at', { ascending: false })
     .limit(limit);
