@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
+import { toast } from 'sonner';
 import PricingSection3 from '@/components/ui/pricing-section-3';
 
 type StepId = 0 | 1 | 2 | 3;
@@ -107,14 +108,19 @@ export default function SiftOnboardingPage() {
   const handleFinish = async (plan: 'monthly' | 'annual' | 'lifetime') => {
     setIsSubmitting(true);
     try {
+      // Personality is a nice-to-have — failing it must not block finishing.
       await fetch('/api/agent-talk/personality', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ communicationStyle: tone }),
       }).catch(() => {});
 
+      // Completing onboarding is CRITICAL. Previously this was .catch(() => {})
+      // and the flow proceeded to checkout regardless — so a user whose
+      // onboarding never saved would pay, return, and be stuck un-onboarded.
+      // Now: if completion fails, surface it and DO NOT send them to checkout.
       const finalUsername = username.trim() || slugifyHandle(firstName || 'mailient_user');
-      await fetch('/api/onboarding/complete', {
+      const res = await fetch('/api/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -125,7 +131,11 @@ export default function SiftOnboardingPage() {
           plan,
           personality: tone,
         }),
-      }).catch(() => {});
+      });
+      if (!res.ok) {
+        const msg = await res.json().then(j => j?.error).catch(() => null);
+        throw new Error(msg || `Setup didn't save (${res.status})`);
+      }
 
       localStorage.setItem('onboarding_completed', 'true');
 
@@ -134,8 +144,11 @@ export default function SiftOnboardingPage() {
         localStorage.setItem('pending_plan_timestamp', String(Date.now()));
       } catch {}
       window.location.href = POLAR_CHECKOUT_URLS[plan];
-    } catch {
+    } catch (e: any) {
       setIsSubmitting(false);
+      toast.error("We couldn't finish setting up your account", {
+        description: (e?.message ? `${e.message}. ` : '') + "Please try again — you haven't been charged.",
+      });
     }
   };
 
