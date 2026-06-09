@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -297,17 +297,198 @@ function SkeletonCard() {
 // "While you were away" — the command-center section. Surfaces what the user's
 // scheduled agents did recently, so the FIRST thing a founder sees on HomeFeed
 // is their agents' work, not just their inbox. This is the spec's core promise.
-function AgentRunsSection({ runs, onOpen }: { runs: AgentRunItem[]; onOpen: () => void }) {
-  const artifactChips = (c: AgentRunItem['artifactCounts']) => {
-    const chips: Array<{ icon: any; n: number; label: string }> = [
-      { icon: Mail, n: c.gmail, label: c.gmail === 1 ? 'draft' : 'drafts' },
-      { icon: CalendarClock, n: c.calendar, label: c.calendar === 1 ? 'event' : 'events' },
-      { icon: FileText, n: c.notion, label: c.notion === 1 ? 'note' : 'notes' },
-      { icon: MessageSquare, n: c.slack, label: 'Slack' },
-    ].filter(x => x.n > 0);
-    return chips;
+
+interface RunDetail {
+  plan: string | null;
+  tools: Array<{ label: string; count: number; ok: boolean }>;
+  links: {
+    gmail: Array<{ label: string; url: string }>;
+    calendar: Array<{ label: string; url: string }>;
+    notion: Array<{ label: string; url: string }>;
+    slack: Array<{ label: string; url: string }>;
+  };
+}
+
+function artifactChips(c: AgentRunItem['artifactCounts']) {
+  return [
+    { icon: Mail, n: c.gmail, label: c.gmail === 1 ? 'draft' : 'drafts' },
+    { icon: CalendarClock, n: c.calendar, label: c.calendar === 1 ? 'event' : 'events' },
+    { icon: FileText, n: c.notion, label: c.notion === 1 ? 'note' : 'notes' },
+    { icon: MessageSquare, n: c.slack, label: 'Slack' },
+  ].filter(x => x.n > 0);
+}
+
+// One run = one collapsible card. Collapsed: status + name + summary + chips
+// (the 10-second glance). Expanded: plan -> tools -> direct links (the full
+// transparency stack), fetched lazily on first open so the feed stays fast.
+function AgentRunCard({ run }: { run: AgentRunItem }) {
+  const [open, setOpen] = useState(false);
+  const [detail, setDetail] = useState<RunDetail | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
+  const [detailError, setDetailError] = useState(false);
+
+  const failed = run.status === 'error' || run.status === 'transient_error';
+  const running = run.status === 'running';
+  const chips = artifactChips(run.artifactCounts);
+
+  const toggle = async () => {
+    const next = !open;
+    setOpen(next);
+    if (next && !detail && !loadingDetail) {
+      setLoadingDetail(true);
+      setDetailError(false);
+      try {
+        const res = await fetch(`/api/home-feed/run-detail?runId=${encodeURIComponent(run.id)}`);
+        if (!res.ok) throw new Error();
+        const json = await res.json();
+        setDetail({ plan: json.plan ?? null, tools: json.tools ?? [], links: json.links ?? { gmail: [], calendar: [], notion: [], slack: [] } });
+      } catch {
+        setDetailError(true);
+      } finally {
+        setLoadingDetail(false);
+      }
+    }
   };
 
+  const linkGroups: Array<{ key: keyof RunDetail['links']; label: string; icon: any }> = [
+    { key: 'gmail', label: 'Gmail drafts', icon: Mail },
+    { key: 'calendar', label: 'Calendar events', icon: CalendarClock },
+    { key: 'notion', label: 'Notion pages', icon: FileText },
+    { key: 'slack', label: 'Slack messages', icon: MessageSquare },
+  ];
+  const hasAnyLink = detail && linkGroups.some(g => detail.links[g.key]?.length);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 6 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl overflow-hidden hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors"
+    >
+      {/* Collapsed header — always visible, the 10-second glance */}
+      <button type="button" onClick={toggle} className="w-full text-left px-4 py-3.5 group">
+        <div className="flex items-center gap-2 mb-1.5">
+          <span className={cn(
+            'inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0',
+            failed ? 'text-amber-600 dark:text-amber-400'
+              : running ? 'text-black/40 dark:text-white/40'
+              : 'text-emerald-600 dark:text-emerald-400',
+          )}>
+            {failed ? <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />
+              : running ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />}
+          </span>
+          <span className="text-[13px] font-semibold text-black dark:text-white truncate">{run.agentName}</span>
+          <span className="text-[11px] text-black/35 dark:text-white/35 flex-shrink-0">{formatRelative(run.ranAt)} ago</span>
+          <ChevronDown className={cn('w-4 h-4 text-black/30 dark:text-white/30 transition-transform ml-auto flex-shrink-0', open && 'rotate-180')} strokeWidth={2} />
+        </div>
+        {run.summary && (
+          <p className={cn('text-[12.5px] text-black/60 dark:text-white/60 leading-relaxed pl-7', !open && 'line-clamp-2')}>{run.summary}</p>
+        )}
+        {!open && (chips.length > 0 || run.toolCalls > 0) && (
+          <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 pl-7">
+            {chips.map((chip, i) => (
+              <span key={i} className="inline-flex items-center gap-1 text-[11px] text-black/45 dark:text-white/45">
+                <chip.icon className="w-3 h-3" strokeWidth={1.75} />
+                {chip.n} {chip.label}
+              </span>
+            ))}
+            {chips.length === 0 && run.toolCalls > 0 && (
+              <span className="text-[11px] text-black/40 dark:text-white/40">{run.toolCalls} {run.toolCalls === 1 ? 'action' : 'actions'} taken</span>
+            )}
+          </div>
+        )}
+      </button>
+
+      {/* Expanded — the full transparency stack */}
+      <AnimatePresence initial={false}>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 pb-4 pl-11 space-y-4">
+              {loadingDetail && (
+                <div className="flex items-center gap-2 text-[12px] text-black/40 dark:text-white/40 pt-1">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading details…
+                </div>
+              )}
+              {detailError && (
+                <p className="text-[12px] text-black/45 dark:text-white/45 pt-1">Couldn't load the details for this run.</p>
+              )}
+
+              {detail && !loadingDetail && (
+                <>
+                  {/* Plan — what Arcus decided to do */}
+                  {detail.plan && (
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-black/35 dark:text-white/35 mb-1.5">The plan</p>
+                      <p className="text-[12.5px] text-black/65 dark:text-white/65 leading-relaxed whitespace-pre-line">{detail.plan}</p>
+                    </div>
+                  )}
+
+                  {/* Tools — what actually executed */}
+                  {detail.tools.length > 0 && (
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-black/35 dark:text-white/35 mb-1.5">What it did</p>
+                      <ul className="space-y-1">
+                        {detail.tools.map((t, i) => (
+                          <li key={i} className="flex items-center gap-2 text-[12.5px] text-black/65 dark:text-white/65">
+                            <span className={cn('w-1 h-1 rounded-full flex-shrink-0', t.ok ? 'bg-emerald-500/70' : 'bg-amber-500/70')} />
+                            <span>{t.label}{t.count > 1 ? ` ×${t.count}` : ''}{!t.ok ? ' — failed' : ''}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Direct links — clickable artifacts */}
+                  {hasAnyLink && (
+                    <div>
+                      <p className="text-[10.5px] font-semibold uppercase tracking-[0.1em] text-black/35 dark:text-white/35 mb-1.5">Open what it made</p>
+                      <div className="space-y-2">
+                        {linkGroups.map(g => {
+                          const items = detail.links[g.key];
+                          if (!items?.length) return null;
+                          return (
+                            <div key={g.key}>
+                              {items.map((lnk, i) => (
+                                <a
+                                  key={i}
+                                  href={lnk.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 text-[12.5px] text-black/70 dark:text-white/70 hover:text-black dark:hover:text-white py-1 group/link"
+                                >
+                                  <g.icon className="w-3.5 h-3.5 flex-shrink-0 text-black/40 dark:text-white/40" strokeWidth={1.75} />
+                                  <span className="truncate">{lnk.label}</span>
+                                  <ExternalLink className="w-3 h-3 flex-shrink-0 text-black/0 group-hover/link:text-black/40 dark:group-hover/link:text-white/40 transition-colors" strokeWidth={2} />
+                                </a>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {!detail.plan && detail.tools.length === 0 && !hasAnyLink && (
+                    <p className="text-[12px] text-black/45 dark:text-white/45">This was a read-only scan — no plan, actions, or artifacts recorded.</p>
+                  )}
+                </>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2.5 mb-3">
@@ -317,56 +498,7 @@ function AgentRunsSection({ runs, onOpen }: { runs: AgentRunItem[]; onOpen: () =
         <h2 className="text-[13px] font-semibold tracking-tight text-black dark:text-white">While you were away</h2>
       </div>
       <div className="space-y-2.5">
-        {runs.map((run) => {
-          const failed = run.status === 'error' || run.status === 'transient_error';
-          const running = run.status === 'running';
-          const chips = artifactChips(run.artifactCounts);
-          return (
-            <motion.button
-              key={run.id}
-              type="button"
-              onClick={onOpen}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25 }}
-              className="w-full text-left bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl px-4 py-3.5 hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors group"
-            >
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className={cn(
-                  'inline-flex items-center justify-center w-5 h-5 rounded-full flex-shrink-0',
-                  failed
-                    ? 'text-amber-600 dark:text-amber-400'
-                    : running
-                      ? 'text-black/40 dark:text-white/40'
-                      : 'text-emerald-600 dark:text-emerald-400',
-                )}>
-                  {failed ? <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />
-                    : running ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    : <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />}
-                </span>
-                <span className="text-[13px] font-semibold text-black dark:text-white truncate">{run.agentName}</span>
-                <span className="text-[11px] text-black/35 dark:text-white/35 flex-shrink-0">{formatRelative(run.ranAt)} ago</span>
-                <ArrowUpRight className="w-3.5 h-3.5 text-black/0 group-hover:text-black/30 dark:group-hover:text-white/30 transition-colors ml-auto flex-shrink-0" strokeWidth={2} />
-              </div>
-              {run.summary && (
-                <p className="text-[12.5px] text-black/60 dark:text-white/60 leading-relaxed line-clamp-2 pl-7">{run.summary}</p>
-              )}
-              {(chips.length > 0 || run.toolCalls > 0) && (
-                <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-2 pl-7">
-                  {chips.map((chip, i) => (
-                    <span key={i} className="inline-flex items-center gap-1 text-[11px] text-black/45 dark:text-white/45">
-                      <chip.icon className="w-3 h-3" strokeWidth={1.75} />
-                      {chip.n} {chip.label}
-                    </span>
-                  ))}
-                  {chips.length === 0 && run.toolCalls > 0 && (
-                    <span className="text-[11px] text-black/40 dark:text-white/40">{run.toolCalls} {run.toolCalls === 1 ? 'action' : 'actions'} taken</span>
-                  )}
-                </div>
-              )}
-            </motion.button>
-          );
-        })}
+        {runs.map((run) => <AgentRunCard key={run.id} run={run} />)}
       </div>
     </section>
   );
@@ -611,7 +743,7 @@ export default function SiftToday() {
             Renders first, independent of inbox buckets — this is the spec's
             "open HomeFeed, understand everything in 10 seconds" promise. */}
         {data && data.agentRuns && data.agentRuns.length > 0 && (
-          <AgentRunsSection runs={data.agentRuns} onOpen={() => router.push('/dashboard?tab=agents')} />
+          <AgentRunsSection runs={data.agentRuns} />
         )}
 
         {loading && !data && (
