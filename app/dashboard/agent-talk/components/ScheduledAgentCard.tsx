@@ -7,6 +7,7 @@ import { Clock, X, Repeat, CalendarClock, ShieldCheck, History, Pause, Play, Arr
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { cleanRunSummary } from '@/lib/arcus/report-summary';
 
 // ── Channel icons ──────────────────────────────────────────────────────────────
 
@@ -303,7 +304,7 @@ function ScheduledAgentSidebar({
                 </p>
                 {pastRun.summary && (
                   <p className={cn("text-[12px] mt-1.5 leading-relaxed line-clamp-4", isDark ? "text-white/45" : "text-neutral-500")}>
-                    {pastRun.summary}
+                    {cleanRunSummary(pastRun.summary)}
                   </p>
                 )}
               </div>

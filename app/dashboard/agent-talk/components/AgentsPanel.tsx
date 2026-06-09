@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { cleanRunSummary } from '@/lib/arcus/report-summary';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -1096,7 +1097,7 @@ function RunRow({ run }: { run: AgentRun }) {
       {run.status === 'error' && run.error_message ? (
         <p className="mt-2 text-[12px] text-red-400 leading-relaxed line-clamp-2">{run.error_message}</p>
       ) : run.report_summary ? (
-        <p className="mt-2 text-[12px] text-arcus-fg-muted leading-relaxed line-clamp-2">{run.report_summary}</p>
+        <p className="mt-2 text-[12px] text-arcus-fg-muted leading-relaxed line-clamp-2">{cleanRunSummary(run.report_summary)}</p>
       ) : null}
 
       {(links.gmail?.length || links.calendar?.length || links.notion?.length || links.slack?.length) ? (
