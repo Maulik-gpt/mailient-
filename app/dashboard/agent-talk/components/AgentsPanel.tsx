@@ -1422,11 +1422,26 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, skip_confirmations: newVal } : a));
   };
 
-  const handleDelete = async (agent: Agent) => {
-    if (!confirm(`Delete "${agent.name}"?`)) return;
-    await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
+  const deleteAgent = async (agent: Agent) => {
+    const prevAgents = agents;
     setAgents(prev => prev.filter(a => a.id !== agent.id));
-    toast.success('Schedule deleted');
+    try {
+      const res = await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success(`"${agent.name}" deleted`);
+    } catch {
+      setAgents(prevAgents);
+      toast.error('Could not delete the schedule', { description: 'Please try again.' });
+    }
+  };
+
+  const handleDelete = (agent: Agent) => {
+    // Styled confirmation toast instead of the browser's native confirm().
+    toast(`Delete "${agent.name}"?`, {
+      description: 'This stops the agent and removes its schedule. This cannot be undone.',
+      action: { label: 'Delete', onClick: () => deleteAgent(agent) },
+      cancel: { label: 'Cancel', onClick: () => {} },
+    });
   };
 
   const handleRunNow = async (agent: Agent) => {

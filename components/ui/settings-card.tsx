@@ -312,19 +312,28 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
         }
     };
 
-    const handleDeleteAccount = async () => {
-        if (confirm('Are you sure you want to delete your account? This action is permanent and will wipe all your data.')) {
-            try {
-                const response = await fetch('/api/user/delete-account', { method: 'DELETE' });
-                if (response.ok) {
-                    signOut({ callbackUrl: '/' });
-                } else {
-                    toast.error('Failed to delete account');
-                }
-            } catch (error) {
-                toast.error('An error occurred');
+    const performDeleteAccount = async () => {
+        try {
+            const response = await fetch('/api/user/delete-account', { method: 'DELETE' });
+            if (response.ok) {
+                signOut({ callbackUrl: '/' });
+            } else {
+                toast.error('Failed to delete account', { description: 'Please try again or contact support.' });
             }
+        } catch (error) {
+            toast.error('Failed to delete account', { description: 'Something went wrong. Please try again.' });
         }
+    };
+
+    const handleDeleteAccount = () => {
+        // Styled confirmation instead of native confirm(). Long duration so the
+        // permanent-deletion warning can't auto-dismiss before it's read.
+        toast('Delete your account?', {
+            description: 'This is permanent and wipes all your data. This cannot be undone.',
+            duration: 10000,
+            action: { label: 'Delete forever', onClick: () => performDeleteAccount() },
+            cancel: { label: 'Cancel', onClick: () => {} },
+        });
     };
 
     const MenuButton = ({ id, icon: Icon, label, category = false }: { id?: SettingsSection, icon?: any, label: string, category?: boolean }) => {

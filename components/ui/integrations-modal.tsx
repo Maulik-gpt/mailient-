@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { ToggleSwitch } from './toggle-switch';
 import { useSession } from 'next-auth/react';
 import { Shield } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Integration {
   id: string;
@@ -182,30 +183,37 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
     }
   }, [isOpen]);
 
+  const disconnectIntegration = async (id: string, label: string) => {
+    try {
+      const res = await fetch(`/api/integrations?provider=${id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setIntegrations(prev =>
+          prev.map(item => item.id === id ? { ...item, enabled: false } : item)
+        );
+        await fetchIntegrationStatus();
+        toast.success(`${label} disconnected`);
+      } else {
+        toast.error(`Failed to disconnect ${label}`, { description: 'Please try again.' });
+      }
+    } catch (err) {
+      console.error('Error disconnecting:', err);
+      toast.error(`Failed to disconnect ${label}`, { description: 'Please try again.' });
+    }
+  };
+
   const handleToggle = async (id: string, currentlyEnabled: boolean) => {
     if (id === 'mailient' || id === 'gmail') return;
 
     if (currentlyEnabled) {
       const label = id === 'cal_com' ? 'Cal.com' : id.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const confirmed = window.confirm(`Are you sure you want to disconnect ${label}?`);
-      if (confirmed) {
-        try {
-          const res = await fetch(`/api/integrations?provider=${id}`, {
-            method: 'DELETE'
-          });
-          if (res.ok) {
-            setIntegrations(prev =>
-              prev.map(item => item.id === id ? { ...item, enabled: false } : item)
-            );
-            await fetchIntegrationStatus();
-          } else {
-            alert('Failed to disconnect integration.');
-          }
-        } catch (err) {
-          console.error('Error disconnecting:', err);
-          alert('Failed to disconnect integration.');
-        }
-      }
+      // Styled confirmation toast instead of the browser's native confirm().
+      toast(`Disconnect ${label}?`, {
+        description: `Arcus will lose access to ${label} until you reconnect it.`,
+        action: { label: 'Disconnect', onClick: () => disconnectIntegration(id, label) },
+        cancel: { label: 'Cancel', onClick: () => {} },
+      });
     } else {
       const V3_DIRECT_ROUTES: Record<string, string> = {
         google_calendar:  '/api/arcus/v3/oauth/gcal',
@@ -229,10 +237,10 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
             return;
           }
         }
-        alert('Failed to initiate connection. Please try again.');
+        toast.error('Failed to initiate connection', { description: 'Please try again.' });
       } catch (err) {
         console.error('Connection init error:', err);
-        alert('Failed to initiate connection. Please try again.');
+        toast.error('Failed to initiate connection', { description: 'Please try again.' });
       }
     }
   };

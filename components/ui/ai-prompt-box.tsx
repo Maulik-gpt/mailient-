@@ -827,7 +827,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   const handleStartRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      alert("Speech Recognition is not supported in this browser.");
+      toast.error('Speech recognition unavailable', { description: "This browser doesn't support voice input. Try Chrome or Edge." });
       setIsRecording(false);
       return;
     }

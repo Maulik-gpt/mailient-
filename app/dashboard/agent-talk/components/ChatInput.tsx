@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, KeyboardEvent } from 'react';
+import { toast } from 'sonner';
 import { ChatInputProps, Email } from '../types/chat';
 import { SlashCommandMenu } from './SlashCommandMenu';
 import { findSlashCommand, filterSlashCommands } from '@/lib/arcus/skills';
@@ -606,7 +607,7 @@ export function ChatInput({ onSendMessage, disabled, placeholder, onModalStateCh
         }
       } catch (error) {
         console.error('MediaRecorder error:', error);
-        alert('Audio recording failed. Please check microphone permissions and try again.');
+        toast.error('Audio recording failed', { description: 'Check your microphone permissions and try again.' });
         setRecordingState('idle');
         setIsListening(false);
         setShowResumeButton(false);

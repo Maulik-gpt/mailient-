@@ -5002,10 +5002,15 @@ export default function ChatInterface({
                             <div className="h-[1px] bg-black/[0.05] dark:bg-white/[0.05] my-1" />
                             <button
                               onClick={() => {
-                                if (currentConversationId && confirm('Delete this conversation?')) {
-                                  handleConversationDelete(currentConversationId);
-                                }
+                                const convId = currentConversationId;
                                 setIsTitleMenuOpen(false);
+                                if (!convId) return;
+                                // Styled confirmation instead of native confirm().
+                                toast('Delete this conversation?', {
+                                  description: 'This permanently removes the chat and its history.',
+                                  action: { label: 'Delete', onClick: () => handleConversationDelete(convId) },
+                                  cancel: { label: 'Cancel', onClick: () => {} },
+                                });
                               }}
                               className="w-full px-3 py-2 text-left text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors flex items-center gap-2.5"
                             >

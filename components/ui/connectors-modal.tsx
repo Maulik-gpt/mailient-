@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from 'next-themes';
+import { toast } from 'sonner';
 import { 
   Calendar, 
   Video,
@@ -324,9 +325,9 @@ export function ConnectorsModal({
         const data = await res.json();
         if (data.url) { window.location.assign(data.url); return; }
       }
-      alert('Authentication failed. Please try again.');
+      toast.error('Authentication failed', { description: 'Please try again.' });
     } catch {
-      alert('Could not reach authentication server.');
+      toast.error('Could not reach authentication server', { description: 'Check your connection and try again.' });
     }
   };
 
