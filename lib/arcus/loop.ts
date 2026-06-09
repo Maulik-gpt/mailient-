@@ -1109,6 +1109,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         let totalToolCalls = 0;
         let nudgeCount = 0;
         let stepListingRetryCount = 0; // counter: allows up to 2 forced retries before giving up
+        // Bug A — background agents on weak models tend to do the MINIMUM: one
+        // search_gmail, then write a report and quit, producing a near-empty
+        // run ("1 tool call · 21s"). This counter lets us nudge such a run to
+        // keep working ONCE before accepting its early finish. Capped at 2 so a
+        // genuinely-done run (or a stubborn model) still terminates.
+        let keepWorkingNudges = 0;
+        const MAX_KEEP_WORKING_NUDGES = 2;
         let finalText = '';
         let canvasContent: any = null;
         let iteration = 0;
@@ -2066,6 +2073,38 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 'Write a complete, specific answer using the actual content you retrieved. ' +
                 'Include the relevant details, names, dates, and specifics from what was found.',
             });
+            continue;
+          }
+
+          // ── Bug A: background "keep working" nudge ────────────────────────
+          // A background agent that's about to finish having made very few tool
+          // calls almost certainly stopped short — weak models do one search
+          // then write a report. If we still have time + budget, push it to
+          // actually do the work its task implies (read threads, draft, log)
+          // before accepting the finish. Only fires for background agents, only
+          // when real budget/time remain, and is capped so it can't loop.
+          const nearlyEmptyRun = totalToolCalls <= 2;
+          const hasHeadroom =
+            totalToolCalls < toolCallLimit - 3 &&
+            Date.now() < deadlineAt - 8000;
+          if (
+            isBackgroundAgent &&
+            nearlyEmptyRun &&
+            hasHeadroom &&
+            keepWorkingNudges < MAX_KEEP_WORKING_NUDGES
+          ) {
+            keepWorkingNudges++;
+            emit('thinking', { status: 'Going deeper on the task…' });
+            messages.push({
+              role: 'user',
+              content:
+                `You have only made ${totalToolCalls} tool ${totalToolCalls === 1 ? 'call' : 'calls'} — that is not enough to actually complete this task. ` +
+                'A single search is the START of the work, not the end. Do the real job now: ' +
+                'read the relevant threads, draft the replies, check the calendar, log to Notion, apply labels — whatever this task requires. ' +
+                'Use as many tools as you need (you have budget remaining). ' +
+                'Do NOT write a final report yet. Call the next tool now.',
+            });
+            forceNextToolCall = true;
             continue;
           }
 
