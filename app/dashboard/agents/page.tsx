@@ -1109,6 +1109,43 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
   );
 }
 
+// ── Agent Task Card — loading skeleton ─────────────────────────────────────────
+// Mirrors the real AgentTaskCard layout (badge row → title → summary → meta)
+// so the loading state previews the shape of the content instead of a bare
+// spinner. Premium apps skeleton-load; spinners read as "generic web app".
+
+function AgentTaskCardSkeleton() {
+  return (
+    <div className="bg-[#0A0A0B]/60 border border-zinc-900 rounded-2xl overflow-hidden animate-pulse">
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-6 w-20 rounded-lg bg-zinc-800/70" />
+            </div>
+            <div className="h-5 w-2/5 rounded bg-zinc-800/70 mb-3" />
+            <div className="h-3.5 w-4/5 rounded bg-zinc-900 mb-2" />
+            <div className="h-3.5 w-3/5 rounded bg-zinc-900 mb-4" />
+            <div className="flex items-center gap-4">
+              <div className="h-3 w-24 rounded bg-zinc-900" />
+              <div className="h-3 w-16 rounded bg-zinc-900" />
+            </div>
+          </div>
+          <div className="w-10 h-6 rounded-full bg-zinc-800/70 flex-shrink-0" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AgentListSkeleton() {
+  return (
+    <div className="max-w-2xl mx-auto space-y-4">
+      {[0, 1, 2].map(i => <AgentTaskCardSkeleton key={i} />)}
+    </div>
+  );
+}
+
 // ── Agent Task Card ────────────────────────────────────────────────────────────
 
 function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleConfirmations }: {
@@ -1227,6 +1264,7 @@ function ScheduledPageInner() {
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [tableError, setTableError] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [activatingTemplate, setActivatingTemplate] = useState<typeof TEMPLATES[0] | null>(null);
 
   const setTab = (t: 'calendar' | 'tasks' | 'marketplace') => {
@@ -1241,7 +1279,12 @@ function ScheduledPageInner() {
       const data = await res.json();
       if (data.error?.includes('not set up')) { setTableError(true); return; }
       setAgents(data.agents || []);
-    } catch { /* ignore */ } finally { setLoading(false); }
+      setLoadError(false);
+    } catch {
+      // Surface the failure instead of silently showing an empty state —
+      // a network/parse error must not look identical to "you have no agents".
+      setLoadError(true);
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAgents(); }, []);
@@ -1301,12 +1344,29 @@ function ScheduledPageInner() {
     if (selectedAgent?.id === agent.id) setSelectedAgent(a => a ? { ...a, skip_confirmations: newVal } : a);
   };
 
-  const handleDelete = async (agent: Agent) => {
-    if (!confirm(`Delete "${agent.name}"?`)) return;
-    await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
+  const deleteAgent = async (agent: Agent) => {
+    // Optimistic remove so the list updates instantly; restore on failure.
+    const prevAgents = agents;
     setAgents(prev => prev.filter(a => a.id !== agent.id));
     if (selectedAgent?.id === agent.id) setSelectedAgent(null);
-    toast.success('Schedule deleted');
+    try {
+      const res = await fetch(`/api/arcus/agents?id=${agent.id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error();
+      toast.success(`"${agent.name}" deleted`);
+    } catch {
+      setAgents(prevAgents);
+      toast.error('Could not delete the schedule', { description: 'Please try again.' });
+    }
+  };
+
+  const handleDelete = (agent: Agent) => {
+    // Styled confirmation toast instead of the browser's native confirm()
+    // dialog, which breaks the dark premium aesthetic.
+    toast(`Delete "${agent.name}"?`, {
+      description: 'This stops the agent and removes its schedule. This cannot be undone.',
+      action: { label: 'Delete', onClick: () => deleteAgent(agent) },
+      cancel: { label: 'Cancel', onClick: () => {} },
+    });
   };
 
   return (
@@ -1351,16 +1411,24 @@ function ScheduledPageInner() {
 
       {/* Content */}
       {loading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
-        </div>
+        // Tasks is the default tab — preview its card shapes with a skeleton.
+        // Calendar/marketplace have non-card layouts, so a subtle spinner fits.
+        tab === 'calendar' || tab === 'marketplace' ? (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
+          </div>
+        ) : (
+          <div className="flex-1 overflow-y-auto px-8 py-7">
+            <AgentListSkeleton />
+          </div>
+        )
       ) : tab === 'calendar' ? (
         /* Calendar: no padding, fills remaining viewport height */
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {tableError && (
             <div className="mx-8 mt-4 p-3 bg-zinc-900 border border-zinc-700/60 rounded-xl flex items-start gap-3 flex-shrink-0">
               <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
-              <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase for the <code className="text-zinc-200">arcus_agents</code> table.</p>
+              <p className="text-[13px] text-zinc-400">Scheduled agents aren't ready yet — your workspace is still finishing setup.</p>
             </div>
           )}
           <CalendarView
@@ -1374,7 +1442,7 @@ function ScheduledPageInner() {
           {tableError && (
             <div className="w-full max-w-md mb-6 p-4 bg-[#121214] border border-zinc-900 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
-              <p className="text-[13px] text-zinc-400">Run the SQL migration in Supabase to enable agents (<code className="text-zinc-350">arcus_agents</code> table).</p>
+              <p className="text-[13px] text-zinc-400">Scheduled agents aren't ready yet — your workspace is still finishing setup.</p>
             </div>
           )}
           <div className="max-w-md w-full py-16 px-6 bg-[#0a0a0b] border border-zinc-900 rounded-3xl text-center flex flex-col items-center shadow-lg shadow-black/40">
@@ -1397,12 +1465,28 @@ function ScheduledPageInner() {
             <div className="mb-6 p-4 bg-zinc-900/60 border border-zinc-700/40 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-zinc-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-zinc-300 font-bold text-[14px]">Database not set up</p>
-                <p className="text-zinc-500 text-[13px] mt-0.5">Run the SQL migration in Supabase for the <code className="text-zinc-300">arcus_agents</code> table.</p>
+                <p className="text-zinc-300 font-bold text-[14px]">Scheduled agents aren't ready yet</p>
+                <p className="text-zinc-500 text-[13px] mt-0.5">Your workspace is still finishing setup. This usually resolves on its own shortly — if it persists, reach out to support.</p>
               </div>
             </div>
           )}
-          {agents.length === 0 ? (
+          {loadError ? (
+            <div className="max-w-md mx-auto mt-16 text-center flex flex-col items-center">
+              <div className="w-14 h-14 rounded-2xl bg-[#121214] border border-zinc-800/80 flex items-center justify-center mb-5">
+                <AlertCircle className="w-7 h-7 text-zinc-400" />
+              </div>
+              <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2">Couldn't load your schedules</h3>
+              <p className="text-[13.5px] text-zinc-500 leading-relaxed mb-6">
+                Something went wrong reaching the server. Your agents are safe — this is just the list failing to load.
+              </p>
+              <button
+                onClick={() => { setLoading(true); setLoadError(false); fetchAgents(); }}
+                className="px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-[13.5px] font-bold hover:bg-white active:scale-95 transition-all"
+              >
+                Try again
+              </button>
+            </div>
+          ) : agents.length === 0 ? (
             <TemplateCards onActivate={t => setActivatingTemplate(t)} />
           ) : (
             <div className="max-w-2xl mx-auto space-y-4">
