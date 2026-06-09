@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   User,
   Mail,
@@ -203,14 +204,14 @@ export default function ProfileSettingsPage() {
         const updatedProfile = await response.json();
         setProfile(updatedProfile);
         setIsEditingProfile(false);
-        alert('Profile updated successfully!');
+        toast.success('Profile updated');
       } else {
         const err = await response.json();
-        alert(err.error || 'Failed to update profile');
+        toast.error(err.error || 'Failed to update profile');
       }
     } catch (error) {
       console.error('Save error:', error);
-      alert('Failed to update profile');
+      toast.error('Failed to update profile', { description: 'Please try again.' });
     } finally {
       setSaving(false);
     }
@@ -227,7 +228,7 @@ export default function ProfileSettingsPage() {
 
     // Validate size (5MB max)
     if (file.size > 5 * 1024 * 1024) {
-      alert("File is too large. Maximum size is 5MB.");
+      toast.error('File is too large', { description: 'Maximum size is 5MB.' });
       return;
     }
 
@@ -249,14 +250,14 @@ export default function ProfileSettingsPage() {
         if (type === 'avatar') {
           setFormData(prev => ({ ...prev, avatar_url: resData.url } as any));
         }
-        alert(`${type === 'avatar' ? 'Avatar' : 'Banner'} uploaded successfully!`);
+        toast.success(`${type === 'avatar' ? 'Avatar' : 'Banner'} uploaded`);
       } else {
         const err = await response.json();
-        alert(err.error || `Failed to upload ${type}`);
+        toast.error(err.error || `Failed to upload ${type}`);
       }
     } catch (err) {
       console.error(err);
-      alert(`Failed to upload ${type}`);
+      toast.error(`Failed to upload ${type}`, { description: 'Please try again.' });
     } finally {
       if (type === 'avatar') setUploadingAvatar(false);
       else setUploadingBanner(false);
@@ -277,11 +278,11 @@ export default function ProfileSettingsPage() {
         setPartnerSubmitted(true);
       } else {
         const err = await response.json();
-        alert(err.error || 'Failed to submit application. Please try again.');
+        toast.error(err.error || 'Failed to submit application', { description: 'Please try again.' });
       }
     } catch (err) {
       console.error('Error submitting application:', err);
-      alert('Failed to submit application. Please try again.');
+      toast.error('Failed to submit application', { description: 'Please try again.' });
     } finally {
       setPartnerSubmitting(false);
     }
@@ -307,13 +308,13 @@ export default function ProfileSettingsPage() {
       if (response.ok) {
         const data = await response.json();
         setProfile(data.profile);
-        alert('Profile synced successfully!');
+        toast.success('Profile synced');
       } else {
-        alert('Failed to sync profile');
+        toast.error('Failed to sync profile');
       }
     } catch (error) {
       console.error('Sync error:', error);
-      alert('Failed to sync profile');
+      toast.error('Failed to sync profile', { description: 'Please try again.' });
     } finally {
       setSyncing(false);
     }
