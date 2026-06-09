@@ -242,7 +242,7 @@ export function DraftReplyBox({
     return (
         <div className="bg-[#242424] border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
             {/* Technical subtle noise overlay */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-[0] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+            <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-[0] bg-[url('/noise.svg')] brightness-100 contrast-150" />
 
             {/* Ambient Glow */}
             <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/[0.02] rounded-full blur-[60px] pointer-events-none" />

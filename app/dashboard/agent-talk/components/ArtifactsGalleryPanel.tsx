@@ -261,7 +261,7 @@ export function ArtifactsGalleryPanel({
             onClick={e => e.stopPropagation()}
           >
             {/* Subtle noise texture */}
-            <div className="absolute inset-0 pointer-events-none opacity-[0.025] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] z-0" />
+            <div className="absolute inset-0 pointer-events-none opacity-[0.025] bg-[url('/noise.svg')] z-0" />
 
             {/* Header */}
             <div className={cn(

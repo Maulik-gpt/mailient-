@@ -54,7 +54,7 @@ export function VerificationCard({
       }}
     >
       {/* Noise Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')]" />
+      <div className="absolute inset-0 opacity-[0.03] pointer-events-none mix-blend-overlay bg-[url('/noise.svg')]" />
 
       {/* Mesh Glow Overlay */}
       <div 

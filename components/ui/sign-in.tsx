@@ -94,7 +94,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
             style={{ backgroundImage: `url(${heroImageSrc})` }}
           >
             <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20" />
-            <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
+            <div className="absolute inset-0 opacity-20 mix-blend-overlay bg-[url('/noise.svg')] bg-repeat" />
           </div>
 
           {testimonials.length > 0 && (

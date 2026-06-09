@@ -4769,7 +4769,7 @@ export default function ChatInterface({
 
         <div className="flex h-full w-full text-arcus-fg bg-arcus-bg selection:bg-arcus-surface selection:text-arcus-fg dark:selection:bg-arcus-surface dark:selection:text-arcus-fg overflow-hidden relative tracking-tight" style={{ height: '100vh', overflow: 'hidden' }}>
           {/* Apple-style Premium Grain Overlay */}
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('https://grainy-gradients.vercel.app/noise.svg')] brightness-100 contrast-150" />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03] z-[100] bg-[url('/noise.svg')] brightness-100 contrast-150" />
 
           {/* Subtle Ambient Glows for Depth - Disabled in dark mode for pure plain black */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
