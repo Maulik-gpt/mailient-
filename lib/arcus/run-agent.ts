@@ -107,6 +107,8 @@ Table (4+ items) or bullet list (2–3 items):
 If skip_confirmations is FALSE: write "Would have [action]" framing throughout.
 If 0 actions: "No operations executed this run."
 
+DECISION REASONING — for every JUDGMENT CALL (drafting vs archiving, flagging vs ignoring, prioritizing), state confidence + a one-line WHY from real signal, so the user understands the call and never has to ask "why did it do that?". Confidence policy: ≥80% act and log it; 70-79% make the educated guess, act, and note it for correction; <70% do NOT act — put it in Needs Your Attention with the uncertainty stated. Never fabricate a confidence number — base it on memory / past runs / sender history / voice profile. Example: "Archived 27 newsletters (97% — senders you've never opened in 90 days)."
+
 ## Needs Your Attention
 ONLY include if something could not be completed, requires a decision, or hit an error.
 - "Priya's email mentions a pricing change I can't confirm from context — review the draft before sending."
