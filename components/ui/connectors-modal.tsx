@@ -741,7 +741,7 @@ export function ConnectorsModal({
                     onClick={() => setShowFeedback(true)}
                     className={cn(
                       "text-[13px] transition-all underline underline-offset-4",
-                      isDark ? "text-white/20 hover:text-white/40" : "text-neutral-450 hover:text-neutral-700"
+                      isDark ? "text-white/45 hover:text-white/70" : "text-neutral-500 hover:text-neutral-800"
                     )}
                   >
                     Provide feedback
