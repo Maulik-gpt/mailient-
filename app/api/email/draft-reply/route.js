@@ -118,12 +118,16 @@ Body: ${emailSnippet || ''}`;
             });
         }
 
-        // FAST FALLBACK: If mimic tone selected but no profile, use professional immediately
-        // NO on-the-fly analysis - that's a separate background job
+        // Voice-first by default: when the caller doesn't specify a tone, mimic
+        // the user's learned voice ("learn the user voice strictly until asked
+        // something different"). An explicit tone (professional/friendly/etc.)
+        // always wins. If mimic is in effect but no profile exists yet, fall
+        // back to professional immediately (no on-the-fly analysis — that's a
+        // separate background job).
         let voiceProfile = voiceProfileRaw;
-        let effectiveTone = tone || 'professional';
-        
-        if (tone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {
+        let effectiveTone = tone || 'mimic';
+
+        if (effectiveTone === 'mimic' && (!voiceProfile || voiceProfile.status === 'default')) {
             effectiveTone = 'professional'; // Immediate fallback, no delay
             voiceProfile = null;
         }

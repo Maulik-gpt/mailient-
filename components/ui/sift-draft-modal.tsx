@@ -25,6 +25,7 @@ export function SiftDraftModal({ draftData, onSendReply, onDismiss, isVisible }:
     const [draftSubject, setDraftSubject] = useState('');
     const [isSending, setIsSending] = useState(false);
     const draftContentEditorRef = useRef<HTMLDivElement>(null);
+    const prevContentRef = useRef<string>('');
     const attachmentInputRef = useRef<HTMLInputElement>(null);
     const [attachments, setAttachments] = useState<File[]>([]);
 
@@ -36,14 +37,28 @@ export function SiftDraftModal({ draftData, onSendReply, onDismiss, isVisible }:
             if (draftContentEditorRef.current) {
                 draftContentEditorRef.current.innerHTML = draftData.content || '';
             }
+            prevContentRef.current = draftData.content || '';
         }
     }, [draftData]);
 
     useEffect(() => {
-        if (draftContentEditorRef.current && draftData && draftContentEditorRef.current.innerHTML !== draftData.content) {
-            // Update only if it's the initial load or a stream update where the user hasn't typed
-             draftContentEditorRef.current.innerHTML = draftData.content || '';
+        const el = draftContentEditorRef.current;
+        if (!el || !draftData) return;
+        const next = draftData.content || '';
+        if (el.innerHTML === next) return;
+
+        const prev = prevContentRef.current;
+        // Streaming append: the new content extends the old. Wrap ONLY the
+        // freshly-arrived tail in a blur-in span so it eases from blurred to
+        // sharp as the model writes — word-by-word fade, not a hard cut.
+        if (next.length > prev.length && next.startsWith(prev) && prev.length > 0) {
+            const tail = next.slice(prev.length);
+            el.innerHTML = prev + `<span class="stream-blur-in">${tail}</span>`;
+        } else {
+            // Initial load, reset, or user edit — set directly, no animation.
+            el.innerHTML = next;
         }
+        prevContentRef.current = next;
     }, [draftData?.content]);
 
     if (!isVisible || !draftData) return null;

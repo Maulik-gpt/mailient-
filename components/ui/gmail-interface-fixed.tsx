@@ -2548,9 +2548,9 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                                     <div className="mt-4 pt-3 border-t border-black/[0.04] dark:border-white/[0.04]">
                                                                         <button
                                                                             onClick={() => setIsVoiceProfileModalOpen(true)}
-                                                                            className="text-[13px] text-black/40 dark:text-white/30 underline underline-offset-2 decoration-black/20 dark:decoration-white/15 hover:text-black/70 dark:hover:text-white/60 hover:decoration-black/40 dark:hover:decoration-white/30 transition-all font-medium flex items-center gap-1.5"
+                                                                            className="text-[13px] text-black/70 dark:text-white/70 underline underline-offset-2 decoration-black/30 dark:decoration-white/30 hover:text-black dark:hover:text-white hover:decoration-black/50 dark:hover:decoration-white/50 transition-all font-medium flex items-center gap-1.5"
                                                                         >
-                                                                            <Mic className="w-3 h-3" />
+                                                                            <Mic className="w-3.5 h-3.5" />
                                                                             Voice Profile
                                                                         </button>
                                                                     </div>

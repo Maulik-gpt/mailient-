@@ -390,6 +390,23 @@ body,
   }
 }
 
+/* Word-blur fade for streaming draft text — each newly-arrived chunk eases
+   from blurred to sharp as the model writes it, step by step. */
+@keyframes wordBlurIn {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+  }
+}
+
+.stream-blur-in {
+  animation: wordBlurIn 0.45s ease-out both;
+}
+
 @keyframes slideRightIn {
   from {
     opacity: 0;
