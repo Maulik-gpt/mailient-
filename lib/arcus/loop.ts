@@ -1295,12 +1295,12 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               {
                 role: 'system',
                 content:
-                  'You are a task planner. Decide if the user\'s request is a COMPLEX MULTI-STEP task that requires 3 or more distinct tool calls.\n' +
-                  'Complex tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents.\n' +
-                  'Simple tasks (casual replies, single questions, greetings) are NOT complex.\n\n' +
-                  'For COMPLEX tasks: output a JSON object with two fields:\n' +
+                  'You are a task planner. Decide if the user\'s request is a MULTI-STEP task that requires 2 or more distinct tool calls.\n' +
+                  'Multi-step tasks involve real work: searching emails, reading threads, drafting messages, scheduling meetings, managing calendar, writing documents, logging to Notion. When in doubt about a real work request, treat it as multi-step and produce the list.\n' +
+                  'Only truly trivial requests (casual replies, single factual questions, greetings) are simple.\n\n' +
+                  'For MULTI-STEP tasks: output a JSON object with two fields:\n' +
                   '  "plan": a single sentence (max 220 chars) describing concretely what will be done — which tools, what will be found, what will be produced.\n' +
-                  '  "tasks": array of 3-5 short action items (max 10 words each).\n' +
+                  '  "tasks": array of 2-5 short action items (max 10 words each).\n' +
                   'For SIMPLE tasks: output exactly {}  (empty object).\n' +
                   'Output ONLY raw JSON. No markdown fences, no extra text.\n' +
                   'Example complex: {"plan":"I\'ll search your Gmail for the past 7 days, read each thread, and compile a full activity report in Canvas.","tasks":["Search Gmail last 7 days","Read top email threads","Compile key metrics","Open activity report in Canvas"]}\n' +
@@ -1313,16 +1313,31 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           ).then(tlRes => {
             const raw = getText(tlRes.content).trim();
             const objMatch = raw.match(/\{[\s\S]*\}/);
+            let parsed: any = null;
             if (objMatch) {
-              const parsed = JSON.parse(objMatch[0]);
-              if (parsed.tasks && Array.isArray(parsed.tasks) && parsed.tasks.length >= 3) {
-                const clean = parsed.tasks.slice(0, 6).map((t: any) => String(t).trim()).filter(Boolean);
-                taskCount = clean.length;
-                emit('task_list', { tasks: clean });
-              }
-              if (parsed.plan && typeof parsed.plan === 'string' && parsed.plan.trim().length > 10) {
-                emit('plan_text', { content: parsed.plan.trim() });
-              }
+              try { parsed = JSON.parse(objMatch[0]); } catch { parsed = null; }
+            }
+            // Weak models often return malformed JSON or claim "simple" for real
+            // multi-step work. If JSON parse failed but the model clearly listed
+            // steps, recover them from bullet/numbered lines so the task list
+            // still shows.
+            let tasks: string[] = Array.isArray(parsed?.tasks) ? parsed.tasks.map((t: any) => String(t).trim()).filter(Boolean) : [];
+            if (tasks.length < 2) {
+              const lineItems = raw
+                .split('\n')
+                .map(l => l.replace(/^\s*(?:[-*•]|\d+[.)])\s+/, '').trim())
+                .filter(l => l.length >= 4 && l.length <= 90 && !l.startsWith('{') && !l.includes('"tasks"'));
+              if (lineItems.length >= 3) tasks = lineItems;
+            }
+            // Threshold lowered 3 -> 2: a genuine two-step task (search + draft)
+            // deserves a visible checklist too.
+            if (tasks.length >= 2) {
+              const clean = tasks.slice(0, 6);
+              taskCount = clean.length;
+              emit('task_list', { tasks: clean });
+            }
+            if (parsed?.plan && typeof parsed.plan === 'string' && parsed.plan.trim().length > 10) {
+              emit('plan_text', { content: parsed.plan.trim() });
             }
           }).catch(() => { /* task list is optional */ });
         }
