@@ -241,6 +241,12 @@ export interface AgentRunResult {
   report: string;
   /** Count of tool_call SSE events observed during the run. */
   toolCalls: number;
+  /**
+   * Structured artifact links the committee already collected. The cron route
+   * persists these directly instead of re-parsing them out of the report
+   * markdown (which broke whenever the report's link format changed).
+   */
+  artifactLinks?: { gmail?: Array<{ label: string; url: string }>; calendar?: Array<{ label: string; url: string }>; notion?: Array<{ label: string; url: string }>; slack?: Array<{ label: string; url: string }> } | null;
 }
 
 /**
@@ -311,11 +317,13 @@ export async function runAgentTask(
 
   let report: string;
   let toolCalls: number;
+  let artifactLinks: AgentRunResult['artifactLinks'] = null;
 
   if (useCommittee) {
     const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs, agentRunId });
     report = committee.report;
     toolCalls = committee.toolCalls;
+    artifactLinks = committee.artifactLinks ?? null;
   } else {
     // Legacy single-LLM path — kept verbatim so flipping the kill switch
     // returns exactly the prior behaviour. Will be deleted in a future
@@ -380,5 +388,5 @@ export async function runAgentTask(
   // Fire-and-forget — never block the cron run on memory write
   saveMemory(agent.user_id, runRecord, ['agent_run', 'background']).catch(() => {});
 
-  return { report, toolCalls };
+  return { report, toolCalls, artifactLinks };
 }

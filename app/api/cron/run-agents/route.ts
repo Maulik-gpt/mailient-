@@ -227,7 +227,7 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const { report, toolCalls } = await runAgentTask(agent, {
+        const { report, toolCalls, artifactLinks: structuredLinks } = await runAgentTask(agent, {
           maxToolCalls: perAgentToolCalls,
           deadlineMs: sharedBudget,
         }, runRecordId || undefined);
@@ -275,7 +275,13 @@ export async function GET(request: NextRequest) {
         // PART 60 — also persist signal_score + delivery_decision so the
         // dashboard can show "suppressed: quiet day" instead of a silent gap.
         if (runRecordId) {
-          const artifactLinks = extractArtifactLinks(report);
+          // Prefer the structured links the committee already collected; fall
+          // back to parsing the report markdown only if they're absent (legacy
+          // single-LLM path). Avoids re-parsing — and breaking on — the report
+          // format.
+          const artifactLinks = structuredLinks && Object.keys(structuredLinks).length
+            ? structuredLinks
+            : extractArtifactLinks(report);
           const coreUpdate = {
             completed_at: completedAt.toISOString(),
             duration_ms: completedAt.getTime() - runStartedAt.getTime(),

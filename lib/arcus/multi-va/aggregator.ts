@@ -123,31 +123,37 @@ function mergedSection(
   return [`## ${title}`, '', ...lines, ''].join('\n');
 }
 
-function linksSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusVA; links: string }>): string {
-  const lines: string[] = ['## All Links', ''];
-  const buckets: Array<[string, ArtifactBuckets[keyof ArtifactBuckets]]> = [
-    ['Gmail', artifacts.gmail],
-    ['Calendar', artifacts.calendar],
-    ['Notion', artifacts.notion],
-    ['Slack', artifacts.slack],
-  ];
-  let hadAny = false;
-  for (const [label, list] of buckets) {
-    if (!list?.length) continue;
-    hadAny = true;
-    lines.push(`**${label}**`);
-    for (const item of list) lines.push(`- [${item.label}](${item.url})`);
-    lines.push('');
+// "Next Actions" — what the user should do now, in priority order, each a
+// clickable artifact link: "→ Review the draft to Priya: <link>". Replaces the
+// old grouped "All Links" dump so the user gets directed actions, not a
+// reference list. Priority: drafts to review/send first, then meetings to
+// confirm, then logged records, then Slack.
+function nextActionsSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusVA; links: string }>): string {
+  const actions: string[] = [];
+
+  for (const item of artifacts.gmail ?? []) actions.push(`→ Review & send: [${item.label}](${item.url})`);
+  for (const item of artifacts.calendar ?? []) actions.push(`→ Confirm meeting: [${item.label}](${item.url})`);
+  for (const item of artifacts.notion ?? []) actions.push(`→ Check the log: [${item.label}](${item.url})`);
+  for (const item of artifacts.slack ?? []) actions.push(`→ View message: [${item.label}](${item.url})`);
+
+  // Per-VA freeform link blocks (raw markdown the VA emitted) — append as-is so
+  // we never drop a link the structured buckets missed.
+  const perVABlocks = perVALinks.filter(p => p.links.trim()).map(p => p.links.trim());
+
+  if (!actions.length && !perVABlocks.length) {
+    // Nothing to click, but the spec wants the section present with a clear
+    // "you're done" signal rather than an empty/ambiguous gap.
+    return ['## Next Actions', '', 'All done — nothing needs your action right now.', ''].join('\n');
   }
-  const perVABlocks = perVALinks
-    .filter(p => p.links.trim())
-    .map(p => `_From ${VA_LABELS[p.va]}:_\n${p.links}`);
+
+  const lines: string[] = ['## Next Actions', ''];
+  lines.push(...actions);
   if (perVABlocks.length) {
-    if (hadAny) lines.push('---', '');
+    if (actions.length) lines.push('');
     lines.push(...perVABlocks);
-    hadAny = true;
   }
-  return hadAny ? lines.join('\n') : '';
+  lines.push('');
+  return lines.join('\n');
 }
 
 // "Tools Used" — concise, humanized, per the report spec. Built from the tool
@@ -301,7 +307,7 @@ export async function buildCommitteeReport(
     '',
     ...(contentSections.length > 0 ? contentSections : [fallbackWhatHappened()]),
     toolsUsedSection(ordered),
-    linksSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
+    nextActionsSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
     '',
     '---',
     '',
