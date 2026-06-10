@@ -78,7 +78,7 @@ const TOOL_CAPABLE_MODELS = [
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
   'nvidia/nemotron-3-super-120b-a12b:free',
-  'z-ai/glm-4.5-air:free',
+  // 'z-ai/glm-4.5-air:free' removed — moved to paid-only, now 404s (verified 2026-06).
   'arcee-ai/trinity-large-thinking:free',
   // Currently rate-limited upstream — retry-worthy fallbacks
   'deepseek/deepseek-v4-flash:free',
