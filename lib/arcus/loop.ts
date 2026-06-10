@@ -944,25 +944,21 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 return;
               }
 
-              // Happy path — agent created. Emit canvas + compose a clean
-              // one-sentence chat message from canvasData.pageMeta.
+              // Happy path — agent created. Emit canvas + the tool's own rich,
+              // randomized, timezone-correct description. We emit richDescription
+              // VERBATIM rather than letting the model compose a sentence — that
+              // is what produced the wrong run time in chat.
               if (result.canvasData) emit('canvas', result.canvasData);
               const cd: any = result.canvasData;
-              const attrs: any[] = cd?.pageMeta?.attendees || [];
-              const scheduleLabel = attrs[0] || 'as scheduled';
-              const channelRaw = (attrs[2] || 'gmail') as string;
-              const channelHuman = channelRaw === 'gmail' ? 'your Gmail inbox'
-                : channelRaw === 'slack' ? 'Slack'
-                : 'both Slack and your Gmail inbox';
-              const nextRun = cd?.pageMeta?.startTime;
-              const nextRunHuman = nextRun
-                ? new Date(nextRun).toLocaleString('en-US', { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })
-                : null;
-              const agentName = params.name;
-              const chatMsg = nextRunHuman
-                ? `**${agentName}** is live — first run ${nextRunHuman}, report lands in ${channelHuman}.`
-                : `**${agentName}** is live — running ${scheduleLabel}, report lands in ${channelHuman}.`;
-              emit('message', { content: chatMsg });
+              const rich = cd?.pageMeta?.richDescription;
+              if (rich) {
+                emit('message', { content: rich });
+              } else {
+                // Fallback only if the tool didn't supply one.
+                const attrs: any[] = cd?.pageMeta?.attendees || [];
+                const scheduleLabel = attrs[0] || 'as scheduled';
+                emit('message', { content: `**${params.name}** is live — running ${scheduleLabel}.` });
+              }
               closeStream(1);
               return;
             } catch (err: any) {

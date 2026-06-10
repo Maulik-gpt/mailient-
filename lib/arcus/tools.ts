@@ -6106,6 +6106,71 @@ function deriveMissingAgentFields(input: any): void {
   }
 }
 
+// Compose a rich (≥500 char), RANDOMIZED confirmation for a freshly-created
+// agent. Randomized so it never reads like a hardcoded template; the time comes
+// from nextRunLabel (already in the user's TZ) so it's always correct. Returned
+// to the loop, which emits it verbatim — the model never invents the time.
+function composeAgentLiveDescription(a: {
+  name: string;
+  scheduleLabel: string;
+  nextRunLabel: string | null;
+  channelHuman: string;
+  taskDescription: string;
+  skipConfirmations: boolean;
+}): string {
+  const pick = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)];
+
+  const openers = [
+    `**${a.name}** is live and on the clock.`,
+    `Done — **${a.name}** is set up and running.`,
+    `**${a.name}** is now part of your team.`,
+    `Your new agent, **${a.name}**, is live.`,
+    `**${a.name}** is wired up and ready to work.`,
+  ];
+
+  const cadence = a.nextRunLabel
+    ? pick([
+        `It runs ${a.scheduleLabel.toLowerCase()}, with the first run landing ${a.nextRunLabel}.`,
+        `First run is ${a.nextRunLabel}, then it repeats ${a.scheduleLabel.toLowerCase()}.`,
+        `Expect the first report ${a.nextRunLabel} — after that it fires ${a.scheduleLabel.toLowerCase()}.`,
+      ])
+    : `It runs ${a.scheduleLabel.toLowerCase()}.`;
+
+  const delivery = pick([
+    `Each run's report is delivered straight to ${a.channelHuman}.`,
+    `When it finishes, the briefing lands in ${a.channelHuman}.`,
+    `You'll get a full report in ${a.channelHuman} every time it runs.`,
+  ]);
+
+  const autonomy = a.skipConfirmations
+    ? pick([
+        `It's set to act autonomously — it'll send, schedule, and log without pausing to ask, so you wake up to finished work, not a queue of approvals.`,
+        `Autonomy is on: it executes write actions on its own and reports what it did, rather than waiting for your sign-off mid-run.`,
+      ])
+    : pick([
+        `It'll draft and prepare everything but pause for your approval before sending or scheduling anything — nothing goes out without your okay.`,
+        `Write actions are gated: it queues drafts and proposed bookings for you to approve, so you stay in control of anything that leaves your inbox.`,
+      ]);
+
+  const tips = [
+    `Tip: you can edit, pause, or change its schedule anytime from the Agents tab — changes take effect on the next run.`,
+    `Tip: the more it runs, the sharper it gets — it remembers your preferences and past decisions, so early runs are the roughest it'll ever be.`,
+    `Tip: if a run ever looks off, open it from the Agents tab to see exactly which tools it used and what it touched — full transparency, no black box.`,
+    `Tip: want it to behave differently? Just tell me in plain English ("only flag VIP emails", "never schedule before 10am") and I'll update its instructions.`,
+    `Tip: you can set an auto-pause date so it stops itself after a busy stretch, or add a second agent for a different job — they run independently.`,
+  ];
+
+  const taskEcho = a.taskDescription && a.taskDescription.length > 20
+    ? pick([
+        ` Its standing brief: "${a.taskDescription.slice(0, 180).trim()}${a.taskDescription.length > 180 ? '…' : ''}".`,
+        ` Each run it works through: "${a.taskDescription.slice(0, 180).trim()}${a.taskDescription.length > 180 ? '…' : ''}".`,
+      ])
+    : '';
+
+  const body = `${pick(openers)} ${cadence} ${delivery}${taskEcho} ${autonomy}\n\n${pick(tips)}`;
+  return body;
+}
+
 async function createScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
   // Resilience: weak models routinely call this with spec_markdown but forget
   // name / task_description (or send them under the wrong key). Rather than
@@ -6335,11 +6400,23 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
 
   // The output is what the LLM sees as its tool result. Keep it concise and
   // factual — NO embedded self-instructions like "Now write a confirmation".
-  // The scheduled_agent canvas card carries the visual confirmation; the LLM
-  // composes its own one-sentence reply for chat.
   const channelHuman = data.output_channel === 'gmail' ? 'your Gmail inbox'
     : data.output_channel === 'slack' ? 'Slack'
     : 'both Slack and your Gmail inbox';
+
+  // Rich, correct, RANDOMIZED confirmation. The loop emits this verbatim instead
+  // of letting the model compose its own sentence — which is where the wrong
+  // time ("first run 10:30 AM" vs the card's 4:00 PM) came from. nextRunLabel is
+  // already formatted in the user's timezone, so the time is always correct.
+  const richDescription = composeAgentLiveDescription({
+    name: data.name,
+    scheduleLabel,
+    nextRunLabel,
+    channelHuman,
+    taskDescription: data.task_description,
+    skipConfirmations: !!data.skip_confirmations,
+  });
+
   return {
     output: [
       `Agent "${data.name}" is live.`,
@@ -6354,9 +6431,9 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       pageMeta: {
         pageId: data.id,
         contentPreview: data.task_description,
-        // schedule + delivery info packed into existing fields so no new ToolResult shape is needed
         url: '',
         startTime: nextRun || undefined,
+        richDescription,
         attendees: [scheduleLabel, cron, data.output_channel, String(!!data.skip_confirmations), data.status],
       },
     },

@@ -867,6 +867,7 @@ interface AgentMessage {
       agentName: string;
       specMarkdown: string;
       agentParams: Record<string, any>;
+      confirmed?: boolean;
     };
     /** PART 31 — Sources tab data. Per-tool grouping of items the assistant
      *  consulted to produce its answer. Built up during the tool_result SSE
@@ -5698,13 +5699,27 @@ export default function ChatInterface({
                                           'flex items-center gap-2.5 px-4 py-3 border-t',
                                           isDark ? 'border-white/[0.06]' : 'border-black/[0.05]',
                                         )}>
+                                          {(msg as AgentMessage).meta!.agentSpecConfirm!.confirmed ? (
+                                            <div className={cn(
+                                              'flex items-center gap-2 text-[13px] font-semibold',
+                                              isDark ? 'text-emerald-400' : 'text-emerald-600',
+                                            )}>
+                                              <Check className="w-4 h-4" strokeWidth={2.5} />
+                                              Confirmed — creating your agent…
+                                            </div>
+                                          ) : (
+                                          <>
                                           <button
                                             onClick={() => {
                                               const sc = (msg as AgentMessage).meta!.agentSpecConfirm!;
+                                              if (sc.confirmed) return; // already confirmed — ignore re-clicks
                                               const p = sc.agentParams || {};
+                                              // Mark confirmed (keep the card visible in a confirmed state)
+                                              // rather than deleting it — the user should still see what they
+                                              // approved instead of having it vanish.
                                               setMessages(prev => prev.map(m =>
                                                 m.id === msg.id && m.type === 'agent'
-                                                  ? { ...m, meta: { ...(m as AgentMessage).meta, agentSpecConfirm: undefined } }
+                                                  ? { ...m, meta: { ...(m as AgentMessage).meta, agentSpecConfirm: { ...sc, confirmed: true } } }
                                                   : m
                                               ));
                                               if (currentConversationId) {
@@ -5750,6 +5765,8 @@ export default function ChatInterface({
                                           >
                                             Edit in canvas
                                           </button>
+                                          </>
+                                          )}
                                         </div>
                                       </motion.div>
                                     )}
@@ -6127,6 +6144,16 @@ export default function ChatInterface({
                                       if (msg.role !== 'assistant') return null;
                                       const m = msg as AgentMessage;
                                       if (m.meta?.limitReached || m.meta?.isStreaming || m.meta?.hasError) return null;
+                                      // Only show the feedback bar on the LAST assistant message of the
+                                      // conversation — i.e. the finished result. It should not appear under
+                                      // every intermediate message of a multi-step task (spec card, "agent
+                                      // is live" step, etc.). The bar means "rate this answer", and only the
+                                      // final answer is rateable. While a newer user/assistant turn exists
+                                      // after this one, this message is mid-task scaffolding.
+                                      const isLastMessage = m.id === messages[messages.length - 1]?.id;
+                                      if (!isLastMessage) return null;
+                                      // Don't show while the agent loop is still working on this final turn.
+                                      if (isAgentLoopActive) return null;
                                       // ── "Still asking the user" gate ──
                                       const isStillAskingUser =
                                         !!m.meta?.agentSpecConfirm ||
@@ -6136,10 +6163,8 @@ export default function ChatInterface({
                                         !!(m.meta?.integrationRequired && !m.meta.scheduledAgent) ||
                                         // Pending follow-up question card attached to THIS msg
                                         !!m.meta?.pendingQuestion ||
-                                        (!!pendingQuestion && m.id === messages[messages.length - 1]?.id);
-                                      // Agent loop still streaming this assistant turn
-                                      const isThisMsgActive = isAgentLoopActive && m.id === messages[messages.length - 1]?.id;
-                                      if (isStillAskingUser || isThisMsgActive) return null;
+                                        !!pendingQuestion;
+                                      if (isStillAskingUser) return null;
                                       return (
                                         <MessageActionButtons
                                           msg={msg}
