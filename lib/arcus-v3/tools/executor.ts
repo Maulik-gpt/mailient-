@@ -1146,6 +1146,30 @@ export async function createScheduledAgent(
     expires_at?: string;
   }
 ): Promise<ToolResult> {
+  // Resilience (mirrors lib/arcus/tools.ts): recover name/task_description from
+  // alias keys or a spec field the model used instead of failing outright.
+  const anyInput = input as any;
+  if (!anyInput.name?.trim?.()) {
+    anyInput.name = anyInput.agent_name || anyInput.agentName || anyInput.title || anyInput.name;
+  }
+  if (!anyInput.task_description?.trim?.()) {
+    anyInput.task_description =
+      anyInput.taskDescription || anyInput.task || anyInput.description || anyInput.instructions || anyInput.task_description;
+  }
+  const specText = typeof anyInput.spec_markdown === 'string' ? anyInput.spec_markdown : '';
+  if (specText.trim()) {
+    if (!anyInput.name?.trim?.()) {
+      const h1 = specText.match(/^\s*#\s+(.+?)\s*$/m);
+      if (h1) anyInput.name = h1[1].replace(/[*_`#]/g, '').trim();
+    }
+    if (!anyInput.task_description?.trim?.()) {
+      const obj = specText.match(/^##\s+[^\n]*(?:objective|logic|task|goal)[^\n]*\n([\s\S]*?)(?=\n##\s|\n#\s|$)/im);
+      const body = obj ? obj[1] : specText.replace(/^[\s\S]*?^#\s+.+?$/m, '');
+      const cleaned = body.replace(/```[\s\S]*?```/g, ' ').replace(/^#{1,6}\s+/gm, '').replace(/^\s*[-*+]\s+/gm, '').replace(/[*_`]/g, '').replace(/\s+/g, ' ').trim();
+      if (cleaned.length >= 12) anyInput.task_description = cleaned.slice(0, 1500);
+    }
+  }
+
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
     return { output: 'Cannot create the agent — both a name and a task description are required. Ask the user what to name the agent and what it should do each run.' };
   }
