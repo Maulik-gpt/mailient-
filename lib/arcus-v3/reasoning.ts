@@ -138,7 +138,7 @@ async function callLLM(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openrouter/free',
+          model: 'openai/gpt-oss-120b:free',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },

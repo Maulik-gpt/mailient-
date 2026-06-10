@@ -87,17 +87,17 @@ Examples:
 
 # [Agent Name] — Run Report
 
-## 💰 Revenue & Opportunities
+## Revenue & Opportunities
 Only include if there are revenue signals (contracts, proposals, invoices, deals, renewals, pricing questions).
 Use a table with: | Contact | Subject | Signal | Action Taken | Link |
 If nothing found: omit this section entirely.
 
-## 🤝 Client & Relationship Updates
+## Client & Relationship Updates
 Emails and actions involving existing clients or important relationships.
 Table format: | Contact | Thread | Summary | Action Taken | Link |
 If nothing found: omit this section entirely.
 
-## ⚙️ Operations
+## Operations
 Everything executed: drafts, meetings, Notion logs, Slack messages, labels applied, threads archived.
 Table (4+ items) or bullet list (2–3 items):
 | Action | Details | Link |
@@ -107,26 +107,26 @@ Table (4+ items) or bullet list (2–3 items):
 If skip_confirmations is FALSE: write "Would have [action]" framing throughout.
 If 0 actions: "No operations executed this run."
 
-## ⚠️ Needs Your Attention
+## Needs Your Attention
 ONLY include if something could not be completed, requires a decision, or hit an error.
 - "Priya's email mentions a pricing change I can't confirm from context — review the draft before sending."
 - "Couldn't find a free slot for James this week. Draft written but time is unspecified."
 - "Notion create failed — content saved as text in the Links section instead."
 If nothing needs attention: **OMIT THIS SECTION ENTIRELY.**
 
-## 🔗 All Links — TRUST RECEIPTS (NON-NEGOTIABLE)
+## All Links — TRUST RECEIPTS (NON-NEGOTIABLE)
 
 Every artifact you touched this run gets ONE link in this section. The user reads the report and clicks through to verify your work. If you wrote 18 drafts, this section has 18 Gmail draft links. If you logged 24 contacts, this section has 24 Notion page links. Do NOT summarize ("18 drafts created — see Gmail"). LIST every URL.
 
 Required link sources (only include sections that have items):
 
-**📧 Gmail drafts** — every draft_reply / gmail_batch_draft_replies that returned a draftId or draft URL. Format: \`- [<subject> → <recipient>](<gmail draft URL or compose link>)\`
-**📤 Emails sent** — every send_email / gmail_batch_send_emails. Format: \`- [<subject> → <recipient>](<gmail message URL>)\`
-**📅 Calendar events** — every schedule_meeting / calendar_batch_create_events. Format: \`- [<event title> — <start time>](<htmlLink from the tool result>)\`
-**📝 Notion pages** — every create_notion_page / notion_auto_log_all_communication / notion_deal_tracking_automation. Format: \`- [<page title>](<notion page URL>)\`
-**💬 Slack messages** — every send_slack_message / slack_post_daily_briefing. Format: \`- [<channel or DM> — <preview>](<slack permalink>)\` (if no permalink, omit the URL but still list it)
-**🏷️ Labels applied** — gmail_auto_label_threads. Format: \`- <label name> applied to N thread(s)\` (no per-thread link needed)
-**📦 Threads archived** — gmail_auto_archive_threads. Format: \`- N thread(s) archived\` (counts only)
+**Gmail drafts** — every draft_reply / gmail_batch_draft_replies that returned a draftId or draft URL. Format: \`- [<subject> → <recipient>](<gmail draft URL or compose link>)\`
+**Emails sent** — every send_email / gmail_batch_send_emails. Format: \`- [<subject> → <recipient>](<gmail message URL>)\`
+**Calendar events** — every schedule_meeting / calendar_batch_create_events. Format: \`- [<event title> — <start time>](<htmlLink from the tool result>)\`
+**Notion pages** — every create_notion_page / notion_auto_log_all_communication / notion_deal_tracking_automation. Format: \`- [<page title>](<notion page URL>)\`
+**Slack messages** — every send_slack_message / slack_post_daily_briefing. Format: \`- [<channel or DM> — <preview>](<slack permalink>)\` (if no permalink, omit the URL but still list it)
+**Labels applied** — gmail_auto_label_threads. Format: \`- <label name> applied to N thread(s)\` (no per-thread link needed)
+**Threads archived** — gmail_auto_archive_threads. Format: \`- N thread(s) archived\` (counts only)
 
 CRITICAL: extract URLs from the tool results. Every successful tool result returns either a \`pageMeta.url\`, an \`htmlLink\`, or a similar URL field. Use those exact URLs. NEVER fabricate a URL. If a tool succeeded but returned no URL, omit the link but still list the action.
 
@@ -154,9 +154,9 @@ Next run: [derive from agent's cron schedule — e.g. "Tomorrow at 9:00 AM" or "
 **FORMAT RULES:**
 - Rich markdown always. Tables for 4+ items, bullet lists for 2–3.
 - **Bold** for names, email subjects, key numbers.
-- Section emojis as shown (💰 🤝 ⚙️ ⚠️ 🔗). One per section header. Never inside tables.
+- NO emojis anywhere — not in headings, not in tables, not in prose. Plain professional text only.
 - Never deliver a plain paragraph as a report. Never wrap in a code block.
-- Omit empty sections entirely — a report with only ⚙️ Operations and 🔗 Links is better than one with empty Revenue and Client sections.`;
+- Omit empty sections entirely — a report with only Operations and Links is better than one with empty Revenue and Client sections.`;
 
 
 export interface AgentRunBudget {

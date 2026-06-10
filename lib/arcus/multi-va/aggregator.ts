@@ -7,11 +7,11 @@ import type {
 } from './types';
 
 const VA_LABELS: Record<ArcusVA, string> = {
-  inbox: '📧 Inbox VA',
-  calendar: '📅 Calendar VA',
-  crm: '📝 CRM VA',
-  comms: '💬 Comms VA',
-  research: '🔍 Research VA',
+  inbox: 'Inbox',
+  calendar: 'Calendar',
+  crm: 'CRM',
+  comms: 'Comms',
+  research: 'Research',
 };
 
 const VA_ORDER: ArcusVA[] = ['inbox', 'calendar', 'crm', 'comms', 'research'];
@@ -123,12 +123,12 @@ function mergedSection(
 }
 
 function linksSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusVA; links: string }>): string {
-  const lines: string[] = ['## 🔗 All Links', ''];
+  const lines: string[] = ['## All Links', ''];
   const buckets: Array<[string, ArtifactBuckets[keyof ArtifactBuckets]]> = [
-    ['📧 Gmail', artifacts.gmail],
-    ['📅 Calendar', artifacts.calendar],
-    ['📝 Notion', artifacts.notion],
-    ['💬 Slack', artifacts.slack],
+    ['Gmail', artifacts.gmail],
+    ['Calendar', artifacts.calendar],
+    ['Notion', artifacts.notion],
+    ['Slack', artifacts.slack],
   ];
   let hadAny = false;
   for (const [label, list] of buckets) {
@@ -241,23 +241,53 @@ export async function buildCommitteeReport(
 
   const headline = await synthesizeHeadline(ordered, agentName, parsed);
 
+  const contentSections = [
+    mergedSection('Revenue & Opportunities', collect('revenue')),
+    mergedSection('Client & Relationship Updates', collect('client')),
+    mergedSection('Operations', collect('operations')),
+    mergedSection('Needs Your Attention', collect('needsAttention')),
+    mergedSection('Cross-VA Observations', collect('crossVA')),
+  ].filter(Boolean);
+
+  // Fallback — the VAs ran but emitted no parseable section content (weak models
+  // skip the required tagged format, or do work without writing it up). Rather
+  // than ship a bare "Run details" footer with zero transparency, synthesize a
+  // "What each agent did" section from each VA's own one-line summary and the
+  // concrete tool count. This guarantees the report always says what happened.
+  const fallbackWhatHappened = (): string => {
+    const lines: string[] = [];
+    for (const r of ordered) {
+      const did = r.toolCalls > 0;
+      const summary = (r.summary || '').trim();
+      const usefulSummary =
+        summary &&
+        !/^no work in your lane/i.test(summary) &&
+        !new RegExp(`^${r.va} VA`, 'i').test(summary) &&
+        summary.length >= 12;
+      if (usefulSummary) {
+        lines.push(`- **${VA_LABELS[r.va]}** — ${summary}`);
+      } else if (did) {
+        lines.push(`- **${VA_LABELS[r.va]}** — completed ${r.toolCalls} ${r.toolCalls === 1 ? 'action' : 'actions'} (details in the linked artifacts).`);
+      }
+      // VAs with no work and no summary are simply omitted (kept out of noise).
+    }
+    if (!lines.length) return '';
+    return ['## What Happened', '', ...lines, ''].join('\n');
+  };
+
   const sections: string[] = [
     headline,
     '',
     `# ${agentName} — Executive Briefing`,
     '',
-    mergedSection('💰 Revenue & Opportunities', collect('revenue')),
-    mergedSection('🤝 Client & Relationship Updates', collect('client')),
-    mergedSection('⚙️ Operations', collect('operations')),
-    mergedSection('⚠️ Needs Your Attention', collect('needsAttention')),
-    mergedSection('🔄 Cross-VA Observations', collect('crossVA')),
+    ...(contentSections.length > 0 ? contentSections : [fallbackWhatHappened()]),
     linksSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
     '',
     '---',
     '',
     runFooter(ordered),
     '',
-    `_Sent by Arcus · ${agentName} · ${new Date().toUTCString()}_`,
+    `Sent by Arcus · ${agentName} · ${new Date().toUTCString()}`,
   ].filter(Boolean);
 
   return {

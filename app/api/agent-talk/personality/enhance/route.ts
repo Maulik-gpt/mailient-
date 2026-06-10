@@ -63,7 +63,7 @@ Rules:
           'HTTP-Referer': 'https://mailient.xyz',
         },
         body: JSON.stringify({
-          model: 'openrouter/free',
+          model: 'openai/gpt-oss-120b:free',
           max_tokens: 400,
           messages: [
             { role: 'system', content: systemPrompt },
