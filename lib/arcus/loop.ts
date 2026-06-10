@@ -1700,25 +1700,33 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                         .then(m => m.markIntegrationNeedsReauth(userId, provider))
                         .catch(() => { /* non-fatal */ });
                     }
+                    // Has any other tool already succeeded this run? If so, the
+                    // user's core request is (at least partly) handled, and a
+                    // missing connector for a SPECULATIVE extra tool must not
+                    // halt everything. Only block-and-wait when nothing else
+                    // worked — i.e. the connector really is essential.
+                    const somethingElseSucceeded = outcomes.some(o => o.ok);
                     emit('connector_required', {
                       connectors: [{
                         ...connectorMeta,
                         connected: false,
                       }],
-                      waitingForUser: true,
+                      // Only make the UI halt-and-wait when the run produced
+                      // nothing else. Otherwise show the card as a soft hint
+                      // and let the loop finish the work it CAN do.
+                      waitingForUser: !somethingElseSucceeded,
                       reason: code,
                     });
-                    // F1.4 — Replace the LLM-facing failure by tool_use_id,
-                    // NOT by array index. Previously `toolResults[length-1]`
-                    // assumed the last pushed entry was this failure, which
-                    // is true in serial code but is a hidden invariant a
-                    // future parallel-batch refactor could easily break.
-                    const newContent =
-                      `Tool ${tc.name} failed: ${connectorMeta.name} is not connected (or scope is missing). ` +
-                      `A connector card has ALREADY been shown to the user. ` +
-                      `Reply with ONE short sentence acknowledging the missing connection — example: ` +
-                      `"I need ${connectorMeta.name} access to do that — reconnect it from the card and I'll continue." ` +
-                      `Do NOT write a long paragraph. Do NOT call any more tools.`;
+                    // F1.4 — Replace the LLM-facing failure by tool_use_id.
+                    const newContent = somethingElseSucceeded
+                      ? `Tool ${tc.name} failed: ${connectorMeta.name} isn't connected, but you DON'T need it for the rest of this task. ` +
+                        `A small reconnect card is already shown. CONTINUE with the other tools and finish the user's request using what you CAN access. ` +
+                        `At the very end, add ONE short line noting ${connectorMeta.name} was unavailable. Do NOT stop. Do NOT make the whole reply about the missing connection.`
+                      : `Tool ${tc.name} failed: ${connectorMeta.name} is not connected (or scope is missing). ` +
+                        `A connector card has ALREADY been shown to the user. ` +
+                        `Reply with ONE short sentence acknowledging the missing connection — example: ` +
+                        `"I need ${connectorMeta.name} access to do that — reconnect it from the card and I'll continue." ` +
+                        `Do NOT write a long paragraph. Do NOT call any more tools.`;
                     const matchIdx = toolResults.findIndex(r => r.tool_use_id === tc.id);
                     if (matchIdx >= 0) {
                       toolResults[matchIdx] = { type: 'tool_result', tool_use_id: tc.id, content: newContent };
@@ -2162,7 +2170,16 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         // ── Layer 3 end: emit partial failure as structured SSE event ──────
         const failed = outcomes.filter(o => !o.ok);
         const succeeded = outcomes.filter(o => o.ok);
-        if (failed.length > 0 && totalToolCalls > 0) {
+        // Only surface a failure prompt when the failure ACTUALLY blocked the
+        // user's request. If we produced a real answer (finalText) OR any tool
+        // succeeded, an incidental failure — e.g. the model speculatively
+        // tried get_calendar_events on an inbox-only request and it lacked
+        // calendar scope — must NOT halt the turn or dominate the response
+        // with "How would you like to handle the failure?". The user asked
+        // about their inbox; we answered; the calendar miss is noise.
+        const producedRealAnswer = !!(finalText && finalText.trim().length > 0);
+        const onlyFailures = succeeded.length === 0 && failed.length > 0;
+        if (onlyFailures && !producedRealAnswer && totalToolCalls > 0) {
           const question = failed.length === 1
             ? `How would you like to handle the ${failed[0].tool} failure?`
             : 'How would you like to handle these failures?';

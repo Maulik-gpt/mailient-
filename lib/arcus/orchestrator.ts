@@ -228,7 +228,8 @@ const INTENT_PATTERNS: IntentPattern[] = [
   {
     name: 'inbox_triage',
     patterns: [
-      /\b(check|look at|process|triage|go through|sort|handle)\b.{0,30}\b(inbox|emails|mail|messages)\b/i,
+      /\b(check|look at|process|triage|go through|sort|handle|fetch|scan|review|read|investigate|analyze|analyse|summari[sz]e|catch me up on|pull up)\b.{0,40}\b(inbox|emails?|mail|messages|threads?|unread)\b/i,
+      /\b(inbox|emails?|mail|messages|threads?|unread)\b.{0,40}\b(needs?|requires?|that need|which need)\b.{0,20}\b(action|reply|response|attention|follow.?up)\b/i,
       /\b(what('?s| is|'?s| did i miss)\b.{0,30}\b(inbox|email|unread)\b)/i,
       /\b(morning brief|daily brief|catch up|what did i miss)\b/i,
     ],
