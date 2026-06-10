@@ -820,7 +820,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   role: 'system',
                   content:
                     'AGENT CREATION INTERCEPT: The user has asked to create a scheduled background agent. ' +
-                    'Your ONLY allowed action this turn is to call create_scheduled_agent ONCE with all required fields including spec_markdown. ' +
+                    'Your ONLY allowed action this turn is to call create_scheduled_agent ONCE. ' +
+                    'You MUST include ALL of these fields in the SAME call — never omit any: ' +
+                    '`name` (a short human name for the agent), `task_description` (the full self-contained instruction it runs each time), ' +
+                    '`cron_schedule` (5-field cron), and `spec_markdown` (the full spec document). ' +
+                    'Omitting name or task_description WILL fail. Fill name from the spec\'s title and task_description from its objective if the user did not state them explicitly. ' +
                     'Do NOT write any text. Do NOT call open_canvas. Do NOT call any read tool (search_gmail, gmail_get_profile, get_calendar_events, etc.). ' +
                     'spec_markdown must contain a full specification document: a "# <Agent Name>" H1, then "## 1. Agent Objective", "## 2. Operational Logic", "## 3. Schedule & Delivery", "## 4. Expected Output". ' +
                     'No bracketed placeholders. Be specific about what the agent will read, write, and deliver. ' +

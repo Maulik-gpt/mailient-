@@ -6059,7 +6059,61 @@ async function logMeetingNotes(userId: string, input: any): Promise<ToolResult> 
   }
 }
 
+// Fill input.name / input.task_description when the model omitted them but gave
+// enough to recover from: alias keys it used by mistake, or the spec_markdown
+// document itself (its H1 is the name; its objective/body is the task).
+function deriveMissingAgentFields(input: any): void {
+  if (!input || typeof input !== 'object') return;
+
+  // 1. Common alias keys the model uses instead of the canonical ones.
+  if (!input.name?.trim?.()) {
+    input.name = input.agent_name || input.agentName || input.title || input.name;
+  }
+  if (!input.task_description?.trim?.()) {
+    input.task_description =
+      input.taskDescription || input.task || input.description || input.instructions || input.task_description;
+  }
+
+  const spec = typeof input.spec_markdown === 'string' ? input.spec_markdown : '';
+  if (!spec.trim()) return;
+
+  // 2. Name ← the spec's first H1 ("# <Agent Name>").
+  if (!input.name?.trim?.()) {
+    const h1 = spec.match(/^\s*#\s+(.+?)\s*$/m);
+    if (h1) input.name = h1[1].replace(/[*_`#]/g, '').trim();
+  }
+
+  // 3. task_description ← the spec's Objective section, else the first
+  //    meaningful paragraph after the H1. Strip markdown structure to a clean
+  //    self-contained instruction.
+  if (!input.task_description?.trim?.()) {
+    // Prefer an "## ... Objective" / "## ... Logic" section body.
+    const objMatch = spec.match(/^##\s+[^\n]*(?:objective|logic|task|goal)[^\n]*\n([\s\S]*?)(?=\n##\s|\n#\s|$)/im);
+    let body = objMatch ? objMatch[1] : '';
+    if (!body.trim()) {
+      // Fallback: everything after the H1, minus headings/fences.
+      const afterH1 = spec.replace(/^[\s\S]*?^#\s+.+?$/m, '');
+      body = afterH1;
+    }
+    const cleaned = body
+      .replace(/```[\s\S]*?```/g, ' ')      // drop fenced blocks (arcus-steps JSON etc.)
+      .replace(/^#{1,6}\s+/gm, '')          // headings
+      .replace(/^\s*[-*+]\s+/gm, '')        // bullet markers
+      .replace(/[*_`]/g, '')                // emphasis
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (cleaned.length >= 12) input.task_description = cleaned.slice(0, 1500);
+  }
+}
+
 async function createScheduledAgent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // Resilience: weak models routinely call this with spec_markdown but forget
+  // name / task_description (or send them under the wrong key). Rather than
+  // hard-reject — which surfaced "a name and a task description are both
+  // required" to the user even though they gave a complete spec — derive the
+  // missing fields from spec_markdown (or task aliases) before validating.
+  deriveMissingAgentFields(input);
+
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
     return failureResult('Cannot create the agent — a name and a task description are both required.', 'validation_error');
   }
