@@ -178,6 +178,8 @@ export async function runVA(assignment: VAAssignment): Promise<VARunResult> {
     let canvasMarkdown = '';
     let currentEventType = '';
     let toolCalls = 0;
+    const toolNames: string[] = [];
+    const failedTools = new Set<string>();
 
     while (true) {
       const { done, value } = await reader.read();
@@ -207,6 +209,18 @@ export async function runVA(assignment: VAAssignment): Promise<VARunResult> {
 
         if (line.startsWith('data: ') && currentEventType === 'tool_call') {
           toolCalls += 1;
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.tool) toolNames.push(String(data.tool));
+          } catch { /* ok */ }
+          currentEventType = '';
+        }
+
+        if (line.startsWith('data: ') && currentEventType === 'tool_result') {
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.tool && data.success === false) failedTools.add(String(data.tool));
+          } catch { /* ok */ }
           currentEventType = '';
         }
       }
@@ -223,6 +237,8 @@ export async function runVA(assignment: VAAssignment): Promise<VARunResult> {
       va,
       status,
       toolCalls,
+      toolNames,
+      failedTools: [...failedTools],
       artifacts: extractArtifacts(body),
       durationMs: Date.now() - startedAt,
       body,

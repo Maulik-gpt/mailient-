@@ -1,4 +1,5 @@
 import { callLLM, getText } from '../engine';
+import { summarizeToolUse } from '../tool-labels';
 import type { ArcusVA } from '../tool-integration-map';
 import type {
   ArtifactBuckets,
@@ -149,6 +150,24 @@ function linksSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusV
   return hadAny ? lines.join('\n') : '';
 }
 
+// "Tools Used" — concise, humanized, per the report spec. Built from the tool
+// names each VA captured from its own SSE stream (race-free, no DB read). Full
+// per-tool input/output/duration lives in the expandable HomeFeed run card.
+function toolsUsedSection(results: VARunResult[]): string {
+  const calls: Array<{ tool_name: string; success: boolean }> = [];
+  for (const r of results) {
+    const failed = new Set(r.failedTools ?? []);
+    for (const name of r.toolNames ?? []) {
+      calls.push({ tool_name: name, success: !failed.has(name) });
+    }
+  }
+  if (!calls.length) return '';
+  const lines = summarizeToolUse(calls).map(t =>
+    `- ${t.label}${t.count > 1 ? ` ×${t.count}` : ''}${!t.ok ? ' — failed' : ''}`,
+  );
+  return ['## Tools Used', '', ...lines, ''].join('\n');
+}
+
 function runFooter(results: VARunResult[]): string {
   const lines: string[] = ['## Run details', ''];
   for (const va of VA_ORDER) {
@@ -281,6 +300,7 @@ export async function buildCommitteeReport(
     `# ${agentName} — Executive Briefing`,
     '',
     ...(contentSections.length > 0 ? contentSections : [fallbackWhatHappened()]),
+    toolsUsedSection(ordered),
     linksSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
     '',
     '---',

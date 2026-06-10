@@ -57,6 +57,10 @@ export interface VARunResult {
   status: 'success' | 'error' | 'timeout' | 'empty';
   /** Tool calls observed via the tool_call SSE event count. */
   toolCalls: number;
+  /** Tool names in execution order (for the report's "Tools Used" section). */
+  toolNames?: string[];
+  /** Tool names that returned success:false this run. */
+  failedTools?: string[];
   /** Artifact links the VA touched this run, keyed by integration. */
   artifacts: ArtifactBuckets;
   /** Wall-clock duration of this VA's loop in ms. */
