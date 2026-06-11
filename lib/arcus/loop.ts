@@ -155,9 +155,12 @@ function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<strin
  * Hard cap on tool calls per run.
  * Background agents (isBackgroundAgent=true) bypass this via the
  * maxToolCalls loop option — see toolCallLimit calculation below.
- * Interactive chat sessions are capped at 20 to keep responses snappy.
+ * Interactive chat sessions are capped at 30 — enough headroom for a real bulk
+ * job (e.g. read 20 threads + batch-draft 15 replies) without the loop stopping
+ * mid-task, while staying snappy for normal turns. Bulk ops should use the batch
+ * tools (one call for many drafts) so this cap is rarely the limiter.
  */
-export const MAX_TOOL_CALLS = 20;
+export const MAX_TOOL_CALLS = 30;
 /**
  * Raised cap for background / cron agents. 100 lets a scheduling agent
  * process a full inbox (50 threads × 2 calls each) without hitting the

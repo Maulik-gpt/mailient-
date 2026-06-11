@@ -188,6 +188,57 @@ function classifyDecideReason(subject: string, snippet: string, from: string): s
   return 'Needs your attention';
 }
 
+// Replace generic regex reasons with real per-email reasoning via one batched
+// LLM call. Mutates items in place. Silent + non-blocking on any failure — the
+// heuristic reason stays. Uses the verified free models directly (no heavy
+// engine import in the hot path).
+async function enrichDecideReasons(items: DecideItem[]): Promise<void> {
+  if (!items.length) return;
+  const keys = [process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY2, process.env.OPENROUTER_API_KEY3].filter(Boolean) as string[];
+  if (!keys.length) return;
+
+  const numbered = items.map((it, i) => `${i + 1}. From: ${it.sender.name || it.sender.email} | Subject: ${it.subject}`).join('\n');
+  const body = {
+    model: 'openai/gpt-oss-120b:free',
+    max_tokens: 400,
+    temperature: 0.2,
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You triage a founder\'s inbox. For each numbered email, write ONE short, specific reason (max 12 words) it needs their attention — name the concrete ask or signal, not a generic label. ' +
+          'Good: "Approve the Q3 budget — they need it by Friday." Bad: "Needs your attention." ' +
+          'Output ONLY lines in the form "<number>. <reason>", one per email, nothing else.',
+      },
+      { role: 'user', content: numbered },
+    ],
+  };
+
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${keys[0]}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz' },
+      body: JSON.stringify(body),
+      signal: AbortSignal.timeout(9000),
+    });
+    if (!res.ok) return;
+    const json = await res.json();
+    let text: string = json.choices?.[0]?.message?.content || '';
+    text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '');
+    for (const line of text.split('\n')) {
+      const m = line.match(/^\s*(\d+)[.)]\s*(.+)$/);
+      if (!m) continue;
+      const idx = parseInt(m[1], 10) - 1;
+      const reason = m[2].replace(/^["'`]+|["'`]+$/g, '').trim();
+      if (idx >= 0 && idx < items.length && reason.length >= 6 && reason.length <= 120) {
+        items[idx].reason = reason;
+      }
+    }
+  } catch {
+    // keep heuristic reasons
+  }
+}
+
 async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
   try {
     const res = await (gmail as any).getEmails(30, 'is:unread newer_than:3d -category:promotions -category:social');
@@ -228,6 +279,13 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
       return 4;
     };
     items.sort((a, b) => rank(a.reason) - rank(b.reason));
+
+    // AI enrichment: the regex above only SELECTS candidates + gives a generic
+    // bucket label. Replace those labels with a real, specific one-line reason
+    // per email ("Priya is asking you to approve the Q3 budget by Friday") via
+    // one batched LLM call. Heuristic labels stay as the fallback if the call
+    // fails — so the feed never slows below the regex baseline.
+    await enrichDecideReasons(items.slice(0, MAX_PER_BUCKET));
     return items.slice(0, MAX_PER_BUCKET);
   } catch (err) {
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
