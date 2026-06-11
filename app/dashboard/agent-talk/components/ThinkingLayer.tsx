@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronRight, ChevronDown, Binary, Sparkles, BrainCircuit, Mail, FileText, Search, Zap, Calendar, BarChart3, Pencil, Terminal, CheckCircle2, Globe, Database, ListTodo, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from "@/lib/utils";
@@ -77,16 +77,25 @@ function ShiningLabel({ text, className }: { text: string; className?: string })
  */
 function SearchTransparencyPanel({ sessions }: { sessions: SearchSession[] }) {
     const [expanded, setExpanded] = useState<boolean>(true);
-
-    if (!sessions || sessions.length === 0) return null;
+    const [userToggled, setUserToggled] = useState(false);
 
     const completedCount = sessions.filter(s => s.status === 'complete').length;
-    const isAllComplete = completedCount === sessions.length;
+    const isAllComplete = sessions.length > 0 && completedCount === sessions.length;
+
+    // Auto-collapse once every step finishes — the work is done, so the steps
+    // fold away into a tidy "Completed N steps" summary the user can re-open.
+    // Respects a manual toggle: if the user opened/closed it themselves, we
+    // stop auto-managing it.
+    useEffect(() => {
+        if (isAllComplete && !userToggled) setExpanded(false);
+    }, [isAllComplete, userToggled]);
+
+    if (!sessions || sessions.length === 0) return null;
 
     return (
         <div className="w-full mb-4 relative pl-1">
             <button
-                onClick={() => setExpanded(!expanded)}
+                onClick={() => { setUserToggled(true); setExpanded(!expanded); }}
                 className="flex items-center gap-2 py-1 text-[12px] font-semibold text-black/40 dark:text-white/30 hover:text-black/60 dark:hover:text-white/50 transition-colors"
             >
                 <ChevronDown className={cn("w-3.5 h-3.5 transition-transform", !expanded && "-rotate-90")} />

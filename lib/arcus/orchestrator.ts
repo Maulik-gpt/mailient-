@@ -240,6 +240,25 @@ const INTENT_PATTERNS: IntentPattern[] = [
     ],
   },
 
+  // ── Compose / send an email to a specific recipient ────────────────────────
+  // "send an email to X", "email my customers", "write to maulik@…", "reach out
+  // to …". Pure Gmail — NEVER calendar. This plan exists specifically to stop
+  // the model speculatively calling get_calendar_events on a send request.
+  {
+    name: 'compose_send',
+    patterns: [
+      /\b(send|write|compose|draft|shoot|fire off|reach out to|email|e-mail|message|reply to)\b.{0,40}\b(email|e-mail|note|message)?\b.{0,20}\b(to|my)\b.{0,30}\b(customer|client|contact|investor|team|recipient|[a-z0-9._%+-]+@[a-z0-9.-]+)\b/i,
+      /\bemail\b.{0,30}\b(my\s+(customers?|clients?|team|investors?)|[a-z0-9._%+-]+@[a-z0-9.-]+)/i,
+      /\b(send|write|draft)\b.{0,20}\b(them|him|her|first one is)\b/i,
+    ],
+    integration: 'gmail',
+    chain: [
+      { tools: ['get_recipient_context'], label: 'Gather recipient context', reason: 'Relationship history + prior threads inform the message — no calendar needed.' },
+      { tools: ['request_confirmation'],  label: 'Confirm before sending',   isWrite: true, reason: 'Sending is a write action; gated unless skip_confirmations.' },
+      { tools: ['send_email'],            label: 'Send the email',           isWrite: true, reason: 'Execute after approval.' },
+    ],
+  },
+
   // ── Multi-email: draft replies for all unanswered threads ──────────────────
   {
     name: 'bulk_reply',
