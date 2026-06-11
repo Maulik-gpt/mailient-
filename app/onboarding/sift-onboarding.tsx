@@ -246,31 +246,31 @@ export default function SiftOnboardingPage() {
      ═══════════════════════════════════════════════════════════════════ */
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] text-[#1A1A1A] font-satoshi flex flex-col relative overflow-hidden">
+    <div className="min-h-screen bg-white text-[#0A0A0A] font-satoshi flex flex-col relative overflow-hidden">
       {/* Subtle background orbs */}
       <div className="fixed inset-0 pointer-events-none select-none overflow-hidden -z-10">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-neutral-200/30 to-gray-200/20 blur-[100px] onboarding-liquid-glow" />
-        <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-neutral-100/25 to-gray-100/15 blur-[80px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#007AFF]/[0.05] to-transparent blur-[120px] onboarding-liquid-glow" />
+        <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-neutral-100/40 to-transparent blur-[100px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* Background Dot Grid Overlay */}
-      <div className="fixed inset-0 pointer-events-none select-none -z-10 opacity-[0.04]"
+      <div className="fixed inset-0 pointer-events-none select-none -z-10 opacity-[0.03]"
            style={{
-             backgroundImage: "radial-gradient(circle, #000000 1px, transparent 1px)",
-             backgroundSize: "24px 24px",
+             backgroundImage: "radial-gradient(circle, #000000 1.2px, transparent 1.2px)",
+             backgroundSize: "28px 28px",
            }}
       />
 
       {/* ── Header ── */}
       {step < 8 && (
-        <header className="sticky top-0 z-30 onboarding-glass border-b border-black/[0.04]">
+        <header className="sticky top-0 z-30 onboarding-glass border-b border-[#EAEAEA]">
           <div className="max-w-3xl mx-auto px-6 h-14 flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-black/[0.06]">
+              <div className="w-7 h-7 rounded-lg overflow-hidden ring-1 ring-black/[0.04]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/mailient-logo-premium.png" alt="Mailient" className="w-full h-full object-cover" />
               </div>
-              <span className="text-[13px] font-semibold tracking-tight text-[#1A1A1A]">Mailient</span>
+              <span className="text-[13px] font-semibold tracking-tight text-[#0A0A0A]">Mailient</span>
             </div>
 
             {/* Progress bar */}
@@ -285,11 +285,11 @@ export default function SiftOnboardingPage() {
                       key={i}
                       layout
                       transition={{ type: "spring", stiffness: 320, damping: 28 }}
-                      className="h-[3px] rounded-[3px] bg-black/[0.06] overflow-hidden"
+                      className="h-[3px] rounded-[3px] bg-black/[0.04] overflow-hidden"
                       style={{ width: isCurrent ? 32 : 12 }}
                     >
                       <motion.div
-                        className="h-full bg-[#1A1A1A] rounded-[3px]"
+                        className="h-full bg-[#007AFF] rounded-[3px]"
                         initial={false}
                         animate={{ width: isFilled ? '100%' : '0%' }}
                         transition={{ type: "spring", stiffness: 220, damping: 24, delay: isCurrent ? 0.08 : 0 }}
@@ -302,7 +302,7 @@ export default function SiftOnboardingPage() {
 
             {/* Step counter or spacer */}
             {showProgress ? (
-              <span className="text-[12px] text-black/40 font-medium tabular-nums min-w-[48px] text-right">
+              <span className="text-[12px] text-[#6B7280] font-medium tabular-nums min-w-[48px] text-right">
                 {progressStep}/{TOTAL_PROGRESS_STEPS - 1}
               </span>
             ) : <span className="w-12" />}
@@ -311,7 +311,7 @@ export default function SiftOnboardingPage() {
       )}
 
       {/* ── Main ── */}
-      <main className="flex-1 flex items-center justify-center px-6 py-12">
+      <main className="flex-1 flex items-center justify-center px-6 py-12 relative z-10">
         <div className={cn('w-full', step === 7 ? 'max-w-6xl' : 'max-w-xl')}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -321,7 +321,19 @@ export default function SiftOnboardingPage() {
               animate="animate"
               exit="exit"
               transition={springTransition}
+              className={cn(
+                step === 7 ? '' : 'onboarding-glass-card p-8 md:p-12 border border-[#EAEAEA] shadow-[0_32px_64px_rgba(0,0,0,0.015)] relative overflow-hidden'
+              )}
             >
+              {/* Corner crosshairs for a technical, premium Linear look */}
+              {step !== 7 && (
+                <>
+                  <div className="absolute top-3 left-3 w-2.5 h-2.5 border-t border-l border-black/10 pointer-events-none" />
+                  <div className="absolute top-3 right-3 w-2.5 h-2.5 border-t border-r border-black/10 pointer-events-none" />
+                  <div className="absolute bottom-3 left-3 w-2.5 h-2.5 border-b border-l border-black/10 pointer-events-none" />
+                  <div className="absolute bottom-3 right-3 w-2.5 h-2.5 border-b border-r border-black/10 pointer-events-none" />
+                </>
+              )}
               {step === 0 && <StepWelcome onGetStarted={() => goto(1)} />}
               {step === 1 && <StepConnectGmail onConnect={handleConnectGoogle} isConnected={!!session} />}
               {step === 2 && (
@@ -378,17 +390,17 @@ export default function SiftOnboardingPage() {
 
       {/* ── Footer Nav ── */}
       {showNavFooter && (
-        <footer className="sticky bottom-0 z-30 onboarding-glass border-t border-black/[0.04]">
+        <footer className="sticky bottom-0 z-30 onboarding-glass border-t border-[#EAEAEA]">
           <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between gap-3">
             <button
               type="button"
               onClick={() => step > 0 && goto((step - 1) as StepId)}
               disabled={step === 0}
               className={cn(
-                'inline-flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-colors',
+                'inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[13px] font-semibold transition-all duration-150',
                 step === 0
-                  ? 'opacity-30 cursor-not-allowed text-black/40'
-                  : 'text-black/55 hover:text-black hover:bg-black/[0.04]',
+                  ? 'opacity-30 cursor-not-allowed text-[#6B7280]/40'
+                  : 'text-[#6B7280] hover:text-[#0A0A0A] hover:bg-black/[0.03] active:scale-[0.98]',
               )}
             >
               <ArrowLeft className="w-3.5 h-3.5" />
@@ -396,7 +408,7 @@ export default function SiftOnboardingPage() {
             </button>
 
             {step === 7 ? (
-              <span className="text-[12px] text-black/40 hidden sm:inline">
+              <span className="text-[12px] text-[#6B7280]/60 hidden sm:inline font-medium">
                 Tap a plan above to continue
               </span>
             ) : (
@@ -417,8 +429,8 @@ export default function SiftOnboardingPage() {
                 className={cn(
                   'inline-flex items-center gap-2 pl-4 pr-3 py-2.5 rounded-full text-[13.5px] font-semibold transition-all duration-200 active:scale-[0.97]',
                   (isSubmitting || isGenerating)
-                    ? 'bg-black/[0.06] text-black/30 cursor-not-allowed'
-                    : 'onboarding-cta',
+                    ? 'bg-black/[0.04] text-black/30 cursor-not-allowed'
+                    : 'onboarding-cta hover:scale-[1.01] active:scale-[0.98]',
                 )}
               >
                 {isGenerating ? (
@@ -465,48 +477,48 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
     <div className="text-center">
       {/* Glowing icon */}
       <div className="relative inline-flex items-center justify-center mb-8">
-        <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-neutral-300/30 to-gray-300/20 blur-xl onboarding-liquid-glow" />
-        <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center overflow-hidden">
+        <div className="absolute w-24 h-24 rounded-full bg-[#007AFF]/[0.06] blur-xl onboarding-liquid-glow" />
+        <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center overflow-hidden border border-[#EAEAEA]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mailient-logo-premium.png" alt="Mailient" className="w-10 h-10 object-cover" />
         </div>
       </div>
 
-      <h1 className="text-4xl sm:text-[48px] sm:leading-[1.08] font-semibold tracking-[-0.03em] mb-4 text-[#1A1A1A]">
+      <h1 className="text-4xl sm:text-[44px] sm:leading-[1.1] font-semibold tracking-[-0.03em] mb-4 text-[#0A0A0A]">
         Meet your AI
         <br />
-        <span className="text-black">
+        <span className="text-[#007AFF]">
           Email Operator
         </span>
       </h1>
 
-      <p className="text-[16px] text-black/50 max-w-md mx-auto leading-relaxed mb-10">
+      <p className="text-[15px] text-[#6B7280] max-w-md mx-auto leading-relaxed mb-10">
         Automate AI agents that manage communication, scheduling, follow-ups, and more.
       </p>
 
       <button
         type="button"
         onClick={onGetStarted}
-        className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold"
+        className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold hover:scale-[1.01] active:scale-[0.98]"
       >
         Get Started
         <ArrowRight className="w-4 h-4" />
       </button>
 
       {/* Trust badges */}
-      <div className="mt-12 flex items-center justify-center gap-6 text-[11px] uppercase tracking-[0.14em] font-medium text-black/30">
+      <div className="mt-12 flex items-center justify-center gap-6 text-[10px] uppercase tracking-[0.14em] font-medium text-[#6B7280]/60">
         <span className="inline-flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <ShieldCheck className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
           Encrypted
         </span>
-        <span className="w-px h-3 bg-black/10" />
+        <span className="w-px h-3 bg-black/5" />
         <span className="inline-flex items-center gap-1.5">
-          <Mail className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <Mail className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
           Gmail Safe
         </span>
-        <span className="w-px h-3 bg-black/10" />
+        <span className="w-px h-3 bg-black/5" />
         <span className="inline-flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <Zap className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
           Autonomous
         </span>
       </div>
@@ -521,45 +533,45 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
 function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; isConnected: boolean }) {
   return (
     <div className="text-center">
-      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-        <Mail className="w-6 h-6 text-black" strokeWidth={1.75} />
+      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+        <Mail className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
       </div>
 
-      <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
+      <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
         Connect your inbox
       </h1>
-      <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed mb-8">
+      <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed mb-8">
         Mailient needs access to your Gmail to understand and act on your emails.
       </p>
 
-      <div className="onboarding-glass-card p-6 mb-6 max-w-sm mx-auto text-left">
+      <div className="onboarding-glass-card p-6 mb-6 max-w-sm mx-auto text-left border border-[#EAEAEA]">
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-50 to-orange-50 border border-red-100/50 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-white border border-[#EAEAEA] flex items-center justify-center">
             <GoogleMark />
           </div>
           <div>
-            <p className="text-[14px] font-semibold text-[#1A1A1A]">Gmail</p>
-            <p className="text-[12px] text-black/40">Read, draft, and send emails</p>
+            <p className="text-[14px] font-semibold text-[#0A0A0A]">Gmail</p>
+            <p className="text-[12px] text-[#6B7280]">Read, draft, and send emails</p>
           </div>
         </div>
-        <ul className="space-y-2 text-[13px] text-black/50">
+        <ul className="space-y-2.5 text-[13px] text-[#6B7280]">
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
             Read and search your inbox
           </li>
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
             Draft replies in your voice
           </li>
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
             Manage labels and archive
           </li>
         </ul>
       </div>
 
       {isConnected ? (
-        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-700 text-[13px] font-medium">
+        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#007AFF]/[0.06] border border-[#007AFF]/10 text-[#007AFF] text-[13px] font-medium">
           <CheckCircle2 className="w-4 h-4" />
           Gmail connected
         </div>
@@ -567,7 +579,7 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
         <button
           type="button"
           onClick={onConnect}
-          className="onboarding-cta inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-[14px] font-semibold"
+          className="onboarding-cta inline-flex items-center gap-2.5 px-6 py-3 rounded-full text-[14px] font-semibold hover:scale-[1.01] active:scale-[0.98]"
         >
           <GoogleMark />
           Connect Gmail
@@ -582,10 +594,10 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
    ═══════════════════════════════════════════════════════════════════ */
 
 const TOOLS = [
-  { id: 'google_calendar', name: 'Google Calendar', required: true, icon: <Calendar className="w-5 h-5" /> },
-  { id: 'notion', name: 'Notion', required: false, icon: <FileText className="w-5 h-5" /> },
-  { id: 'slack', name: 'Slack', required: false, icon: <MessageSquare className="w-5 h-5" /> },
-  { id: 'google_meet', name: 'Google Meet', required: false, icon: <Video className="w-5 h-5" /> },
+  { id: 'google_calendar', name: 'Google Calendar', required: true, icon: <Calendar className="w-4 h-4 text-[#007AFF]" /> },
+  { id: 'notion', name: 'Notion', required: false, icon: <FileText className="w-4 h-4 text-[#6B7280]" /> },
+  { id: 'slack', name: 'Slack', required: false, icon: <MessageSquare className="w-4 h-4 text-[#6B7280]" /> },
+  { id: 'google_meet', name: 'Google Meet', required: false, icon: <Video className="w-4 h-4 text-[#6B7280]" /> },
 ];
 
 function StepConnectTools({
@@ -598,24 +610,26 @@ function StepConnectTools({
   return (
     <div>
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Link className="w-6 h-6 text-black" strokeWidth={1.75} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+          <Link className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
         </div>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
+        <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Connect your workspace
         </h1>
-        <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
           Link the tools Mailient needs to operate autonomously.
         </p>
       </div>
 
       {/* Required */}
       <div className="mb-4">
-        <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-black/35 mb-2 px-1">Required</p>
+        <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-[#6B7280]/60 mb-2 px-1">Required</p>
         {TOOLS.filter(t => t.required).map(tool => (
           <ToolCard
             key={tool.id}
-            {...tool}
+            name={tool.name}
+            icon={tool.icon}
+            required={tool.required}
             connected={isConnected(tool.id)}
             onConnect={() => onConnect(tool.id)}
           />
@@ -624,12 +638,14 @@ function StepConnectTools({
 
       {/* Optional */}
       <div>
-        <p className="text-[11px] uppercase tracking-[0.14em] font-semibold text-black/35 mb-2 px-1">Optional</p>
+        <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-[#6B7280]/60 mb-2 px-1">Optional</p>
         <div className="space-y-2">
           {TOOLS.filter(t => !t.required).map(tool => (
             <ToolCard
               key={tool.id}
-              {...tool}
+              name={tool.name}
+              icon={tool.icon}
+              required={tool.required}
               connected={isConnected(tool.id)}
               onConnect={() => onConnect(tool.id)}
             />
@@ -641,32 +657,40 @@ function StepConnectTools({
 }
 
 function ToolCard({
-  name, connected, required, onConnect,
+  name, connected, required, onConnect, icon,
 }: {
-  name: string; connected: boolean; required: boolean; onConnect: () => void;
+  name: string; connected: boolean; required: boolean; onConnect: () => void; icon: React.ReactNode;
 }) {
   return (
     <div className={cn(
-      'onboarding-glass-card flex items-center justify-between px-5 py-4 mb-2',
+      'onboarding-glass-card flex items-center justify-between px-5 py-4 mb-2 border border-[#EAEAEA]',
       connected && 'onboarding-glass-card-active',
     )}>
-      <div className="flex items-center gap-2.5">
-        <p className="text-[14px] font-semibold text-[#1A1A1A]">{name}</p>
-        {required && (
-          <span className="text-[9px] uppercase tracking-wider font-bold text-black bg-black/[0.05] border border-black/[0.05] px-1.5 py-0.5 rounded">
-            Required
-          </span>
-        )}
+      <div className="flex items-center gap-3">
+        <div className={cn(
+          "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
+          connected ? "bg-[#007AFF]/[0.08]" : "bg-black/[0.03]"
+        )}>
+          {icon}
+        </div>
+        <div className="flex items-center gap-2">
+          <p className="text-[14px] font-semibold text-[#0A0A0A]">{name}</p>
+          {required && (
+            <span className="text-[9px] uppercase tracking-wider font-bold text-[#007AFF] bg-[#007AFF]/[0.06] border border-[#007AFF]/10 px-1.5 py-0.5 rounded">
+              Required
+            </span>
+          )}
+        </div>
       </div>
       {connected ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-[12px] font-medium">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#007AFF]/[0.06] border border-[#007AFF]/10 text-[#007AFF] text-[12px] font-medium animate-fade-in">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF]" />
           Connected
         </span>
       ) : (
         <button
           onClick={onConnect}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold text-black bg-black/[0.04] hover:bg-black/[0.08] border border-black/[0.08] transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold text-[#007AFF] bg-[#007AFF]/[0.06] hover:bg-[#007AFF]/[0.12] border border-[#007AFF]/10 transition-colors duration-150 hover:scale-[1.01] active:scale-[0.98]"
         >
           Connect
         </button>
@@ -689,13 +713,13 @@ function StepChooseGoal({
   return (
     <div>
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Mail className="w-6 h-6 text-black" strokeWidth={1.75} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+          <Inbox className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
         </div>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
-          What do you want Mailient to handle?
+        <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
+          What should Mailient handle?
         </h1>
-        <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
           Select one or more goals to shape your first agent.
         </p>
       </div>
@@ -712,7 +736,7 @@ function StepChooseGoal({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
               className={cn(
-                'text-left p-4 rounded-2xl transition-all duration-200',
+                'text-left p-4 rounded-2xl transition-all duration-200 border border-[#EAEAEA]',
                 isActive
                   ? 'onboarding-glass-card-active'
                   : 'onboarding-glass-card',
@@ -722,17 +746,17 @@ function StepChooseGoal({
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                   isActive
-                    ? 'bg-black text-white'
-                    : 'bg-black/[0.03] text-black/50',
+                    ? 'bg-[#007AFF]/[0.08] text-[#007AFF]'
+                    : 'bg-black/[0.03] text-[#6B7280]',
                 )}>
                   {goal.icon}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-semibold text-[#1A1A1A] mb-0.5">{goal.title}</p>
-                  <p className="text-[12px] text-black/45 leading-snug">{goal.desc}</p>
+                  <p className="text-[14px] font-semibold text-[#0A0A0A] mb-0.5">{goal.title}</p>
+                  <p className="text-[12px] text-[#6B7280] leading-snug">{goal.desc}</p>
                 </div>
                 {isActive && (
-                  <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-[#007AFF] flex items-center justify-center flex-shrink-0 mt-0.5 animate-fade-in">
                     <Check className="w-3 h-3 text-white" strokeWidth={3} />
                   </div>
                 )}
@@ -763,19 +787,19 @@ function StepCreateAgent({
   return (
     <div>
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Sliders className="w-6 h-6 text-black" strokeWidth={1.75} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+          <Sliders className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
         </div>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
+        <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Describe your agent
         </h1>
-        <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
           What should this agent do? Describe it in plain language.
         </p>
       </div>
 
-      <div className="onboarding-glass-card p-5">
-        <label className="block text-[11px] uppercase tracking-[0.14em] font-semibold text-black/35 mb-2">
+      <div className="onboarding-glass-card p-5 border border-[#EAEAEA] focus-within:border-[#007AFF] focus-within:ring-2 focus-within:ring-[#007AFF]/8 transition-all duration-200">
+        <label className="block text-[10px] uppercase tracking-[0.14em] font-semibold text-[#6B7280]/60 mb-2">
           Agent Prompt
         </label>
         <textarea
@@ -783,19 +807,19 @@ function StepCreateAgent({
           onChange={(e) => setPrompt(e.target.value)}
           placeholder="Schedule meetings from incoming emails and send me a daily report."
           rows={4}
-          className="w-full bg-transparent border-none text-[15px] text-[#1A1A1A] placeholder:text-black/25 focus:outline-none resize-none leading-relaxed"
+          className="w-full bg-transparent border-none text-[15px] text-[#0A0A0A] placeholder:text-[#6B7280]/40 focus:outline-none resize-none leading-relaxed"
         />
       </div>
 
       <div className="mt-3 px-1">
-        <p className="text-[12px] text-black/35">
-          <span className="font-medium text-black/45">Example:</span> &ldquo;Schedule meetings from incoming emails and send me a daily report.&rdquo;
+        <p className="text-[12px] text-[#6B7280]/60">
+          <span className="font-semibold text-[#6B7280]/80">Example:</span> &ldquo;Schedule meetings from incoming emails and send me a daily report.&rdquo;
         </p>
       </div>
 
       {isGenerating && (
-        <div className="mt-6 flex items-center justify-center gap-3 text-[13px] text-black/50">
-          <Loader2 className="w-4 h-4 animate-spin text-black" />
+        <div className="mt-6 flex items-center justify-center gap-3 text-[13px] text-[#6B7280]">
+          <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
           Generating your agent plan…
         </div>
       )}
@@ -817,15 +841,15 @@ function StepReviewApprove({
   if (!plan) {
     return (
       <div className="text-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-black mx-auto mb-3" />
-        <p className="text-[14px] text-black/50">Loading agent plan…</p>
+        <Loader2 className="w-6 h-6 animate-spin text-[#007AFF] mx-auto mb-3" />
+        <p className="text-[14px] text-[#6B7280]">Loading agent plan…</p>
       </div>
     );
   }
 
   const sections = [
     { label: 'Goal', icon: <Zap className="w-4 h-4" />, content: plan.goal },
-    { label: 'Tools', icon: <Zap className="w-4 h-4" />, content: plan.tools.join(', ') },
+    { label: 'Tools', icon: <Link className="w-4 h-4" />, content: plan.tools.join(', ') },
     { label: 'Actions', icon: <Activity className="w-4 h-4" />, items: plan.actions },
     { label: 'Permissions', icon: <ShieldCheck className="w-4 h-4" />, items: plan.permissions },
     { label: 'Schedule', icon: <Clock className="w-4 h-4" />, content: plan.schedule },
@@ -834,13 +858,13 @@ function StepReviewApprove({
   return (
     <div>
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <CheckCircle2 className="w-6 h-6 text-black" strokeWidth={1.75} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+          <CheckCircle2 className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
         </div>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
-          Mailient generated a plan
+        <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
+          Review your operator plan
         </h1>
-        <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed">
+        <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
           Review what your agent will do, then approve to activate.
         </p>
       </div>
@@ -852,20 +876,20 @@ function StepReviewApprove({
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.07 }}
-            className="onboarding-glass-card p-4"
+            className="onboarding-glass-card p-4 border border-[#EAEAEA]"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-black/85">{s.icon}</span>
-              <span className="text-[11px] uppercase tracking-[0.14em] font-semibold text-black/40">{s.label}</span>
+              <span className="text-[#007AFF] bg-[#007AFF]/[0.08] p-1 rounded-md">{s.icon}</span>
+              <span className="text-[10px] uppercase tracking-[0.14em] font-bold text-[#6B7280]/60">{s.label}</span>
             </div>
             {s.content && (
-              <p className="text-[14px] text-[#1A1A1A] font-medium">{s.content}</p>
+              <p className="text-[14px] text-[#0A0A0A] font-semibold pl-1">{s.content}</p>
             )}
             {s.items && (
-              <ul className="space-y-1.5">
+              <ul className="space-y-1.5 pl-1">
                 {s.items.map((item, j) => (
-                  <li key={j} className="flex items-start gap-2 text-[13px] text-black/65">
-                    <Check className="w-3.5 h-3.5 text-emerald-500 mt-0.5 flex-shrink-0" strokeWidth={2.5} />
+                  <li key={j} className="flex items-start gap-2 text-[13px] text-[#6B7280]">
+                    <Check className="w-3.5 h-3.5 text-[#007AFF] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
                     {item}
                   </li>
                 ))}
@@ -904,19 +928,19 @@ function StepFirstRun({
   return (
     <div>
       <div className="text-center mb-8">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Play className="w-6 h-6 text-black" strokeWidth={1.75} />
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
+          <Play className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
         </div>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
-          Your agent is live
+        <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
+          Your operator is live
         </h1>
-        <p className="text-[15px] text-black/50 max-w-sm mx-auto leading-relaxed">
-          Everything is connected and ready to go.
+        <p className="text-[15px] text-[#6B7280] max-w-sm mx-auto leading-relaxed">
+          Everything is connected and ready to run.
         </p>
       </div>
 
       {/* Status checklist */}
-      <div className="onboarding-glass-card p-5 mb-5">
+      <div className="onboarding-glass-card p-5 mb-5 border border-[#EAEAEA]">
         <div className="space-y-3">
           {checks.map((check, i) => (
             <motion.div
@@ -929,14 +953,14 @@ function StepFirstRun({
               <div className={cn(
                 'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
                 check.done
-                  ? 'bg-emerald-100 text-emerald-600'
-                  : 'bg-black/[0.04] text-black/25',
+                  ? 'bg-[#007AFF]/[0.08] text-[#007AFF]'
+                  : 'bg-black/[0.04] text-[#6B7280]/40',
               )}>
                 <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
               </div>
               <span className={cn(
-                'text-[14px] font-medium',
-                check.done ? 'text-[#1A1A1A]' : 'text-black/35',
+                'text-[14px] font-semibold',
+                check.done ? 'text-[#0A0A0A]' : 'text-[#6B7280]/40',
               )}>
                 {check.label}
               </span>
@@ -951,18 +975,18 @@ function StepFirstRun({
           onClick={onRunTest}
           disabled={isRunning}
           className={cn(
-            'w-full onboarding-glass-card p-4 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all',
-            isRunning ? 'text-black/40' : 'text-black hover:text-black/80 font-semibold underline decoration-dotted underline-offset-4',
+            'w-full onboarding-glass-card p-4 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all border border-[#EAEAEA]',
+            isRunning ? 'text-[#6B7280]/40 bg-black/[0.01]' : 'text-[#007AFF] hover:bg-[#007AFF]/[0.02] border border-[#007AFF]/10 bg-white font-semibold hover:scale-[1.01] active:scale-[0.98]',
           )}
         >
           {isRunning ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
               Running test…
             </>
           ) : (
             <>
-              <Play className="w-4 h-4" />
+              <Play className="w-4 h-4 fill-current" />
               Run Test
             </>
           )}
@@ -971,14 +995,14 @@ function StepFirstRun({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="onboarding-glass-card-active p-4"
+          className="onboarding-glass-card-active p-4 border border-[#007AFF]"
           style={{ borderRadius: 20 }}
         >
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <div className="w-8 h-8 rounded-lg bg-[#007AFF]/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5">
+              <CheckCircle2 className="w-4 h-4 text-[#007AFF]" />
             </div>
-            <p className="text-[13px] text-black/65 leading-relaxed">{testResult}</p>
+            <p className="text-[13px] text-[#0A0A0A] font-medium leading-relaxed">{testResult}</p>
           </div>
         </motion.div>
       )}
@@ -1002,21 +1026,21 @@ function StepPricing({
   return (
     <div className="relative">
       <div className="text-center mb-8">
-        <p className="text-[11px] uppercase tracking-[0.18em] text-black/40 font-medium mb-3">
+        <p className="text-[10px] uppercase tracking-[0.18em] text-[#6B7280]/60 font-semibold mb-3">
           Almost there
         </p>
-        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3 text-[#1A1A1A]">
+        <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           {firstName ? `Pick your plan, ${firstName}.` : 'Pick your plan.'}
         </h1>
-        <p className="text-[15px] text-black/50 max-w-md mx-auto leading-relaxed">
+        <p className="text-[15px] text-[#6B7280] max-w-md mx-auto leading-relaxed">
           Choose the plan that fits. Change anytime in settings.
         </p>
       </div>
 
       {isSubmitting && (
         <div className="absolute inset-0 z-20 backdrop-blur-sm bg-white/60 rounded-3xl flex items-center justify-center">
-          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#1A1A1A] text-white font-medium text-[13px]">
-            <Loader2 className="w-4 h-4 animate-spin" />
+          <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0A0A0A] text-white font-medium text-[13px]">
+            <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
             Setting up your account…
           </div>
         </div>
@@ -1043,16 +1067,16 @@ function StepSuccess() {
         particleCount: 120,
         spread: 80,
         origin: { y: 0.5 },
-        colors: ['#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF'],
+        colors: ['#007AFF', '#0A0A0A', '#6B7280', '#FAFAFA', '#FFFFFF'],
       });
     }, 400);
     return () => clearTimeout(timer);
   }, []);
 
   const actions = [
-    { icon: <Send className="w-5 h-5" />, title: 'Send a test email', desc: 'Try your agent in action', href: '/home-feed' },
-    { icon: <Activity className="w-5 h-5" />, title: 'View activity', desc: 'See what your agent does', href: '/home-feed' },
-    { icon: <PlusCircle className="w-5 h-5" />, title: 'Create another agent', desc: 'Build more automations', href: '/dashboard/agent-talk' },
+    { icon: <Send className="w-5 h-5" />, title: 'Send a test email', desc: 'Try your operator in action', href: '/home-feed' },
+    { icon: <Activity className="w-5 h-5" />, title: 'View activity', desc: 'See what your operator does', href: '/home-feed' },
+    { icon: <PlusCircle className="w-5 h-5" />, title: 'Create another operator', desc: 'Build more automations', href: '/dashboard/agent-talk' },
     { icon: <UserPlus className="w-5 h-5" />, title: 'Invite teammates', desc: 'Collaborate with your team', href: '/home-feed' },
   ];
 
@@ -1065,8 +1089,8 @@ function StepSuccess() {
         transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
         className="relative inline-flex items-center justify-center mb-8"
       >
-        <div className="absolute w-28 h-28 rounded-full bg-gradient-to-br from-neutral-200/50 to-gray-200/30 blur-xl onboarding-liquid-glow" />
-        <div className="relative w-18 h-18 rounded-2xl bg-black flex items-center justify-center p-4 shadow-lg border border-black/10">
+        <div className="absolute w-28 h-28 rounded-full bg-[#007AFF]/10 blur-xl onboarding-liquid-glow" />
+        <div className="relative w-18 h-18 rounded-2xl bg-[#007AFF] flex items-center justify-center p-4 shadow-[0_8px_32px_rgba(0,122,255,0.25)] border border-[#007AFF]/10">
           <CheckCircle2 className="w-10 h-10 text-white" strokeWidth={1.75} />
         </div>
       </motion.div>
@@ -1075,7 +1099,7 @@ function StepSuccess() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3"
+        className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]"
       >
         Your first operator is ready
       </motion.h1>
@@ -1084,7 +1108,7 @@ function StepSuccess() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="text-[15px] text-black/50 max-w-md mx-auto leading-relaxed mb-10"
+        className="text-[15px] text-[#6B7280] max-w-md mx-auto leading-relaxed mb-10"
       >
         Everything is set up. Here&apos;s what you can do next.
       </motion.p>
@@ -1103,13 +1127,13 @@ function StepSuccess() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 + i * 0.08 }}
             onClick={() => router.push(action.href)}
-            className="onboarding-glass-card p-4 text-left group"
+            className="onboarding-glass-card p-4 text-left group border border-[#EAEAEA]"
           >
-            <div className="w-9 h-9 rounded-xl bg-black/[0.04] text-black flex items-center justify-center mb-3 group-hover:bg-black/[0.08] transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-black/[0.03] text-[#0A0A0A] flex items-center justify-center mb-3 group-hover:bg-[#007AFF]/[0.08] group-hover:text-[#007AFF] transition-colors">
               {action.icon}
             </div>
-            <p className="text-[13px] font-semibold text-[#1A1A1A] mb-0.5">{action.title}</p>
-            <p className="text-[11px] text-black/40 leading-snug">{action.desc}</p>
+            <p className="text-[13px] font-semibold text-[#0A0A0A] mb-0.5">{action.title}</p>
+            <p className="text-[11px] text-[#6B7280] leading-snug">{action.desc}</p>
           </motion.button>
         ))}
       </motion.div>
@@ -1122,7 +1146,7 @@ function StepSuccess() {
       >
         <button
           onClick={() => router.push('/home-feed')}
-          className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold"
+          className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold hover:scale-[1.01] active:scale-[0.98]"
         >
           Go to Dashboard
           <ArrowRight className="w-4 h-4" />
