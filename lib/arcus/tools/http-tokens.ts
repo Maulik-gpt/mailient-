@@ -134,36 +134,69 @@ export async function performGoogleRefresh(refreshToken: string): Promise<string
   return json.access_token || null;
 }
 
+// Google access tokens live ~1 hour. We refresh PROACTIVELY when the stored
+// token is within this buffer of expiry (or already expired, or has no recorded
+// expiry), so API calls never hit a stale token, fail with 401, and falsely
+// trip "needs reauth" — the root cause of users losing Gmail/Calendar daily.
+const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+
+function isExpiredOrExpiring(expiresAt: string | null | undefined): boolean {
+  if (!expiresAt) return true; // no recorded expiry → treat as stale, refresh to be safe
+  const t = new Date(expiresAt).getTime();
+  if (!Number.isFinite(t)) return true;
+  return t - Date.now() <= TOKEN_REFRESH_BUFFER_MS;
+}
+
 export async function getGmailToken(userId: string): Promise<string | null> {
   try {
     const supabase = getSupabaseAdmin();
     const uid = normalizeUserId(userId);
 
-    // 1. arcus_integrations (V3 OAuth flow)
+    // 1. arcus_integrations (V3 OAuth flow) — proactively refresh if expiring.
     const { data: v3 } = await supabase
       .from('arcus_integrations')
-      .select('access_token')
+      .select('access_token, expires_at')
       .eq('user_id', uid)
       .eq('provider', 'gmail')
       .maybeSingle();
-    if (v3?.access_token) return decrypt(v3.access_token);
+    if (v3?.access_token) {
+      if (isExpiredOrExpiring(v3.expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+        // Refresh failed but we still have a token — return it; the caller's
+        // 401-retry path + markIntegrationNeedsReauth handle a truly-dead grant.
+      }
+      return decrypt(v3.access_token);
+    }
 
     // 2. integration_credentials (legacy OAuth flow)
     const { data: legacy } = await supabase
       .from('integration_credentials')
-      .select('encrypted_access_token')
+      .select('encrypted_access_token, expires_at')
       .eq('user_id', uid)
       .eq('provider', 'google')
       .maybeSingle();
-    if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
+    if (legacy?.encrypted_access_token) {
+      if (isExpiredOrExpiring(legacy.expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+      }
+      return decrypt(legacy.encrypted_access_token);
+    }
 
     // 3. user_tokens (populated automatically on Google login via NextAuth)
     const { data: ut } = await supabase
       .from('user_tokens')
-      .select('encrypted_access_token')
+      .select('encrypted_access_token, access_token_expires_at')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
       .maybeSingle();
-    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
+    if (ut?.encrypted_access_token) {
+      if (isExpiredOrExpiring(ut.access_token_expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+      }
+      return decrypt(ut.encrypted_access_token);
+    }
 
     return null;
   } catch {
@@ -176,31 +209,49 @@ export async function getGcalToken(userId: string): Promise<string | null> {
     const supabase = getSupabaseAdmin();
     const uid = normalizeUserId(userId);
 
-    // 1. arcus_integrations (V3 OAuth flow)
+    // 1. arcus_integrations (V3 OAuth flow) — proactively refresh if expiring.
     const { data: v3 } = await supabase
       .from('arcus_integrations')
-      .select('access_token')
+      .select('access_token, expires_at')
       .eq('user_id', uid)
       .eq('provider', 'gcal')
       .maybeSingle();
-    if (v3?.access_token) return decrypt(v3.access_token);
+    if (v3?.access_token) {
+      if (isExpiredOrExpiring(v3.expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+      }
+      return decrypt(v3.access_token);
+    }
 
     // 2. integration_credentials (legacy OAuth flow)
     const { data: legacy } = await supabase
       .from('integration_credentials')
-      .select('encrypted_access_token')
+      .select('encrypted_access_token, expires_at')
       .eq('user_id', uid)
       .eq('provider', 'google_calendar')
       .maybeSingle();
-    if (legacy?.encrypted_access_token) return decrypt(legacy.encrypted_access_token);
+    if (legacy?.encrypted_access_token) {
+      if (isExpiredOrExpiring(legacy.expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+      }
+      return decrypt(legacy.encrypted_access_token);
+    }
 
     // 3. user_tokens (Google login covers Calendar scope too)
     const { data: ut } = await supabase
       .from('user_tokens')
-      .select('encrypted_access_token')
+      .select('encrypted_access_token, access_token_expires_at')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
       .maybeSingle();
-    if (ut?.encrypted_access_token) return decrypt(ut.encrypted_access_token);
+    if (ut?.encrypted_access_token) {
+      if (isExpiredOrExpiring(ut.access_token_expires_at)) {
+        const refreshed = await refreshGoogleToken(uid);
+        if (refreshed) return refreshed;
+      }
+      return decrypt(ut.encrypted_access_token);
+    }
 
     return null;
   } catch {

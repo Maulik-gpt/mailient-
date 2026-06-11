@@ -4,8 +4,14 @@ import { auth } from '../../../../lib/auth.js';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 15;
 
+// Verified-working free models (same set as lib/arcus/engine.ts). The old list
+// was a single tiny 1.2B "thinking" model that was unreliable AND leaked
+// <thinking> tags into titles — so titles silently fell back to the user's
+// first words every time. These are reliable + don't emit reasoning tags.
 const FREE_MODELS = [
-  'liquid/lfm-2.5-1.2b-thinking:free',
+  'openai/gpt-oss-120b:free',
+  'google/gemma-4-31b-it:free',
+  'openai/gpt-oss-20b:free',
 ];
 
 function getKeys(): string[] {
@@ -49,7 +55,10 @@ async function tryGenerateTitle(message: string): Promise<string | null> {
         if (!res.ok) continue;
 
         const json = await res.json();
-        const raw: string = json.choices?.[0]?.message?.content?.trim() || '';
+        let raw: string = json.choices?.[0]?.message?.content?.trim() || '';
+        // Strip any leaked reasoning tags + take the first clean line.
+        raw = raw.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '').replace(/<[^>]+>/g, '').trim();
+        raw = (raw.split('\n').map(l => l.trim()).find(Boolean) || raw).trim();
         const title = raw.replace(/^["'`*#]+|["'`*#.!?]+$/g, '').trim();
 
         if (title && title.length >= 3 && title.length <= 60) {
