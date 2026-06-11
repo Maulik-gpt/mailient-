@@ -24,7 +24,12 @@ import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 
-export const maxDuration = 60;
+// Mega-agent: big multi-task chat requests (handle the whole inbox + prep
+// meetings + log to Notion in one go) need room to run. Vercel Pro allows 300s.
+// The loop is given a deadline just under this so it self-terminates and writes
+// its final message BEFORE Vercel force-kills the function — that graceful
+// finish is what stops big runs from "erroring partway".
+export const maxDuration = 300;
 
 function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -486,6 +491,13 @@ export async function POST(request: NextRequest) {
       // at the bottom of the system prompt and got forgotten by free models.
       communicationStyle: stylePrefs.communicationStyle,
       verbosity: stylePrefs.verbosity,
+      // Mega-agent budget: give big runs a real wall-clock deadline (just under
+      // the 300s function cap) so the loop self-terminates and delivers its
+      // final message gracefully instead of being force-killed mid-task. The
+      // higher tool-call ceiling lets a genuinely large request (read 40 threads
+      // + batch-draft + log + schedule) complete in one pass.
+      deadlineMs: 280_000,
+      maxToolCalls: 60,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });
