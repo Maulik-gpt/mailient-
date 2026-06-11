@@ -253,6 +253,14 @@ export default function SiftOnboardingPage() {
         <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-neutral-100/25 to-gray-100/15 blur-[80px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
       </div>
 
+      {/* Background Dot Grid Overlay */}
+      <div className="fixed inset-0 pointer-events-none select-none -z-10 opacity-[0.04]"
+           style={{
+             backgroundImage: "radial-gradient(circle, #000000 1px, transparent 1px)",
+             backgroundSize: "24px 24px",
+           }}
+      />
+
       {/* ── Header ── */}
       {step < 8 && (
         <header className="sticky top-0 z-30 onboarding-glass border-b border-black/[0.04]">
