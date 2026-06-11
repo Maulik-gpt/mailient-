@@ -534,7 +534,7 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-        <Mail className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+        <Mail className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
       </div>
 
       <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
@@ -556,23 +556,23 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
         </div>
         <ul className="space-y-2.5 text-[13px] text-[#6B7280]">
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#6B7280] flex-shrink-0" strokeWidth={2.5} />
             Read and search your inbox
           </li>
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#6B7280] flex-shrink-0" strokeWidth={2.5} />
             Draft replies in your voice
           </li>
           <li className="flex items-center gap-2">
-            <Check className="w-3.5 h-3.5 text-[#007AFF] flex-shrink-0" strokeWidth={2.5} />
+            <Check className="w-3.5 h-3.5 text-[#6B7280] flex-shrink-0" strokeWidth={2.5} />
             Manage labels and archive
           </li>
         </ul>
       </div>
 
       {isConnected ? (
-        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#007AFF]/[0.06] border border-[#007AFF]/10 text-[#007AFF] text-[13px] font-medium">
-          <CheckCircle2 className="w-4 h-4" />
+        <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/[0.03] border border-[#EAEAEA] text-[#0A0A0A] text-[13px] font-semibold">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] animate-pulse" />
           Gmail connected
         </div>
       ) : (
@@ -594,10 +594,10 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
    ═══════════════════════════════════════════════════════════════════ */
 
 const TOOLS = [
-  { id: 'google_calendar', name: 'Google Calendar', required: true, icon: <Calendar className="w-4 h-4 text-[#007AFF]" /> },
-  { id: 'notion', name: 'Notion', required: false, icon: <FileText className="w-4 h-4 text-[#6B7280]" /> },
-  { id: 'slack', name: 'Slack', required: false, icon: <MessageSquare className="w-4 h-4 text-[#6B7280]" /> },
-  { id: 'google_meet', name: 'Google Meet', required: false, icon: <Video className="w-4 h-4 text-[#6B7280]" /> },
+  { id: 'google_calendar', name: 'Google Calendar', required: true, icon: <Calendar className="w-4 h-4 text-[#0A0A0A]" /> },
+  { id: 'notion', name: 'Notion', required: false, icon: <FileText className="w-4 h-4 text-[#0A0A0A]" /> },
+  { id: 'slack', name: 'Slack', required: false, icon: <MessageSquare className="w-4 h-4 text-[#0A0A0A]" /> },
+  { id: 'google_meet', name: 'Google Meet', required: false, icon: <Video className="w-4 h-4 text-[#0A0A0A]" /> },
 ];
 
 function StepConnectTools({
@@ -611,7 +611,7 @@ function StepConnectTools({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-          <Link className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+          <Link className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Connect your workspace
@@ -667,30 +667,27 @@ function ToolCard({
       connected && 'onboarding-glass-card-active',
     )}>
       <div className="flex items-center gap-3">
-        <div className={cn(
-          "w-8 h-8 rounded-lg flex items-center justify-center transition-colors",
-          connected ? "bg-[#007AFF]/[0.08]" : "bg-black/[0.03]"
-        )}>
+        <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-black/[0.03] transition-colors">
           {icon}
         </div>
         <div className="flex items-center gap-2">
           <p className="text-[14px] font-semibold text-[#0A0A0A]">{name}</p>
           {required && (
-            <span className="text-[9px] uppercase tracking-wider font-bold text-[#007AFF] bg-[#007AFF]/[0.06] border border-[#007AFF]/10 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] uppercase tracking-wider font-bold text-[#6B7280] bg-black/[0.04] border border-[#EAEAEA] px-1.5 py-0.5 rounded">
               Required
             </span>
           )}
         </div>
       </div>
       {connected ? (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#007AFF]/[0.06] border border-[#007AFF]/10 text-[#007AFF] text-[12px] font-medium animate-fade-in">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.03] border border-[#EAEAEA] text-[#0A0A0A] text-[12px] font-semibold animate-fade-in">
           <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF]" />
           Connected
         </span>
       ) : (
         <button
           onClick={onConnect}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold text-[#007AFF] bg-[#007AFF]/[0.06] hover:bg-[#007AFF]/[0.12] border border-[#007AFF]/10 transition-colors duration-150 hover:scale-[1.01] active:scale-[0.98]"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold text-[#0A0A0A] bg-black/[0.04] hover:bg-black/[0.08] border border-[#EAEAEA] transition-colors duration-150 hover:scale-[1.01] active:scale-[0.98]"
         >
           Connect
         </button>
@@ -714,7 +711,7 @@ function StepChooseGoal({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-          <Inbox className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+          <Inbox className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           What should Mailient handle?
@@ -736,10 +733,10 @@ function StepChooseGoal({
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.06 }}
               className={cn(
-                'text-left p-4 rounded-2xl transition-all duration-200 border border-[#EAEAEA]',
+                'text-left p-4 rounded-2xl transition-all duration-200 border',
                 isActive
-                  ? 'onboarding-glass-card-active'
-                  : 'onboarding-glass-card',
+                  ? 'border-[#0A0A0A] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.02)]'
+                  : 'border-[#EAEAEA] bg-[#FAFAFA] hover:border-[#D4D4D4]',
               )}
             >
               <div className="flex items-start gap-3">
@@ -788,7 +785,7 @@ function StepCreateAgent({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-          <Sliders className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+          <Sliders className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Describe your agent
@@ -859,7 +856,7 @@ function StepReviewApprove({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-          <CheckCircle2 className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+          <CheckCircle2 className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Review your operator plan
@@ -929,7 +926,7 @@ function StepFirstRun({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6 border border-[#EAEAEA]">
-          <Play className="w-6 h-6 text-[#007AFF]" strokeWidth={1.75} />
+          <Play className="w-6 h-6 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[38px] sm:leading-[1.1] font-semibold tracking-[-0.025em] mb-3 text-[#0A0A0A]">
           Your operator is live
@@ -953,7 +950,7 @@ function StepFirstRun({
               <div className={cn(
                 'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
                 check.done
-                  ? 'bg-[#007AFF]/[0.08] text-[#007AFF]'
+                  ? 'bg-black/[0.03] text-[#007AFF]'
                   : 'bg-black/[0.04] text-[#6B7280]/40',
               )}>
                 <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -976,7 +973,7 @@ function StepFirstRun({
           disabled={isRunning}
           className={cn(
             'w-full onboarding-glass-card p-4 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all border border-[#EAEAEA]',
-            isRunning ? 'text-[#6B7280]/40 bg-black/[0.01]' : 'text-[#007AFF] hover:bg-[#007AFF]/[0.02] border border-[#007AFF]/10 bg-white font-semibold hover:scale-[1.01] active:scale-[0.98]',
+            isRunning ? 'text-[#6B7280]/40 bg-black/[0.01]' : 'text-[#0A0A0A] bg-white hover:bg-black/[0.02] hover:border-[#D4D4D4] border border-[#EAEAEA] font-semibold hover:scale-[1.01] active:scale-[0.98]',
           )}
         >
           {isRunning ? (
@@ -986,7 +983,7 @@ function StepFirstRun({
             </>
           ) : (
             <>
-              <Play className="w-4 h-4 fill-current" />
+              <Play className="w-4 h-4 fill-current text-[#0A0A0A]" />
               Run Test
             </>
           )}
@@ -995,14 +992,14 @@ function StepFirstRun({
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="onboarding-glass-card-active p-4 border border-[#007AFF]"
+          className="onboarding-glass-card p-4 border border-[#EAEAEA] shadow-[0_8px_24px_rgba(0,0,0,0.015)]"
           style={{ borderRadius: 20 }}
         >
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#007AFF]/[0.08] flex items-center justify-center flex-shrink-0 mt-0.5">
+            <div className="w-8 h-8 rounded-lg bg-black/[0.03] flex items-center justify-center flex-shrink-0 mt-0.5 border border-[#EAEAEA]">
               <CheckCircle2 className="w-4 h-4 text-[#007AFF]" />
             </div>
-            <p className="text-[13px] text-[#0A0A0A] font-medium leading-relaxed">{testResult}</p>
+            <p className="text-[13px] text-[#0A0A0A] font-semibold leading-relaxed">{testResult}</p>
           </div>
         </motion.div>
       )}
@@ -1089,9 +1086,9 @@ function StepSuccess() {
         transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
         className="relative inline-flex items-center justify-center mb-8"
       >
-        <div className="absolute w-28 h-28 rounded-full bg-[#007AFF]/10 blur-xl onboarding-liquid-glow" />
-        <div className="relative w-18 h-18 rounded-2xl bg-[#007AFF] flex items-center justify-center p-4 shadow-[0_8px_32px_rgba(0,122,255,0.25)] border border-[#007AFF]/10">
-          <CheckCircle2 className="w-10 h-10 text-white" strokeWidth={1.75} />
+        <div className="absolute w-28 h-28 rounded-full bg-[#007AFF]/[0.04] blur-xl onboarding-liquid-glow" />
+        <div className="relative w-18 h-18 rounded-2xl onboarding-glass-card flex items-center justify-center p-4 border border-[#EAEAEA] shadow-[0_8px_24px_rgba(0,0,0,0.015)]">
+          <CheckCircle2 className="w-10 h-10 text-[#007AFF]" strokeWidth={1.75} />
         </div>
       </motion.div>
 
@@ -1127,9 +1124,9 @@ function StepSuccess() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.7 + i * 0.08 }}
             onClick={() => router.push(action.href)}
-            className="onboarding-glass-card p-4 text-left group border border-[#EAEAEA]"
+            className="onboarding-glass-card p-4 text-left group border border-[#EAEAEA] hover:border-[#0A0A0A]"
           >
-            <div className="w-9 h-9 rounded-xl bg-black/[0.03] text-[#0A0A0A] flex items-center justify-center mb-3 group-hover:bg-[#007AFF]/[0.08] group-hover:text-[#007AFF] transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-black/[0.03] text-[#0A0A0A] flex items-center justify-center mb-3 group-hover:bg-black/[0.06] group-hover:text-[#0A0A0A] transition-colors">
               {action.icon}
             </div>
             <p className="text-[13px] font-semibold text-[#0A0A0A] mb-0.5">{action.title}</p>

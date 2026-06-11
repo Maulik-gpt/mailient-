@@ -781,29 +781,29 @@ body,
 }
 
 .onboarding-cta {
-  background: linear-gradient(180deg, #0084FF 0%, #007AFF 100%);
-  color: white;
-  border: 1px solid rgba(0, 122, 255, 0.2);
+  background: linear-gradient(180deg, #18181B 0%, #0A0A0A 100%);
+  color: #FFFFFF;
+  border: 1px solid #0A0A0A;
   box-shadow:
-    0 4px 12px -2px rgba(0, 122, 255, 0.2),
+    0 4px 12px -2px rgba(0, 0, 0, 0.1),
     0 1px 3px rgba(0, 0, 0, 0.02),
-    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .onboarding-cta:hover {
-  background: linear-gradient(180deg, #008CFF 0%, #0080FF 100%);
+  background: linear-gradient(180deg, #27272A 0%, #0A0A0A 100%);
   box-shadow:
-    0 8px 20px -4px rgba(0, 122, 255, 0.3),
-    0 2px 6px rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    0 8px 20px -4px rgba(0, 0, 0, 0.15),
+    0 2px 6px rgba(0, 0, 0, 0.03),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
   transform: translateY(-1px);
 }
 
 .onboarding-cta:active {
   transform: translateY(0) scale(0.985);
   box-shadow:
-    0 2px 6px -1px rgba(0, 122, 255, 0.15),
+    0 2px 6px -1px rgba(0, 0, 0, 0.08),
     0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
