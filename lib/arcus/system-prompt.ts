@@ -11,6 +11,13 @@ export interface SystemPromptOptions {
   connectedIntegrations: string[];
   memories: string;
   /**
+   * The persistent mental model of the user (from arcus_user_model) — business
+   * type, decision style, relationship tiers, which calls are strategic vs
+   * routine. Injected so every judgment call is grounded in WHO the user is,
+   * not just isolated rules. Empty string when no model exists yet.
+   */
+  userModel?: string;
+  /**
    * The user's learned writing voice — derived from sent-mail analysis.
    * Drives email body STYLE only (greetings, sign-offs, formality, contractions).
    * NOT for behavioral rules — those go in userInstructions.
@@ -274,6 +281,20 @@ Cross-run learning is automatic: \`memory_save\` fires at the end of every run w
 Every email body you write MUST sound exactly like this user. Apply without exception — greeting style, sentence rhythm, sign-off, formality, contractions, punctuation habits. There is no email where "default professional tone" is acceptable. Do NOT call any tool to re-fetch the voice profile — it is already here.
 
 ${opts.personality.trim()}` : '';
+
+  // The persistent mental model of the user — grounds every judgment call in
+  // WHO they are (business, decision style, relationship tiers, what's
+  // strategic vs routine) instead of isolated rules. Update it with the
+  // update_user_model tool as you learn.
+  const userModelBlock = opts.userModel?.trim() ? `
+
+---
+
+## WHO THIS USER IS — your mental model (reason from this on every judgment call)
+
+This is your accumulated understanding of how this user operates. Use it to decide WHAT to do, not just whether you're allowed: who gets handled personally vs. autonomously, which decisions are theirs vs. yours, what they value, how they want to be communicated with. If you learn something lasting that's missing or wrong here, call update_user_model to evolve it.
+
+${opts.userModel.trim()}` : '';
 
   // PART 45 — user-tunable style overlay. Read by the LLM AFTER all the
   // doctrine + AFTER the voice profile + AFTER user instructions, so it's
@@ -899,7 +920,7 @@ ${opts.isBackgroundAgent
 - The executor-level state-machine gate is bypassed for this run — write tools accept calls in any phase without a preceding approval row.
 - Final message confirms WHAT HAPPENED, not what you're about to do: "Sent to Priya." / "Booked Tuesday 3 PM with James." / "Logged to Notion."
 
-**Still applies even in ACT mode:** the anti-hallucination floor. Don't claim work you didn't do. Don't invent contact details, calendar slots, or document contents. ACT mode removes the confirmation gate — it does NOT remove fetch-before-claim, voice-profile compliance, or any of the NEVER rules in CORE DOCTRINE.` : ''}${opts.memories}${agentContext}${voiceBlock}${instructionsBlock}${userStyle}
+**Still applies even in ACT mode:** the anti-hallucination floor. Don't claim work you didn't do. Don't invent contact details, calendar slots, or document contents. ACT mode removes the confirmation gate — it does NOT remove fetch-before-claim, voice-profile compliance, or any of the NEVER rules in CORE DOCTRINE.` : ''}${opts.memories}${userModelBlock}${agentContext}${voiceBlock}${instructionsBlock}${userStyle}
 
 ════════════════════════════════════════════════════════════════════════
 # SIGN-OFF — last thing you read before responding

@@ -187,7 +187,7 @@ export async function buildAgentLoopArgs(
   // PART 23 also pulls the user's binding instructions from their profile
   // so background runs obey "always cc legal@", "never schedule weekends",
   // etc. exactly like interactive chat does.
-  const [connectedIntegrations, [selfHistory, topicContext], voicePrompt, userInstructions] = await Promise.all([
+  const [connectedIntegrations, [selfHistory, topicContext], voicePrompt, userInstructions, userModel] = await Promise.all([
     getConnectedIntegrations(userId),
     Promise.all([
       searchMemories(userId, `[AGENT_RUN] ${agentName || taskDescription.slice(0, 80)}`, 3),
@@ -195,6 +195,7 @@ export async function buildAgentLoopArgs(
     ]),
     getVoiceProfilePromptBlock(userId),
     fetchUserInstructions(userId),
+    (async () => { try { const { getUserModelSummary } = await import('./user-model'); return await getUserModelSummary(userId); } catch { return ''; } })(),
   ]);
 
   // Merge both memory sets, deduplicating identical lines

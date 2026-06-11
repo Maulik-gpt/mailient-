@@ -467,6 +467,44 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'update_user_model',
+    description:
+      'Update your persistent MENTAL MODEL of who this user is — the durable, structured understanding that grounds every judgment call. Call this whenever you learn something lasting about how the user operates: their business type, decision style, what they value, how they communicate, their work rhythm, risk tolerance, which contacts are VIP vs transactional, and which decisions are theirs (strategic) vs yours to make (routine). ' +
+      'Merges with the existing model (arrays accumulate, deduped; scalars replace) — you do NOT need to resend the whole model, just the new understanding. This is different from memory_save: memory is individual facts; this is the shaped profile the agent reasons from. ' +
+      'Output: a short confirmation + the refreshed model summary. Soft-write, no approval gate.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        business_type: { type: 'string', description: 'e.g. "early-stage SaaS founder", "agency owner", "VC".' },
+        decision_style: { type: 'string', description: 'e.g. "data-driven", "intuition-driven", "collaborative".' },
+        communication_style: { type: 'string', description: 'e.g. "direct, no fluff", "warm and detailed".' },
+        risk_tolerance: { type: 'string', description: 'e.g. "high", "medium", "low".' },
+        values: { type: 'array', items: { type: 'string' }, description: 'What the user optimizes for, e.g. ["speed","relationships"].' },
+        work_patterns: { type: 'array', items: { type: 'string' }, description: 'e.g. ["early mornings","Friday deep-work blocks","ignores weekends"].' },
+        pain_points: { type: 'array', items: { type: 'string' }, description: 'What frustrates the user.' },
+        opportunities: { type: 'array', items: { type: 'string' }, description: 'What excites/matters to the user.' },
+        relationships: {
+          type: 'object',
+          description: 'Contact tiers. Names or emails.',
+          properties: {
+            vip: { type: 'array', items: { type: 'string' }, description: 'Always handle personally — never auto-act.' },
+            trusted: { type: 'array', items: { type: 'string' }, description: 'Drafting on their behalf is fine.' },
+            transactional: { type: 'array', items: { type: 'string' }, description: 'You can fully handle.' },
+          },
+        },
+        decision_types: {
+          type: 'object',
+          description: 'Which calls are whose.',
+          properties: {
+            strategic: { type: 'array', items: { type: 'string' }, description: 'User decides — you flag, never act.' },
+            tactical: { type: 'array', items: { type: 'string' }, description: 'You can decide with confidence + log it.' },
+            routine: { type: 'array', items: { type: 'string' }, description: 'You handle silently.' },
+          },
+        },
+      },
+    },
+  },
+  {
     name: 'build_worklist',
     description:
       'Background-agent helper. Scans the inbox with a query and returns a filtered, tiered worklist of email threads that are actually worth processing this run. ' +
@@ -2185,6 +2223,7 @@ export async function executeTool(
       case 'remember_about_contact': result = await rememberAboutContact(userId, input); break;
       case 'memory_search':         result = await memorySearchTool(userId, input); break;
       case 'memory_save':           result = await memorySaveTool(userId, input); break;
+      case 'update_user_model':     result = await updateUserModelTool(userId, input); break;
       case 'memory_get_contact_profile': result = await memoryGetContactProfile(userId, input); break;
       case 'build_worklist':        result = await buildWorklistTool(userId, input); break;
       case 'claim_worklist_items':  result = await claimWorklistItemsTool(userId, input); break;
@@ -4830,6 +4869,42 @@ async function memorySaveTool(userId: string, input: any): Promise<ToolResult> {
   await saveMemory(userId, content, tags.length ? tags : undefined);
   return {
     output: `Saved to memory: "${content.slice(0, 100)}${content.length > 100 ? '…' : ''}"${tags.length ? ` (tags: ${tags.join(', ')})` : ''}`,
+  };
+}
+
+async function updateUserModelTool(userId: string, input: any): Promise<ToolResult> {
+  // Accept only the known model fields; ignore stray keys the model might add.
+  const patch: any = {};
+  for (const k of ['business_type', 'decision_style', 'communication_style', 'risk_tolerance']) {
+    if (typeof input?.[k] === 'string' && input[k].trim()) patch[k] = input[k].trim();
+  }
+  for (const k of ['values', 'work_patterns', 'pain_points', 'opportunities']) {
+    if (Array.isArray(input?.[k])) patch[k] = input[k].filter((x: any) => typeof x === 'string' && x.trim());
+  }
+  if (input?.relationships && typeof input.relationships === 'object') {
+    patch.relationships = {};
+    for (const tier of ['vip', 'trusted', 'transactional']) {
+      if (Array.isArray(input.relationships[tier])) patch.relationships[tier] = input.relationships[tier].filter((x: any) => typeof x === 'string' && x.trim());
+    }
+  }
+  if (input?.decision_types && typeof input.decision_types === 'object') {
+    patch.decision_types = {};
+    for (const tier of ['strategic', 'tactical', 'routine']) {
+      if (Array.isArray(input.decision_types[tier])) patch.decision_types[tier] = input.decision_types[tier].filter((x: any) => typeof x === 'string' && x.trim());
+    }
+  }
+
+  if (Object.keys(patch).length === 0) {
+    return failureResult('Nothing to update — pass at least one model field (business_type, values, relationships, decision_types, etc.).', 'validation_error');
+  }
+
+  const { updateUserModel } = await import('./user-model');
+  const res = await updateUserModel(userId, patch);
+  if (!res.ok) {
+    return failureResult('Could not update the user model (the arcus_user_model table may not be migrated yet).', 'user_model_unavailable');
+  }
+  return {
+    output: `Updated my model of the user. Current understanding:\n${res.summary}`,
   };
 }
 

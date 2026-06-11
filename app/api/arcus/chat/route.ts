@@ -250,6 +250,7 @@ export async function POST(request: NextRequest) {
   let personalityData = '';
   let voiceContext = '';
   let preferenceMemories = '';
+  let userModel = '';
   let stylePrefs: { communicationStyle?: 'direct' | 'balanced' | 'warm'; verbosity?: 'brief' | 'normal' | 'detailed'; actionMode?: 'ask' | 'auto' } = {};
   try {
     // Phase C — Enrich the memory context with TWO parallel queries:
@@ -258,13 +259,14 @@ export async function POST(request: NextRequest) {
     // Past code only queried (1), so the LLM might miss a saved preference
     // that doesn't semantically overlap with the current message ("never
     // schedule weekends" wouldn't surface on a Monday "schedule X" query).
-    [connectedIntegrations, memories, preferenceMemories, personalityData, voiceContext, stylePrefs] = await Promise.all([
+    [connectedIntegrations, memories, preferenceMemories, personalityData, voiceContext, stylePrefs, userModel] = await Promise.all([
       getConnectedIntegrations(userId),
       searchMemories(userId, message, 5),
       searchMemories(userId, '[PREFERENCE]', 8),
       fetchPersonality(userId),
       getVoiceContext(userId),
       fetchUserStylePrefs(userId),
+      (async () => { try { const { getUserModelSummary } = await import('../../../../lib/arcus/user-model'); return await getUserModelSummary(userId); } catch { return ''; } })(),
     ]);
     // Combine, dedup by line content
     if (preferenceMemories && !memories.includes(preferenceMemories.slice(0, 100))) {
@@ -330,6 +332,7 @@ export async function POST(request: NextRequest) {
         userId,
         connectedIntegrations,
         memories,
+        userModel: userModel || undefined,
         personality: voiceContext || undefined,
         userInstructions: personalityData || undefined,
         relevantVAs: promptVAFilter,
