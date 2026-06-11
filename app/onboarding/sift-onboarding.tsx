@@ -8,7 +8,7 @@ import {
   ArrowRight, ArrowLeft, Check, Loader2, ShieldCheck, X,
   Mail, CalendarClock, Calendar, Bot, Inbox, Clock, Users,
   Zap, FileText, MessageSquare, Video, CheckCircle2, Play,
-  Send, Activity, PlusCircle, UserPlus,
+  Send, Activity, PlusCircle, UserPlus, Sliders, Link,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import confetti from 'canvas-confetti';
@@ -33,7 +33,7 @@ const GOALS: Array<{ id: GoalId; title: string; desc: string; icon: React.ReactN
   { id: 'inbox',      title: 'Inbox Management', desc: 'Triage, label, and prioritize', icon: <Inbox className="w-5 h-5" /> },
   { id: 'followups',  title: 'Follow-Ups', desc: 'Track and nudge unanswered threads', icon: <Clock className="w-5 h-5" /> },
   { id: 'briefings',  title: 'Executive Briefings', desc: 'Daily digests of what matters', icon: <FileText className="w-5 h-5" /> },
-  { id: 'custom',     title: 'Custom Agent', desc: 'Describe your own workflow', icon: <Bot className="w-5 h-5" /> },
+  { id: 'custom',     title: 'Custom Agent', desc: 'Describe your own workflow', icon: <Sliders className="w-5 h-5" /> },
 ];
 
 interface AgentPlan {
@@ -458,15 +458,16 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Glowing icon */}
       <div className="relative inline-flex items-center justify-center mb-8">
         <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-neutral-300/30 to-gray-300/20 blur-xl onboarding-liquid-glow" />
-        <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center">
-          <Bot className="w-7 h-7 text-black" strokeWidth={1.75} />
+        <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/mailient-logo-premium.png" alt="Mailient" className="w-10 h-10 object-cover" />
         </div>
       </div>
 
       <h1 className="text-4xl sm:text-[48px] sm:leading-[1.08] font-semibold tracking-[-0.03em] mb-4 text-[#1A1A1A]">
         Meet your AI
         <br />
-        <span className="bg-gradient-to-r from-black to-neutral-700 bg-clip-text text-transparent">
+        <span className="text-black">
           Email Operator
         </span>
       </h1>
@@ -590,7 +591,7 @@ function StepConnectTools({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Zap className="w-6 h-6 text-black" strokeWidth={1.75} />
+          <Link className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Connect your workspace
@@ -632,27 +633,22 @@ function StepConnectTools({
 }
 
 function ToolCard({
-  name, icon, connected, required, onConnect,
+  name, connected, required, onConnect,
 }: {
-  name: string; icon: React.ReactNode; connected: boolean; required: boolean; onConnect: () => void;
+  name: string; connected: boolean; required: boolean; onConnect: () => void;
 }) {
   return (
     <div className={cn(
-      'onboarding-glass-card flex items-center gap-4 px-4 py-3.5 mb-2',
+      'onboarding-glass-card flex items-center justify-between px-5 py-4 mb-2',
       connected && 'onboarding-glass-card-active',
     )}>
-      <div className="w-10 h-10 rounded-xl bg-white/80 border border-black/[0.05] flex items-center justify-center text-black/60 flex-shrink-0">
-        {icon}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-[14px] font-semibold text-[#1A1A1A]">{name}</p>
-          {required && (
-            <span className="text-[9px] uppercase tracking-wider font-bold text-black bg-black/[0.05] border border-black/[0.05] px-1.5 py-0.5 rounded">
-              Required
-            </span>
-          )}
-        </div>
+      <div className="flex items-center gap-2.5">
+        <p className="text-[14px] font-semibold text-[#1A1A1A]">{name}</p>
+        {required && (
+          <span className="text-[9px] uppercase tracking-wider font-bold text-black bg-black/[0.05] border border-black/[0.05] px-1.5 py-0.5 rounded">
+            Required
+          </span>
+        )}
       </div>
       {connected ? (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-100 text-emerald-600 text-[12px] font-medium">
@@ -686,7 +682,7 @@ function StepChooseGoal({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Bot className="w-6 h-6 text-black" strokeWidth={1.75} />
+          <Mail className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           What do you want Mailient to handle?
@@ -760,7 +756,7 @@ function StepCreateAgent({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Bot className="w-6 h-6 text-black" strokeWidth={1.75} />
+          <Sliders className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Describe your agent
@@ -820,7 +816,7 @@ function StepReviewApprove({
   }
 
   const sections = [
-    { label: 'Goal', icon: <Bot className="w-4 h-4" />, content: plan.goal },
+    { label: 'Goal', icon: <Zap className="w-4 h-4" />, content: plan.goal },
     { label: 'Tools', icon: <Zap className="w-4 h-4" />, content: plan.tools.join(', ') },
     { label: 'Actions', icon: <Activity className="w-4 h-4" />, items: plan.actions },
     { label: 'Permissions', icon: <ShieldCheck className="w-4 h-4" />, items: plan.permissions },
