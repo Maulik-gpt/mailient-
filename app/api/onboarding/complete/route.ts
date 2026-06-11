@@ -24,7 +24,8 @@ export async function POST(request: Request) {
       role,
       personality,
       goals,
-      customInstruction
+      customInstruction,
+      agentConfig
     } = body;
 
     if (!username || username.length === 0) {
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       goals: goals || null,
       personality: personality || null,
       custom_instruction: customInstruction || null,
+      agent_config: agentConfig || null,
     };
 
     console.log(`📋 Completing onboarding for ${userId}`);

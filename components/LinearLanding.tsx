@@ -133,16 +133,16 @@ export function LinearLanding() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const DESCRIPTIONS = [
-    "Replies sent. Meetings booked. You were asleep.",
-    "Your inbox doesn't wait. Neither does Arcus.",
-    "Inbox zero. Every morning. No effort.",
-    "The email app that works when you don't.",
-    "Drafts written. Calendar full. You did nothing.",
-    "Your voice. Your replies. Arcus's work.",
-    "Hired an AI. Fired your inbox anxiety.",
-    "Open Gmail. Everything's already done.",
-    "The founder's inbox, on autopilot.",
-    "Less email. More everything else."
+    "It read 200 emails, drafted 18 replies in your voice, and booked 3 meetings — while you slept.",
+    "Not an inbox tool. A chief of staff that handles your whole inbox while you sleep.",
+    "Give it a goal. It plans, executes, and reports back — across Gmail, Calendar, Notion, and Slack.",
+    "Wake up to a briefing: what it did, why it did it, and the two things that need you.",
+    "It learns who you are — your voice, your VIPs, what's strategic vs. routine — and acts on it.",
+    "One message. It triages the inbox, drafts every reply, logs to your CRM, and preps your day.",
+    "Replies that sound exactly like you. Because it cloned your voice from your sent mail.",
+    "Every action logged, every link clickable. No black box — you see exactly what it did.",
+    "The AI chief of staff that kills communication overload for founders.",
+    "Less inbox. More building."
   ];
 
   const [descIndex, setDescIndex] = useState(0);

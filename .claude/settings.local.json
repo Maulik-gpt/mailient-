@@ -14,7 +14,11 @@
       "Bash(grep -n \"instructionsBlock}\\\\\\\\\\\\`;\" c:/Users/hp/Mailent/lib/arcus/system-prompt.ts)",
       "Bash(grep -nE \"PersonalitySettingsModal|fetch\\\\\\\\\\('/api/agent-talk/personality'\" c:/Users/hp/Mailent/app/dashboard/agent-talk/ChatInterface.tsx)",
       "Bash(npx next *)",
-      "Bash(echo \"EXIT $?\")"
+      "Bash(echo \"EXIT $?\")",
+      "Bash(curl -s -m 280 -H \"Authorization: Bearer arcus-cron-secret\" http://localhost:3000/api/cron/run-agents)",
+      "Bash(echo \"=== exit: $? ===\")",
+      "Bash(node _verify_db.mjs)",
+      "Read(//tmp/**)"
     ]
   }
 }

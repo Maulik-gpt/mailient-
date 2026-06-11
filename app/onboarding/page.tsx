@@ -117,8 +117,8 @@ export default function OnboardingPage() {
 
   if (status === "loading") {
     return (
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-black/10 dark:border-white/10 border-t-black dark:border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] flex items-center justify-center">
+        <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     );
   }
@@ -200,8 +200,8 @@ export default function OnboardingPage() {
   // Use the new Sift onboarding flow with Suspense
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-white dark:bg-black flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-black/10 dark:border-white/10 border-t-black dark:border-t-white rounded-full animate-spin" />
+      <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] flex items-center justify-center">
+        <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     }>
       <SiftOnboardingPage />
