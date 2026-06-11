@@ -36,9 +36,10 @@ import { saveMemory } from '../../../../lib/arcus/memory';
 
 export const dynamic = 'force-dynamic';
 // Vercel Pro allows up to 300s. Meeting prep + follow-up compose LLM drafts
-// per attendee; on free models with retries that can exceed 60s. 300s gives
-// headroom so prep emails actually send instead of dying mid-compose.
-export const maxDuration = 300;
+// per attendee. Vercel Hobby caps at 60s — 300 would be ignored and the
+// function killed at 60s mid-compose. Capped at 60; the route should process
+// fewer items per tick and rely on the next tick for the rest. (On Pro: 300.)
+export const maxDuration = 60;
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';

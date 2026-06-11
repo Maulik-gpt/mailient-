@@ -24,12 +24,14 @@ import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 
-// Mega-agent: big multi-task chat requests (handle the whole inbox + prep
-// meetings + log to Notion in one go) need room to run. Vercel Pro allows 300s.
-// The loop is given a deadline just under this so it self-terminates and writes
-// its final message BEFORE Vercel force-kills the function — that graceful
-// finish is what stops big runs from "erroring partway".
-export const maxDuration = 300;
+// Vercel HOBBY (free) plan hard-caps serverless functions at 60s — 300 would be
+// rejected/ignored and the loop would think it had time it doesn't, getting
+// killed mid-task. So we cap at 60 and give the loop a 52s deadline: it
+// self-terminates ~8s before Vercel pulls the plug, stops scheduling new tools,
+// and writes its final briefing of everything done so far — a big run finishes
+// gracefully instead of erroring partway. (When you upgrade to Pro, raise both
+// maxDuration->300 and the deadline below to ~280_000.)
+export const maxDuration = 60;
 
 function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -491,13 +493,15 @@ export async function POST(request: NextRequest) {
       // at the bottom of the system prompt and got forgotten by free models.
       communicationStyle: stylePrefs.communicationStyle,
       verbosity: stylePrefs.verbosity,
-      // Mega-agent budget: give big runs a real wall-clock deadline (just under
-      // the 300s function cap) so the loop self-terminates and delivers its
-      // final message gracefully instead of being force-killed mid-task. The
-      // higher tool-call ceiling lets a genuinely large request (read 40 threads
-      // + batch-draft + log + schedule) complete in one pass.
-      deadlineMs: 280_000,
-      maxToolCalls: 60,
+      // Mega-agent budget, sized for the Vercel Hobby 60s cap: a 52s deadline
+      // (8s margin for the final message + SSE flush before Vercel kills the
+      // function) and a 26 tool-call ceiling — about what fits in 52s at ~2s
+      // per call. The loop self-terminates at the deadline and delivers its
+      // briefing, so a big multi-task run finishes gracefully. Batch tools (one
+      // call for many drafts/sends/labels) are how big jobs still complete a lot
+      // of work inside this window. (On Pro: raise to 280_000 / 60.)
+      deadlineMs: 52_000,
+      maxToolCalls: 26,
     });
   } catch (e: any) {
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });

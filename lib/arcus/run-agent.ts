@@ -315,7 +315,10 @@ export async function runAgentTask(
   // agentRunId (the arcus_agent_runs.id) flows down to every VA loop so all
   // their tool calls log against the one run the user sees.
   const useCommittee = process.env.ARCUS_DISABLE_COMMITTEE !== 'true';
-  const maxToolCalls = budget.maxToolCalls ?? 80;
+  // Defaults sized for Vercel Hobby's 60s function cap (used when no caller
+  // budget is supplied, e.g. the "Run now" path). The cron route passes its own
+  // tighter per-agent budget. (On Pro: 80 / 50_000.)
+  const maxToolCalls = budget.maxToolCalls ?? 26;
   const deadlineMs = budget.deadlineMs ?? 50_000;
 
   let report: string;

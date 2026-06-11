@@ -41,15 +41,14 @@ const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.x
 const STALE_LOCK_MIN = 60;
 
 export const dynamic = 'force-dynamic';
-// Vercel Pro allows up to 300s. Committee runs (5 parallel VAs, 20-80 tool
-// calls, free-model retries) routinely need 90-180s — the old 60s cap killed
-// them mid-run, leaving status='running' with no report ever delivered. This
-// is the single biggest reliability win for scheduled agents.
-// cron-job.org's own request timeout must also be raised (job → Advanced →
-// Timeout) to at least 60s so it doesn't disconnect before we respond; the
-// run continues server-side regardless, but a longer client timeout lets it
-// capture the response in job history.
-export const maxDuration = 300;
+// Vercel HOBBY (free) plan hard-caps at 60s. We CANNOT use 300 here — Vercel
+// would kill the function at 60s with the committee mid-run (status='running',
+// no report). So we cap at 60 and size the internal budget below it. The
+// committee runs leaner (fewer tool calls, shorter deadline) so it self-
+// terminates and DELIVERS a report inside 60s rather than crashing.
+// (On Vercel Pro, raise this to 300 and FUNCTION_BUDGET_MS to ~285_000.)
+// cron-job.org's own request timeout should be ≥60s so it captures the response.
+export const maxDuration = 60;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cron entry
@@ -86,9 +85,12 @@ export async function GET(request: NextRequest) {
   // margin for report delivery (Gmail/Slack) + DB writes, then split the
   // remaining wall-clock across the agents due this tick so the committee
   // self-terminates and writes its report BEFORE Vercel pulls the plug.
-  // 285s budget leaves 15s of headroom under the 300s hard cap.
-  const FUNCTION_BUDGET_MS = 285_000;
-  const DELIVERY_RESERVE_MS = 20_000;
+  // Sized for the Vercel Hobby 60s cap: 52s working budget leaves 8s headroom,
+  // with 12s reserved for report delivery (Gmail/Slack) + DB writes. The
+  // committee self-terminates and ships a report inside 60s. (On Pro: 285_000 /
+  // 20_000.)
+  const FUNCTION_BUDGET_MS = 52_000;
+  const DELIVERY_RESERVE_MS = 12_000;
   const cronStartedAt = Date.now();
   const timeLeftMs = () => FUNCTION_BUDGET_MS - (Date.now() - cronStartedAt);
 
@@ -163,9 +165,10 @@ export async function GET(request: NextRequest) {
   // Per-agent tool-call ceiling: derived from per-agent share of remaining
   // wall-clock time. Two agents running in parallel each get ~half the calls
   // a single agent would get, because they're competing for the same LLM
-  // throughput. Floor at 20, cap at 80.
+  // throughput. Sized for the 60s/Hobby budget: floor 8, cap 30 (batch tools
+  // do the heavy lifting in few calls). (On Pro: floor 20, cap 80.)
   const perAgentSlice = sharedBudget / readyToRun.length;
-  const perAgentToolCalls = Math.min(80, Math.max(20, Math.floor(perAgentSlice / 2500)));
+  const perAgentToolCalls = Math.min(30, Math.max(8, Math.floor(perAgentSlice / 2500)));
 
   // F3.1 — Mark 'running' AND set last_run_at = now in ONE write up front.
   //

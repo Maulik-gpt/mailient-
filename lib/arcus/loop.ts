@@ -155,15 +155,16 @@ function log(level: 'info' | 'warn' | 'error', msg: string, extra?: Record<strin
  * Hard cap on tool calls per run.
  * Background agents (isBackgroundAgent=true) bypass this via the
  * maxToolCalls loop option — see toolCallLimit calculation below.
- * Interactive chat is capped at 80 so a genuine MEGA request (read 40 threads +
- * batch-draft replies + log to Notion + check + book meetings, all in one turn)
- * can complete in a single pass. The 280s wall-clock deadline (passed by the
- * chat route, under the 300s function cap) is the real governor — the loop
- * self-terminates and writes its final message before Vercel kills it, so a big
- * run finishes gracefully rather than erroring partway. Normal turns finish in
- * 1-3 calls regardless, so the high ceiling never slows them.
+ * Interactive chat ceiling. The REAL governor is the wall-clock deadline the
+ * chat route passes (52s on Vercel Hobby's 60s function cap) — the loop self-
+ * terminates and writes its final briefing before Vercel kills it, so a big run
+ * finishes gracefully rather than erroring partway. This cap is just a safety
+ * ceiling above what fits in that window; the route requests ~26. Big jobs use
+ * the BATCH tools (one call for many drafts/sends) to do a lot inside the time
+ * budget. Normal turns finish in 1-3 calls regardless. (Raise toward 80 only
+ * when on Vercel Pro with a 280s deadline.)
  */
-export const MAX_TOOL_CALLS = 80;
+export const MAX_TOOL_CALLS = 40;
 /**
  * Raised cap for background / cron agents. 100 lets a scheduling agent
  * process a full inbox (50 threads × 2 calls each) without hitting the
