@@ -3,7 +3,7 @@
  * POST /api/arcus/chat
  *
  * Rebuilds the chat system from scratch:
- * - Tool_use via OpenRouter free models (openrouter/free)
+ * - Tool_use via OpenRouter free models (see lib/arcus/engine.ts TOOL_CAPABLE_MODELS)
  * - Supermemory v3 for cross-session memory
  * - Full conversation history on every call
  * - Real tool execution (Gmail, Calendar, Notion, Canvas, Web, Slack)
