@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ArrowRight, ArrowLeft, Check, Loader2, ShieldCheck, Sparkles, X,
+  ArrowRight, ArrowLeft, Check, Loader2, ShieldCheck, X,
   Mail, CalendarClock, Calendar, Bot, Inbox, Clock, Users,
   Zap, FileText, MessageSquare, Video, CheckCircle2, Play,
   Send, Activity, PlusCircle, UserPlus,
@@ -249,8 +249,8 @@ export default function SiftOnboardingPage() {
     <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] text-[#1A1A1A] font-satoshi flex flex-col relative overflow-hidden">
       {/* Subtle background orbs */}
       <div className="fixed inset-0 pointer-events-none select-none overflow-hidden -z-10">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-indigo-200/30 to-violet-200/20 blur-[100px] onboarding-liquid-glow" />
-        <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-blue-100/25 to-purple-100/15 blur-[80px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
+        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-neutral-200/30 to-gray-200/20 blur-[100px] onboarding-liquid-glow" />
+        <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-neutral-100/25 to-gray-100/15 blur-[80px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
       </div>
 
       {/* ── Header ── */}
@@ -273,16 +273,20 @@ export default function SiftOnboardingPage() {
                   const isFilled = progressStep !== null && segStep <= progressStep;
                   const isCurrent = segStep === progressStep;
                   return (
-                    <div
+                    <motion.div
                       key={i}
-                      className="onboarding-progress-segment"
+                      layout
+                      transition={{ type: "spring", stiffness: 320, damping: 28 }}
+                      className="h-[3px] rounded-[3px] bg-black/[0.06] overflow-hidden"
                       style={{ width: isCurrent ? 32 : 12 }}
                     >
-                      <div
-                        className="onboarding-progress-segment-fill"
-                        style={{ width: isFilled ? '100%' : '0%' }}
+                      <motion.div
+                        className="h-full bg-[#1A1A1A] rounded-[3px]"
+                        initial={false}
+                        animate={{ width: isFilled ? '100%' : '0%' }}
+                        transition={{ type: "spring", stiffness: 220, damping: 24, delay: isCurrent ? 0.08 : 0 }}
                       />
-                    </div>
+                    </motion.div>
                   );
                 })}
               </div>
@@ -417,7 +421,7 @@ export default function SiftOnboardingPage() {
                 ) : step === 4 ? (
                   <>
                     Generate Agent
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </>
                 ) : step === 5 ? (
                   <>
@@ -453,16 +457,16 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
     <div className="text-center">
       {/* Glowing icon */}
       <div className="relative inline-flex items-center justify-center mb-8">
-        <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-indigo-400/30 to-violet-400/20 blur-xl onboarding-liquid-glow" />
+        <div className="absolute w-24 h-24 rounded-full bg-gradient-to-br from-neutral-300/30 to-gray-300/20 blur-xl onboarding-liquid-glow" />
         <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center">
-          <Sparkles className="w-7 h-7 text-indigo-600" strokeWidth={1.75} />
+          <Bot className="w-7 h-7 text-black" strokeWidth={1.75} />
         </div>
       </div>
 
       <h1 className="text-4xl sm:text-[48px] sm:leading-[1.08] font-semibold tracking-[-0.03em] mb-4 text-[#1A1A1A]">
         Meet your AI
         <br />
-        <span className="bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">
+        <span className="bg-gradient-to-r from-black to-neutral-700 bg-clip-text text-transparent">
           Email Operator
         </span>
       </h1>
@@ -493,8 +497,8 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
         </span>
         <span className="w-px h-3 bg-black/10" />
         <span className="inline-flex items-center gap-1.5">
-          <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
-          AI Powered
+          <Zap className="w-3.5 h-3.5" strokeWidth={1.75} />
+          Autonomous
         </span>
       </div>
     </div>
@@ -509,7 +513,7 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
   return (
     <div className="text-center">
       <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-        <Mail className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+        <Mail className="w-6 h-6 text-black" strokeWidth={1.75} />
       </div>
 
       <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
@@ -586,7 +590,7 @@ function StepConnectTools({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Zap className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+          <Zap className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Connect your workspace
@@ -644,7 +648,7 @@ function ToolCard({
         <div className="flex items-center gap-2">
           <p className="text-[14px] font-semibold text-[#1A1A1A]">{name}</p>
           {required && (
-            <span className="text-[9px] uppercase tracking-wider font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">
+            <span className="text-[9px] uppercase tracking-wider font-bold text-black bg-black/[0.05] border border-black/[0.05] px-1.5 py-0.5 rounded">
               Required
             </span>
           )}
@@ -658,7 +662,7 @@ function ToolCard({
       ) : (
         <button
           onClick={onConnect}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-100 transition-colors"
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-bold text-black bg-black/[0.04] hover:bg-black/[0.08] border border-black/[0.08] transition-colors"
         >
           Connect
         </button>
@@ -682,7 +686,7 @@ function StepChooseGoal({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Bot className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+          <Bot className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           What do you want Mailient to handle?
@@ -714,7 +718,7 @@ function StepChooseGoal({
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                   isActive
-                    ? 'bg-indigo-100 text-indigo-600'
+                    ? 'bg-black text-white'
                     : 'bg-black/[0.03] text-black/50',
                 )}>
                   {goal.icon}
@@ -724,7 +728,7 @@ function StepChooseGoal({
                   <p className="text-[12px] text-black/45 leading-snug">{goal.desc}</p>
                 </div>
                 {isActive && (
-                  <div className="w-5 h-5 rounded-full bg-indigo-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center flex-shrink-0 mt-0.5">
                     <Check className="w-3 h-3 text-white" strokeWidth={3} />
                   </div>
                 )}
@@ -756,7 +760,7 @@ function StepCreateAgent({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Sparkles className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+          <Bot className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Describe your agent
@@ -787,7 +791,7 @@ function StepCreateAgent({
 
       {isGenerating && (
         <div className="mt-6 flex items-center justify-center gap-3 text-[13px] text-black/50">
-          <Loader2 className="w-4 h-4 animate-spin text-indigo-600" />
+          <Loader2 className="w-4 h-4 animate-spin text-black" />
           Generating your agent plan…
         </div>
       )}
@@ -809,7 +813,7 @@ function StepReviewApprove({
   if (!plan) {
     return (
       <div className="text-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-indigo-600 mx-auto mb-3" />
+        <Loader2 className="w-6 h-6 animate-spin text-black mx-auto mb-3" />
         <p className="text-[14px] text-black/50">Loading agent plan…</p>
       </div>
     );
@@ -827,7 +831,7 @@ function StepReviewApprove({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <CheckCircle2 className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+          <CheckCircle2 className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Mailient generated a plan
@@ -847,7 +851,7 @@ function StepReviewApprove({
             className="onboarding-glass-card p-4"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-indigo-600">{s.icon}</span>
+              <span className="text-black/85">{s.icon}</span>
               <span className="text-[11px] uppercase tracking-[0.14em] font-semibold text-black/40">{s.label}</span>
             </div>
             {s.content && (
@@ -897,7 +901,7 @@ function StepFirstRun({
     <div>
       <div className="text-center mb-8">
         <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl onboarding-glass-card mb-6">
-          <Play className="w-6 h-6 text-indigo-600" strokeWidth={1.75} />
+          <Play className="w-6 h-6 text-black" strokeWidth={1.75} />
         </div>
         <h1 className="text-3xl sm:text-[40px] sm:leading-[1.08] font-semibold tracking-[-0.025em] mb-3">
           Your agent is live
@@ -944,7 +948,7 @@ function StepFirstRun({
           disabled={isRunning}
           className={cn(
             'w-full onboarding-glass-card p-4 flex items-center justify-center gap-2 text-[14px] font-semibold transition-all',
-            isRunning ? 'text-black/40' : 'text-indigo-600 hover:text-indigo-700',
+            isRunning ? 'text-black/40' : 'text-black hover:text-black/80 font-semibold underline decoration-dotted underline-offset-4',
           )}
         >
           {isRunning ? (
@@ -1035,7 +1039,7 @@ function StepSuccess() {
         particleCount: 120,
         spread: 80,
         origin: { y: 0.5 },
-        colors: ['#4F46E5', '#7C3AED', '#A78BFA', '#C4B5FD', '#E0E7FF'],
+        colors: ['#000000', '#333333', '#666666', '#999999', '#CCCCCC', '#FFFFFF'],
       });
     }, 400);
     return () => clearTimeout(timer);
@@ -1057,8 +1061,8 @@ function StepSuccess() {
         transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
         className="relative inline-flex items-center justify-center mb-8"
       >
-        <div className="absolute w-28 h-28 rounded-full bg-gradient-to-br from-emerald-200/40 to-indigo-200/30 blur-xl onboarding-liquid-glow" />
-        <div className="relative w-18 h-18 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 flex items-center justify-center p-4">
+        <div className="absolute w-28 h-28 rounded-full bg-gradient-to-br from-neutral-200/50 to-gray-200/30 blur-xl onboarding-liquid-glow" />
+        <div className="relative w-18 h-18 rounded-2xl bg-black flex items-center justify-center p-4 shadow-lg border border-black/10">
           <CheckCircle2 className="w-10 h-10 text-white" strokeWidth={1.75} />
         </div>
       </motion.div>
@@ -1097,7 +1101,7 @@ function StepSuccess() {
             onClick={() => router.push(action.href)}
             className="onboarding-glass-card p-4 text-left group"
           >
-            <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-3 group-hover:bg-indigo-100 transition-colors">
+            <div className="w-9 h-9 rounded-xl bg-black/[0.04] text-black flex items-center justify-center mb-3 group-hover:bg-black/[0.08] transition-colors">
               {action.icon}
             </div>
             <p className="text-[13px] font-semibold text-[#1A1A1A] mb-0.5">{action.title}</p>

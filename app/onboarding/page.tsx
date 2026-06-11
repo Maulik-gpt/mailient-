@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SiftOnboardingPage from "./sift-onboarding";
 import posthog from "posthog-js";
-import { CheckCircle2, ArrowRight, Mail, ExternalLink, Sparkles, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ArrowRight, Mail, ExternalLink, Zap, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -118,7 +118,7 @@ export default function OnboardingPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-black/[0.08] border-t-black rounded-full animate-spin" />
       </div>
     );
   }
@@ -188,7 +188,7 @@ export default function OnboardingPage() {
             </span>
             <span className="w-px h-3 bg-black/10 dark:bg-white/10" />
             <span className="inline-flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5" strokeWidth={1.75} />
+              <Zap className="w-3.5 h-3.5" strokeWidth={1.75} />
               Priority access
             </span>
           </div>
@@ -201,7 +201,7 @@ export default function OnboardingPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-gradient-to-b from-[#FAFAFA] to-[#F0F0F2] flex items-center justify-center">
-        <div className="w-7 h-7 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+        <div className="w-7 h-7 border-2 border-black/[0.08] border-t-black rounded-full animate-spin" />
       </div>
     }>
       <SiftOnboardingPage />

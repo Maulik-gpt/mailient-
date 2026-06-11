@@ -344,7 +344,7 @@ export function LinearLanding() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
             <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.12] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent pb-4">
-              Handle less, <br />Rest more.
+              An AI chief of staff <br />that works while you sleep.
             </h1>
           </BlurFade>
 
