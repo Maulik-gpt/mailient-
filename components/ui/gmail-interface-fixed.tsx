@@ -1860,7 +1860,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                         tab and the swap doesn't feel like jumping into a different
                         app. Keeps the chrome for legacy direct-mount paths. */}
                     <div className={forceTraditionalView
-                        ? 'min-h-screen overflow-y-auto custom-scrollbar bg-transparent dark:bg-black'
+                        ? 'min-h-screen overflow-y-auto custom-scrollbar bg-transparent'
                         : 'mt-0 md:mt-2.5 mr-0 md:mr-2.5 mb-0 md:mb-2.5 bg-white dark:bg-[#111111] rounded-none md:rounded-[2.5rem] min-h-screen md:min-h-[calc(100vh-20px)] border-none md:border border-[#EBE9E2] dark:border-white/[0.05] shadow-none md:shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-none overflow-y-auto custom-scrollbar'
                     }>
                         <div className={`${viewMode === 'people' ? 'max-w-[1600px]' : 'max-w-5xl'} mx-auto px-4 md:px-10 py-8 md:py-12 duration-500`}>

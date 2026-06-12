@@ -267,7 +267,7 @@ function HomeFeedContent() {
   };
 
   return (
-    <div className="satoshi-home-feed w-full min-h-screen bg-[#F4F5F8] dark:bg-black relative flex">
+    <div className="satoshi-home-feed w-full min-h-screen bg-arcus-bg relative flex">
       <HomeFeedSidebar 
         onCollapse={setIsSidebarCollapsed} 
         onOpenSettings={() => setShowSettings(true)}
