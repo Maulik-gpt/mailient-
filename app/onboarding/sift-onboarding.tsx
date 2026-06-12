@@ -322,7 +322,7 @@ export default function SiftOnboardingPage() {
               exit="exit"
               transition={springTransition}
               className={cn(
-                step === 7 ? '' : 'onboarding-glass-card p-8 md:p-12 border border-[#EAEAEA] shadow-[0_32px_64px_rgba(0,0,0,0.015)] relative overflow-hidden'
+                step === 7 ? '' : 'onboarding-glass-card p-8 md:p-14 relative overflow-hidden rounded-[24px]'
               )}
             >
               {/* Corner crosshairs for a technical, premium Linear look */}
@@ -476,30 +476,30 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
   return (
     <div className="text-center">
       {/* Glowing icon */}
-      <div className="relative inline-flex items-center justify-center mb-8">
-        <div className="absolute w-24 h-24 rounded-full bg-[#007AFF]/[0.06] blur-xl onboarding-liquid-glow" />
-        <div className="relative w-16 h-16 rounded-2xl onboarding-glass-card flex items-center justify-center overflow-hidden border border-[#EAEAEA]">
+      <div className="relative inline-flex items-center justify-center mb-9">
+        <div className="absolute w-28 h-28 rounded-full bg-black/[0.04] blur-2xl onboarding-liquid-glow" />
+        <div className="relative w-[68px] h-[68px] rounded-[20px] onboarding-glass-card flex items-center justify-center overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/mailient-logo-premium.png" alt="Mailient" className="w-10 h-10 object-cover" />
         </div>
       </div>
 
-      <h1 className="text-4xl sm:text-[44px] sm:leading-[1.1] font-semibold tracking-[-0.03em] mb-4 text-[#0A0A0A]">
-        Meet your AI
+      <h1 className="text-4xl sm:text-[46px] sm:leading-[1.06] font-semibold tracking-[-0.035em] mb-4 text-[#0A0A0A]">
+        Your AI Operator
         <br />
-        <span className="text-[#007AFF]">
-          Email Operator
+        <span className="text-[#0A0A0A]/40">
+          for email.
         </span>
       </h1>
 
-      <p className="text-[15px] text-[#6B7280] max-w-md mx-auto leading-relaxed mb-10">
-        Automate AI agents that manage communication, scheduling, follow-ups, and more.
+      <p className="text-[15.5px] text-[#6B7280] max-w-md mx-auto leading-relaxed mb-11">
+        An autonomous chief of staff that reads, drafts, schedules, and follows up — so your inbox runs itself.
       </p>
 
       <button
         type="button"
         onClick={onGetStarted}
-        className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold hover:scale-[1.01] active:scale-[0.98]"
+        className="onboarding-cta inline-flex items-center gap-2.5 px-7 py-3.5 rounded-full text-[15px] font-semibold"
       >
         Get Started
         <ArrowRight className="w-4 h-4" />
@@ -508,17 +508,17 @@ function StepWelcome({ onGetStarted }: { onGetStarted: () => void }) {
       {/* Trust badges */}
       <div className="mt-12 flex items-center justify-center gap-6 text-[10px] uppercase tracking-[0.14em] font-medium text-[#6B7280]/60">
         <span className="inline-flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
+          <ShieldCheck className="w-3.5 h-3.5 text-[#0A0A0A]/70" strokeWidth={2} />
           Encrypted
         </span>
         <span className="w-px h-3 bg-black/5" />
         <span className="inline-flex items-center gap-1.5">
-          <Mail className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
+          <Mail className="w-3.5 h-3.5 text-[#0A0A0A]/70" strokeWidth={2} />
           Gmail Safe
         </span>
         <span className="w-px h-3 bg-black/5" />
         <span className="inline-flex items-center gap-1.5">
-          <Zap className="w-3.5 h-3.5 text-[#007AFF]" strokeWidth={2} />
+          <Zap className="w-3.5 h-3.5 text-[#0A0A0A]/70" strokeWidth={2} />
           Autonomous
         </span>
       </div>
@@ -572,7 +572,7 @@ function StepConnectGmail({ onConnect, isConnected }: { onConnect: () => void; i
 
       {isConnected ? (
         <div className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-black/[0.03] border border-[#EAEAEA] text-[#0A0A0A] text-[13px] font-semibold">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF] animate-pulse" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A] animate-pulse" />
           Gmail connected
         </div>
       ) : (
@@ -681,7 +681,7 @@ function ToolCard({
       </div>
       {connected ? (
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-black/[0.03] border border-[#EAEAEA] text-[#0A0A0A] text-[12px] font-semibold animate-fade-in">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#007AFF]" />
+          <span className="w-1.5 h-1.5 rounded-full bg-[#0A0A0A]" />
           Connected
         </span>
       ) : (
@@ -743,7 +743,7 @@ function StepChooseGoal({
                 <div className={cn(
                   'w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors',
                   isActive
-                    ? 'bg-[#007AFF]/[0.08] text-[#007AFF]'
+                    ? 'bg-black/[0.04] text-[#0A0A0A]'
                     : 'bg-black/[0.03] text-[#6B7280]',
                 )}>
                   {goal.icon}
@@ -753,7 +753,7 @@ function StepChooseGoal({
                   <p className="text-[12px] text-[#6B7280] leading-snug">{goal.desc}</p>
                 </div>
                 {isActive && (
-                  <div className="w-5 h-5 rounded-full bg-[#007AFF] flex items-center justify-center flex-shrink-0 mt-0.5 animate-fade-in">
+                  <div className="w-5 h-5 rounded-full bg-[#0A0A0A] flex items-center justify-center flex-shrink-0 mt-0.5 animate-fade-in">
                     <Check className="w-3 h-3 text-white" strokeWidth={3} />
                   </div>
                 )}
@@ -795,7 +795,7 @@ function StepCreateAgent({
         </p>
       </div>
 
-      <div className="onboarding-glass-card p-5 border border-[#EAEAEA] focus-within:border-[#007AFF] focus-within:ring-2 focus-within:ring-[#007AFF]/8 transition-all duration-200">
+      <div className="onboarding-glass-card p-5 border border-[#EAEAEA] focus-within:border-[#0A0A0A] focus-within:ring-2 focus-within:ring-black/[0.06] transition-all duration-200">
         <label className="block text-[10px] uppercase tracking-[0.14em] font-semibold text-[#6B7280]/60 mb-2">
           Agent Prompt
         </label>
@@ -816,7 +816,7 @@ function StepCreateAgent({
 
       {isGenerating && (
         <div className="mt-6 flex items-center justify-center gap-3 text-[13px] text-[#6B7280]">
-          <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
+          <Loader2 className="w-4 h-4 animate-spin text-[#0A0A0A]" />
           Generating your agent plan…
         </div>
       )}
@@ -838,7 +838,7 @@ function StepReviewApprove({
   if (!plan) {
     return (
       <div className="text-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-[#007AFF] mx-auto mb-3" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#0A0A0A] mx-auto mb-3" />
         <p className="text-[14px] text-[#6B7280]">Loading agent plan…</p>
       </div>
     );
@@ -876,7 +876,7 @@ function StepReviewApprove({
             className="onboarding-glass-card p-4 border border-[#EAEAEA]"
           >
             <div className="flex items-center gap-2 mb-2">
-              <span className="text-[#007AFF] bg-[#007AFF]/[0.08] p-1 rounded-md">{s.icon}</span>
+              <span className="text-[#0A0A0A] bg-black/[0.04] p-1 rounded-md">{s.icon}</span>
               <span className="text-[10px] uppercase tracking-[0.14em] font-bold text-[#6B7280]/60">{s.label}</span>
             </div>
             {s.content && (
@@ -886,7 +886,7 @@ function StepReviewApprove({
               <ul className="space-y-1.5 pl-1">
                 {s.items.map((item, j) => (
                   <li key={j} className="flex items-start gap-2 text-[13px] text-[#6B7280]">
-                    <Check className="w-3.5 h-3.5 text-[#007AFF] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
+                    <Check className="w-3.5 h-3.5 text-[#0A0A0A] mt-0.5 flex-shrink-0" strokeWidth={2.5} />
                     {item}
                   </li>
                 ))}
@@ -950,7 +950,7 @@ function StepFirstRun({
               <div className={cn(
                 'w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0',
                 check.done
-                  ? 'bg-black/[0.03] text-[#007AFF]'
+                  ? 'bg-black/[0.03] text-[#0A0A0A]'
                   : 'bg-black/[0.04] text-[#6B7280]/40',
               )}>
                 <Check className="w-3.5 h-3.5" strokeWidth={2.5} />
@@ -978,7 +978,7 @@ function StepFirstRun({
         >
           {isRunning ? (
             <>
-              <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
+              <Loader2 className="w-4 h-4 animate-spin text-[#0A0A0A]" />
               Running test…
             </>
           ) : (
@@ -997,7 +997,7 @@ function StepFirstRun({
         >
           <div className="flex items-start gap-3">
             <div className="w-8 h-8 rounded-lg bg-black/[0.03] flex items-center justify-center flex-shrink-0 mt-0.5 border border-[#EAEAEA]">
-              <CheckCircle2 className="w-4 h-4 text-[#007AFF]" />
+              <CheckCircle2 className="w-4 h-4 text-[#0A0A0A]" />
             </div>
             <p className="text-[13px] text-[#0A0A0A] font-semibold leading-relaxed">{testResult}</p>
           </div>
@@ -1037,7 +1037,7 @@ function StepPricing({
       {isSubmitting && (
         <div className="absolute inset-0 z-20 backdrop-blur-sm bg-white/60 rounded-3xl flex items-center justify-center">
           <div className="flex items-center gap-2.5 px-4 py-2.5 rounded-full bg-[#0A0A0A] text-white font-medium text-[13px]">
-            <Loader2 className="w-4 h-4 animate-spin text-[#007AFF]" />
+            <Loader2 className="w-4 h-4 animate-spin text-[#0A0A0A]" />
             Setting up your account…
           </div>
         </div>
@@ -1086,9 +1086,9 @@ function StepSuccess() {
         transition={{ type: 'spring', damping: 15, stiffness: 200, delay: 0.2 }}
         className="relative inline-flex items-center justify-center mb-8"
       >
-        <div className="absolute w-28 h-28 rounded-full bg-[#007AFF]/[0.04] blur-xl onboarding-liquid-glow" />
+        <div className="absolute w-28 h-28 rounded-full bg-[#0A0A0A]/[0.04] blur-xl onboarding-liquid-glow" />
         <div className="relative w-18 h-18 rounded-2xl onboarding-glass-card flex items-center justify-center p-4 border border-[#EAEAEA] shadow-[0_8px_24px_rgba(0,0,0,0.015)]">
-          <CheckCircle2 className="w-10 h-10 text-[#007AFF]" strokeWidth={1.75} />
+          <CheckCircle2 className="w-10 h-10 text-[#0A0A0A]" strokeWidth={1.75} />
         </div>
       </motion.div>
 
