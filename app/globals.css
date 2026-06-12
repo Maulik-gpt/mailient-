@@ -750,50 +750,22 @@ body,
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.4);
 }
 
-/* Floating frosted card — translucent so the background orbs bleed through,
-   with a specular top highlight that "catches the light" like real glass. */
+/* The main onboarding card — crisp near-white surface (Stripe/Linear style),
+   one refined hairline border, a soft single lifted shadow. Stable: it is the
+   page's content surface, not an interactive element, so it does NOT lift or
+   glare on hover. Clean beats flashy. */
 .onboarding-glass-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(30px) saturate(180%);
-  -webkit-backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  border-radius: 20px;
+  background: #FFFFFF;
+  border: 1px solid #ECECEC;
+  border-radius: 24px;
   box-shadow:
-    0 24px 60px -20px rgba(0, 0, 0, 0.06),
-    0 8px 24px -12px rgba(0, 0, 0, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.015),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.9),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.5);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    0 30px 60px -32px rgba(0, 0, 0, 0.10),
+    0 8px 20px -12px rgba(0, 0, 0, 0.05),
+    0 1px 0 0 rgba(0, 0, 0, 0.02),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.9);
+  transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1),
               border-color 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Soft specular sheen across the top edge — the liquid-glass light catch. */
-.onboarding-glass-card::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.55) 0%,
-    rgba(255, 255, 255, 0) 32%
-  );
-  opacity: 0.7;
-}
-
-.onboarding-glass-card:hover {
-  border-color: rgba(0, 0, 0, 0.08);
-  box-shadow:
-    0 32px 70px -22px rgba(0, 0, 0, 0.09),
-    0 12px 28px -12px rgba(0, 0, 0, 0.05),
-    0 1px 3px rgba(0, 0, 0, 0.02),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.95),
-    inset 0 0 0 0.5px rgba(255, 255, 255, 0.6);
-  transform: translateY(-2px);
 }
 
 .onboarding-glass-card-active {
