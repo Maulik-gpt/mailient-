@@ -47,8 +47,8 @@ User's agent description: ${prompt}`;
         const response = await aiService.generateChatResponse(
           systemPrompt,
           prompt,
-          false,
-          { timeout: 12000 }
+          null,
+          false
         );
 
         // Try to parse the AI response as JSON

@@ -63,7 +63,7 @@ const stepVariants = {
   exit: { opacity: 0, y: -12, filter: 'blur(4px)' },
 };
 
-const springTransition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] };
+const springTransition = { duration: 0.4, ease: [0.16, 1, 0.3, 1] as const };
 
 /* ═══════════════════════════════════════════════════════════════════
    MAIN COMPONENT
@@ -249,7 +249,7 @@ export default function SiftOnboardingPage() {
     <div className="min-h-screen bg-white text-[#0A0A0A] font-satoshi flex flex-col relative overflow-hidden">
       {/* Subtle background orbs */}
       <div className="fixed inset-0 pointer-events-none select-none overflow-hidden -z-10">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-[#007AFF]/[0.05] to-transparent blur-[120px] onboarding-liquid-glow" />
+        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-gradient-to-br from-neutral-200/40 to-transparent blur-[120px] onboarding-liquid-glow" />
         <div className="absolute bottom-[-15%] left-[-10%] w-[500px] h-[500px] rounded-full bg-gradient-to-tr from-neutral-100/40 to-transparent blur-[100px] onboarding-liquid-glow" style={{ animationDelay: '2s' }} />
       </div>
 
@@ -289,7 +289,7 @@ export default function SiftOnboardingPage() {
                       style={{ width: isCurrent ? 32 : 12 }}
                     >
                       <motion.div
-                        className="h-full bg-[#007AFF] rounded-[3px]"
+                        className="h-full bg-[#0A0A0A] rounded-[3px]"
                         initial={false}
                         animate={{ width: isFilled ? '100%' : '0%' }}
                         transition={{ type: "spring", stiffness: 220, damping: 24, delay: isCurrent ? 0.08 : 0 }}

@@ -507,25 +507,25 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                01 // Inbox triage
+                01 // Understands your day
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
-                activeStep === 0 
-                  ? "text-4xl md:text-[48px] text-white" 
+                activeStep === 0
+                  ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Filter out noise.
+                Reads the whole inbox.
               </h3>
               {activeStep === 0 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Automatically filters out notifications and organizes important emails so you can respond faster.
+                    It reads every thread, learns who your VIPs are, and surfaces the 3 things that actually need you — silently archiving the noise. Not keyword filters. Real judgment about what matters to your business.
                   </p>
                   <CircleExpandButton 
                     href="/product/sift"
@@ -546,25 +546,25 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 1 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                02 // Smart drafts
+                02 // Sounds exactly like you
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
-                activeStep === 1 
-                  ? "text-4xl md:text-[48px] text-white" 
+                activeStep === 1
+                  ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Draft in your voice.
+                Drafts in your voice.
               </h3>
               {activeStep === 1 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Learns your writing style from past messages to draft natural, custom replies automatically.
+                    It clones your voice from your sent mail — your greetings, your rhythm, your sign-offs — and drafts replies so natural the recipient can't tell. Ask for 15 at once; it writes all 15. You just review and send.
                   </p>
                   <CircleExpandButton 
                     href="/product/drafts"
@@ -585,27 +585,27 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                03 // Autopilot booking
+                03 // Runs itself, on schedule
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
-                activeStep === 2 
-                  ? "text-4xl md:text-[48px] text-white" 
+                activeStep === 2
+                  ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Book on autopilot.
+                Works while you sleep.
               </h3>
               {activeStep === 2 && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4 }}
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Coordinates slots, schedules meetings on your calendar, and sets up links overnight.
+                    Set up agents that run on their own — a 7am inbox sweep, a Friday revenue digest, meeting prep before every call. They check your calendar, book the slots, log to Notion, and leave a briefing in your inbox before you wake up.
                   </p>
-                  <CircleExpandButton 
+                  <CircleExpandButton
                     href="#pricing"
                     className="text-xs md:text-sm"
                   >
@@ -807,7 +807,7 @@ export function LinearLanding() {
               </h2>
 
               <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Arcus is not an email assistant. It does not suggest or summarize. It acts. Connecting deeply with your codebase, calendar adapters, and topic clusters, Arcus handles your entire email footprint overnight, delivering finished briefings and resolved threads before you open your laptop.
+                Arcus isn't a chatbot that suggests. It's a chief of staff that acts. Give it a goal in plain English — "handle my inbox and prep tomorrow" — and it plans the steps, works across Gmail, Calendar, Notion, and Slack in parallel, and reports back with every decision it made and why. It learns who you are over time, so it gets sharper every run.
               </p>
 
               <div className="pt-6">
@@ -826,20 +826,21 @@ export function LinearLanding() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
               <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
-                <span>ARCUS MISSION DEPLOYMENT</span>
+                <span>ARCUS · MORNING INBOX SWEEP</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
 
               <div className="space-y-2.5">
-                <p className="text-neutral-500">&gt; Starting scheduled inbox sweep for May 20...</p>
-                <p className="text-neutral-400">&gt; Triage category MATCHED: Pitch deck feedback</p>
-                <p className="text-neutral-300">&gt; Local PII vault sanitizer completed encryption: AES-256 standard</p>
-                <p className="text-white font-semibold">&gt; 4 meetings scheduled. 3 drafts waiting. 0 actions required.</p>
+                <p className="text-neutral-500">&gt; Scanned 214 threads from the last 24h</p>
+                <p className="text-neutral-400">&gt; Drafted 18 replies in your voice (avg confidence 89%)</p>
+                <p className="text-neutral-400">&gt; Booked 3 meetings · logged 6 contacts to Notion</p>
+                <p className="text-neutral-300">&gt; Archived 41 newsletters · flagged 2 for your eyes</p>
+                <p className="text-white font-semibold">&gt; Briefing delivered. 2 things need you.</p>
               </div>
 
               <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-                <span>AGENT RESOLUTION TIME: 4.2 SEC</span>
-                <span>100% SUCCESS RATE</span>
+                <span>EVERY ACTION LOGGED · EVERY LINK CLICKABLE</span>
+                <span>NO BLACK BOX</span>
               </div>
             </div>
 
@@ -1220,54 +1221,54 @@ export function LinearLanding() {
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="max-w-5xl mx-auto">
           
-          {/* Stat row */}
+          {/* Capability row — what one run can do (honest capability, not usage claims) */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24 text-left">
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Triage Capacity</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Per run</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={100} />k+
+                <ActiveCounter target={200} />+
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Processed daily</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Threads read in one sweep</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Response Speed</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">In one message</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={24} />x
+                <ActiveCounter target={15} />+
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Faster triage cycles</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Replies drafted in your voice</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Accuracy rate</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Connected apps</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={99} />.4%
+                <ActiveCounter target={4} />
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Noise isolation rate</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Gmail · Calendar · Notion · Slack</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Founder Advantage</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">You're in control</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={1240} />h
+                <ActiveCounter target={100} />%
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Focus hours saved</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Of actions logged & reviewable</span>
             </div>
           </div>
 
-          {/* Quotes grid */}
+          {/* Built-for-founders strip (honest pre-launch — no fabricated testimonials) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-24">
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                Mailient restored my momentum. I wake up to resolved threads and booked calls, not a wall of noise.
+                The promise is simple: open Mailient in the morning and the inbox is already handled. Replies drafted in your voice, meetings booked, the two things that need you flagged at the top.
               </p>
-              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Austin, Founder at Aether Labs</span>
+              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; What you wake up to</span>
             </div>
 
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                Autonomous workflows are the ultimate leverage. Arcus handles the routine, keeping our team focused on shipping.
+                It learns who you are — your VIPs, your voice, what's strategic versus routine — and gets sharper every single run. Less a tool you operate, more an employee you trust.
               </p>
-              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Sarah, COO at Linear VCs</span>
+              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Why it's different</span>
             </div>
           </div>
 
