@@ -118,7 +118,7 @@ export default function OnboardingPage() {
   if (status === "loading") {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-black/[0.04] border-t-[#007AFF] rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-black/[0.04] border-t-[#0A0A0A] rounded-full animate-spin" />
       </div>
     );
   }
@@ -201,7 +201,7 @@ export default function OnboardingPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-black/[0.04] border-t-[#007AFF] rounded-full animate-spin" />
+        <div className="w-6 h-6 border-2 border-black/[0.04] border-t-[#0A0A0A] rounded-full animate-spin" />
       </div>
     }>
       <SiftOnboardingPage />

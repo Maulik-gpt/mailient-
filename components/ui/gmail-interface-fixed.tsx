@@ -1751,7 +1751,13 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
 
     return (
         <LayoutGroup>
-            <div className="min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden satoshi-dashboard" style={{ fontFamily: "Satoshi, sans-serif" }}>
+            <div 
+                className={forceTraditionalView 
+                    ? "w-full bg-transparent flex flex-col overflow-hidden satoshi-dashboard" 
+                    : "min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden satoshi-dashboard"
+                } 
+                style={{ fontFamily: "Satoshi, sans-serif" }}
+            >
                 <UsageLimitModal
                     isOpen={isUsageLimitModalOpen}
                     onClose={() => setIsUsageLimitModalOpen(false)}
@@ -1762,15 +1768,17 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                     currentPlan={usageLimitModalData?.currentPlan || 'starter'}
                 />
                 {/* Sidebar */}
-                <HomeFeedSidebar
-                    onOpenSettings={() => setShowSettings(true)}
-                    onOpenHelp={() => setShowHelp(true)}
-                    onOpenRewards={() => setShowRewards(true)}
-                    activeView={viewMode}
-                    onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
-                    isOpen={isMobileMenuOpen}
-                    onClose={() => setIsMobileMenuOpen(false)}
-                />
+                {!forceTraditionalView && (
+                    <HomeFeedSidebar
+                        onOpenSettings={() => setShowSettings(true)}
+                        onOpenHelp={() => setShowHelp(true)}
+                        onOpenRewards={() => setShowRewards(true)}
+                        activeView={viewMode}
+                        onCollapse={(collapsed) => setSidebarCollapsed(collapsed)}
+                        isOpen={isMobileMenuOpen}
+                        onClose={() => setIsMobileMenuOpen(false)}
+                    />
+                )}
 
                 <AnimatePresence>
                     {showSettings && (
@@ -1797,8 +1805,8 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                 {/* Main Content Wrapper */}
                 <motion.div
                     animate={{
-                        marginLeft: isMobile ? 0 : (sidebarCollapsed ? 80 : 256),
-                        width: isMobile ? '100%' : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
+                        marginLeft: isMobile || forceTraditionalView ? 0 : (sidebarCollapsed ? 80 : 256),
+                        width: isMobile || forceTraditionalView ? '100%' : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
                     }}
                     initial={false}
                     transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}

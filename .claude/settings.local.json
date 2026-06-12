@@ -18,7 +18,10 @@
       "Bash(curl -s -m 280 -H \"Authorization: Bearer arcus-cron-secret\" http://localhost:3000/api/cron/run-agents)",
       "Bash(echo \"=== exit: $? ===\")",
       "Bash(node _verify_db.mjs)",
-      "Read(//tmp/**)"
+      "Read(//tmp/**)",
+      "Bash(cd /c/Users/hp/Mailent)",
+      "Bash(pkill -f \"next dev\")",
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" npm run dev)"
     ]
   }
 }
