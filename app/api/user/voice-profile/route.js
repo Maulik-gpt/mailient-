@@ -4,6 +4,11 @@ import { voiceProfileService } from '@/lib/voice-profile-service';
 import { GmailService } from '@/lib/gmail';
 import { decrypt } from '@/lib/crypto';
 
+// Building the voice profile fetches sent mail + runs LLM analysis, which can
+// take a while on a busy mailbox. Give it room so it doesn't get killed at the
+// platform default.
+export const maxDuration = 60;
+
 export async function GET() {
     try {
         const session = await auth();
@@ -61,10 +66,12 @@ export async function POST() {
         // 2. Run analysis — prefer the user's last 90 days of sent mail so the
         //    voice reflects how they write now; fall back to all-time if a
         //    low-volume sender has fewer than 3 in that window.
+        // Keep the sample tight: every email is a separate Gmail round-trip, and
+        // the analysis only needs ~25 to capture a voice (the LLM reads up to 15).
         const gmailService = new GmailService(accessToken, refreshToken);
-        let sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 60, 90);
+        let sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 25, 90);
         if (sentEmails.length < 3) {
-            sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 60);
+            sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 25);
         }
 
         if (sentEmails.length < 3) {

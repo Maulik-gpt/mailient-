@@ -777,11 +777,16 @@ function S6BuildVoice({ done, setDone, onDone }: { done: boolean; setDone: (b: b
     started.current = true;
     if (done) return;
     (async () => {
+      // Bound the wait so a slow analysis degrades to the error screen instead
+      // of leaving the user stuck on "reading your inbox…" forever.
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 58_000);
       try {
-        const res = await fetch('/api/user/voice-profile', { method: 'POST' });
+        const res = await fetch('/api/user/voice-profile', { method: 'POST', signal: controller.signal });
         if (!res.ok) throw new Error('voice failed');
         setDone(true); setStatus('done');
       } catch { setStatus('error'); }
+      finally { clearTimeout(timer); }
     })();
   }, [done, setDone]);
 
