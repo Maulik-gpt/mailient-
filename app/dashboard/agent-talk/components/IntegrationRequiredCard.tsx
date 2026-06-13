@@ -3,8 +3,24 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Zap, ArrowRight, RefreshCw, AlertTriangle } from 'lucide-react';
+import { signIn } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import type { ScheduledAgentData } from './ScheduledAgentCard';
+
+// Maps the agent's required-integration id → the real session-authed OAuth
+// route segment (/api/integrations/{seg}/auth). The old /api/connectors/oauth
+// route never existed, so connecting here always 404'd.
+const PROVIDER_AUTH: Record<string, string> = {
+  gcal: 'google_calendar',
+  google_calendar: 'google_calendar',
+  calendar: 'google_calendar',
+  google_meet: 'google_meet',
+  notion: 'notion',
+  notion_calendar: 'notion_calendar',
+  slack: 'slack',
+  calcom: 'cal_com',
+  cal_com: 'cal_com',
+};
 
 // ── Integration icon components ───────────────────────────────────────────────
 
@@ -140,55 +156,78 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
     setConnectingId(integrationId);
     setError(null);
     setLastFailedId(null);
-    try {
-      const res = await fetch('/api/connectors/oauth', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          connectorId: integrationId,
-          redirectUri: `${window.location.origin}/api/connectors/callback`,
-        }),
-      });
-      if (!res.ok) throw new Error("Couldn't start the connection. Try again in a moment.");
-      const { oauthUrl } = await res.json();
 
-      const w = 500, h = 600;
-      const popup = window.open(
-        oauthUrl,
-        'Connect Integration',
-        `width=${w},height=${h},left=${window.screenX + (window.outerWidth - w) / 2},top=${window.screenY + (window.outerHeight - h) / 2}`,
-      );
-      if (!popup) throw new Error('Popup was blocked — allow popups for this site and retry.');
+    // Gmail comes from the primary Google login, not a connector OAuth.
+    if (integrationId === 'gmail') {
+      signIn('google', { callbackUrl: window.location.href });
+      return;
+    }
 
-      const poll = setInterval(async () => {
-        if (popup.closed) {
-          clearInterval(poll);
-          setConnectingId(null);
-          // refresh and check if this integration actually connected
-          await refresh();
-          // Use a fresh fetch result rather than relying on stale state
-          try {
-            const r = await fetch('/api/arcus/v3/integrations');
-            const j = r.ok ? await r.json() : { integrations: [] };
-            const providers: string[] = (j.integrations || []).map((i: any) => i.provider as string);
-            const statusRes = await fetch('/api/integrations/status').catch(() => null);
-            if (statusRes?.ok) {
-              const status = await statusRes.json();
-              const connectedArray = status.integrations || [];
-              if (connectedArray.some((i: any) => i.provider === 'gmail' && i.connected)) providers.push('gmail');
-              if (connectedArray.some((i: any) => i.provider === 'google_calendar' && i.connected)) providers.push('gcal');
-            }
-            if (!providers.includes(integrationId)) {
-              setLastFailedId(integrationId);
-              setError("The connection didn't complete. Retry below — make sure to finish the Google/Slack/Notion sign-in.");
-            }
-          } catch { /* non-fatal */ }
-        }
-      }, 800);
-    } catch (err: any) {
-      setLastFailedId(integrationId);
-      setError(err.message || 'Connection failed — try again.');
+    const provider = PROVIDER_AUTH[integrationId];
+    if (!provider) {
       setConnectingId(null);
+      setLastFailedId(integrationId);
+      setError("That integration can't be connected here yet.");
+      return;
+    }
+
+    // Open the popup synchronously (within the click) so it isn't blocked.
+    const w = 500, h = 640;
+    const popup = window.open(
+      'about:blank',
+      'Connect Integration',
+      `width=${w},height=${h},left=${window.screenX + (window.outerWidth - w) / 2},top=${window.screenY + (window.outerHeight - h) / 2}`,
+    );
+    if (!popup) {
+      setConnectingId(null);
+      setLastFailedId(integrationId);
+      setError('Popup was blocked — allow popups for this site and retry.');
+      return;
+    }
+
+    const isConnected = async (): Promise<boolean> => {
+      try {
+        const r = await fetch('/api/integrations/status');
+        const j = r.ok ? await r.json() : { integrations: [] };
+        return (j.integrations || []).some((i: any) => i.provider === provider && i.connected);
+      } catch { return false; }
+    };
+
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(poll);
+      clearTimeout(timeout);
+      setConnectingId(null);
+      refresh();
+      if (!ok) {
+        setLastFailedId(integrationId);
+        setError("The connection didn't complete. Retry below — finish the sign-in in the popup window.");
+      }
+    };
+
+    // Poll status and auto-close the popup the moment it connects, so the user
+    // never lands on the dashboard inside the popup.
+    const poll = setInterval(async () => {
+      if (await isConnected()) {
+        try { if (!popup.closed) popup.close(); } catch { /* cross-origin */ }
+        finish(true);
+      } else if (popup.closed) {
+        finish(await isConnected());
+      }
+    }, 1000);
+    const timeout = setTimeout(() => finish(false), 180_000);
+
+    try {
+      const res = await fetch(`/api/integrations/${provider}/auth`);
+      if (!res.ok) throw new Error('start failed');
+      const { url } = await res.json();
+      if (!url) throw new Error('no url');
+      popup.location.href = url;
+    } catch {
+      try { popup.close(); } catch { /* */ }
+      finish(false);
     }
   };
 

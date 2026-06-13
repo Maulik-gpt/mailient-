@@ -31,8 +31,25 @@ interface UseConnectorsOptions {
   onError?: (error: Error) => void;
 }
 
+// UI connector id → real session-authed OAuth route segment
+// (/api/integrations/{seg}/auth). The old /api/connectors/oauth route never
+// existed and used Supabase bearer auth the NextAuth app doesn't have.
+const PROVIDER_AUTH: Record<string, string> = {
+  gcal: 'google_calendar',
+  google_calendar: 'google_calendar',
+  calendar: 'google_calendar',
+  google_meet: 'google_meet',
+  notion: 'notion',
+  notion_calendar: 'notion_calendar',
+  slack: 'slack',
+  calcom: 'cal_com',
+  cal_com: 'cal_com',
+};
+
 export function useConnectors(options: UseConnectorsOptions) {
-  const { userId, supabase } = options;
+  // `supabase` is still accepted in options for call-site compatibility, but
+  // connector flows now use the NextAuth-session integrations endpoints.
+  const { userId } = options;
   
   const [connectedAccounts, setConnectedAccounts] = useState<ConnectedAccount[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -48,20 +65,24 @@ export function useConnectors(options: UseConnectorsOptions) {
       setIsLoading(true);
       setError(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      const response = await fetch('/api/connectors', {
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`
-        }
-      });
+      // Use the session-authed integrations status (NextAuth cookie) — the old
+      // /api/connectors GET required a Supabase bearer token this app never has.
+      const response = await fetch('/api/integrations/status');
 
       if (!response.ok) {
         throw new Error('Failed to load connectors');
       }
 
       const data = await response.json();
-      setConnectedAccounts(data.connectedAccounts || []);
+      const accounts: ConnectedAccount[] = (data.integrations || [])
+        .filter((i: any) => i.connected)
+        .map((i: any) => ({
+          id: i.provider,
+          connectorId: i.provider,
+          provider: i.provider,
+          status: 'connected',
+        }));
+      setConnectedAccounts(accounts);
 
     } catch (err) {
       setError(err as Error);
@@ -69,74 +90,84 @@ export function useConnectors(options: UseConnectorsOptions) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId, supabase, options]);
+  }, [userId, options]);
 
   // Load accounts on mount
   useEffect(() => {
     loadAccounts();
   }, [loadAccounts]);
 
-  // Connect a connector
+  // Connect a connector via the real session-authed OAuth route. Opens the
+  // popup synchronously (so it isn't blocked), points it at the provider's
+  // auth URL, then polls status and auto-closes the popup once connected.
   const connect = useCallback(async (connectorId: string) => {
     if (!userId) return;
 
-    try {
-      setIsConnecting(connectorId);
-      setError(null);
-
-      const { data: { session } } = await supabase.auth.getSession();
-
-      const response = await fetch('/api/connectors/oauth', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          connectorId,
-          redirectUri: `${window.location.origin}/api/connectors/callback`
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to initiate OAuth');
-      }
-
-      const { oauthUrl } = await response.json();
-
-      // Open OAuth window
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(
-        oauthUrl,
-        'Connect Account',
-        `width=${width},height=${height},left=${left},top=${top}`
-      );
-
-      if (!popup) {
-        throw new Error('Popup blocked. Please allow popups and try again.');
-      }
-
-      // Listen for completion
-      const checkClosed = setInterval(() => {
-        if (popup.closed) {
-          clearInterval(checkClosed);
-          loadAccounts();
-          setIsConnecting(null);
-        }
-      }, 1000);
-
-      options.onConnect?.(connectorId);
-
-    } catch (err) {
-      setError(err as Error);
-      setIsConnecting(null);
-      options.onError?.(err as Error);
+    const provider = PROVIDER_AUTH[connectorId];
+    if (!provider) {
+      const e = new Error(`Can't connect "${connectorId}" here yet.`);
+      setError(e);
+      options.onError?.(e);
+      return;
     }
-  }, [userId, supabase, loadAccounts, options]);
+
+    setIsConnecting(connectorId);
+    setError(null);
+
+    const width = 500, height = 640;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+    const popup = window.open('about:blank', 'Connect Account', `width=${width},height=${height},left=${left},top=${top}`);
+    if (!popup) {
+      const e = new Error('Popup blocked. Please allow popups and try again.');
+      setError(e);
+      setIsConnecting(null);
+      options.onError?.(e);
+      return;
+    }
+
+    const isConnected = async (): Promise<boolean> => {
+      try {
+        const r = await fetch('/api/integrations/status');
+        const j = r.ok ? await r.json() : { integrations: [] };
+        return (j.integrations || []).some((i: any) => i.provider === provider && i.connected);
+      } catch { return false; }
+    };
+
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      clearInterval(poll);
+      clearTimeout(timeout);
+      setIsConnecting(null);
+      loadAccounts();
+      if (ok) options.onConnect?.(connectorId);
+    };
+
+    const poll = setInterval(async () => {
+      if (await isConnected()) {
+        try { if (!popup.closed) popup.close(); } catch { /* cross-origin */ }
+        finish(true);
+      } else if (popup.closed) {
+        finish(await isConnected());
+      }
+    }, 1000);
+    const timeout = setTimeout(() => finish(false), 180_000);
+
+    try {
+      const res = await fetch(`/api/integrations/${provider}/auth`);
+      if (!res.ok) throw new Error('start failed');
+      const { url } = await res.json();
+      if (!url) throw new Error('no url');
+      popup.location.href = url;
+    } catch (err) {
+      try { popup.close(); } catch { /* */ }
+      setError(err as Error);
+      options.onError?.(err as Error);
+      finish(false);
+    }
+  }, [userId, loadAccounts, options]);
 
   // Disconnect an account (now: by connectorId, not accountId — so we can
   // hit the unified Arcus disconnect endpoint which clears every store).
@@ -203,7 +234,7 @@ export function useConnectors(options: UseConnectorsOptions) {
       options.onError?.(err as Error);
       toastApi?.error(`Couldn't disconnect: ${(err as Error).message}`);
     }
-  }, [userId, supabase, options, connectedAccounts, loadAccounts]);
+  }, [userId, options, connectedAccounts, loadAccounts]);
 
   // Reconfigure / "Manage" — re-initiates OAuth for an already-connected
   // provider. Used when a connector's scopes expired or the user wants to
