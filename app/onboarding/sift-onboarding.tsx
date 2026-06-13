@@ -31,10 +31,13 @@ const FIRST = 1;
 const LAST = 15;
 type Step = number; // 1..15
 
-const POLAR_CHECKOUT_URLS: Record<'monthly' | 'annual', string> = {
-  monthly: 'https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61',
-  annual:  'https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej',
+const POLAR_CHECKOUT_URLS: Record<'monthly' | 'annual' | 'lifetime', string> = {
+  monthly:  'https://buy.polar.sh/polar_cl_iFCJ2Mq7UbVBQTIiMGwI3STQZTvGfT1EBLyiM1HM5ca',
+  annual:   'https://buy.polar.sh/polar_cl_I2DWGQPxxX0lvNGzbAeSRbkdCP6TgU9Ybsy7O3pkReC',
+  lifetime: 'https://buy.polar.sh/polar_cl_T848DqQDK82361tmecJpNmtFgfPubJSb4Eyza2l8yrV',
 };
+
+type PlanChoice = 'monthly' | 'annual' | 'lifetime';
 
 interface ScanResult {
   windowDays: number;
@@ -150,7 +153,7 @@ export default function SiftOnboardingPage() {
   const [voiceDone, setVoiceDone] = useState(false);
   const [agentSpec, setAgentSpec] = useState<AgentSpec | null>(null);
   const [createdAgent, setCreatedAgent] = useState<CreatedAgent | null>(null);
-  const [planChoice, setPlanChoice] = useState<'monthly' | 'annual' | null>(null);
+  const [planChoice, setPlanChoice] = useState<PlanChoice | null>(null);
   const [briefTime, setBriefTime] = useState('07:00');
   const [briefChannel, setBriefChannel] = useState<'gmail' | 'slack' | 'both'>('gmail');
 
@@ -1403,30 +1406,34 @@ const PLAN_FEATURES = [
   'Approval queue — you sign off on every send',
 ];
 
-function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: 'monthly' | 'annual' | null; onChoose: (p: 'monthly' | 'annual') => void }) {
-  const [annual, setAnnual] = useState(plan ? plan === 'annual' : true);
+const PLAN_PRICING: Record<PlanChoice, { label: string; price: string; unit: string; sub: string; badge?: string }> = {
+  monthly:  { label: 'Monthly',  price: '$29',     unit: '/mo',          sub: 'Billed monthly' },
+  annual:   { label: 'Annual',   price: '$16.58',  unit: '/mo',          sub: '$199/year · 2 months free', badge: '2 months free' },
+  lifetime: { label: 'Lifetime', price: '$499',    unit: ' once',        sub: 'Pay once. Yours forever.',  badge: 'Best value' },
+};
+
+function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanChoice | null; onChoose: (p: PlanChoice) => void }) {
+  const [selected, setSelected] = useState<PlanChoice>(plan || 'annual');
+  const p = PLAN_PRICING[selected];
   return (
     <div>
       <div className="text-center mb-8">
-        <Display className="text-[28px] sm:text-[36px] mb-3">{firstName ? `Choose your plan, ${firstName}.` : 'Choose your plan.'}</Display>
-        <Body className="text-[15px] max-w-sm mx-auto">One plan, everything included. Cancel anytime.</Body>
+        <Display className="text-[28px] sm:text-[36px] mb-3">{firstName ? `Activate Arcus, ${firstName}.` : 'Activate Arcus.'}</Display>
+        <Body className="text-[15px] max-w-sm mx-auto">Subscribe and your agent deploys automatically — it starts running on its schedule the moment you’re in.</Body>
       </div>
 
       <div className="flex justify-center mb-7">
         <div className="lg-capsule !p-1 flex gap-1 rounded-full">
-          {(['monthly', 'annual'] as const).map((opt) => {
-            const active = (opt === 'annual') === annual;
+          {(['monthly', 'annual', 'lifetime'] as const).map((opt) => {
+            const active = selected === opt;
             return (
               <button
                 key={opt}
-                onClick={() => setAnnual(opt === 'annual')}
-                className={cn('lg-focus relative rounded-full px-5 py-2 text-[12.5px] font-medium transition-colors', active ? 'text-white' : 'text-[#0A0A0A]/55')}
+                onClick={() => setSelected(opt)}
+                className={cn('lg-focus relative rounded-full px-4 py-2 text-[12.5px] font-medium transition-colors', active ? 'text-white' : 'text-[#0A0A0A]/55')}
               >
                 {active && <motion.span layoutId="plan-toggle" className="absolute inset-0 rounded-full bg-[#0A0A0A]" transition={{ type: 'spring', stiffness: 380, damping: 30 }} />}
-                <span className="relative z-10 inline-flex items-center gap-1.5">
-                  {opt === 'monthly' ? 'Monthly' : 'Annual'}
-                  {opt === 'annual' && <span className={cn('px-1.5 py-0.5 rounded text-[8px] font-black uppercase', active ? 'bg-white text-[#0A0A0A]' : 'bg-[#0A0A0A] text-white')}>2 months free</span>}
-                </span>
+                <span className="relative z-10">{PLAN_PRICING[opt].label}</span>
               </button>
             );
           })}
@@ -1435,10 +1442,10 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: 'mont
 
       <GlassCard className="max-w-md mx-auto text-center">
         <div className="flex items-baseline justify-center mb-1">
-          <span className="text-[48px] font-medium tracking-tight text-[#0A0A0A]">${annual ? '16.58' : '29'}</span>
-          <span className="text-[13px] text-[#0A0A0A]/50 ml-2">/mo{annual ? ', billed yearly' : ''}</span>
+          <span className="text-[48px] font-medium tracking-tight text-[#0A0A0A]">{p.price}</span>
+          <span className="text-[13px] text-[#0A0A0A]/50 ml-2">{p.unit}</span>
         </div>
-        <p className="text-[12px] text-[#0A0A0A]/45 mb-6">{annual ? '$199/year · 2 months free' : 'Billed monthly'}</p>
+        <p className="text-[12px] text-[#0A0A0A]/45 mb-6">{p.sub}</p>
 
         <ul className="space-y-3 text-left mb-7">
           {PLAN_FEATURES.map((f) => (
@@ -1447,10 +1454,14 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: 'mont
               <span className="text-[13.5px] text-[#0A0A0A]/75 leading-snug">{f}</span>
             </li>
           ))}
+          <li className="flex items-start gap-2.5">
+            <span className="w-[18px] h-[18px] rounded-full lg-pane grid place-content-center mt-0.5 shrink-0"><Sparkles className="w-3 h-3 text-[#0A0A0A]" strokeWidth={2.5} /></span>
+            <span className="text-[13.5px] text-[#0A0A0A] font-medium leading-snug">Your agent deploys & runs automatically</span>
+          </li>
         </ul>
 
-        <PrimaryButton onClick={() => onChoose(annual ? 'annual' : 'monthly')} className="w-full">
-          Choose {annual ? 'annual' : 'monthly'} <ArrowRight className="w-4 h-4" />
+        <PrimaryButton onClick={() => onChoose(selected)} className="w-full">
+          Continue with {p.label} <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
       </GlassCard>
 
@@ -1551,21 +1562,31 @@ function S14Notifications({ time, setTime, channel, setChannel, hasSlack, agent,
 
 function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFinish }: {
   firstName: string; agent: CreatedAgent | null; scan: ScanResult | null;
-  briefTime: string; briefChannel: 'gmail' | 'slack' | 'both'; plan: 'monthly' | 'annual' | null;
+  briefTime: string; briefChannel: 'gmail' | 'slack' | 'both'; plan: PlanChoice | null;
   onFinish: () => Promise<void>;
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
 
+  // Did we just come back from a successful Polar checkout? /payment-success
+  // returns the user to /onboarding?step=15&paid=1 after verifying payment.
+  const paid = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('paid') === '1';
+
   const finish = async () => {
     setBusy(true);
     await onFinish();
-    if (plan) {
-      try { localStorage.setItem('pending_plan', plan); } catch {}
-      window.location.href = POLAR_CHECKOUT_URLS[plan];
-    } else {
+    // Already paid (returned from checkout) or no plan chosen → straight in.
+    if (paid || !plan) {
       router.push('/home-feed');
+      return;
     }
+    // Send to Polar checkout, remembering where to come back to so the user
+    // lands right here (paid) afterward instead of the dashboard.
+    try {
+      localStorage.setItem('pending_plan', plan);
+      localStorage.setItem('mailient_checkout_return', '/onboarding?step=15&paid=1');
+    } catch { /* */ }
+    window.location.href = POLAR_CHECKOUT_URLS[plan];
   };
 
   const channelLabel = briefChannel === 'both' ? 'Gmail + Slack' : briefChannel === 'slack' ? 'Slack' : 'Gmail';
@@ -1576,9 +1597,11 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         <IconBadge><Check className="w-5 h-5 text-[#0A0A0A]" strokeWidth={2} /></IconBadge>
       </motion.div>
 
-      <Display className="text-[32px] sm:text-[42px] mb-4">Arcus is on duty.</Display>
+      <Display className="text-[32px] sm:text-[42px] mb-4">{paid ? 'Arcus is on duty.' : 'One step to go live.'}</Display>
       <Body className="text-[15.5px] max-w-md mx-auto mb-8">
-        {firstName ? `You're set, ${firstName}. ` : ''}Here’s what’s running. Everything waits for your approval before it sends.
+        {paid
+          ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent is deployed and runs on its schedule. Everything waits for your approval before it sends.`
+          : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys automatically — it starts running on its schedule right away. Everything waits for your approval before it sends.`}
       </Body>
 
       <GlassCard className="max-w-sm mx-auto text-left space-y-4 mb-9">
@@ -1599,7 +1622,11 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       </GlassCard>
 
       <PrimaryButton onClick={finish} disabled={busy} className="px-8 py-3.5 text-[15px]">
-        {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</> : <>Go to Mailient <ArrowRight className="w-4 h-4" /></>}
+        {busy
+          ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</>
+          : (paid || !plan)
+            ? <>Go to Mailient <ArrowRight className="w-4 h-4" /></>
+            : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
       </PrimaryButton>
     </div>
   );

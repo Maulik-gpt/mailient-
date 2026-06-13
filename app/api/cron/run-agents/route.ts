@@ -27,6 +27,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
+// @ts-ignore - JS module
+import { subscriptionService } from '../../../../lib/subscription-service.js';
 import { runAgentTask, generateRunPlan } from '../../../../lib/arcus/run-agent';
 import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
@@ -113,6 +115,23 @@ export async function GET(request: NextRequest) {
     }),
   );
 
+  // Plan gate: only DEPLOY agents for users on a paid plan (pro / annual /
+  // lifetime, including active free-Pro referral grants and owner emails).
+  // A free/expired user's agents stay 'active' but dormant — so the moment they
+  // subscribe, their agents start running on the very next tick. This is what
+  // makes "after you pay, your agents deploy automatically" actually true.
+  const paidMap: Record<string, boolean> = {};
+  await Promise.all(
+    uniqueUsers.map(async (uid: string) => {
+      try {
+        const plan = await subscriptionService.getUserPlanType(uid);
+        paidMap[uid] = !!plan && plan !== 'free' && plan !== 'none';
+      } catch {
+        paidMap[uid] = false;
+      }
+    }),
+  );
+
   // ── Pre-flight pass ──────────────────────────────────────────────────────
   // Walk every active agent ONCE and classify it:
   //   - expired → pause and skip
@@ -123,6 +142,9 @@ export async function GET(request: NextRequest) {
   // happens once, here.
   const readyToRun: any[] = [];
   for (const agent of agents) {
+    // Dormant until the owner is on a paid plan.
+    if (!paidMap[agent.user_id]) continue;
+
     if (agent.expires_at) {
       const expiryEnd = new Date(`${agent.expires_at}T23:59:59Z`).getTime();
       if (now.getTime() > expiryEnd) {

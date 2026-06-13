@@ -35,9 +35,17 @@ function PaymentSuccessContent() {
             colors: ['#ffffff', '#a855f7', '#6366f1']
         });
 
-        // Redirect to dashboard after 3 seconds
+        // Return the user to where they started checkout (e.g. their onboarding
+        // step) if we stored one; otherwise the dashboard. Read it BEFORE the
+        // 3s delay so a late localStorage clear can't wipe it.
+        let dest = '/home-feed';
+        try {
+            const ret = localStorage.getItem('mailient_checkout_return');
+            if (ret) dest = ret;
+            localStorage.removeItem('mailient_checkout_return');
+        } catch { /* */ }
         setTimeout(() => {
-            router.push('/home-feed');
+            router.push(dest);
         }, 3000);
     };
 

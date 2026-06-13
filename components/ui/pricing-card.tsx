@@ -25,7 +25,7 @@ const mailientPlans = [
       "Full Sift email triage",
       "Gold Founding Badge",
     ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
+    checkoutUrl: "https://buy.polar.sh/polar_cl_iFCJ2Mq7UbVBQTIiMGwI3STQZTvGfT1EBLyiM1HM5ca",
   },
   {
     id: "annual",
@@ -41,7 +41,7 @@ const mailientPlans = [
       "Gold Founding Badge",
       "Priority Support",
     ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_ojXGgACq5GNMsUInVP3HX5vpXepohT5P8m7SL2RcCej",
+    checkoutUrl: "https://buy.polar.sh/polar_cl_I2DWGQPxxX0lvNGzbAeSRbkdCP6TgU9Ybsy7O3pkReC",
     highlighted: true,
   },
   {
@@ -57,7 +57,7 @@ const mailientPlans = [
       "VIP Diamond Slack channel",
       "Dedicated founder support SLA",
     ],
-    checkoutUrl: "https://buy.polar.sh/polar_cl_BmoCj2jm6Hxy2Pc4DI6y717wsENNDAniGPfsB1pMO61",
+    checkoutUrl: "https://buy.polar.sh/polar_cl_T848DqQDK82361tmecJpNmtFgfPubJSb4Eyza2l8yrV",
   },
 ];
 
