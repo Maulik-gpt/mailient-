@@ -201,7 +201,12 @@ export default function SiftOnboardingPage() {
         if (!res.ok) return;
         const d = await res.json();
         const st = d?.state || {};
-        if (st.scan) setScan(st.scan);
+        // Only accept a persisted scan that matches the CURRENT shape — older
+        // saves (needsReply/repetitive) lack these fields and would crash the
+        // First Scan screen on render. Drop them so step 4 re-scans cleanly.
+        if (st.scan && typeof st.scan.received === 'number' && typeof st.scan.unanswered === 'number') {
+          setScan(st.scan);
+        }
         if (st.voiceDone) setVoiceDone(true);
         if (st.agent) setCreatedAgent(st.agent);
         if (st.agentSpec) setAgentSpec(st.agentSpec);
@@ -496,11 +501,15 @@ function GmailMark({ size = 22 }: { size?: number }) {
 }
 
 function GCalMark({ size = 22 }: { size?: number }) {
+  // Google-blue body so it stays visible on the frosted-glass badge, with the
+  // recognizable binder rings + "31".
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="9" y="10" width="30" height="30" rx="4" fill="#fff" stroke="#E8EAED" strokeWidth="1.5" />
-      <path d="M9 14a4 4 0 0 1 4-4h22a4 4 0 0 1 4 4v2H9z" fill="#4285F4" />
-      <text x="24" y="35" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#4285F4">31</text>
+      <rect x="8" y="11" width="32" height="29" rx="5" fill="#4285F4" />
+      <rect x="12" y="19" width="24" height="17" rx="2" fill="#fff" />
+      <rect x="15.5" y="7" width="3.4" height="8" rx="1.7" fill="#4285F4" />
+      <rect x="29.1" y="7" width="3.4" height="8" rx="1.7" fill="#4285F4" />
+      <text x="24" y="32.5" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fontSize="13" fill="#4285F4">31</text>
     </svg>
   );
 }
@@ -635,7 +644,7 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
   useEffect(() => {
     if (started.current) return;
     started.current = true;
-    if (scan) { setDisplay(scan.received); setPhase('settled'); return; }
+    if (scan) { setDisplay(scan.received ?? 0); setPhase('settled'); return; }
     (async () => {
       try {
         const res = await fetch('/api/onboarding/scan', { method: 'POST' });
@@ -707,8 +716,8 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
         ) : (
           <motion.div key="s" initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Body className="text-[16px] max-w-sm mx-auto">
-              You’ve gotten <span className="text-[#0A0A0A] font-medium">{scan?.received.toLocaleString()}{scan?.receivedCapped ? '+' : ''}</span> emails in the last{' '}
-              {scan?.windowDays} days. <span className="text-[#0A0A0A] font-medium">{scan?.unanswered.toLocaleString()}{scan?.unansweredCapped ? '+' : ''}</span> are still unanswered.
+              You’ve gotten <span className="text-[#0A0A0A] font-medium">{(scan?.received ?? 0).toLocaleString()}{scan?.receivedCapped ? '+' : ''}</span> emails in the last{' '}
+              {scan?.windowDays ?? 30} days. <span className="text-[#0A0A0A] font-medium">{(scan?.unanswered ?? 0).toLocaleString()}{scan?.unansweredCapped ? '+' : ''}</span> are still unanswered.
             </Body>
           </motion.div>
         )}
@@ -1586,7 +1595,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         ) : (
           <SummaryRow icon={<Sparkles className="w-4 h-4" />} label="First agent" value="None yet — add one from your dashboard" />
         )}
-        {scan && <SummaryRow icon={<Activity className="w-4 h-4" />} label="Taking off your plate" value={`~${scan.hoursPerWeek}h / week`} />}
+        {scan?.hoursPerWeek != null && <SummaryRow icon={<Activity className="w-4 h-4" />} label="Taking off your plate" value={`~${scan.hoursPerWeek}h / week`} />}
       </GlassCard>
 
       <PrimaryButton onClick={finish} disabled={busy} className="px-8 py-3.5 text-[15px]">
