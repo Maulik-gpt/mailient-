@@ -80,8 +80,8 @@ export default function OnboardingPage() {
                   // Already completed onboarding, ensure cached locally for status indicators but don't force redirect
                   console.log('📋 [Onboarding] Onboarding completed according to server.');
                   localStorage.setItem('onboarding_completed', 'true');
-                } else if (data.lastStep !== undefined) {
-                  // Not completed, redirect to the last step they were on
+                } else if (data.lastStep && data.lastStep >= 1) {
+                  // Not completed, resume at the last step they reached (1-indexed flow)
                   const currentParam = new URLSearchParams(window.location.search).get('step');
                   if (currentParam === null || parseInt(currentParam) !== data.lastStep) {
                     console.log(`🚀 [Onboarding] Redirecting to step ${data.lastStep}`);
