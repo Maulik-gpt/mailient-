@@ -21,7 +21,8 @@
       "Read(//tmp/**)",
       "Bash(cd /c/Users/hp/Mailent)",
       "Bash(pkill -f \"next dev\")",
-      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" npm run dev)"
+      "Bash(NODE_OPTIONS=\"--max-old-space-size=2048\" npm run dev)",
+      "Bash(node -e \"const t=require\\('./tsconfig.json'\\); console.log\\('noUnusedLocals:', t.compilerOptions.noUnusedLocals, '| strict:', t.compilerOptions.strict, '| noUnusedParameters:', t.compilerOptions.noUnusedParameters\\)\")"
     ]
   }
 }

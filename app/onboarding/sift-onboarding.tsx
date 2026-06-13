@@ -661,24 +661,49 @@ function S6BuildVoice({ done, setDone, onDone }: { done: boolean; setDone: (b: b
 
 /* ═══════════════════════════ 7 · VOICE PREVIEW ═══════════════════════════ */
 
+interface ToneState { formality: number; detail: number; warmth: number; confidence: number }
+
 function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [tone, setTone] = useState<ToneState>({ formality: 50, detail: 40, warmth: 50, confidence: 30 });
+
   useEffect(() => {
     (async () => {
       try {
         const res = await fetch('/api/user/voice-profile');
         const d = await res.json();
-        setProfile(d?.profile || null);
-      } catch { /* */ } finally { setLoading(false); }
+        const p = d?.profile || null;
+        setProfile(p);
+        const t = p?.manual_settings?.tone;
+        if (t) setTone({ formality: t.formality ?? 50, detail: t.detail ?? 40, warmth: t.warmth ?? 50, confidence: t.confidence ?? 30 });
+      } catch { /* non-fatal */ } finally { setLoading(false); }
     })();
   }, []);
 
-  const tone = profile?.tone?.description || profile?.manual_settings?.tone || null;
-  const toneLabel = typeof tone === 'string' ? tone : 'Direct, warm, low on filler';
+  const toneDesc = profile?.tone?.description;
+  const toneLabel = typeof toneDesc === 'string' ? toneDesc : 'Direct, warm, low on filler';
   const signoff = profile?.closing_patterns?.[0] || profile?.sample_phrases?.[0] || 'Best,';
-  const sample = profile?.sample_phrases?.find((s: string) => s.length > 20)
+  const sample = profile?.sample_phrases?.find((s: string) => s?.length > 20)
     || 'Thanks for the nudge — that works on my end. I’ll send the doc over before end of day so you have time to review.';
+
+  const saveTone = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch('/api/user/voice-profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tone }),
+      });
+      const d = await res.json();
+      if (res.ok && d?.profile) setProfile(d.profile);
+      setEditing(false);
+    } catch {
+      toast.error("Couldn't save those adjustments — try again.");
+    } finally { setSaving(false); }
+  };
 
   return (
     <div>
@@ -687,9 +712,17 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
         <Display className="text-[26px] sm:text-[32px] mb-3">This is how you sound</Display>
         <Body className="text-[15px] max-w-sm mx-auto">Mailient drafts in this voice. You can adjust it any time.</Body>
       </div>
+
       <GlassCard className="mb-5">
         {loading ? (
           <div className="flex items-center gap-2 text-[13px] text-[#0A0A0A]/45"><Loader2 className="w-4 h-4 animate-spin" /> Loading your profile…</div>
+        ) : editing ? (
+          <div className="space-y-5">
+            <ToneSlider label="Formality"  left="Casual"   right="Formal"     value={tone.formality}  onChange={(v) => setTone({ ...tone, formality: v })} />
+            <ToneSlider label="Detail"     left="Brief"    right="Detailed"   value={tone.detail}     onChange={(v) => setTone({ ...tone, detail: v })} />
+            <ToneSlider label="Warmth"     left="Warm"     right="Direct"     value={tone.warmth}     onChange={(v) => setTone({ ...tone, warmth: v })} />
+            <ToneSlider label="Confidence" left="Reserved" right="Confident"  value={tone.confidence} onChange={(v) => setTone({ ...tone, confidence: v })} />
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5">
@@ -705,9 +738,41 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
           </>
         )}
       </GlassCard>
-      <div className="flex items-center justify-center gap-5">
-        <PrimaryButton onClick={onContinue}>This is me <Check className="w-4 h-4" /></PrimaryButton>
-        <SkipLink onClick={onContinue}>Adjust later</SkipLink>
+
+      {editing ? (
+        <div className="flex items-center justify-center gap-5">
+          <PrimaryButton onClick={saveTone} disabled={saving}>
+            {saving ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</> : <>Save voice <Check className="w-4 h-4" /></>}
+          </PrimaryButton>
+          <SkipLink onClick={() => setEditing(false)}>Cancel</SkipLink>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-5">
+          <PrimaryButton onClick={onContinue}>This is me <Check className="w-4 h-4" /></PrimaryButton>
+          <SkipLink onClick={() => setEditing(true)}>Adjust</SkipLink>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ToneSlider({ label, left, right, value, onChange }: {
+  label: string; left: string; right: string; value: number; onChange: (v: number) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="text-[12px] font-medium text-[#0A0A0A]">{label}</span>
+        <span className="text-[11px] tabular-nums text-[#0A0A0A]/35">{value}</span>
+      </div>
+      <input
+        type="range" min={0} max={100} step={5} value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        aria-label={label}
+        className="lg-focus w-full accent-[#0A0A0A] h-1.5 cursor-pointer"
+      />
+      <div className="flex items-center justify-between mt-1 text-[10.5px] text-[#0A0A0A]/40">
+        <span>{left}</span><span>{right}</span>
       </div>
     </div>
   );
