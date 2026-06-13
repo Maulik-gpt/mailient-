@@ -17,7 +17,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, ArrowLeft, Check, Loader2, Lock,
-  Mail, Calendar, FileText, MessageSquare, Clock,
+  Mail, Clock,
   Sparkles, PenLine, ChevronRight, Inbox, Activity, Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -238,40 +238,67 @@ export default function SiftOnboardingPage() {
   const back = useCallback(() => go(Math.max(FIRST, step - 1)), [go, step]);
 
   // ── In-flow popup OAuth (keeps the user inside onboarding) ──
-  const connectViaPopup = useCallback((connectorId: string): Promise<boolean> => {
-    return new Promise(async (resolve) => {
-      try {
-        const res = await fetch('/api/connectors/oauth', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ connectorId, redirectUri: `${window.location.origin}/api/connectors/callback` }),
-        });
-        if (!res.ok) throw new Error('start failed');
-        const { oauthUrl } = await res.json();
-        const w = 500, h = 640;
-        const popup = window.open(
-          oauthUrl, 'Connect',
-          `width=${w},height=${h},left=${window.screenX + (window.outerWidth - w) / 2},top=${window.screenY + (window.outerHeight - h) / 2}`,
-        );
-        if (!popup) { toast.error('Allow popups for this site, then try again.'); return resolve(false); }
-        const poll = setInterval(async () => {
-          if (popup.closed) {
-            clearInterval(poll);
-            await fetchIntegrations();
-            try {
-              const r = await fetch('/api/integrations/status');
-              const j = r.ok ? await r.json() : { integrations: [] };
-              const ok = (j.integrations || []).some((i: any) => (i.provider === connectorId || i.provider === providerAlias(connectorId)) && i.connected);
-              resolve(ok);
-            } catch { resolve(false); }
-          }
-        }, 700);
-      } catch {
-        toast.error("That connection didn't start. Try again in a moment.");
-        resolve(false);
-      }
+  // In-flow popup OAuth. `provider` is the integrations provider name
+  // (google_calendar | notion | slack). Opens the popup synchronously (so it
+  // isn't blocked), points it at the real session-authed auth URL, then polls
+  // connection status — auto-closing the popup the moment the app connects, so
+  // the user never lands on the dashboard inside the popup.
+  const isProviderConnected = useCallback(async (provider: string): Promise<boolean> => {
+    try {
+      const r = await fetch('/api/integrations/status');
+      const j = r.ok ? await r.json() : { integrations: [] };
+      return (j.integrations || []).some((i: any) => i.provider === provider && i.connected);
+    } catch { return false; }
+  }, []);
+
+  const connectViaPopup = useCallback((provider: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const w = 500, h = 640;
+      const popup = window.open(
+        'about:blank', 'Connect',
+        `width=${w},height=${h},left=${window.screenX + (window.outerWidth - w) / 2},top=${window.screenY + (window.outerHeight - h) / 2}`,
+      );
+      if (!popup) { toast.error('Allow popups for this site, then try again.'); return resolve(false); }
+
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        clearInterval(poll);
+        clearTimeout(timeout);
+        fetchIntegrations();
+        resolve(ok);
+      };
+
+      const poll = setInterval(async () => {
+        if (await isProviderConnected(provider)) {
+          try { if (!popup.closed) popup.close(); } catch { /* cross-origin */ }
+          finish(true);
+        } else if (popup.closed) {
+          // Closed without connecting — re-check once in case the callback
+          // landed a moment before the window closed.
+          finish(await isProviderConnected(provider));
+        }
+      }, 1000);
+
+      // Safety: stop polling after 3 minutes.
+      const timeout = setTimeout(() => finish(false), 180_000);
+
+      (async () => {
+        try {
+          const res = await fetch(`/api/integrations/${provider}/auth`);
+          if (!res.ok) throw new Error('start failed');
+          const { url } = await res.json();
+          if (!url) throw new Error('no url');
+          popup.location.href = url;
+        } catch {
+          try { popup.close(); } catch { /* */ }
+          toast.error("That connection didn't start. Try again in a moment.");
+          finish(false);
+        }
+      })();
     });
-  }, [fetchIntegrations]);
+  }, [fetchIntegrations, isProviderConnected]);
 
   // ── Complete onboarding (writes the durable record) ──
   const completeOnboarding = useCallback(async () => {
@@ -328,7 +355,7 @@ export default function SiftOnboardingPage() {
             <motion.div key={step} {...fade}>
               {step === 1  && <S1Welcome onBegin={() => go(2)} />}
               {step === 2  && <S2Gmail isConnected={isConnected('gmail')} onConnect={() => signIn('google', { callbackUrl: `${window.location.pathname}?step=2`, redirect: true })} onContinue={() => next()} />}
-              {step === 3  && <S3Calendar connected={isConnected('gcal') || isConnected('google_calendar')} onConnect={() => connectViaPopup('gcal')} onContinue={() => next()} onSkip={() => next()} />}
+              {step === 3  && <S3Calendar connected={isConnected('gcal') || isConnected('google_calendar')} onConnect={() => connectViaPopup('google_calendar')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 4  && <S4Scan scan={scan} setScan={setScan} onDone={(s) => next({ scan: s })} reduce={!!reduce} />}
               {step === 5  && <S5ScanResults scan={scan} onContinue={() => next()} />}
               {step === 6  && <S6BuildVoice done={voiceDone} setDone={setVoiceDone} onDone={() => next({ voiceDone: true })} />}
@@ -364,10 +391,6 @@ export default function SiftOnboardingPage() {
   );
 }
 
-function providerAlias(connectorId: string): string {
-  if (connectorId === 'gcal') return 'google_calendar';
-  return connectorId;
-}
 
 /* ─────────────────────────────────────────────────────────────────────────
    Progress capsule — the signature liquid-glass element
@@ -458,6 +481,54 @@ function GoogleMark({ size = 16 }: { size?: number }) {
   );
 }
 
+/* Real brand marks for the connect screens. */
+
+function GmailMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z"/>
+      <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z"/>
+      <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17"/>
+      <path fill="#c62828" d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8C4.924,8,3,9.924,3,12.298z"/>
+      <path fill="#fbc02d" d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8C43.076,8,45,9.924,45,12.298z"/>
+    </svg>
+  );
+}
+
+function GCalMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
+      <rect x="9" y="10" width="30" height="30" rx="4" fill="#fff" stroke="#E8EAED" strokeWidth="1.5" />
+      <path d="M9 14a4 4 0 0 1 4-4h22a4 4 0 0 1 4 4v2H9z" fill="#4285F4" />
+      <text x="24" y="35" textAnchor="middle" fontFamily="Arial, sans-serif" fontWeight="700" fontSize="16" fill="#4285F4">31</text>
+    </svg>
+  );
+}
+
+function NotionMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#fff" stroke="#E8EAED" strokeWidth="0.5" d="M3.3 3.2 15.9 2.3c1.5-.1 1.9.0 2.9.7l3.1 2.2c.6.5.8.6.8 1.1v14.1c0 1-.4 1.6-1.6 1.7l-14.6.9c-1 .1-1.5-.1-2-.8L1.6 19.6c-.6-.8-.8-1.4-.8-2.1V4.9c0-.8.4-1.5 1.5-1.6z"/>
+      <path fill="#000" d="M15.9 2.3 3.3 3.2C2.2 3.3 1.8 4 1.8 4.9v12.6c0 .7.2 1.3.8 2.1l1.3 1.3c.5.7 1 .9 2 .8l14.6-.9c1.2-.1 1.6-.7 1.6-1.7V6.3c0-.5-.2-.7-.8-1.1L18.8 3c-1-.7-1.4-.8-2.9-.7zM6.7 5.3c-1.1.1-1.4.1-2-.4L3.2 3.7c-.2-.2-.1-.4.3-.5L15.6 2.3c1-.1 1.4.3 1.8.6l1.8 1.3c.1.1.3.4 0 .4L7 5.3h-.3zm-1.3 16V8.4c0-.6.2-.8.7-.9l13.7-.8c.5 0 .7.3.7.8V19c0 .6-.1 1.1-.9 1.1l-13.1.8c-.8 0-1.1-.3-1.1-1zm12.1-12.1c.1.4 0 .8-.4.8l-.6.1v9.3c-.5.3-1 .4-1.4.4-.7 0-.8-.2-1.3-.8l-4.1-6.5v6.3l1.3.3s0 .8-1 .8l-2.9.2c-.1-.2 0-.6.3-.7l.7-.2V9.7l-1-.1c-.1-.4.1-.9.7-1l3.1-.2 4.3 6.6V9.2l-1.1-.1c-.1-.5.3-.8.7-.9l2.7-.1z"/>
+    </svg>
+  );
+}
+
+function SlackMark({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 122.8 122.8" aria-hidden="true">
+      <path fill="#E01E5A" d="M25.8 77.6c0 7.1-5.8 12.9-12.9 12.9S0 84.7 0 77.6s5.8-12.9 12.9-12.9h12.9v12.9z" />
+      <path fill="#E01E5A" d="M32.3 77.6c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9v32.3c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V77.6z" />
+      <path fill="#36C5F0" d="M45.2 25.8c-7.1 0-12.9-5.8-12.9-12.9S38.1 0 45.2 0s12.9 5.8 12.9 12.9v12.9H45.2z" />
+      <path fill="#36C5F0" d="M45.2 32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H12.9C5.8 58.1 0 52.3 0 45.2s5.8-12.9 12.9-12.9h32.3z" />
+      <path fill="#2EB67D" d="M97 45.2c0-7.1 5.8-12.9 12.9-12.9s12.9 5.8 12.9 12.9-5.8 12.9-12.9 12.9H97V45.2z" />
+      <path fill="#2EB67D" d="M90.5 45.2c0 7.1-5.8 12.9-12.9 12.9s-12.9-5.8-12.9-12.9V12.9C64.7 5.8 70.5 0 77.6 0s12.9 5.8 12.9 12.9v32.3z" />
+      <path fill="#ECB22E" d="M77.6 97c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9-12.9-5.8-12.9-12.9V97h12.9z" />
+      <path fill="#ECB22E" d="M77.6 90.5c-7.1 0-12.9-5.8-12.9-12.9s5.8-12.9 12.9-12.9h32.3c7.1 0 12.9 5.8 12.9 12.9s-5.8 12.9-12.9 12.9H77.6z" />
+    </svg>
+  );
+}
+
 /* ═══════════════════════════ 1 · WELCOME ═══════════════════════════ */
 
 function S1Welcome({ onBegin }: { onBegin: () => void }) {
@@ -491,7 +562,7 @@ function S1Welcome({ onBegin }: { onBegin: () => void }) {
 function S2Gmail({ isConnected, onConnect, onContinue }: { isConnected: boolean; onConnect: () => void; onContinue: () => void }) {
   return (
     <div className="text-center">
-      <IconBadge><Mail className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} /></IconBadge>
+      <IconBadge><GmailMark size={24} /></IconBadge>
       <Display className="text-[28px] sm:text-[34px] mb-3">Connect your inbox</Display>
       <Body className="text-[15px] max-w-sm mx-auto mb-7">
         Mailient reads and drafts from your inbox. This is the one connection it can’t work without.
@@ -535,7 +606,7 @@ function S3Calendar({ connected, onConnect, onContinue, onSkip }: { connected: b
   const handle = async () => { setBusy(true); const ok = await onConnect(); setBusy(false); if (ok) onContinue(); };
   return (
     <div className="text-center">
-      <IconBadge><Calendar className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} /></IconBadge>
+      <IconBadge><GCalMark size={24} /></IconBadge>
       <Display className="text-[28px] sm:text-[34px] mb-3">Add your calendar</Display>
       <Body className="text-[15px] max-w-sm mx-auto mb-8">
         So Mailient can book meetings without double-booking you.
@@ -1082,7 +1153,7 @@ function humanTool(name: string): string {
 function S10Notion({ connected, onConnect, onContinue, onSkip }: { connected: boolean; onConnect: () => Promise<boolean>; onContinue: () => void; onSkip: () => void }) {
   return (
     <ConnectScreen
-      icon={<FileText className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} />}
+      icon={<NotionMark size={24} />}
       title="Connect Notion"
       subtitle="Mailient can log every contact, deal, and decision to Notion automatically."
       connected={connected} onConnect={onConnect} onContinue={onContinue} onSkip={onSkip}
@@ -1095,7 +1166,7 @@ function S10Notion({ connected, onConnect, onContinue, onSkip }: { connected: bo
 function S11Slack({ connected, onConnect, onContinue, onSkip }: { connected: boolean; onConnect: () => Promise<boolean>; onContinue: () => void; onSkip: () => void }) {
   return (
     <ConnectScreen
-      icon={<MessageSquare className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} />}
+      icon={<SlackMark size={24} />}
       title="Connect Slack"
       subtitle="Get your morning briefing in Slack."
       connected={connected} onConnect={onConnect} onContinue={onContinue} onSkip={onSkip}
