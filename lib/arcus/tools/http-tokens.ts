@@ -359,8 +359,20 @@ export const GMAIL_SCOPE_MESSAGE =
   'I need Gmail access to do that. The current Google token is missing the required Gmail permissions. ' +
   'Open the connectors button in the prompt box, pick Gmail, finish the Google sign-in, and ask me again.';
 
+/**
+ * A *scope* error means the token is valid but lacks the permission the call
+ * needs — Google signals this with **403** (insufficientPermissions /
+ * ACCESS_TOKEN_SCOPE_INSUFFICIENT). The fix for that is a reconnect.
+ *
+ * A **401** is NOT a scope error: it means the access token is expired or
+ * invalid. Every caller already runs a refresh-and-retry before reaching this
+ * check, so a surviving 401 is a transient auth failure (refresh blip, network
+ * error, clock skew) — it must fall through to a retryable "upstream" failure,
+ * NOT a reconnect card. Treating 401 as a scope error was telling users to
+ * reconnect Google Calendar even though their connection was never broken.
+ */
 export function isScopeError(status: number): boolean {
-  return status === 403 || status === 401;
+  return status === 403;
 }
 
 /**

@@ -1622,15 +1622,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     name: 'notion_get_calendar_events',
     description:
       'Read pages from a Notion database that has a date property, filtered to a time window. Use to merge Notion-tracked calendar entries with Google Calendar. ' +
-      'Auto-discovers a database from the hint (default "calendar") or accepts an explicit databaseId. ' +
+      'If no hint/databaseId is given, auto-discovers ANY date-bearing database in the connected workspace (Tasks / Roadmap / Schedule / etc., not only ones named "calendar"). ' +
+      'When the workspace has no readable date-bearing database, returns success:true with an empty "No Notion calendar source" note — the standalone Notion Calendar app has no public API, so this is a benign skip, not an error. Do NOT tell the user to reconnect on an empty result. ' +
       'Output: plain text listing each event with date, title, and any "attendees" / "people" property values. ' +
-      'Errors (success:false): notion_not_connected, validation_error, notion_db_not_found, notion_schema_unreadable, upstream_notion.',
+      'Errors (success:false): notion_not_connected, validation_error, upstream_notion.',
     input_schema: {
       type: 'object',
       properties: {
         startDate: { type: 'string', description: 'ISO 8601 start of window.' },
         endDate: { type: 'string', description: 'ISO 8601 end of window.' },
-        database: { type: 'string', description: 'Hint for which Notion database to read; default "calendar". Ignored when databaseId is set.' },
+        database: { type: 'string', description: 'Optional hint for which Notion database to read (e.g. "Tasks", "Roadmap"). When omitted, any date-bearing database is auto-discovered. Ignored when databaseId is set.' },
         databaseId: { type: 'string', description: 'Exact Notion database id — preferred when known.' },
       },
       required: ['startDate', 'endDate'],
@@ -4310,46 +4311,90 @@ async function notionGetCalendarEvents(userId: string, input: any): Promise<Tool
     'Content-Type': 'application/json',
   };
 
-  // 1) Resolve database id
+  // 1) Resolve a database to read.
+  //
+  // "Notion Calendar" means different things to different users: a Notion
+  // database with a Date property, the standalone Notion Calendar app (no
+  // public API — unreadable here), or just a Google Calendar mirror. We can
+  // only read the first kind. So: if an explicit hint matches a database, use
+  // it; otherwise auto-discover ANY date-bearing database in the connected
+  // workspace (Tasks / Roadmap / Schedule / etc.), not only ones literally
+  // titled "calendar". And when nothing readable exists, we return a benign
+  // empty result (success:true) — NOT a failure — because for the app-only
+  // and Google-synced cases there is genuinely nothing to read, and surfacing
+  // that as a red "failed" line in the report is misleading.
   let dbId = (input.databaseId || '').trim();
-  const dbHint = (input.database || 'calendar').trim();
-  if (!dbId) {
+  const dbHint = (input.database || '').trim();
+  let resolvedTitle = dbHint || 'Notion';
+
+  // Pull candidate databases once: the hint (if any) first, then a generic
+  // sweep so we can fall back to any date-bearing DB.
+  const searchFor = async (query: string): Promise<any[]> => {
     try {
-      const searchRes = await fetch('https://api.notion.com/v1/search', {
+      const res = await fetch('https://api.notion.com/v1/search', {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          query: dbHint,
+          query,
           filter: { value: 'database', property: 'object' },
-          page_size: 8,
+          page_size: 20,
         }),
         signal: AbortSignal.timeout(10000),
       });
-      if (searchRes.ok) {
-        const data = await searchRes.json();
-        const results: any[] = data.results || [];
-        const hintLower = dbHint.toLowerCase();
-        const best = results.map((r: any) => {
-          const t = (r.title?.[0]?.plain_text ?? '').toLowerCase();
-          return { r, score: t === hintLower ? 2 : t.includes(hintLower) ? 1 : 0 };
-        }).sort((a: any, b: any) => b.score - a.score)[0]?.r;
-        if (best) dbId = best.id;
-      }
-    } catch { /* fallthrough */ }
-  }
+      if (!res.ok) return [];
+      const data = await res.json();
+      return data.results || [];
+    } catch { return []; }
+  };
+
   if (!dbId) {
-    return failureResult(`Could not find a Notion database matching "${dbHint}". Pass databaseId explicitly or use a broader hint.`, 'notion_db_not_found');
+    const titleOf = (r: any) => (r.title?.[0]?.plain_text ?? '').toLowerCase();
+    let candidates: any[] = [];
+
+    // a) If the caller gave a hint, try to match it by title first.
+    if (dbHint) {
+      const hintLower = dbHint.toLowerCase();
+      const hitResults = await searchFor(dbHint);
+      const best = hitResults
+        .map((r: any) => ({ r, score: titleOf(r) === hintLower ? 2 : titleOf(r).includes(hintLower) ? 1 : 0 }))
+        .sort((a, b) => b.score - a.score)[0];
+      if (best && best.score > 0) { dbId = best.r.id; resolvedTitle = best.r.title?.[0]?.plain_text || dbHint; }
+      candidates = hitResults;
+    }
+
+    // b) No title match → scan ANY database the integration can see and pick
+    //    the first one that actually has a Date property. This is what makes
+    //    "all of the above" work: a user's "Tasks" or "Roadmap" DB gets found
+    //    even though it isn't named "calendar".
+    if (!dbId) {
+      if (!candidates.length) candidates = await searchFor('');
+      for (const c of candidates) {
+        const sch = await fetchNotionDbSchema(headers, c.id);
+        if (sch?.some(p => p.type === 'date')) {
+          dbId = c.id;
+          resolvedTitle = c.title?.[0]?.plain_text || 'Notion';
+          break;
+        }
+      }
+    }
   }
 
-  // 2) Introspect schema to find the date property name
+  // No readable date-bearing database exists. That's the app-only / Google-
+  // synced case — benign, not an error. Return empty so the LLM merges
+  // nothing and the report shows a clean skip rather than a failure.
+  if (!dbId) {
+    return { output: `No Notion calendar source to read — no connected database has a date property. (The standalone Notion Calendar app has no public API; events there can't be read directly.)` };
+  }
+
+  // 2) Introspect schema to find the date property name.
   const schema = await fetchNotionDbSchema(headers, dbId);
-  if (!schema) return failureResult(`Found database "${dbHint}" but could not read its schema.`, 'notion_schema_unreadable');
+  if (!schema) {
+    // Couldn't read the schema — treat as nothing-to-merge, not a hard failure.
+    return { output: `No Notion calendar entries readable from "${resolvedTitle}".` };
+  }
   const dateProp = schema.find(p => p.type === 'date');
   if (!dateProp) {
-    return failureResult(
-      `Database "${dbHint}" has no date property — nothing to treat as a calendar event. Properties available: ${schema.map(p => `${p.name} (${p.type})`).join(', ')}.`,
-      'notion_schema_unreadable',
-    );
+    return { output: `No Notion calendar entries in "${resolvedTitle}" (no date property to treat as events).` };
   }
   const titleProp = schema.find(p => p.type === 'title');
 
@@ -4377,7 +4422,7 @@ async function notionGetCalendarEvents(userId: string, input: any): Promise<Tool
   const qData = await qRes.json();
   const rows: any[] = qData.results || [];
   if (!rows.length) {
-    return { output: `No Notion calendar entries in "${dbHint}" between ${startIso} and ${endIso}.` };
+    return { output: `No Notion calendar entries in "${resolvedTitle}" between ${startIso} and ${endIso}.` };
   }
 
   // 4) Render
@@ -4391,7 +4436,7 @@ async function notionGetCalendarEvents(userId: string, input: any): Promise<Tool
   });
 
   return {
-    output: `${rows.length} Notion entr${rows.length === 1 ? 'y' : 'ies'} in "${dbHint}" (date property: ${dateProp.name}):\n\n${lines.join('\n\n')}`,
+    output: `${rows.length} Notion entr${rows.length === 1 ? 'y' : 'ies'} in "${resolvedTitle}" (date property: ${dateProp.name}):\n\n${lines.join('\n\n')}`,
   };
 }
 
@@ -8037,13 +8082,31 @@ async function calendarUnlimitedScan(userId: string, input: any): Promise<ToolRe
   let notionEvents: any[] = [];
   if (includeNotion) {
     try {
-      const n = await notionGetCalendarEvents(userId, { daysAhead: days, maxResults: 50 });
+      // notionGetCalendarEvents needs an explicit ISO window (it ignores
+      // daysAhead) — pass the same window we scanned GCal for.
+      const n = await notionGetCalendarEvents(userId, {
+        startDate: now.toISOString(),
+        endDate: end.toISOString(),
+        database: input?.notionDatabase,
+        databaseId: input?.notionDatabaseId,
+      });
       if (n.success !== false) {
-        // Parse output lines — format is human-readable; cheap heuristic extraction
+        // notionGetCalendarEvents renders each entry as:
+        //   "N. <title>\n   When: <start>[ → <end>]\n   ...\n   URL: <url>"
+        // Pair each numbered title line with the following "When:" line.
         const lines = n.output.split('\n');
-        for (const line of lines) {
-          const m = line.match(/^\s*[-•]\s*(.+?)\s+—\s+(.+)$/);
-          if (m) notionEvents.push({ source: 'notion', id: '', title: m[1].trim(), start: m[2].trim() });
+        for (let i = 0; i < lines.length; i++) {
+          const titleM = lines[i].match(/^\s*\d+\.\s+(.+)$/);
+          if (!titleM) continue;
+          const whenM = (lines[i + 1] || '').match(/^\s*When:\s*(.+?)(?:\s+→\s+(.+))?$/);
+          if (!whenM) continue;
+          notionEvents.push({
+            source: 'notion',
+            id: '',
+            title: titleM[1].trim(),
+            start: whenM[1].trim(),
+            end: whenM[2]?.trim(),
+          });
         }
       }
     } catch { /* notion not connected — silent */ }
