@@ -47,11 +47,15 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
     const username = profile?.username || profile?.email?.split('@')[0] || '';
     const referralUrl = `${typeof window !== 'undefined' ? window.location.hostname : 'mailient.xyz'}/invite/${username}`;
 
+    const freeProUntil = profile?.free_pro_until ? new Date(profile.free_pro_until) : null;
+    const freeProActive = !!freeProUntil && freeProUntil > new Date();
+    const conversions = profile?.conversion_count || 0;
+
     const steps = [
         { icon: Link2, text: "Share your invite link", bold: "" },
-        { icon: Sparkles, text: "They sign up and get ", bold: "extra 20 credits" },
-        { icon: Zap, text: "You get ", bold: "50 credits", extra: " per signup, plus " },
-        { icon: Zap, text: "Another ", bold: "100 credits", extra: " if they go Pro" },
+        { icon: Sparkles, text: "A friend signs up ", bold: "free" },
+        { icon: Zap, text: "When they upgrade to Pro, you get ", bold: "1 month of Pro, free" },
+        { icon: Zap, text: "It ", bold: "stacks", extra: " — every conversion adds another free month" },
     ];
 
     return (
@@ -91,12 +95,12 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
-                            <span className="text-[10px] font-bold text-neutral-600 dark:text-white tracking-widest uppercase opacity-80">Earn 50+ units</span>
+                            <span className="text-[10px] font-bold text-neutral-600 dark:text-white tracking-widest uppercase opacity-80">Affiliate · Free Pro</span>
                         </div>
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
-                            Expand the<br />Network
+                            Refer friends,<br />get Pro free
                         </h2>
-                        <p className="text-neutral-600 dark:text-white/40 text-sm font-medium">and earn free AI intelligence</p>
+                        <p className="text-neutral-600 dark:text-white/40 text-sm font-medium">a free month of Pro for every paid referral</p>
                     </div>
 
                     <button 
@@ -134,14 +138,24 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         </div>
                     </div>
 
-                    <div className="pt-2 border-t border-neutral-200 dark:border-white/5 flex items-center justify-between">
-                        <p className="text-[13px] font-medium text-neutral-500 dark:text-white/50">
-                            <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{profile?.conversion_count || 0}</span> converted
-                        </p>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                            <span className="text-[10px] font-bold text-neutral-500 dark:text-white/40 uppercase tracking-tighter">Live Status</span>
+                    <div className="pt-2 border-t border-neutral-200 dark:border-white/5 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <p className="text-[13px] font-medium text-neutral-500 dark:text-white/50">
+                                <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{conversions}</span> went Pro
+                            </p>
+                            <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
+                                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                <span className="text-[10px] font-bold text-neutral-500 dark:text-white/40 uppercase tracking-tighter">Live</span>
+                            </div>
                         </div>
+                        {freeProActive && (
+                            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                                <Sparkles className="w-3.5 h-3.5 text-green-600 dark:text-green-400" />
+                                <span className="text-[12px] font-semibold text-green-700 dark:text-green-300">
+                                    Your Pro is free until {freeProUntil!.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     {/* Copy Box */}

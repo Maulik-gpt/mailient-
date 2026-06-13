@@ -15,7 +15,7 @@ export async function GET() {
         const db = new DatabaseService();
         const { data: profile, error } = await db.supabase
             .from('user_profiles')
-            .select('name, username, avatar_url, email, preferences')
+            .select('name, username, avatar_url, email, preferences, invite_count, conversion_count')
             .eq('user_id', session.user.email.toLowerCase())
             .maybeSingle();
 
@@ -27,16 +27,24 @@ export async function GET() {
                 username: session.user.name?.toLowerCase().replace(/\s/g, '_'),
                 picture: session.user.image,
                 email: session.user.email,
-                preferences: {}
+                preferences: {},
+                invite_count: 0,
+                conversion_count: 0,
+                free_pro_until: null,
             });
         }
-        
+
+        const prefs = profile?.preferences || {};
         return Response.json({
             name: profile?.name || session.user.name,
             username: profile?.username || session.user.name?.toLowerCase().replace(/\s/g, '_'),
             picture: profile?.avatar_url || session.user.image,
             email: session.user.email,
-            preferences: profile?.preferences || {}
+            preferences: prefs,
+            // Referral / affiliate stats for the Rewards card
+            invite_count: profile?.invite_count || 0,
+            conversion_count: profile?.conversion_count || 0,
+            free_pro_until: prefs.free_pro_until || null,
         });
     } catch (e) {
         console.error('Unexpected profile fetch error:', e);
