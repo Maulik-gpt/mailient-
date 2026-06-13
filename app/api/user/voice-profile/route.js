@@ -58,15 +58,33 @@ export async function POST() {
             return Response.json({ error: 'Gmail not connected' }, { status: 403 });
         }
 
-        // 2. Run analysis
+        // 2. Run analysis — prefer the user's last 90 days of sent mail so the
+        //    voice reflects how they write now; fall back to all-time if a
+        //    low-volume sender has fewer than 3 in that window.
         const gmailService = new GmailService(accessToken, refreshToken);
-        const sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 40);
-        
+        let sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 60, 90);
+        if (sentEmails.length < 3) {
+            sentEmails = await voiceProfileService.fetchSentEmails(gmailService, 60);
+        }
+
         if (sentEmails.length < 3) {
             return Response.json({ error: 'Not enough sent emails to analyze (minimum 3 required)' }, { status: 400 });
         }
 
         const profile = await voiceProfileService.analyzeVoiceProfile(sentEmails);
+
+        // 3. Generate ONE real sample reply in the user's own voice for the
+        //    "This is how you sound" preview — best-effort, never blocks save.
+        try {
+            const sample = await voiceProfileService.generatePreviewReply(
+                profile.manual_settings,
+                'Hi — could you send over the latest version of the doc when you get a chance? Hoping to review before our call tomorrow.'
+            );
+            if (sample && sample.trim()) profile.sample_reply = sample.trim();
+        } catch (e) {
+            console.warn('⚠️ Voice sample generation failed (non-fatal):', e.message);
+        }
+
         await voiceProfileService.saveVoiceProfile(userId, profile);
 
         return Response.json({ success: true, profile });

@@ -58,7 +58,7 @@ interface AgentSpec {
   steps: string[];
 }
 
-interface CreatedAgent { id: string; name: string; scheduleLabel: string; nextRun?: string }
+interface CreatedAgent { id: string; name: string; scheduleLabel: string; nextRun?: string; cron?: string }
 
 /* ─────────────────────────────────────────────────────────────────────────
    Utilities
@@ -89,6 +89,39 @@ function nextDailyOccurrence(hhmm: string): string {
   const d = new Date(now);
   d.setHours(Number.isFinite(h) ? h : 7, Number.isFinite(m) ? m : 0, 0, 0);
   if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
+}
+
+/** Replace only the minute/hour of a 5-field cron, preserving its cadence
+    (day-of-month / month / day-of-week). Falls back to a daily cron. */
+function setCronTime(cron: string | undefined, hhmm: string): string {
+  const [h, m] = hhmm.split(':').map((n) => parseInt(n, 10));
+  const mm = Number.isFinite(m) ? m : 0;
+  const hh = Number.isFinite(h) ? h : 7;
+  const p = (cron || '').trim().split(/\s+/);
+  if (p.length !== 5) return `${mm} ${hh} * * *`;
+  p[0] = String(mm); p[1] = String(hh);
+  return p.join(' ');
+}
+
+/** Next local occurrence of a (daily or weekly single-DOW) cron, ISO string.
+    Returns null for step crons (e.g. every-30-min) where a fixed time has no
+    meaning here. */
+function nextRunFromCron(cron: string): string | null {
+  const p = cron.trim().split(/\s+/);
+  if (p.length !== 5) return null;
+  const [minS, hourS, , , dowS] = p;
+  const m = parseInt(minS, 10), h = parseInt(hourS, 10);
+  if (!Number.isFinite(m) || !Number.isFinite(h)) return null;
+  const now = new Date();
+  const d = new Date(now);
+  d.setHours(h, m, 0, 0);
+  if (/^\d$/.test(dowS)) {
+    const target = Number(dowS);
+    while (d.getTime() <= now.getTime() || d.getDay() !== target) d.setDate(d.getDate() + 1);
+  } else if (d.getTime() <= now.getTime()) {
+    d.setDate(d.getDate() + 1);
+  }
   return d.toISOString();
 }
 
@@ -710,7 +743,9 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
       try {
         const res = await fetch('/api/user/voice-profile');
         const d = await res.json();
-        const p = d?.profile || null;
+        // GET returns the DB row { voice_profile: {...} }; PUT/POST return the
+        // bare object. Normalize to the profile object either way.
+        const p = d?.profile?.voice_profile || d?.profile || null;
         setProfile(p);
         const t = p?.manual_settings?.tone;
         if (t) setTone({ formality: t.formality ?? 50, detail: t.detail ?? 40, warmth: t.warmth ?? 50, confidence: t.confidence ?? 30 });
@@ -718,11 +753,16 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
     })();
   }, []);
 
-  const toneDesc = profile?.tone?.description;
-  const toneLabel = typeof toneDesc === 'string' ? toneDesc : 'Direct, warm, low on filler';
-  const signoff = profile?.closing_patterns?.[0] || profile?.sample_phrases?.[0] || 'Best,';
-  const sample = profile?.sample_phrases?.find((s: string) => s?.length > 20)
-    || 'Thanks for the nudge — that works on my end. I’ll send the doc over before end of day so you have time to review.';
+  // Real analyzed signals (object shapes, not arrays).
+  const toneDesc = profile?.tone?.description || profile?.tone?.primary;
+  const toneLabel = typeof toneDesc === 'string' && toneDesc.trim() ? toneDesc : 'Direct, warm, low on filler';
+  const signoff = profile?.closing_patterns?.preferred_closings?.[0] || 'Best,';
+  const replyLength = profile?.structural_patterns?.typical_email_length
+    || profile?.language_patterns?.sentence_length || 'Short, a few lines';
+  const formality = profile?.tone?.primary || 'Semi-formal';
+  const sample: string | null = (typeof profile?.sample_reply === 'string' && profile.sample_reply.trim())
+    ? profile.sample_reply.trim()
+    : null;
 
   const saveTone = async () => {
     setSaving(true);
@@ -733,7 +773,7 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
         body: JSON.stringify({ tone }),
       });
       const d = await res.json();
-      if (res.ok && d?.profile) setProfile(d.profile);
+      if (res.ok && d?.profile) setProfile(d.profile?.voice_profile || d.profile);
       setEditing(false);
     } catch {
       toast.error("Couldn't save those adjustments — try again.");
@@ -760,16 +800,18 @@ function S7VoicePreview({ onContinue }: { onContinue: () => void }) {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-4 mb-5">
+            <div className={cn('grid grid-cols-2 gap-x-6 gap-y-4', sample && 'mb-5')}>
               <Trait label="Tone" value={toneLabel} />
               <Trait label="Typical sign-off" value={signoff} />
-              <Trait label="Reply length" value={profile?.structural_patterns?.avg_length || 'Short, a few lines'} />
-              <Trait label="Formality" value={profile?.tone?.primary || 'Semi-formal'} />
+              <Trait label="Reply length" value={replyLength} />
+              <Trait label="Formality" value={formality} />
             </div>
-            <div className="pt-5 border-t border-black/[0.06]">
-              <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-[#0A0A0A]/40 mb-2">A draft in your voice</p>
-              <p className="text-[14px] text-[#0A0A0A]/80 leading-relaxed italic">“{sample}”</p>
-            </div>
+            {sample && (
+              <div className="pt-5 border-t border-black/[0.06]">
+                <p className="text-[10px] uppercase tracking-[0.14em] font-semibold text-[#0A0A0A]/40 mb-2">A draft in your voice</p>
+                <p className="text-[14px] text-[#0A0A0A]/80 leading-relaxed italic">“{sample}”</p>
+              </div>
+            )}
           </>
         )}
       </GlassCard>
@@ -872,6 +914,7 @@ function S9Arcus({ scan, firstName, onContinue, reduce }: { scan: ScanResult | n
       const decoder = new TextDecoder();
       let buffer = '';
       let finalText = '';
+      let errored = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -886,9 +929,11 @@ function S9Arcus({ scan, firstName, onContinue, reduce }: { scan: ScanResult | n
           const type = evLine.slice(6).trim();
           let data: any = {};
           try { data = JSON.parse(dataLine.slice(5).trim()); } catch { /* */ }
+          if (type === 'error') { errored = true; continue; }
           handleEvent(type, data, (t) => { finalText = t; });
         }
       }
+      if (errored && !finalText) { setPhase('error'); return; }
       if (finalText) push({ kind: 'final', text: finalText });
       setPhase('done');
     } catch {
@@ -900,23 +945,29 @@ function S9Arcus({ scan, firstName, onContinue, reduce }: { scan: ScanResult | n
     switch (type) {
       case 'thinking':
       case 'narrative': {
-        const t = (data?.text || data?.message || '').toString().trim();
+        // thinking → { status }, narrative → { text }
+        const t = (data?.status || data?.text || data?.message || '').toString().trim();
         if (t && t.length > 3) push({ kind: 'reason', text: clip(t) });
         break;
       }
       case 'tool_call': {
-        const label = humanTool(data?.name || data?.tool || '');
+        const label = humanTool(data?.tool || data?.name || '');
         if (label) push({ kind: 'decision', text: label });
         break;
       }
       case 'tool_result': {
-        const name = (data?.name || data?.tool || '').toString();
-        if (/draft/i.test(name)) setDrafts((d) => d + 1);
+        const name = (data?.tool || data?.name || '').toString();
+        // Only count drafts the agent actually saved.
+        if (/draft/i.test(name) && data?.success !== false) setDrafts((d) => d + 1);
         break;
       }
       case 'message': {
-        const t = (data?.text || data?.content || '').toString().trim();
+        const t = (data?.content || data?.text || '').toString().trim();
         if (t) setFinal(clip(t, 320));
+        break;
+      }
+      case 'connector_required': {
+        push({ kind: 'decision', text: 'Needs Gmail reconnected to continue' });
         break;
       }
       default: break;
@@ -1086,12 +1137,12 @@ const AGENT_TEMPLATES = [
     plan: ['Read the last 24h of unread email', 'Draft replies in your voice', 'Archive newsletters & promos', 'Log key conversations to Notion'],
   },
   {
-    id: 'meeting_prep_concierge', name: 'Meeting Autopilot', tagline: 'A prep doc for every external meeting tomorrow',
+    id: 'meeting_prep_concierge', name: 'Meeting Prep Concierge', tagline: 'A prep doc for every external meeting tomorrow',
     schedule: 'Daily 6:00 PM', recommended: false,
     plan: ['Scan tomorrow’s calendar', 'Pull recent emails with each attendee', 'Write a one-page prep doc', 'Add Meet links & buffers'],
   },
   {
-    id: 'weekly_executive_brief', name: 'Weekly Digest', tagline: 'A real executive briefing every Friday',
+    id: 'weekly_executive_brief', name: 'Weekly Executive Brief', tagline: 'A real executive briefing every Friday',
     schedule: 'Friday 4:00 PM', recommended: false,
     plan: ['Aggregate the week’s email & meetings', 'Find revenue wins & client updates', 'Compose a structured briefing', 'Post to Slack & email it'],
   },
@@ -1159,7 +1210,7 @@ function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
         if (!res.ok || !d.agent?.id) throw new Error(d?.error || 'failed');
         agent = d.agent;
       }
-      setCreated({ id: agent.id, name: agent.name, scheduleLabel: agent.scheduleLabel || '', nextRun: agent.nextRun });
+      setCreated({ id: agent.id, name: agent.name, scheduleLabel: agent.scheduleLabel || '', nextRun: agent.nextRun, cron: agent.cron });
       onContinue(true);
     } catch {
       toast.error("Couldn't activate that agent right now — you can add it from your dashboard.");
@@ -1346,17 +1397,20 @@ function S14Notifications({ time, setTime, channel, setChannel, hasSlack, agent,
 
   const save = async () => {
     setSaving(true);
-    // Make the preference real: retarget the created agent's schedule + channel.
-    // Only update what we show (next run / label) if the PATCH actually succeeds,
-    // so S15 never displays a schedule the backend didn't accept.
+    // Make the preference real: retarget the created agent's briefing TIME +
+    // channel while preserving its cadence (a weekly digest stays weekly).
+    // Only update what we show (next run / label) if the PATCH actually
+    // succeeds, so S15 never displays a schedule the backend didn't accept.
     if (agent?.id) {
+      const newCron = setCronTime(agent.cron, time);
       try {
         const res = await fetch('/api/arcus/agents', {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: agent.id, cron_schedule: timeToCron(time), output_channel: channel }),
+          body: JSON.stringify({ id: agent.id, cron_schedule: newCron, output_channel: channel }),
         });
         if (res.ok) {
-          onUpdate({ ...agent, scheduleLabel: `Daily · ${prettyTime(time)}`, nextRun: nextDailyOccurrence(time) });
+          const nextRun = nextRunFromCron(newCron) || nextDailyOccurrence(time);
+          onUpdate({ ...agent, cron: newCron, nextRun });
         }
       } catch { /* preference still persisted via state patch on continue */ }
     }
