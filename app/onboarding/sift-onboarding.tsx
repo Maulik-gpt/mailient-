@@ -1045,40 +1045,42 @@ function ConnectScreen({ icon, title, subtitle, connected, onConnect, onContinue
 /* ═══════════════════════════ 12 · FIRST AGENT (real create, skippable) ═══════════════════════════ */
 
 const AGENT_TEMPLATES = [
-  { id: 'morning_inbox_sweep', name: 'Morning Inbox Sweep', tagline: 'Wake up to a triaged inbox with drafts ready', schedule: 'Daily 7:00 AM', recommended: true },
-  { id: 'meeting_prep_concierge', name: 'Meeting Autopilot', tagline: 'A prep doc for every external meeting tomorrow', schedule: 'Daily 6:00 PM', recommended: false },
-  { id: 'weekly_executive_brief', name: 'Weekly Digest', tagline: 'A real executive briefing every Friday', schedule: 'Friday 4:00 PM', recommended: false },
+  {
+    id: 'morning_inbox_sweep', name: 'Morning Inbox Sweep', tagline: 'Wake up to a triaged inbox with drafts ready',
+    schedule: 'Daily 7:00 AM', recommended: true,
+    plan: ['Read the last 24h of unread email', 'Draft replies in your voice', 'Archive newsletters & promos', 'Log key conversations to Notion'],
+  },
+  {
+    id: 'meeting_prep_concierge', name: 'Meeting Autopilot', tagline: 'A prep doc for every external meeting tomorrow',
+    schedule: 'Daily 6:00 PM', recommended: false,
+    plan: ['Scan tomorrow’s calendar', 'Pull recent emails with each attendee', 'Write a one-page prep doc', 'Add Meet links & buffers'],
+  },
+  {
+    id: 'weekly_executive_brief', name: 'Weekly Digest', tagline: 'A real executive briefing every Friday',
+    schedule: 'Friday 4:00 PM', recommended: false,
+    plan: ['Aggregate the week’s email & meetings', 'Find revenue wins & client updates', 'Compose a structured briefing', 'Post to Slack & email it'],
+  },
 ];
+
+type AgentTemplate = (typeof AGENT_TEMPLATES)[number];
+type Review =
+  | { kind: 'template'; template: AgentTemplate }
+  | { kind: 'custom'; spec: AgentSpec };
 
 function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
   spec: AgentSpec | null; setSpec: (s: AgentSpec | null) => void;
   created: CreatedAgent | null; setCreated: (c: CreatedAgent | null) => void;
   onContinue: (created: boolean) => void; onSkip: () => void;
 }) {
-  const [mode, setMode] = useState<'pick' | 'custom'>('pick');
+  const [mode, setMode] = useState<'pick' | 'custom' | 'review'>('pick');
+  const [review, setReview] = useState<Review | null>(null);
   const [customPrompt, setCustomPrompt] = useState('');
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  const spawnTemplate = async (templateId: string) => {
-    setBusyId(templateId);
-    try {
-      const res = await fetch('/api/arcus/agents/templates', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ templateId }),
-      });
-      const d = await res.json();
-      if (res.ok && d.agent?.id) {
-        setCreated({ id: d.agent.id, name: d.agent.name, scheduleLabel: d.agent.scheduleLabel || '', nextRun: d.agent.nextRun });
-        onContinue(true);
-      } else throw new Error(d?.error || 'failed');
-    } catch {
-      toast.error("Couldn't create that agent right now — you can add it from your dashboard.");
-    } finally { setBusyId(null); }
-  };
-
-  const spawnCustom = async () => {
+  // Design the custom agent, then show its plan for approval (don't create yet).
+  const designCustom = async () => {
     if (!customPrompt.trim()) return;
-    setBusyId('custom');
+    setBusy(true);
     try {
       const g = await fetch('/api/onboarding/generate-agent', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -1087,23 +1089,83 @@ function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
       const gd = await g.json();
       if (!gd.success || !gd.agent) throw new Error('design failed');
       setSpec(gd.agent);
-      const c = await fetch('/api/arcus/agents/create', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: gd.agent.name, task_description: gd.agent.task_description,
-          cron_schedule: gd.agent.cron_schedule, output_channel: gd.agent.output_channel,
-          slack_channel: null, skip_confirmations: false,
-        }),
-      });
-      const cd = await c.json();
-      if (c.ok && cd.agent?.id) {
-        setCreated({ id: cd.agent.id, name: cd.agent.name, scheduleLabel: cd.agent.scheduleLabel || gd.agent.scheduleLabel, nextRun: cd.agent.nextRun });
-        onContinue(true);
-      } else throw new Error('create failed');
+      setReview({ kind: 'custom', spec: gd.agent });
+      setMode('review');
     } catch {
-      toast.error("Couldn't build that agent right now — you can add it from your dashboard.");
-    } finally { setBusyId(null); }
+      toast.error("Couldn't design that agent right now — try rephrasing, or do it later.");
+    } finally { setBusy(false); }
   };
+
+  // Approve → actually create the real arcus_agents row.
+  const approve = async () => {
+    if (!review) return;
+    setBusy(true);
+    try {
+      let agent: any;
+      if (review.kind === 'template') {
+        const res = await fetch('/api/arcus/agents/templates', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ templateId: review.template.id }),
+        });
+        const d = await res.json();
+        if (!res.ok || !d.agent?.id) throw new Error(d?.error || 'failed');
+        agent = d.agent;
+      } else {
+        const s = review.spec;
+        const res = await fetch('/api/arcus/agents/create', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: s.name, task_description: s.task_description,
+            cron_schedule: s.cron_schedule, output_channel: s.output_channel,
+            slack_channel: null, skip_confirmations: false,
+          }),
+        });
+        const d = await res.json();
+        if (!res.ok || !d.agent?.id) throw new Error(d?.error || 'failed');
+        agent = d.agent;
+      }
+      setCreated({ id: agent.id, name: agent.name, scheduleLabel: agent.scheduleLabel || '', nextRun: agent.nextRun });
+      onContinue(true);
+    } catch {
+      toast.error("Couldn't activate that agent right now — you can add it from your dashboard.");
+    } finally { setBusy(false); }
+  };
+
+  // ── Review / approve ──
+  if (mode === 'review' && review) {
+    const name = review.kind === 'template' ? review.template.name : review.spec.name;
+    const schedule = review.kind === 'template' ? review.template.schedule : review.spec.scheduleLabel;
+    const summary = review.kind === 'template' ? review.template.tagline : review.spec.summary;
+    const steps = review.kind === 'template' ? review.template.plan : review.spec.steps;
+    return (
+      <div>
+        <div className="text-center mb-7">
+          <IconBadge><Sparkles className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} /></IconBadge>
+          <Display className="text-[26px] sm:text-[32px] mb-3">Here’s the plan</Display>
+          <Body className="text-[15px] max-w-sm mx-auto">Approve to put it on a schedule. Drafts always wait for your sign-off.</Body>
+        </div>
+        <GlassCard className="mb-5">
+          <p className="text-[16px] font-medium text-[#0A0A0A]">{name}</p>
+          <p className="text-[13px] text-[#0A0A0A]/55 mt-0.5">{summary}</p>
+          <p className="text-[12px] text-[#0A0A0A]/45 mt-2 inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {schedule}</p>
+          <ol className="mt-4 pt-4 border-t border-black/[0.06] space-y-2.5">
+            {steps.map((s, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="w-5 h-5 rounded-full lg-pane text-[11px] font-medium grid place-content-center shrink-0 tabular-nums">{i + 1}</span>
+                <span className="text-[13.5px] text-[#0A0A0A]/75 leading-snug">{s}</span>
+              </li>
+            ))}
+          </ol>
+        </GlassCard>
+        <div className="flex items-center justify-center gap-5">
+          <PrimaryButton onClick={approve} disabled={busy}>
+            {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Activating…</> : <>Approve & activate <Check className="w-4 h-4" /></>}
+          </PrimaryButton>
+          <SkipLink onClick={() => { setReview(null); setMode('pick'); }}>Choose another</SkipLink>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -1118,11 +1180,10 @@ function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
           {AGENT_TEMPLATES.map((t) => (
             <button
               key={t.id}
-              onClick={() => spawnTemplate(t.id)}
-              disabled={!!busyId}
+              onClick={() => { setReview({ kind: 'template', template: t }); setMode('review'); }}
               className={cn(
-                'lg-focus w-full text-left lg-card p-5 flex items-center gap-4 transition-transform active:scale-[0.99] disabled:opacity-60',
-                t.recommended && !busyId && 'lg-pulse',
+                'lg-focus w-full text-left lg-card p-5 flex items-center gap-4 transition-transform active:scale-[0.99]',
+                t.recommended && 'lg-pulse',
               )}
             >
               <div className="flex-1 min-w-0">
@@ -1133,7 +1194,7 @@ function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
                 <p className="text-[12.5px] text-[#0A0A0A]/50 mt-0.5">{t.tagline}</p>
                 <p className="text-[11.5px] text-[#0A0A0A]/40 mt-1.5 inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {t.schedule}</p>
               </div>
-              {busyId === t.id ? <Loader2 className="w-4 h-4 animate-spin text-[#0A0A0A]/60" /> : <ChevronRight className="w-4 h-4 text-[#0A0A0A]/30" />}
+              <ChevronRight className="w-4 h-4 text-[#0A0A0A]/30" />
             </button>
           ))}
           <button onClick={() => setMode('custom')} className="lg-focus w-full text-center py-3 text-[13.5px] font-medium text-[#0A0A0A]/55 hover:text-[#0A0A0A] transition-colors">
@@ -1152,8 +1213,8 @@ function S12Agent({ spec, setSpec, created, setCreated, onContinue, onSkip }: {
             />
           </div>
           <div className="flex items-center justify-center gap-5 mt-5">
-            <PrimaryButton onClick={spawnCustom} disabled={!customPrompt.trim() || busyId === 'custom'}>
-              {busyId === 'custom' ? <><Loader2 className="w-4 h-4 animate-spin" /> Building…</> : <>Create agent <ArrowRight className="w-4 h-4" /></>}
+            <PrimaryButton onClick={designCustom} disabled={!customPrompt.trim() || busy}>
+              {busy ? <><Loader2 className="w-4 h-4 animate-spin" /> Designing…</> : <>Design agent <ArrowRight className="w-4 h-4" /></>}
             </PrimaryButton>
             <SkipLink onClick={() => setMode('pick')}>Back to templates</SkipLink>
           </div>
