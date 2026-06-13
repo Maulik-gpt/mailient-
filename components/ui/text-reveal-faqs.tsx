@@ -25,7 +25,7 @@ export default function FAQs() {
     {
       id: 'item-4',
       question: 'Is my email data secure?',
-      answer: 'Security is our core priority. We use enterprise-grade encryption. We only process metadata for Sift and specific content when you trigger an AI action. We never store your raw email content permanently.',
+      answer: 'Security is a core priority. Mailient connects to Gmail with scoped access you grant — and can revoke anytime. Email content is processed only when you trigger an AI action or run an agent, and your emails are never used to train models.',
     },
     {
       id: 'item-5',
@@ -34,29 +34,29 @@ export default function FAQs() {
     },
     {
       id: 'item-6',
-      question: 'How do I trigger an AI scheduling?',
-      answer: 'In Arcus chat, click the calendar icon. Arcus will scan your linked calendar and suggest optimal times based on the email context and your preferences.',
+      question: 'How do I get Arcus to schedule a meeting?',
+      answer: 'Connect your Google Calendar, then just ask Arcus in chat (e.g. “find a 30-min slot next week and draft a reply proposing times”). It reads your calendar and writes the reply for your approval — it never sends without you.',
     },
 
     {
       id: 'item-8',
-      question: 'How do Arcus credits work?',
-      answer: 'Each plan comes with a set of monthly Arcus credits. High-intensity tasks like drafting and deep research use credits. You can monitor your usage in the sidebar usage badge.',
+      question: 'How much can I use on a paid plan?',
+      answer: 'Paid plans (Monthly, Annual, and Lifetime) are unlimited — unlimited Arcus runs, drafts, Sift analysis, summaries, and scheduled agents. There are no per-task credits to track.',
     },
     {
       id: 'item-9',
-      question: 'Can I use Mailient for multiple business accounts?',
-      answer: 'Yes! Pro and Team plans support multi-account linking, allowing you to sift through all your business communications from a single, unified view.',
+      question: 'Where do the replies Arcus writes go?',
+      answer: 'Every reply is saved straight to your Gmail “Drafts” folder for you to review, edit, and send. Mailient never sends mail on your behalf without your approval.',
     },
     {
       id: 'item-10',
-      question: 'How do I enable Smart Nudges?',
-      answer: 'Go to Settings > System and toggle "Enable Smart Nudges". Sift will then start monitoring for crucial updates and alert you the moment a hot lead needs your attention.',
+      question: 'Can I control Arcus’s tone and length?',
+      answer: 'Yes. In Arcus Settings you can set the tone (Direct, Balanced, or Warm) and the length (Brief, Normal, or Detailed), and add standing custom instructions Arcus follows on every task.',
     },
     {
       id: 'item-11',
-      question: 'What happens if I hit my usage limit?',
-      answer: "You'll still be able to read and reply to emails manually, but AI features will be paused until the next billing cycle or until you upgrade to a higher-tier plan.",
+      question: 'What do I get without a plan?',
+      answer: 'Without an active plan, AI features (Arcus, drafting, Sift, summaries, agents) are paused — you can still read and reply manually. Subscribe to unlock everything, unlimited.',
     },
     {
       id: 'item-12',
@@ -65,8 +65,8 @@ export default function FAQs() {
     },
     {
       id: 'item-13',
-      question: 'How accurate is the opportunity detection?',
-      answer: 'Our models are trained on millions of business interactions. While we recommend a quick human check, our users report over 95% accuracy in detecting urgent business needs.',
+      question: 'How accurate is Sift’s detection?',
+      answer: 'Sift reads context to flag what likely needs you, and it shows its reasoning so you can judge each call. It’s a strong first pass, not a replacement for your judgment — a quick human check is always worth it on anything important.',
     },
     {
       id: 'item-14',

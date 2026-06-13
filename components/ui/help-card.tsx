@@ -134,21 +134,19 @@ export function HelpCard({ onClose }: HelpCardProps) {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-12 pb-12">
                                         {[
-                                            { title: "CMD+K Intelligence", desc: "Use global search to quickly summarize any thread without opening it. Speed is everything." },
-                                            { title: "Dynamic Style Mimicry", desc: "Our AI learns your sign-offs and personal vocabulary over time. It gets scarily accurate." },
-                                            { title: "Integrated Calendar", desc: "Arcus can suggest and book meeting slots directly from your chat. No more tab hopping." },
-                                            { title: "Priority Sifting", desc: "Sift AI automatically pins high-conviction leads to your main home feed based on context." },
-                                            { title: "System Nudges", desc: "Fine-tune notification triggers for specific business events in your system settings panel." },
-                                            { title: "Voice Profile Training", desc: "The more you use Mailient, the more accurate and human your Arcus drafts become." },
-                                            { title: "Multi-Thread Summary", desc: "Summarize dozens of related emails into a single intelligence report for rapid catching up." },
-                                            { title: "Contextual Peeking", desc: "Hover over contacts in People view to see their last AI intelligence sift instantly." },
+                                            { title: "Jump to Arcus", desc: "Press ⌘K (Ctrl+K) from anywhere to focus the Arcus chat input and start typing instantly." },
+                                            { title: "Voice Profile", desc: "Arcus analyzes your sent mail to match your tone and sign-offs — and keeps learning from the edits you make to its drafts." },
+                                            { title: "Scheduled Agents", desc: "Set up background agents that run on their own schedule — like a morning inbox sweep — and report back to you." },
+                                            { title: "Calendar Scheduling", desc: "Ask Arcus to find open slots from your connected Google Calendar and draft a reply proposing times." },
+                                            { title: "Drafts, Never Auto-Sent", desc: "Every reply Arcus writes lands in your Gmail Drafts for approval. Nothing sends without you." },
+                                            { title: "Sift Today", desc: "Sift surfaces the threads that actually need you on your home feed — and shows the reasoning behind each one." },
+                                            { title: "Tone & Length", desc: "Tune Arcus in Settings: tone (Direct / Balanced / Warm) and length (Brief / Normal / Detailed)." },
+                                            { title: "Custom Instructions", desc: "Add standing instructions in Settings and Arcus follows them on every task it runs." },
 
-                                            { title: "Adaptive Tones", desc: "Toggle between Founder, Assistant, and Concise modes for any reply depending on the stakes." },
-                                            { title: "Privacy First", desc: "Enable Enhanced Privacy to keep all sensitive AI processing confined to your local device." },
-                                            { title: "Session Awareness", desc: "Arcus remembers your research during the session for better, contextual follow-ups." },
-                                            { title: "Zero-Click Drafting", desc: "Set Mailient to auto-draft replies for routine business inquiries while you focus on deep work." },
-                                            { title: "Usage Monitoring", desc: "Watch the sidebar badge to track your high-intensity AI credits in real-time." },
-                                            { title: "Keyboard Mastery", desc: "Navigate the entire app with shortcuts for a true non-mouse, high-performance workflow." }
+                                            { title: "Session Memory", desc: "Arcus remembers context across a conversation, so follow-ups stay sharp without re-explaining." },
+                                            { title: "Connected Tools", desc: "Link Google Calendar, Notion, and Slack so your agents can act and report across all of them." },
+                                            { title: "Reads Attachments", desc: "Attach or paste text files and Arcus reads them inline before it responds." },
+                                            { title: "Thread Summaries", desc: "Ask Arcus to condense a long thread — or several related ones — into a single brief." }
                                         ].map((tip, i) => (
                                             <div key={i} className="group">
                                                 <div className="flex items-center gap-4 mb-3">
