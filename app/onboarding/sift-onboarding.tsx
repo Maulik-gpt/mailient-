@@ -39,9 +39,12 @@ const POLAR_CHECKOUT_URLS: Record<'monthly' | 'annual', string> = {
 interface ScanResult {
   windowDays: number;
   received: number;
-  needsReply: number;
-  repetitive: number;
+  unanswered: number;
+  automated: number;
   hoursPerWeek: number;
+  receivedCapped?: boolean;
+  unansweredCapped?: boolean;
+  automatedCapped?: boolean;
 }
 
 interface AgentSpec {
@@ -77,6 +80,16 @@ function prettyTime(hhmm: string): string {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12 = ((h + 11) % 12) + 1;
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+/** Next local occurrence of a daily HH:MM time, as an ISO string. */
+function nextDailyOccurrence(hhmm: string): string {
+  const [h, m] = hhmm.split(':').map((n) => parseInt(n, 10));
+  const now = new Date();
+  const d = new Date(now);
+  d.setHours(Number.isFinite(h) ? h : 7, Number.isFinite(m) ? m : 0, 0, 0);
+  if (d.getTime() <= now.getTime()) d.setDate(d.getDate() + 1);
+  return d.toISOString();
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
@@ -120,6 +133,24 @@ export default function SiftOnboardingPage() {
     } catch { /* silent */ }
   }, []);
   useEffect(() => { fetchIntegrations(); }, [fetchIntegrations]);
+
+  // Capture the user's real timezone so scheduled agents fire (and display their
+  // first run) at the correct local time — the create route reads this.
+  const tzSent = useRef(false);
+  useEffect(() => {
+    if (tzSent.current) return;
+    tzSent.current = true;
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (timezone) {
+        fetch('/api/arcus/agents/timezone', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timezone }),
+        }).catch(() => {});
+      }
+    } catch { /* non-fatal */ }
+  }, []);
 
   const isConnected = useCallback((provider: string) => {
     if (provider === 'gmail') return !!session || integrations.some((s: any) => s.provider === 'gmail' && s.connected);
@@ -275,7 +306,7 @@ export default function SiftOnboardingPage() {
               {step === 11 && <S11Slack connected={isConnected('slack')} onConnect={() => connectViaPopup('slack')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 12 && <S12Agent spec={agentSpec} setSpec={setAgentSpec} created={createdAgent} setCreated={setCreatedAgent} onContinue={(c) => next(c ? { agent: c, agentSpec } : undefined)} onSkip={() => next()} />}
               {step === 13 && <S13Plan firstName={firstName} plan={planChoice} onChoose={(p) => { setPlanChoice(p); next({ plan: p }); }} />}
-              {step === 14 && <S14Notifications time={briefTime} setTime={setBriefTime} channel={briefChannel} setChannel={setBriefChannel} hasSlack={isConnected('slack')} agentId={createdAgent?.id || null} onContinue={() => next({ briefTime, briefChannel })} />}
+              {step === 14 && <S14Notifications time={briefTime} setTime={setBriefTime} channel={briefChannel} setChannel={setBriefChannel} hasSlack={isConnected('slack')} agent={createdAgent} onUpdate={setCreatedAgent} onContinue={() => next({ briefTime, briefChannel })} />}
               {step === 15 && <S15Done firstName={firstName} agent={createdAgent} scan={scan} briefTime={briefTime} briefChannel={briefChannel} plan={planChoice} onFinish={completeOnboarding} />}
             </motion.div>
           </AnimatePresence>
@@ -507,8 +538,10 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
         const d = await res.json();
         if (!res.ok || !d.success) throw new Error(d?.error || 'scan failed');
         const result: ScanResult = {
-          windowDays: d.windowDays, received: d.received, needsReply: d.needsReply,
-          repetitive: d.repetitive, hoursPerWeek: d.hoursPerWeek,
+          windowDays: d.windowDays, received: d.received, unanswered: d.unanswered,
+          automated: d.automated, hoursPerWeek: d.hoursPerWeek,
+          receivedCapped: d.receivedCapped, unansweredCapped: d.unansweredCapped,
+          automatedCapped: d.automatedCapped,
         };
         setScan(result);
         // Count-up to the real number, then settle into the insight.
@@ -559,7 +592,7 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
       </div>
 
       <div className="tabular-nums font-medium tracking-[-0.04em] text-[#0A0A0A] text-[64px] sm:text-[88px] leading-none mb-3">
-        {display.toLocaleString()}
+        {display.toLocaleString()}{phase === 'settled' && scan?.receivedCapped ? '+' : ''}
       </div>
 
       <AnimatePresence mode="wait">
@@ -570,8 +603,8 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
         ) : (
           <motion.div key="s" initial={{ opacity: reduce ? 1 : 0, y: reduce ? 0 : 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
             <Body className="text-[16px] max-w-sm mx-auto">
-              You’ve gotten <span className="text-[#0A0A0A] font-medium">{scan?.received.toLocaleString()}</span> emails in the last{' '}
-              {scan?.windowDays} days. About <span className="text-[#0A0A0A] font-medium">{scan?.needsReply.toLocaleString()}</span> needed a reply.
+              You’ve gotten <span className="text-[#0A0A0A] font-medium">{scan?.received.toLocaleString()}{scan?.receivedCapped ? '+' : ''}</span> emails in the last{' '}
+              {scan?.windowDays} days. <span className="text-[#0A0A0A] font-medium">{scan?.unanswered.toLocaleString()}{scan?.unansweredCapped ? '+' : ''}</span> are still unanswered.
             </Body>
           </motion.div>
         )}
@@ -583,11 +616,12 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
 /* ═══════════════════════════ 5 · SCAN RESULTS ═══════════════════════════ */
 
 function S5ScanResults({ scan, onContinue }: { scan: ScanResult | null; onContinue: () => void }) {
+  const win = scan?.windowDays ?? 30;
   const rows = [
-    { label: 'Emails received', value: scan?.received, sub: `last ${scan?.windowDays ?? 30} days` },
-    { label: 'Needed a reply', value: scan?.needsReply, sub: 'from real people' },
-    { label: 'Repetitive / automated', value: scan?.repetitive, sub: 'newsletters, updates, promos' },
-    { label: 'Hours a week', value: scan?.hoursPerWeek, sub: 'estimated, on email' },
+    { label: 'Emails received', value: scan?.received, capped: scan?.receivedCapped, est: false, sub: `last ${win} days` },
+    { label: 'Still unanswered', value: scan?.unanswered, capped: scan?.unansweredCapped, est: false, sub: 'unread, from real people' },
+    { label: 'Automated / bulk', value: scan?.automated, capped: scan?.automatedCapped, est: false, sub: 'newsletters, updates, promos' },
+    { label: 'Hours a week', value: scan?.hoursPerWeek, capped: false, est: true, sub: 'estimated, on email' },
   ];
   return (
     <div>
@@ -604,12 +638,13 @@ function S5ScanResults({ scan, onContinue }: { scan: ScanResult | null; onContin
               <p className="text-[12px] text-[#0A0A0A]/45">{r.sub}</p>
             </div>
             <span className="tabular-nums text-[22px] font-medium tracking-tight text-[#0A0A0A]">
-              {r.value != null ? r.value.toLocaleString() : '—'}
+              {r.value != null ? `${r.est ? '~' : ''}${r.value.toLocaleString()}${r.capped ? '+' : ''}` : '—'}
             </span>
           </div>
         ))}
       </GlassCard>
-      <div className="text-center mt-7">
+      <p className="text-center text-[11.5px] text-[#0A0A0A]/40 mt-4">Counted from your Gmail over the last {win} days.</p>
+      <div className="text-center mt-6">
         <PrimaryButton onClick={onContinue}>Continue <ArrowRight className="w-4 h-4" /></PrimaryButton>
       </div>
     </div>
@@ -808,7 +843,7 @@ function S8MeetArcus({ onContinue }: { onContinue: () => void }) {
 interface Moment { kind: 'reason' | 'decision' | 'action' | 'final'; text: string }
 
 function S9Arcus({ scan, firstName, onContinue, reduce }: { scan: ScanResult | null; firstName: string; onContinue: () => void; reduce: boolean }) {
-  const count = Math.max(1, Math.min(3, scan?.needsReply ?? 3));
+  const count = Math.max(1, Math.min(3, scan?.unanswered ?? 3));
   const [phase, setPhase] = useState<'idle' | 'working' | 'done' | 'error'>('idle');
   const [moments, setMoments] = useState<Moment[]>([]);
   const [drafts, setDrafts] = useState(0);
@@ -1297,10 +1332,10 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: 'mont
 
 /* ═══════════════════════════ 14 · NOTIFICATIONS ═══════════════════════════ */
 
-function S14Notifications({ time, setTime, channel, setChannel, hasSlack, agentId, onContinue }: {
+function S14Notifications({ time, setTime, channel, setChannel, hasSlack, agent, onUpdate, onContinue }: {
   time: string; setTime: (t: string) => void;
   channel: 'gmail' | 'slack' | 'both'; setChannel: (c: 'gmail' | 'slack' | 'both') => void;
-  hasSlack: boolean; agentId: string | null; onContinue: () => void;
+  hasSlack: boolean; agent: CreatedAgent | null; onUpdate: (a: CreatedAgent) => void; onContinue: () => void;
 }) {
   const [saving, setSaving] = useState(false);
   const channels: Array<{ id: 'gmail' | 'slack' | 'both'; label: string; disabled?: boolean }> = [
@@ -1312,12 +1347,17 @@ function S14Notifications({ time, setTime, channel, setChannel, hasSlack, agentI
   const save = async () => {
     setSaving(true);
     // Make the preference real: retarget the created agent's schedule + channel.
-    if (agentId) {
+    // Only update what we show (next run / label) if the PATCH actually succeeds,
+    // so S15 never displays a schedule the backend didn't accept.
+    if (agent?.id) {
       try {
-        await fetch('/api/arcus/agents', {
+        const res = await fetch('/api/arcus/agents', {
           method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: agentId, cron_schedule: timeToCron(time), output_channel: channel }),
+          body: JSON.stringify({ id: agent.id, cron_schedule: timeToCron(time), output_channel: channel }),
         });
+        if (res.ok) {
+          onUpdate({ ...agent, scheduleLabel: `Daily · ${prettyTime(time)}`, nextRun: nextDailyOccurrence(time) });
+        }
       } catch { /* preference still persisted via state patch on continue */ }
     }
     setSaving(false);
@@ -1415,11 +1455,11 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
             <SummaryRow
               icon={<Clock className="w-4 h-4" />}
               label="First run"
-              value={agent.nextRun ? new Date(agent.nextRun).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : `${prettyTime(briefTime)} · ${channelLabel}`}
+              value={`${agent.nextRun ? new Date(agent.nextRun).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' }) : prettyTime(briefTime)} · ${channelLabel}`}
             />
           </>
         ) : (
-          <SummaryRow icon={<Clock className="w-4 h-4" />} label="Briefing" value={`${prettyTime(briefTime)} · ${channelLabel}`} />
+          <SummaryRow icon={<Sparkles className="w-4 h-4" />} label="First agent" value="None yet — add one from your dashboard" />
         )}
         {scan && <SummaryRow icon={<Activity className="w-4 h-4" />} label="Taking off your plate" value={`~${scan.hoursPerWeek}h / week`} />}
       </GlassCard>
