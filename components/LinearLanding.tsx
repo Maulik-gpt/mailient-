@@ -240,12 +240,30 @@ export function LinearLanding() {
     const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (!CLIENT_ID) return;
 
+    // One Tap only returns an identity token — no Gmail access/refresh token,
+    // which this app can't function without. So we use the tap to launch the
+    // REAL Google OAuth (Gmail scopes + offline access), pre-selecting the
+    // account the user just chose via login_hint. This is why the old
+    // credential-only sign-in "did nothing": even on success the session had no
+    // Gmail token and onboarding had nothing to work with.
+    const emailFromCredential = (cred: string): string | undefined => {
+      try {
+        const payload = cred.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/");
+        if (!payload) return undefined;
+        return JSON.parse(atob(payload))?.email || undefined;
+      } catch {
+        return undefined;
+      }
+    };
+
     const handleCredential = async (response: { credential?: string }) => {
       if (!response?.credential) return;
-      await signIn("google-one-tap", {
-        credential: response.credential,
-        callbackUrl: "/home-feed",
-      });
+      const email = emailFromCredential(response.credential);
+      await signIn(
+        "google",
+        { callbackUrl: "/onboarding" },
+        email ? { login_hint: email } : undefined,
+      );
     };
 
     const init = () => {
