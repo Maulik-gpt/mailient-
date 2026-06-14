@@ -2268,10 +2268,10 @@ export async function executeTool(
       case 'calendar_get_availability': result = await calendarGetAvailability(userId, input); break;
       case 'calendar_cancel_event': result = await calendarCancelEvent(userId, input, context); break;
       // Cal.com scheduling
-      case 'calcom_list_event_types': result = await calcomListEventTypes(); break;
-      case 'calcom_get_slots':        result = await calcomGetSlots(input); break;
+      case 'calcom_list_event_types': result = await calcomListEventTypes(userId); break;
+      case 'calcom_get_slots':        result = await calcomGetSlots(userId, input); break;
       case 'calcom_create_booking':   result = await calcomCreateBooking(userId, input, context); break;
-      case 'calcom_list_bookings':    result = await calcomListBookings(); break;
+      case 'calcom_list_bookings':    result = await calcomListBookings(userId); break;
       case 'calcom_cancel_booking':   result = await calcomCancelBooking(userId, input, context); break;
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
@@ -3696,11 +3696,25 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
 // attendees is irreversible (you can't unsend a cancellation email), so this
 // is treated as Tier 3 — explicit confirm per event.
 // ── Cal.com scheduling ─────────────────────────────────────────────────────────
-// Uses the app's CAL_API_KEY so booking works for every user out of the box.
-function getCalClient(): InstanceType<typeof CalComService> | null {
-  const key = (process.env.CAL_API_KEY || '').trim();
-  if (!key) return null;
-  return new CalComService(key);
+// Prefer the user's OWN connected Cal.com API key (so bookings land on their
+// account); fall back to the app's shared CAL_API_KEY so it still works for
+// users who haven't connected one.
+async function getCalClient(userId?: string): Promise<InstanceType<typeof CalComService> | null> {
+  if (userId) {
+    try {
+      const supabase = getSupabaseAdmin();
+      const { data } = await supabase
+        .from('integration_credentials')
+        .select('access_token')
+        .eq('user_email', userId.toLowerCase())
+        .eq('provider', 'cal_com')
+        .maybeSingle();
+      const k = (data?.access_token || '').trim();
+      if (k) return new CalComService(k);
+    } catch { /* fall through to shared key */ }
+  }
+  const shared = (process.env.CAL_API_KEY || '').trim();
+  return shared ? new CalComService(shared) : null;
 }
 
 function calcomBookingUrl(slug: string): string {
@@ -3711,9 +3725,9 @@ function calcomBookingUrl(slug: string): string {
   return user ? `https://cal.com/${user}/${slug}` : `https://cal.com/${slug}`;
 }
 
-async function calcomListEventTypes(): Promise<ToolResult> {
-  const cal = getCalClient();
-  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+async function calcomListEventTypes(userId: string): Promise<ToolResult> {
+  const cal = await getCalClient(userId);
+  if (!cal) return failureResult('Cal.com is not connected. Add your Cal.com API key in Settings → Integrations.', 'calcom_not_configured');
   try {
     const types = await cal.getEventTypes();
     if (!types.length) return { output: 'No Cal.com event types found. Create a meeting type in Cal.com first.' };
@@ -3726,9 +3740,9 @@ async function calcomListEventTypes(): Promise<ToolResult> {
   }
 }
 
-async function calcomGetSlots(input: any): Promise<ToolResult> {
-  const cal = getCalClient();
-  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+async function calcomGetSlots(userId: string, input: any): Promise<ToolResult> {
+  const cal = await getCalClient(userId);
+  if (!cal) return failureResult('Cal.com is not connected. Add your Cal.com API key in Settings → Integrations.', 'calcom_not_configured');
   const eventTypeId = Number(input.eventTypeId);
   if (!eventTypeId) return failureResult('eventTypeId is required.', 'validation_error');
   if (!input.startTime || !input.endTime) return failureResult('startTime and endTime are required.', 'validation_error');
@@ -3747,8 +3761,8 @@ async function calcomGetSlots(input: any): Promise<ToolResult> {
 }
 
 async function calcomCreateBooking(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
-  const cal = getCalClient();
-  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  const cal = await getCalClient(userId);
+  if (!cal) return failureResult('Cal.com is not connected. Add your Cal.com API key in Settings → Integrations.', 'calcom_not_configured');
   const eventTypeId = Number(input.eventTypeId);
   if (!eventTypeId || !input.start || !input.name || !input.email) {
     return failureResult('eventTypeId, start, name and email are required.', 'validation_error');
@@ -3785,9 +3799,9 @@ async function calcomCreateBooking(userId: string, input: any, context: ToolCont
   }
 }
 
-async function calcomListBookings(): Promise<ToolResult> {
-  const cal = getCalClient();
-  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+async function calcomListBookings(userId: string): Promise<ToolResult> {
+  const cal = await getCalClient(userId);
+  if (!cal) return failureResult('Cal.com is not connected. Add your Cal.com API key in Settings → Integrations.', 'calcom_not_configured');
   try {
     const bookings = await cal.getBookings();
     if (!bookings.length) return { output: 'No Cal.com bookings found.' };
@@ -3802,8 +3816,8 @@ async function calcomListBookings(): Promise<ToolResult> {
 }
 
 async function calcomCancelBooking(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
-  const cal = getCalClient();
-  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  const cal = await getCalClient(userId);
+  if (!cal) return failureResult('Cal.com is not connected. Add your Cal.com API key in Settings → Integrations.', 'calcom_not_configured');
   const bookingId = Number(input.bookingId);
   if (!bookingId) return failureResult('bookingId is required.', 'validation_error');
 

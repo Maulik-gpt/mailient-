@@ -235,6 +235,32 @@ export function ConnectorsModal({
   const [selectedApp, setSelectedApp] = useState<any | null>(null);
   const [showDetails, setShowDetails] = useState(false);
   const [manageDropdownOpen, setManageDropdownOpen] = useState(false);
+  // Cal.com connects by pasting an API key (cloud Cal.com has no OAuth app flow).
+  const [calcomKey, setCalcomKey] = useState('');
+  const [calcomConnecting, setCalcomConnecting] = useState(false);
+
+  const connectCalcom = async () => {
+    const key = calcomKey.trim();
+    if (!key) { toast.error('Paste your Cal.com API key first.'); return; }
+    setCalcomConnecting(true);
+    try {
+      const res = await fetch('/api/integrations/cal_com/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Could not connect Cal.com.'); return; }
+      toast.success('Cal.com connected.');
+      setCalcomKey('');
+      const r = await fetch('/api/integrations/status');
+      if (r.ok) setStatuses((await r.json()).integrations || []);
+    } catch {
+      toast.error('Could not reach the server. Try again.');
+    } finally {
+      setCalcomConnecting(false);
+    }
+  };
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
   const [feedback, setFeedback] = useState('');
@@ -661,13 +687,47 @@ export function ConnectorsModal({
                     <Clock className="w-4 h-4" />
                     Coming soon
                   </button>
+                ) : selectedApp.id === 'cal_com' ? (
+                  <div className="w-full flex flex-col gap-2.5">
+                    <input
+                      type="password"
+                      value={calcomKey}
+                      onChange={(e) => setCalcomKey(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') connectCalcom(); }}
+                      placeholder="Paste your Cal.com API key (cal_...)"
+                      className={cn(
+                        "w-full px-4 py-3.5 rounded-2xl border text-[14px] font-medium focus:outline-none transition-all",
+                        isDark
+                          ? "bg-white/[0.04] border-white/10 text-white placeholder:text-white/30 focus:border-white/25"
+                          : "bg-black/[0.03] border-black/10 text-neutral-900 placeholder:text-neutral-400 focus:border-black/25"
+                      )}
+                    />
+                    <button
+                      onClick={connectCalcom}
+                      disabled={calcomConnecting}
+                      className={cn(
+                        "w-full py-4 rounded-2xl font-bold text-[15px] active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-50",
+                        isDark ? "bg-white text-black hover:bg-white/90" : "bg-neutral-950 text-white hover:bg-neutral-800"
+                      )}
+                    >
+                      {calcomConnecting ? 'Connecting…' : <><Zap className={cn("w-4 h-4", isDark ? "fill-black" : "fill-white")} /> Connect</>}
+                    </button>
+                    <a
+                      href="https://app.cal.com/settings/developer/api-keys"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn("text-center text-[12px] font-medium underline-offset-2 hover:underline", isDark ? "text-white/40" : "text-neutral-500")}
+                    >
+                      Where do I find my API key?
+                    </a>
+                  </div>
                 ) : (
                   <button
                     onClick={() => handleConnectAction(selectedApp.id)}
                     className={cn(
                       "w-full py-4 rounded-2xl font-bold text-[15px] active:scale-95 transition-all flex items-center justify-center gap-2",
-                      isDark 
-                        ? "bg-white text-black hover:bg-white/90" 
+                      isDark
+                        ? "bg-white text-black hover:bg-white/90"
                         : "bg-neutral-950 text-white hover:bg-neutral-800"
                     )}
                   >
