@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip, Copy, Send, Loader2, Link as LinkIcon, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { VoiceProfileButton } from '@/components/ui/voice-profile-button';
 
 interface SiftDraftModalProps {
     draftData: {
@@ -18,9 +19,11 @@ interface SiftDraftModalProps {
     onSendReply: (draftData: any) => Promise<void>;
     onDismiss: () => void;
     isVisible: boolean;
+    /** Optional: re-generate this draft using the (updated) voice profile. */
+    onRedraft?: () => void;
 }
 
-export function SiftDraftModal({ draftData, onSendReply, onDismiss, isVisible }: SiftDraftModalProps) {
+export function SiftDraftModal({ draftData, onSendReply, onDismiss, isVisible, onRedraft }: SiftDraftModalProps) {
     const [draftContent, setDraftContent] = useState('');
     const [draftSubject, setDraftSubject] = useState('');
     const [isSending, setIsSending] = useState(false);
@@ -92,7 +95,10 @@ export function SiftDraftModal({ draftData, onSendReply, onDismiss, isVisible }:
             >
                 {/* Header */}
                 <div className="flex justify-between items-center px-8 py-5">
-                    <span className="text-black/40 dark:text-zinc-400 font-medium tracking-wide">Email</span>
+                    <div className="flex items-center gap-4">
+                        <span className="text-black/40 dark:text-zinc-400 font-medium tracking-wide">Email</span>
+                        <VoiceProfileButton onApplied={onRedraft} />
+                    </div>
                     <div className="flex items-center gap-2">
                         {/* Attachment Picker */}
                         <input

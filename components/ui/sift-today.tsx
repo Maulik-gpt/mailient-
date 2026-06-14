@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -514,9 +514,13 @@ export default function SiftToday() {
   const [activeDraft, setActiveDraft] = useState<any>(null);
   const [isDraftingNudgeId, setIsDraftingNudgeId] = useState<string | null>(null);
   const [isDraftingDecideId, setIsDraftingDecideId] = useState<string | null>(null);
+  // Re-runs the generator for the currently open draft (used by the Voice
+  // Profile button to re-draft in the updated voice).
+  const redraftRef = useRef<(() => void) | null>(null);
 
   const handleDraftNudge = async (item: ChaseItem) => {
     setIsDraftingNudgeId(item.id);
+    redraftRef.current = () => handleDraftNudge(item);
     setActiveDraft({
       content: '',
       recipientName: item.recipient.name || item.recipient.email.split('@')[0] || 'Recipient',
@@ -567,6 +571,7 @@ export default function SiftToday() {
 
   const handleDraftDecide = async (item: DecideItem) => {
     setIsDraftingDecideId(item.id);
+    redraftRef.current = () => handleDraftDecide(item);
     setActiveDraft({
       content: '',
       recipientName: item.sender.name || item.sender.email.split('@')[0] || 'Recipient',
@@ -982,6 +987,7 @@ export default function SiftToday() {
             onSendReply={handleSendDraft}
             onDismiss={() => setActiveDraft(null)}
             isVisible={true}
+            onRedraft={() => redraftRef.current?.()}
           />
         )}
       </div>

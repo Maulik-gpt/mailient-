@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Paperclip, Copy, Send, Mic, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { VoiceProfileButton } from '@/components/ui/voice-profile-button';
 
 export interface DraftApprovalData {
   content: string;
@@ -29,6 +30,8 @@ interface DraftApprovalModalProps {
     gmailDraftId?: string;
   }) => Promise<void>;
   onDismiss: () => void;
+  /** Optional: re-generate this draft using the (updated) voice profile. */
+  onRedraft?: () => void;
 }
 
 function markdownToInitialHtml(raw: string): string {
@@ -58,6 +61,7 @@ export function DraftApprovalModal({
   draftData,
   onSendReply,
   onDismiss,
+  onRedraft,
 }: DraftApprovalModalProps) {
   const [subject, setSubject] = useState('');
   const [isSending, setIsSending] = useState(false);
@@ -175,7 +179,10 @@ export function DraftApprovalModal({
             style={{ maxHeight: '85vh' }}
           >
             <div className="flex justify-between items-center px-8 py-5">
-              <span className="text-black/40 dark:text-zinc-400 font-medium tracking-wide">Email</span>
+              <div className="flex items-center gap-4">
+                <span className="text-black/40 dark:text-zinc-400 font-medium tracking-wide">Email</span>
+                <VoiceProfileButton onApplied={onRedraft} />
+              </div>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
