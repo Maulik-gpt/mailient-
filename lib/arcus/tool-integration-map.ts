@@ -56,6 +56,13 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   calendar_auto_generate_meet_links: 'gcal',
   calendar_buffer_time_insertion: 'gcal',
 
+  // Cal.com — always available (app provides CAL_API_KEY), no per-user OAuth needed
+  calcom_list_event_types: null,
+  calcom_get_slots: null,
+  calcom_create_booking: null,
+  calcom_list_bookings: null,
+  calcom_cancel_booking: null,
+
   // Notion
   search_notion: 'notion',
   fetch_notion_schema: 'notion',
@@ -141,6 +148,7 @@ export const INTEGRATION_LABELS: Record<string, string> = {
   notion: 'Notion',
   notion_calendar: 'Notion Calendar',
   slack: 'Slack',
+  cal_com: 'Cal.com',
 };
 
 /**
@@ -220,6 +228,11 @@ export const TOOL_VA_OWNERSHIP: Record<string, ArcusVA[]> = {
   schedule_meeting: ['calendar'],
   calendar_batch_create_events: ['calendar'],
   calendar_cancel_event: ['calendar'],
+  calcom_list_event_types: ['calendar'],
+  calcom_get_slots: ['calendar'],
+  calcom_create_booking: ['calendar'],
+  calcom_list_bookings: ['calendar'],
+  calcom_cancel_booking: ['calendar'],
 
   // 📝 CRM VA (Notion)
   search_notion: ['crm'],

@@ -26,7 +26,9 @@ export type ApprovalActionType =
   | 'send_slack_message'
   | 'send_slack_dm'
   | 'create_notion_page'
-  | 'cancel_event';
+  | 'cancel_event'
+  | 'calcom_book'
+  | 'calcom_cancel';
 
 const APPROVAL_TABLE = 'arcus_session_approvals';
 
@@ -69,6 +71,16 @@ export function normalizeTargetKey(action: ApprovalActionType, input: Record<str
     case 'cancel_event': {
       // Event id alone is sufficient — there is exactly one event per id.
       return String(input.eventId || input.EventId || input.event_id || '').trim().toLowerCase();
+    }
+    case 'calcom_book': {
+      // Keyed on attendee email + start — fields a human confirmation card
+      // reliably carries (eventTypeId rarely appears in the confirmation text).
+      const email = String(input.email || input.Email || input.with || input.attendee || '').trim().toLowerCase();
+      const start = String(input.start || input.Start || input.When || '').trim().toLowerCase();
+      return `${email}|${start}`;
+    }
+    case 'calcom_cancel': {
+      return String(input.bookingId || input.BookingId || input.booking_id || '').trim().toLowerCase();
     }
   }
 }

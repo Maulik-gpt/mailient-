@@ -10,6 +10,8 @@
 
 // @ts-ignore — JS module
 import { getSupabaseAdmin } from '../supabase.js';
+// @ts-ignore - JS module
+import { CalComService } from '../calcom.js';
 // @ts-ignore — JS module
 import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
@@ -336,6 +338,79 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         minSlotMinutes: { type: 'number', description: 'Minimum free-slot length to report in minutes (default 30).' },
       },
       required: ['startDate', 'endDate'],
+    },
+  },
+  {
+    name: 'calcom_list_event_types',
+    description:
+      'List the user\'s Cal.com meeting types (the bookable links people use to schedule with them — e.g. "30 Min Meeting", "Intro Call"). ' +
+      'Call this FIRST for any Cal.com booking so you have the eventTypeId and the shareable booking link (slug). ' +
+      'Output: each type with id, title, length (minutes), slug, and its public booking URL. ' +
+      'Use when someone asks "send them my booking link", "book a call", or "what meeting types do I have". ' +
+      'Errors (success:false): calcom_not_configured, upstream_calcom.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'calcom_get_slots',
+    description:
+      'Get the user\'s available Cal.com slots for a meeting type within a window. Use BEFORE proposing times so you never offer a slot that isn\'t actually open. ' +
+      'Output: list of available start times (ISO, in the given timezone). ' +
+      'Errors (success:false): calcom_not_configured, validation_error, upstream_calcom.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        eventTypeId: { type: 'number', description: 'Cal.com event type id from calcom_list_event_types.' },
+        startTime: { type: 'string', description: 'ISO 8601 start of the window, e.g. "2026-06-16T00:00:00Z".' },
+        endTime: { type: 'string', description: 'ISO 8601 end of the window.' },
+        timezone: { type: 'string', description: 'IANA timezone for the returned slots, e.g. "America/New_York". Defaults to the request timezone.' },
+      },
+      required: ['eventTypeId', 'startTime', 'endTime'],
+    },
+  },
+  {
+    name: 'calcom_create_booking',
+    description:
+      'Book a Cal.com meeting on a confirmed slot. The attendee gets a calendar invite + confirmation from Cal.com (includes a meeting link). ' +
+      'GATED: requires a prior request_confirmation — this notifies the attendee, so confirm with the user first. ' +
+      'Get the slot from calcom_get_slots first; never invent a time. ' +
+      'Output: "Booked <title> with <name> at <start>." plus the booking id. ' +
+      'Errors (success:false): confirmation_required, calcom_not_configured, slot_unavailable, validation_error, upstream_calcom.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        eventTypeId: { type: 'number', description: 'Cal.com event type id.' },
+        start: { type: 'string', description: 'ISO 8601 start time from calcom_get_slots.' },
+        end: { type: 'string', description: 'ISO 8601 end time (start + event length). Optional — Cal.com derives it from the event type if omitted.' },
+        name: { type: 'string', description: 'Attendee full name.' },
+        email: { type: 'string', description: 'Attendee email.' },
+        notes: { type: 'string', description: 'Optional notes / agenda shown on the booking.' },
+        timezone: { type: 'string', description: 'Attendee IANA timezone.' },
+      },
+      required: ['eventTypeId', 'start', 'name', 'email'],
+    },
+  },
+  {
+    name: 'calcom_list_bookings',
+    description:
+      'List the user\'s Cal.com bookings (upcoming and recent) — use to report their schedule, or to find a booking id to cancel/reschedule. ' +
+      'Output: each booking with id, title, start/end, attendee name/email, and status. ' +
+      'Errors (success:false): calcom_not_configured, upstream_calcom.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'calcom_cancel_booking',
+    description:
+      'Cancel a Cal.com booking by id. The attendee is notified by Cal.com. ' +
+      'GATED: requires a prior request_confirmation — it\'s irreversible from the attendee\'s POV. ' +
+      'To RESCHEDULE: cancel the old booking, then calcom_create_booking on the new slot. ' +
+      'Output: "Cancelled booking <id>." Errors (success:false): confirmation_required, calcom_not_configured, not_found, upstream_calcom.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        bookingId: { type: 'number', description: 'Cal.com booking id from calcom_list_bookings.' },
+        reason: { type: 'string', description: 'Optional cancellation reason shown to the attendee.' },
+      },
+      required: ['bookingId'],
     },
   },
   {
@@ -2192,6 +2267,12 @@ export async function executeTool(
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
       case 'calendar_get_availability': result = await calendarGetAvailability(userId, input); break;
       case 'calendar_cancel_event': result = await calendarCancelEvent(userId, input, context); break;
+      // Cal.com scheduling
+      case 'calcom_list_event_types': result = await calcomListEventTypes(); break;
+      case 'calcom_get_slots':        result = await calcomGetSlots(input); break;
+      case 'calcom_create_booking':   result = await calcomCreateBooking(userId, input, context); break;
+      case 'calcom_list_bookings':    result = await calcomListBookings(); break;
+      case 'calcom_cancel_booking':   result = await calcomCancelBooking(userId, input, context); break;
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
@@ -3578,6 +3659,145 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
 // Gated by the same session-approval mechanism as send_email. Notifying
 // attendees is irreversible (you can't unsend a cancellation email), so this
 // is treated as Tier 3 — explicit confirm per event.
+// ── Cal.com scheduling ─────────────────────────────────────────────────────────
+// Uses the app's CAL_API_KEY so booking works for every user out of the box.
+function getCalClient(): InstanceType<typeof CalComService> | null {
+  const key = (process.env.CAL_API_KEY || '').trim();
+  if (!key) return null;
+  return new CalComService(key);
+}
+
+function calcomBookingUrl(slug: string): string {
+  // Cal.com public booking links are cal.com/<username>/<slug>; without the
+  // username we surface the slug and let the LLM combine it with the user's
+  // handle when known. Most tenants set CAL_COM_USERNAME for clean links.
+  const user = (process.env.CAL_COM_USERNAME || '').trim();
+  return user ? `https://cal.com/${user}/${slug}` : `https://cal.com/${slug}`;
+}
+
+async function calcomListEventTypes(): Promise<ToolResult> {
+  const cal = getCalClient();
+  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  try {
+    const types = await cal.getEventTypes();
+    if (!types.length) return { output: 'No Cal.com event types found. Create a meeting type in Cal.com first.' };
+    const lines = types.map((t: any) =>
+      `• ${t.title} — id ${t.id}, ${t.length || t.lengthInMinutes || '?'} min, link ${calcomBookingUrl(t.slug)}`,
+    );
+    return { output: `Cal.com meeting types:\n${lines.join('\n')}` };
+  } catch (err: any) {
+    return failureResult(`Cal.com error: ${err.message}`, 'upstream_calcom');
+  }
+}
+
+async function calcomGetSlots(input: any): Promise<ToolResult> {
+  const cal = getCalClient();
+  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  const eventTypeId = Number(input.eventTypeId);
+  if (!eventTypeId) return failureResult('eventTypeId is required.', 'validation_error');
+  if (!input.startTime || !input.endTime) return failureResult('startTime and endTime are required.', 'validation_error');
+  try {
+    const slots = await cal.getAvailableSlots({ eventTypeId, startTime: input.startTime, endTime: input.endTime });
+    // Cal.com returns { "YYYY-MM-DD": [{ time }] }
+    const flat: string[] = [];
+    for (const day of Object.keys(slots || {})) {
+      for (const s of (slots[day] || [])) flat.push(s.time || s);
+    }
+    if (!flat.length) return { output: 'No open Cal.com slots in that window. Try a wider window or a different meeting type.' };
+    return { output: `Available Cal.com slots (${flat.length}):\n${flat.slice(0, 60).map((t) => `• ${t}`).join('\n')}` };
+  } catch (err: any) {
+    return failureResult(`Cal.com error: ${err.message}`, 'upstream_calcom');
+  }
+}
+
+async function calcomCreateBooking(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const cal = getCalClient();
+  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  const eventTypeId = Number(input.eventTypeId);
+  if (!eventTypeId || !input.start || !input.name || !input.email) {
+    return failureResult('eventTypeId, start, name and email are required.', 'validation_error');
+  }
+
+  // Confirmation gate — booking notifies the attendee.
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('calcom_book', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId, userId, actionType: 'calcom_book', targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to book. No approved request_confirmation found. Call request_confirmation first with action "Book Cal.com meeting" and details { With: "${input.name}", When: "${input.start}" }, wait for Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({ agentId: context.agentId, runId: context.runId, userId, toolName: 'calcom_create_booking', toolInput: input });
+    return { output: `Booking queued for user approval.` };
+  }
+
+  try {
+    const booking = await cal.createBooking({
+      eventTypeId, start: input.start, end: input.end,
+      name: input.name, email: input.email, notes: input.notes, timezone: input.timezone,
+    });
+    return { output: `Booked Cal.com meeting with ${input.name} at ${input.start}.${booking?.id ? ` Booking id ${booking.id}.` : ''}` };
+  } catch (err: any) {
+    const code = /no available|slot|busy/i.test(err.message) ? 'slot_unavailable' : 'upstream_calcom';
+    return failureResult(`Cal.com error: ${err.message}`, code);
+  }
+}
+
+async function calcomListBookings(): Promise<ToolResult> {
+  const cal = getCalClient();
+  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  try {
+    const bookings = await cal.getBookings();
+    if (!bookings.length) return { output: 'No Cal.com bookings found.' };
+    const lines = bookings.slice(0, 40).map((b: any) => {
+      const who = b.attendees?.[0]?.name || b.attendees?.[0]?.email || 'someone';
+      return `• id ${b.id} — ${b.title || 'Meeting'} with ${who}, ${b.startTime || b.start} (${b.status || 'accepted'})`;
+    });
+    return { output: `Cal.com bookings:\n${lines.join('\n')}` };
+  } catch (err: any) {
+    return failureResult(`Cal.com error: ${err.message}`, 'upstream_calcom');
+  }
+}
+
+async function calcomCancelBooking(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const cal = getCalClient();
+  if (!cal) return failureResult('Cal.com is not configured (CAL_API_KEY missing).', 'calcom_not_configured');
+  const bookingId = Number(input.bookingId);
+  if (!bookingId) return failureResult('bookingId is required.', 'validation_error');
+
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('calcom_cancel', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId, userId, actionType: 'calcom_cancel', targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to cancel. No approved request_confirmation found for cancelling Cal.com booking ${bookingId}. Call request_confirmation first, wait for Confirm, then retry.`,
+        'confirmation_required',
+      );
+    }
+  }
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({ agentId: context.agentId, runId: context.runId, userId, toolName: 'calcom_cancel_booking', toolInput: input });
+    return { output: `Cancellation queued for user approval.` };
+  }
+
+  try {
+    await cal.cancelBooking({ bookingId, reason: input.reason });
+    return { output: `Cancelled Cal.com booking ${bookingId}.` };
+  } catch (err: any) {
+    const code = /not found|404/i.test(err.message) ? 'not_found' : 'upstream_calcom';
+    return failureResult(`Cal.com error: ${err.message}`, code);
+  }
+}
+
 async function calendarCancelEvent(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
   const eventId = (input.eventId || '').trim();
   if (!eventId) return failureResult('eventId is required.', 'validation_error');
@@ -5635,6 +5855,10 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   const lower = (input.action || '').toLowerCase();
   let actionType: ApprovalActionType | null = null;
   if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
+  // Cal.com first — its actions also contain "book"/"meeting"/"cancel", so they
+  // must be classified before the generic calendar rules below.
+  else if (/cal\.?com/.test(lower) && /\bcancel\b/.test(lower)) actionType = 'calcom_cancel';
+  else if (/cal\.?com/.test(lower) && /\bbook\b|\bschedule\b|\bmeeting\b/.test(lower)) actionType = 'calcom_book';
   else if (/\bcancel\b.*\b(event|meeting|invite|calendar)\b/.test(lower)) actionType = 'cancel_event';
   else if (/\bschedule\b|\bmeeting\b|\bcalendar\b.*\bevent\b|\bbook\b/.test(lower)) actionType = 'schedule_meeting';
   else if (/\bslack\b.*\bdm\b|\bdirect\b.*\bmessage\b|\bdm\b\s+\w+/.test(lower)) actionType = 'send_slack_dm';
@@ -5664,6 +5888,11 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
       if (typeof att === 'string') detailsLower.attendees = att.split(/[,;]/).map((s: string) => s.trim());
     } else if (actionType === 'cancel_event') {
       detailsLower.eventId = detailsLower.eventid || detailsLower.event_id || detailsLower.id || detailsLower.event;
+    } else if (actionType === 'calcom_book') {
+      detailsLower.email = detailsLower.email || detailsLower.with || detailsLower.attendee || detailsLower.to;
+      detailsLower.start = detailsLower.start || detailsLower.when || detailsLower.time;
+    } else if (actionType === 'calcom_cancel') {
+      detailsLower.bookingId = detailsLower.bookingid || detailsLower.booking_id || detailsLower.id || detailsLower.booking;
     }
     const targetKey = normalizeTargetKey(actionType, detailsLower);
 
