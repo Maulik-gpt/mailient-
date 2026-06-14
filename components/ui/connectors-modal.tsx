@@ -196,7 +196,7 @@ export const SUPPORTED_APPS = [
     description: 'Cal.com MCP enables professional scheduling with automated link generation and booking straight from Arcus.',
     details: 'Integrate Cal.com to let Arcus share your booking links and automatically handle appointment scheduling with external partners.',
     smartPrompt: "Share my Cal.com booking link and check if there's any availability for a 30-min call this Friday afternoon.",
-    comingSoon: true
+    comingSoon: false
   }
 ];
 
