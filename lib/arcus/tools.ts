@@ -2392,6 +2392,34 @@ export async function executeTool(
 
 // ── Implementations ────────────────────────────────────────────────────────────
 
+/**
+ * Gmail GET with transient retry. Background agents run all five VAs (and many
+ * tools) in parallel, which bursts past Gmail's per-user rate limit — a single
+ * 429/5xx/timeout was surfacing as "Searched inbox — failed". Retries those
+ * transient cases with backoff (honoring Retry-After); does NOT retry 4xx like
+ * 401/403 (handled by the caller's refresh) or 400.
+ */
+async function gmailGetWithRetry(url: string, token: string, timeoutMs = 12000, attempts = 3): Promise<Response> {
+  let lastErr: any;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });
+      if ((res.status === 429 || res.status >= 500) && i < attempts - 1) {
+        const ra = Number(res.headers.get('retry-after'));
+        const wait = ra > 0 ? Math.min(ra * 1000, 5000) : 600 * (i + 1) * (i + 1);
+        await new Promise(r => setTimeout(r, wait));
+        continue;
+      }
+      return res;
+    } catch (e) {
+      lastErr = e; // timeout / network — transient
+      if (i < attempts - 1) { await new Promise(r => setTimeout(r, 600 * (i + 1) * (i + 1))); continue; }
+      throw e;
+    }
+  }
+  throw lastErr;
+}
+
 async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
@@ -2400,10 +2428,18 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   const params = new URLSearchParams({ q: input.query, maxResults: String(max) });
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
 
-  let listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let listRes: Response;
+  try {
+    listRes = await gmailGetWithRetry(url, token);
+  } catch {
+    return failureResult('Gmail search timed out after retries.', 'upstream_gmail');
+  }
   if (listRes.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (newToken) {
+      token = newToken;
+      try { listRes = await gmailGetWithRetry(url, token); } catch { return failureResult('Gmail search timed out after retries.', 'upstream_gmail'); }
+    }
   }
   if (!listRes.ok) return gmailHttpFailure(listRes.status, 'Gmail search failed');
 
@@ -7894,18 +7930,16 @@ async function gmailUnlimitedSearch(userId: string, input: any): Promise<ToolRes
       maxResults: String(Math.min(100, limit - collected.length)),
     });
     if (pageToken) params.set('pageToken', pageToken);
-    let res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(15000),
-    });
+    const pageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
+    let res: Response;
+    try {
+      res = await gmailGetWithRetry(pageUrl, token, 15000);
+    } catch { break; } // transient timeout after retries — stop paginating, keep what we have
     if (res.status === 401) {
       const nt = await refreshGoogleToken(userId);
       if (nt) {
         token = nt;
-        res = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`, {
-          headers: { Authorization: `Bearer ${token}` },
-          signal: AbortSignal.timeout(15000),
-        });
+        try { res = await gmailGetWithRetry(pageUrl, token, 15000); } catch { break; }
       }
     }
     if (!res.ok) break;

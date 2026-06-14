@@ -1,5 +1,4 @@
 import { callLLM, getText } from '../engine';
-import { summarizeToolUse } from '../tool-labels';
 import type { ArcusVA } from '../tool-integration-map';
 import type {
   ArtifactBuckets,
@@ -93,15 +92,6 @@ function mergeArtifacts(results: VARunResult[]): ArtifactBuckets {
   return merged;
 }
 
-function statusBadge(r: VARunResult): string {
-  switch (r.status) {
-    case 'success': return 'ran';
-    case 'empty':   return 'nothing in lane';
-    case 'timeout': return 'timed out';
-    case 'error':   return 'failed';
-  }
-}
-
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
   return `${(ms / 1000).toFixed(1)}s`;
@@ -112,11 +102,11 @@ function mergedSection(
   perVAItems: Array<{ va: ArcusVA; items: string[] }>,
 ): string {
   const lines: string[] = [];
-  for (const { va, items } of perVAItems) {
+  for (const { items } of perVAItems) {
     for (const item of items) {
       const cleaned = item.trim();
       if (!looksLikeRealContent(cleaned)) continue;
-      lines.push(`- ${cleaned} _<small>via ${VA_LABELS[va]}</small>_`);
+      lines.push(`- ${cleaned}`);
     }
   }
   if (lines.length === 0) return '';
@@ -141,46 +131,18 @@ function nextActionsSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: 
   const perVABlocks = perVALinks.filter(p => p.links.trim()).map(p => p.links.trim());
 
   if (!actions.length && !perVABlocks.length) {
-    // Nothing to click, but the spec wants the section present with a clear
-    // "you're done" signal rather than an empty/ambiguous gap.
-    return ['## Next Actions', '', 'All done — nothing needs your action right now.', ''].join('\n');
+    // Nothing to click, but keep the section present with a clear "you're done"
+    // signal rather than an empty/ambiguous gap.
+    return ['## What needs you', '', 'Nothing right now — you’re all caught up.', ''].join('\n');
   }
 
-  const lines: string[] = ['## Next Actions', ''];
+  const lines: string[] = ['## What needs you', ''];
   lines.push(...actions);
   if (perVABlocks.length) {
     if (actions.length) lines.push('');
     lines.push(...perVABlocks);
   }
   lines.push('');
-  return lines.join('\n');
-}
-
-// "Tools Used" — concise, humanized, per the report spec. Built from the tool
-// names each VA captured from its own SSE stream (race-free, no DB read). Full
-// per-tool input/output/duration lives in the expandable HomeFeed run card.
-function toolsUsedSection(results: VARunResult[]): string {
-  const calls: Array<{ tool_name: string; success: boolean }> = [];
-  for (const r of results) {
-    const failed = new Set(r.failedTools ?? []);
-    for (const name of r.toolNames ?? []) {
-      calls.push({ tool_name: name, success: !failed.has(name) });
-    }
-  }
-  if (!calls.length) return '';
-  const lines = summarizeToolUse(calls).map(t =>
-    `- ${t.label}${t.count > 1 ? ` ×${t.count}` : ''}${!t.ok ? ' — failed' : ''}`,
-  );
-  return ['## Tools Used', '', ...lines, ''].join('\n');
-}
-
-function runFooter(results: VARunResult[]): string {
-  const lines: string[] = ['## Run details', ''];
-  for (const va of VA_ORDER) {
-    const r = results.find(x => x.va === va);
-    if (!r) continue;
-    lines.push(`- ${VA_LABELS[va]}: ${statusBadge(r)} · ${r.toolCalls} tool ${r.toolCalls === 1 ? 'call' : 'calls'} · ${formatDuration(r.durationMs)}${r.error ? ` · ${r.error}` : ''}`);
-  }
   return lines.join('\n');
 }
 
@@ -267,53 +229,74 @@ export async function buildCommitteeReport(
   const headline = await synthesizeHeadline(ordered, agentName, parsed);
 
   const contentSections = [
-    mergedSection('Revenue & Opportunities', collect('revenue')),
-    mergedSection('Client & Relationship Updates', collect('client')),
+    mergedSection('Needs your attention', collect('needsAttention')),
+    mergedSection('Revenue & opportunities', collect('revenue')),
+    mergedSection('Client updates', collect('client')),
     mergedSection('Operations', collect('operations')),
-    mergedSection('Needs Your Attention', collect('needsAttention')),
-    mergedSection('Cross-VA Observations', collect('crossVA')),
+    mergedSection('Worth noting', collect('crossVA')),
   ].filter(Boolean);
 
-  // Fallback — the VAs ran but emitted no parseable section content (weak models
-  // skip the required tagged format, or do work without writing it up). Rather
-  // than ship a bare "Run details" footer with zero transparency, synthesize a
-  // "What each agent did" section from each VA's own one-line summary and the
-  // concrete tool count. This guarantees the report always says what happened.
-  const fallbackWhatHappened = (): string => {
+  // Honest per-lane "what happened" — NEVER claims success for failed work.
+  // (The old version said "completed N actions" even when those tools failed,
+  // and trusted "inbox clear" summaries written despite a failed search.)
+  const whatHappenedSection = (): string => {
     const lines: string[] = [];
     for (const r of ordered) {
-      const did = r.toolCalls > 0;
+      if (r.status === 'empty') continue; // nothing in this lane — keep quiet
+      const failed = new Set(r.failedTools ?? []);
+      const successfulActions = (r.toolNames ?? []).filter(n => !failed.has(n)).length;
+      const hadFailure = (r.failedTools?.length ?? 0) > 0 || r.status === 'error' || r.status === 'timeout';
       const summary = (r.summary || '').trim();
+      const claimsNothing = /\b(clear|nothing|no\b.*(found|triage|repl|action))/i.test(summary);
       const usefulSummary =
         summary &&
         !/^no work in your lane/i.test(summary) &&
         !new RegExp(`^${r.va} VA`, 'i').test(summary) &&
-        summary.length >= 12;
+        summary.length >= 12 &&
+        !(hadFailure && claimsNothing); // don't trust "all clear" if a step failed
+
       if (usefulSummary) {
         lines.push(`- **${VA_LABELS[r.va]}** — ${summary}`);
-      } else if (did) {
-        lines.push(`- **${VA_LABELS[r.va]}** — completed ${r.toolCalls} ${r.toolCalls === 1 ? 'action' : 'actions'} (details in the linked artifacts).`);
+      } else if (hadFailure && successfulActions === 0) {
+        lines.push(`- **${VA_LABELS[r.va]}** — hit a snag this run; it’ll retry next time.`);
+      } else if (successfulActions > 0) {
+        lines.push(`- **${VA_LABELS[r.va]}** — handled ${successfulActions} ${successfulActions === 1 ? 'item' : 'items'}.`);
       }
-      // VAs with no work and no summary are simply omitted (kept out of noise).
     }
-    if (!lines.length) return '';
-    return ['## What Happened', '', ...lines, ''].join('\n');
+    if (!lines.length) lines.push('- Nothing needed doing — you were already caught up.');
+    return ['## What happened', '', ...lines, ''].join('\n');
   };
 
+  // One calm, human footer line instead of per-lane tool-call jargon.
+  const humanFooter = (): string => {
+    const totalMs = Math.max(0, ...ordered.map(r => r.durationMs));
+    const failedSteps = ordered.reduce((n, r) => n + (r.failedTools?.length ?? 0), 0);
+    const actions = ordered.reduce((n, r) => {
+      const failed = new Set(r.failedTools ?? []);
+      return n + (r.toolNames ?? []).filter(t => !failed.has(t)).length;
+    }, 0);
+    const when = new Date().toUTCString().replace(/ GMT$/, ' UTC');
+    const bits = [when, formatDuration(totalMs)];
+    if (actions > 0) bits.push(`${actions} ${actions === 1 ? 'action' : 'actions'} taken`);
+    if (failedSteps > 0) bits.push(`${failedSteps} step${failedSteps === 1 ? '' : 's'} will retry next run`);
+    return `_${bits.join(' · ')}_`;
+  };
+
+  // Apple-style: a calm headline, the agent name, what happened, the highlights
+  // that exist, what needs the user, and a single quiet footer. No tool jargon,
+  // no per-VA "ran · N tool calls" noise in the body.
   const sections: string[] = [
     headline,
     '',
-    `# ${agentName} — Executive Briefing`,
+    `# ${agentName}`,
     '',
-    ...(contentSections.length > 0 ? contentSections : [fallbackWhatHappened()]),
-    toolsUsedSection(ordered),
+    whatHappenedSection(),
+    ...contentSections,
     nextActionsSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
     '',
     '---',
     '',
-    runFooter(ordered),
-    '',
-    `Sent by Arcus · ${agentName} · ${new Date().toUTCString()}`,
+    humanFooter(),
   ].filter(Boolean);
 
   return {
