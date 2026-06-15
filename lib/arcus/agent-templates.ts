@@ -43,6 +43,23 @@ export interface AgentTemplate {
   taskDescription: string;
   /** What the user can expect in the report. */
   expectedOutput: string;
+
+  // ── Next-gen scheduling (all optional; omit = classic time-based agent) ──
+  /** How the agent fires. Defaults to 'schedule'. */
+  triggerType?: 'schedule' | 'event' | 'condition' | 'chained';
+  /** Config for non-schedule triggers, e.g. { event_source:'gmail', debounce_min:15 }. */
+  triggerConfig?: Record<string, any>;
+  /** AND-list of trigger conditions for event/condition agents. */
+  conditions?: Array<{ field: string; op: string; value: string | number | string[] }>;
+  /** Budget priority (1 highest). */
+  priority?: number;
+  /**
+   * Pipeline children — when present, spawning this template creates each child
+   * agent first, then the parent with pipeline = [child ids]. The parent runs on
+   * its own trigger and hands its result down the chain (children are 'chained').
+   */
+  pipelineChildren?: Array<Pick<AgentTemplate,
+    'name' | 'tagline' | 'description' | 'emoji' | 'outputChannel' | 'skipConfirmations' | 'requiredIntegrations' | 'taskDescription' | 'expectedOutput'>>;
 }
 
 export const AGENT_TEMPLATES: AgentTemplate[] = [
@@ -187,6 +204,139 @@ export const AGENT_TEMPLATES: AgentTemplate[] = [
       'A Friday afternoon executive briefing — in your inbox and in your team Slack channel — that reads like a ' +
       'real chief-of-staff weekly report. Sections for revenue, client relationships, operations, and what needs ' +
       'your attention next week. Every claim links to the underlying Notion page or Gmail thread.',
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // 5. VIP Auto-Responder  (EVENT trigger — reacts to client email, no clock)
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: 'vip_auto_responder',
+    name: 'VIP Auto-Responder',
+    tagline: 'Reacts the moment an important client emails you',
+    description:
+      'Watches for new email from your key client domains and, within minutes, reads the thread and drafts a ' +
+      'reply in your voice — so VIPs never wait. Fires on the event, not on a schedule.',
+    emoji: '⚡',
+    cronSchedule: '0 9 * * *', // unused for event agents; kept for schema compatibility
+    scheduleLabel: 'On every client email',
+    outputChannel: 'gmail',
+    skipConfirmations: false,
+    requiredIntegrations: ['gmail'],
+    triggerType: 'event',
+    triggerConfig: { event_source: 'gmail', debounce_min: 10 },
+    conditions: [{ field: 'domain', op: 'contains', value: '@client.com' }], // user edits to their client domain
+    priority: 2,
+    taskDescription: [
+      'A new email arrived from a VIP client (it matched my trigger). Respond fast:',
+      '',
+      '1. gmail_read_thread on the triggering thread — understand the full context.',
+      '2. get_recipient_context / memory_get_contact_profile — pull what I know about this person.',
+      '3. draft_reply in my voice addressing exactly what they asked. Leave it as a draft for my approval.',
+      '4. check_draft_quality; redraft if it flags generic filler.',
+      '5. Report the one thread you handled and the draft link. Keep it to a single item — this is a reactive run, not a digest.',
+    ].join('\n'),
+    expectedOutput:
+      'A near-real-time note that a VIP emailed, with a ready-to-send draft linked. One thread per fire.',
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // 6. Stalled-Deal Chaser  (CONDITION trigger — revenue thread idle 3+ days)
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: 'stalled_deal_chaser',
+    name: 'Stalled-Deal Chaser',
+    tagline: 'Nudges deals that have gone quiet for 3+ days',
+    description:
+      'Watches your revenue threads and, when a proposal/contract conversation goes silent for 3+ days, ' +
+      'drafts a timely, polite follow-up so deals never die from neglect.',
+    emoji: '🎯',
+    cronSchedule: '0 10 * * 1-5',
+    scheduleLabel: 'When a deal stalls 3+ days',
+    outputChannel: 'gmail',
+    skipConfirmations: false,
+    requiredIntegrations: ['gmail'],
+    triggerType: 'condition',
+    triggerConfig: { event_source: 'gmail', debounce_min: 720 }, // at most ~twice a day
+    conditions: [
+      { field: 'keyword', op: 'eq', value: 'revenue' },
+      { field: 'age_days', op: 'gte', value: 3 },
+    ],
+    priority: 3,
+    taskDescription: [
+      'A revenue thread has gone quiet for 3+ days (it matched my trigger). Re-warm it:',
+      '',
+      '1. gmail_read_thread on the matched thread — confirm it is genuinely awaiting a reply from the other side.',
+      '2. If a follow-up is warranted, draft_reply in my voice: short, specific, one clear next step. Leave as a draft.',
+      '3. check_draft_quality; redraft if needed.',
+      '4. Report which deal stalled, how long it has been silent, and link the draft. Skip threads where I already replied.',
+    ].join('\n'),
+    expectedOutput:
+      'A short alert naming the stalled deal(s) and a ready follow-up draft for each. Nothing when no deal is stalling.',
+  },
+
+  // ───────────────────────────────────────────────────────────────────────
+  // 7. Triage → Draft → Digest  (PIPELINE — three chained agents)
+  // ───────────────────────────────────────────────────────────────────────
+  {
+    id: 'triage_draft_digest',
+    name: 'Triage → Draft → Digest',
+    tagline: 'A 3-stage morning pipeline: sort, draft, then summarize',
+    description:
+      'A pipeline of three agents that hand work down the line: Triage sorts the inbox, then Draft writes replies ' +
+      'for what matters, then Digest sends you one clean summary of everything that happened.',
+    emoji: '🔗',
+    cronSchedule: '0 7 * * *',
+    scheduleLabel: 'Daily 7:00 AM (pipeline)',
+    outputChannel: 'gmail',
+    skipConfirmations: false,
+    requiredIntegrations: ['gmail'],
+    priority: 4,
+    taskDescription: [
+      'STAGE 1 — TRIAGE. Sort my last-24h inbox and hand the priority items downstream:',
+      '',
+      '1. build_worklist with gmailQuery "is:unread newer_than:1d -category:promotions".',
+      '2. gmail_bulk_read_threads + gmail_extract_data_from_threads on the worklist.',
+      '3. gmail_detect_urgency to flag the urgent ones.',
+      '4. Report the triaged list (sender, subject, why it matters, urgency) — this becomes the next stage\'s input.',
+    ].join('\n'),
+    expectedOutput:
+      'A triaged priority list that flows into the Draft stage. You only get pinged by the final Digest stage.',
+    pipelineChildren: [
+      {
+        name: 'Draft (pipeline)',
+        tagline: 'Drafts replies for the triaged items',
+        description: 'Second stage: drafts replies in your voice for the items Triage surfaced.',
+        emoji: '✍️',
+        outputChannel: 'gmail',
+        skipConfirmations: false,
+        requiredIntegrations: ['gmail'],
+        taskDescription: [
+          'You were handed a triaged priority list by the upstream Triage agent (see PIPELINE INPUT). Draft replies:',
+          '',
+          '1. For each Tier-1/Tier-2 item in the handoff, draft_reply in my voice. Leave each as a Gmail draft.',
+          '2. check_draft_quality on each; redraft if it flags generic filler.',
+          '3. Report each draft with its link — this flows to the Digest stage.',
+        ].join('\n'),
+        expectedOutput: 'Ready-to-send drafts for the priority threads, handed to the Digest stage.',
+      },
+      {
+        name: 'Digest (pipeline)',
+        tagline: 'Sends one clean summary of the run',
+        description: 'Final stage: turns the triage + drafts into one calm summary email.',
+        emoji: '📬',
+        outputChannel: 'gmail',
+        skipConfirmations: false,
+        requiredIntegrations: ['gmail'],
+        taskDescription: [
+          'You received the Draft stage\'s output (see PIPELINE INPUT). Produce the single user-facing summary:',
+          '',
+          '1. Summarize what Triage surfaced and what Draft prepared — what needs my review, in priority order.',
+          '2. Include every draft link so I can review and send in one pass.',
+          '3. Write it as one calm executive briefing. This is the only message I should receive from the pipeline.',
+        ].join('\n'),
+        expectedOutput: 'One summary email with every draft linked for one-pass review.',
+      },
+    ],
   },
 ];
 

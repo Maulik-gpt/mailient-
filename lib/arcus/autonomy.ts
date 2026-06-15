@@ -62,11 +62,13 @@ export interface WorklistOptions {
  * threads. The real value is the budget guard: even a rough Tier-1 filter
  * cuts a 200-email inbox to ~30 items.
  */
-const REVENUE_KEYWORDS =
+// Exported so the trigger condition evaluator (lib/arcus/conditions.ts) matches
+// the SAME vocabulary the worklist scorer uses — one source of truth.
+export const REVENUE_KEYWORDS =
   /\b(contract|invoice|payment|proposal|deal|renewal|pricing|quote|sow|po\b|purchase order|signed|approve|terms)\b/i;
-const SCHEDULING_KEYWORDS =
+export const SCHEDULING_KEYWORDS =
   /\b(meeting|schedule|book|availability|calendar|invite|sync|call)\b/i;
-const NEWSLETTER_KEYWORDS =
+export const NEWSLETTER_KEYWORDS =
   /\b(unsubscribe|newsletter|digest|weekly roundup|view in browser|click here|special offer|sale ends|view email)\b/i;
 
 /**

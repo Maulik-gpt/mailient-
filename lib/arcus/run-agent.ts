@@ -174,7 +174,12 @@ export interface AgentRunBudget {
  * identical agent behaviour.
  */
 export async function buildAgentLoopArgs(
-  agent: { user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string },
+  agent: {
+    user_id: string; task_description: string; skip_confirmations?: boolean; name?: string; id?: string;
+    // Next-gen: cross-run memory + pipeline hand-off input (both optional).
+    agent_state?: Record<string, any> | null;
+    _chainInput?: { summary?: string; parentAgentId?: string } | null;
+  },
   budget: AgentRunBudget = {},
 ) {
   const userId = agent.user_id;
@@ -203,6 +208,23 @@ export async function buildAgentLoopArgs(
     ...selfHistory.split('\n').filter(Boolean),
     ...topicContext.split('\n').filter(Boolean),
   ]);
+
+  // Next-gen context — fold cross-run state and any pipeline hand-off into the
+  // memory block so the loop sees them without changing the engine's interface.
+  if (agent._chainInput?.summary) {
+    memoryLines.add(
+      `[PIPELINE INPUT] You were triggered by an upstream agent. Its result (use it as your starting context, do not redo its work):\n${agent._chainInput.summary.slice(0, 1000)}`,
+    );
+  }
+  const st = agent.agent_state || {};
+  const stateBits: string[] = [];
+  if (st.last_fired_at) stateBits.push(`last fired ${st.last_fired_at}`);
+  if (Array.isArray(st.processed_event_ids) && st.processed_event_ids.length) {
+    stateBits.push(`${st.processed_event_ids.length} item(s) already handled in prior runs — do not act on them again`);
+  }
+  if (typeof st.note === 'string' && st.note.trim()) stateBits.push(st.note.trim().slice(0, 300));
+  if (stateBits.length) memoryLines.add(`[AGENT STATE] ${stateBits.join(' · ')}`);
+
   const memories = [...memoryLines].join('\n');
 
   const systemPrompt = buildSystemPrompt({

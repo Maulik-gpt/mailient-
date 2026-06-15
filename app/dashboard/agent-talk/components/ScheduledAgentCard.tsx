@@ -102,6 +102,28 @@ export interface ScheduledAgentData {
   skipConfirmations: boolean;
   status: string;
   nextRun?: string;
+  // Next-gen scheduling (optional — absent = classic schedule agent).
+  triggerType?: 'schedule' | 'event' | 'condition' | 'chained';
+  conditions?: Array<{ field: string; op: string; value: string | number | string[] }>;
+  pipelineCount?: number;
+}
+
+/** Human "how this fires" line — schedule cadence, event condition, or chain. */
+function triggerSummary(data: ScheduledAgentData): string {
+  const t = data.triggerType || 'schedule';
+  if (t === 'event' || t === 'condition') {
+    const conds = data.conditions || [];
+    if (!conds.length) return 'On every new email';
+    const c = conds[0];
+    const head = `${c.field} ${c.op} "${c.value}"`;
+    return conds.length > 1 ? `When ${head} +${conds.length - 1}` : `When ${head}`;
+  }
+  if (t === 'chained') return 'Triggered by a pipeline';
+  return scheduleFromCron(data.cron);
+}
+
+function isScheduleTrigger(data: ScheduledAgentData): boolean {
+  return (data.triggerType || 'schedule') === 'schedule';
 }
 
 function fmt(iso?: string): string {
@@ -248,20 +270,32 @@ function ScheduledAgentSidebar({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <span className={cn("flex items-center gap-2 text-[13px]", isDark ? "text-white/50" : "text-neutral-500")}>
-                <Repeat className="w-4 h-4" /> Repeat
+                <Repeat className="w-4 h-4" /> {isScheduleTrigger(data) ? 'Repeat' : 'Trigger'}
               </span>
-              <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
-                {scheduleFromCron(data.cron)}
-              </span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className={cn("flex items-center gap-2 text-[13px]", isDark ? "text-white/50" : "text-neutral-500")}>
-                <CalendarClock className="w-4 h-4" /> Next run
-              </span>
-              <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
-                {fmt((nextRunDateFromCron(data.cron) ?? (data.nextRun ? new Date(data.nextRun) : null))?.toISOString())}
+              <span className={cn("text-[13px] font-semibold text-right max-w-[60%] truncate", isDark ? "text-white/85" : "text-neutral-800")}>
+                {triggerSummary(data)}
               </span>
             </div>
+            {isScheduleTrigger(data) && (
+              <div className="flex items-center justify-between">
+                <span className={cn("flex items-center gap-2 text-[13px]", isDark ? "text-white/50" : "text-neutral-500")}>
+                  <CalendarClock className="w-4 h-4" /> Next run
+                </span>
+                <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
+                  {fmt((nextRunDateFromCron(data.cron) ?? (data.nextRun ? new Date(data.nextRun) : null))?.toISOString())}
+                </span>
+              </div>
+            )}
+            {!!data.pipelineCount && (
+              <div className="flex items-center justify-between">
+                <span className={cn("flex items-center gap-2 text-[13px]", isDark ? "text-white/50" : "text-neutral-500")}>
+                  <ArrowUpRight className="w-4 h-4" /> Chains to
+                </span>
+                <span className={cn("text-[13px] font-semibold", isDark ? "text-white/85" : "text-neutral-800")}>
+                  {data.pipelineCount} agent{data.pipelineCount === 1 ? '' : 's'}
+                </span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className={cn("flex items-center gap-2 text-[13px]", isDark ? "text-white/50" : "text-neutral-500")}>
                 <ShieldCheck className="w-4 h-4" /> Skip confirmations
@@ -433,22 +467,31 @@ export function ScheduledAgentCard({ data: initialData }: { data: ScheduledAgent
             <div className="flex items-center gap-1.5">
               <Repeat className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
               <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
-                {scheduleFromCron(data.cron)}
+                {triggerSummary(data)}
               </span>
             </div>
-            <div className="flex flex-col">
+            {isScheduleTrigger(data) ? (
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <Clock className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
+                  <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
+                    {countdown}
+                  </span>
+                </div>
+                {nextRunAbsolute && (
+                  <span className={cn("text-[10.5px] leading-tight mt-0.5 pl-5", isDark ? "text-white/35" : "text-neutral-400")}>
+                    {nextRunAbsolute}
+                  </span>
+                )}
+              </div>
+            ) : (data.pipelineCount ? (
               <div className="flex items-center gap-1.5">
-                <Clock className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
+                <ArrowUpRight className={cn("w-3.5 h-3.5 flex-shrink-0", isDark ? "text-white/30" : "text-neutral-400")} />
                 <span className={cn("text-[12px] font-medium", isDark ? "text-white/70" : "text-neutral-700")}>
-                  {countdown}
+                  → chains to {data.pipelineCount}
                 </span>
               </div>
-              {nextRunAbsolute && (
-                <span className={cn("text-[10.5px] leading-tight mt-0.5 pl-5", isDark ? "text-white/35" : "text-neutral-400")}>
-                  {nextRunAbsolute}
-                </span>
-              )}
-            </div>
+            ) : null)}
           </div>
         </button>
 

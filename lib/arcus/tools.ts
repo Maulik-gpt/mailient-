@@ -1939,8 +1939,14 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         expires_at: { type: 'string', description: 'Optional ISO date (YYYY-MM-DD) after which the agent auto-pauses. Omit for no expiry.' },
         spec_markdown: { type: 'string', description: 'STAGE 1 ONLY — the full agent specification markdown. REQUIRED structure: # <Agent Name> H1, then ## Objective (1-2 sentences), then ## Steps containing an ```arcus-steps fenced JSON block with {steps:[{label, description}]} — NOT inline-numbered prose, then ## Schedule & Delivery (bullets for schedule + delivery), then ## Expected Output (one paragraph). Each ## section on its own line with blank lines around it. No bracketed placeholders.' },
         _planApproved: { type: 'boolean', description: 'Internal — set to true by the UI after the user clicks Confirm spec. Never set this yourself; the UI handles it.' },
+        // ── Next-gen scheduling (all optional; omit for a normal time-based agent) ──
+        trigger_type: { type: 'string', enum: ['schedule', 'event', 'condition', 'chained'], description: 'How the agent fires. "schedule" (default) = runs at cron_schedule. "event"/"condition" = runs when a new email matches `conditions` (no cron needed). "chained" = only runs when an upstream agent triggers it via its pipeline.' },
+        trigger_config: { type: 'object', description: 'Config for non-schedule triggers, e.g. { "event_source": "gmail", "debounce_min": 15 }. debounce_min throttles how often an event agent may re-fire.' },
+        conditions: { type: 'array', description: 'For event/condition agents: an AND-list of rules. Each {field, op, value}. field: sender|domain|subject|keyword|amount|age_days. op: eq|contains|matches|gte|lte|in. Examples: [{"field":"domain","op":"contains","value":"@acme.com"}] fires on any email from acme.com; [{"field":"keyword","op":"eq","value":"revenue"},{"field":"age_days","op":"gte","value":3}] fires on revenue threads idle 3+ days. Empty/omitted = any new email.', items: { type: 'object' } },
+        pipeline: { type: 'array', description: 'Ordered list of OTHER agent ids to trigger after THIS agent finishes, handing them this run\'s summary + artifacts (Triage → Draft → Digest). Omit for standalone agents.', items: { type: 'string' } },
+        priority: { type: 'number', description: '1 (highest) – 9. When many agents are due at once, higher priority gets tool budget first. Default 5.' },
       },
-      required: ['name', 'task_description', 'cron_schedule'],
+      required: ['name', 'task_description'],
     },
   },
   {
@@ -6581,9 +6587,14 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
   if (!input?.name?.trim() || !input?.task_description?.trim()) {
     return failureResult('Cannot create the agent — a name and a task description are both required.', 'validation_error');
   }
-  // G5 — Accept either a 5-field cron OR a natural-language schedule.
+  // Next-gen trigger type — defaults to the classic schedule path.
+  const triggerType = ['schedule', 'event', 'condition', 'chained'].includes(input.trigger_type) ? input.trigger_type : 'schedule';
+
+  // G5 — Accept either a 5-field cron OR a natural-language schedule. For
+  // event/condition/chained agents the cron is irrelevant (they fire reactively
+  // or via a pipeline), so we keep a harmless default and skip validation.
   let cron = (input.cron_schedule || '0 7 * * *').trim();
-  if (cron.split(/\s+/).length !== 5) {
+  if (triggerType === 'schedule' && cron.split(/\s+/).length !== 5) {
     const nl = naturalLanguageToCron(cron);
     if (nl) {
       cron = nl;
@@ -6591,6 +6602,11 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       return failureResult(`Schedule "${cron}" wasn't recognised. Use either a 5-field cron ("m h dom mon dow") or a natural phrase ("every weekday at 9am", "daily at 7", "every Monday and Thursday morning").`, 'validation_error');
     }
   }
+
+  const triggerConfig = input.trigger_config && typeof input.trigger_config === 'object' ? input.trigger_config : {};
+  const conditions = Array.isArray(input.conditions) ? input.conditions : [];
+  const pipeline = Array.isArray(input.pipeline) ? input.pipeline : [];
+  const priority = Number.isFinite(input.priority) ? input.priority : 5;
 
   const agentName = input.name.trim();
   const taskDescription = input.task_description.trim();
@@ -6775,6 +6791,11 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
       skip_confirmations: input.skip_confirmations ?? false,
       expires_at: input.expires_at || null,
       status: 'active',
+      trigger_type: triggerType,
+      trigger_config: triggerConfig,
+      conditions,
+      pipeline,
+      priority,
     })
     .select()
     .single();

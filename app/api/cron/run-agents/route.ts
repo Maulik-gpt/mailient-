@@ -32,6 +32,8 @@ import { subscriptionService } from '../../../../lib/subscription-service.js';
 import { runAgentTask, generateRunPlan } from '../../../../lib/arcus/run-agent';
 import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
+import { checkEventAgents, mergeProcessedIds } from '../../../../lib/arcus/triggers/reactive-poll';
+import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/triggers/chain';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
@@ -165,13 +167,68 @@ export async function GET(request: NextRequest) {
     }
 
     const userTz = tzMap[agent.user_id] || 'UTC';
+    const triggerType = agent.trigger_type || 'schedule';
+
+    // 'chained' agents never fire on the clock — only the chain drainer below.
+    if (triggerType === 'chained') continue;
+
+    // Event / condition agents: reactive poll (gated by debounce so dormant
+    // agents don't re-read Gmail every tick).
+    if (triggerType === 'event' || triggerType === 'condition') {
+      const debMin = Number(agent.trigger_config?.debounce_min) || 15;
+      if (agent.last_run_at && (now.getTime() - new Date(agent.last_run_at).getTime()) / 60000 < debMin) continue;
+      let reactive;
+      try { reactive = await checkEventAgents(agent); } catch { reactive = null; }
+      if (!reactive?.shouldFire) continue;
+      agent._triggerSource = 'event';
+      agent._matchedEvents = reactive.matchedEvents;
+      agent._newProcessedIds = reactive.newProcessedIds;
+      readyToRun.push(agent);
+      continue;
+    }
+
+    // schedule (default) — unchanged path.
     if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
+    agent._triggerSource = 'schedule';
     readyToRun.push(agent);
+  }
+
+  // ── Chain drainer ─────────────────────────────────────────────────────────
+  // Pipeline hand-offs enqueued by a parent run last tick. Load each child and
+  // append it (subject to the same paid/expiry/status gate).
+  try {
+    const drained = await drainChainQueue(supabase);
+    for (const d of drained) {
+      const { data: child } = await supabase.from('arcus_agents').select('*').eq('id', d.agentId).maybeSingle();
+      if (!child || child.status === 'paused') continue;
+      if (child.expires_at && now.getTime() > new Date(`${child.expires_at}T23:59:59Z`).getTime()) continue;
+      if (!(child.user_id in paidMap)) {
+        try {
+          const plan = await subscriptionService.getUserPlanType(child.user_id);
+          paidMap[child.user_id] = !!plan && plan !== 'free' && plan !== 'none';
+        } catch { paidMap[child.user_id] = false; }
+      }
+      if (!paidMap[child.user_id]) continue;
+      if (readyToRun.some(a => a.id === child.id)) continue; // already queued this tick
+      child._triggerSource = 'chain';
+      child._chainInput = d.chainInput;
+      child._parentRunId = d.parentRunId;
+      child._chainDepth = d.chainDepth;
+      child._visited = d.visited;
+      readyToRun.push(child);
+      results.push(`Chained: ${child.name} (from pipeline)`);
+    }
+  } catch (e: any) {
+    console.warn('[Cron] chain drain failed:', e?.message);
   }
 
   if (readyToRun.length === 0) {
     return NextResponse.json({ message: 'No agents due this tick.', ran: 0, results });
   }
+
+  // Highest priority first (1 = highest), so when budget is tight the agents
+  // that matter most get their tool-call share before the rest.
+  readyToRun.sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5));
 
   // ── Parallel run ─────────────────────────────────────────────────────────
   // All due agents run concurrently within the same wall-clock budget. Each
@@ -228,6 +285,12 @@ export async function GET(request: NextRequest) {
             user_id: agent.user_id,
             started_at: runStartedAt.toISOString(),
             status: 'running',
+            // Next-gen provenance — why/how this run fired.
+            trigger_source: agent._triggerSource || 'schedule',
+            triggering_event: agent._matchedEvents ? { matches: agent._matchedEvents } : null,
+            parent_run_id: agent._parentRunId || null,
+            chain_depth: agent._chainDepth || 0,
+            chain_input: agent._chainInput || null,
           })
           .select('id')
           .single();
@@ -253,7 +316,9 @@ export async function GET(request: NextRequest) {
 
       try {
         const { report, toolCalls, artifactLinks: structuredLinks } = await runAgentTask(agent, {
-          maxToolCalls: perAgentToolCalls,
+          // Per-agent override (advanced agents can be given a bigger/smaller
+          // tool budget) falls back to the fair per-tick share.
+          maxToolCalls: agent.max_tool_calls || perAgentToolCalls,
           deadlineMs: sharedBudget,
         }, runRecordId || undefined);
 
@@ -284,14 +349,46 @@ export async function GET(request: NextRequest) {
           ? ''
           : ` · Email delivery failed: ${emailErr}`;
         const quietSuffix = deliverySuffix;
+
+        // Cross-run memory: for event/condition agents, remember which items
+        // we've now handled (so we never re-fire on the same email) and when we
+        // last fired (for debounce).
+        const agentUpdate: Record<string, any> = {
+          status: 'active',
+          last_run_at: completedAt.toISOString(),
+          last_report_summary: (report.slice(0, 460) + quietSuffix).slice(0, 500),
+        };
+        if (agent._triggerSource === 'event' && Array.isArray(agent._newProcessedIds)) {
+          const prior = agent.agent_state || {};
+          agentUpdate.agent_state = {
+            ...prior,
+            processed_event_ids: mergeProcessedIds(prior.processed_event_ids, agent._newProcessedIds),
+            last_fired_at: completedAt.toISOString(),
+          };
+        }
         await supabase
           .from('arcus_agents')
-          .update({
-            status: 'active',
-            last_run_at: completedAt.toISOString(),
-            last_report_summary: (report.slice(0, 460) + quietSuffix).slice(0, 500),
-          })
+          .update(agentUpdate)
           .eq('id', agent.id);
+
+        // Pipeline hand-off: enqueue each child agent with this run's summary +
+        // artifacts as its chain_input. Depth/cycle-guarded inside enqueue.
+        const pipeline: string[] = Array.isArray(agent.pipeline) ? agent.pipeline : [];
+        if (pipeline.length) {
+          const visited = [...(agent._visited || []), agent.id];
+          const summaryForChild = (report || '').slice(0, 1200);
+          for (const childId of pipeline) {
+            await enqueueChainHandoff(supabase, agent.user_id, {
+              childId,
+              parentAgentId: agent.id,
+              parentRunId: runRecordId,
+              chainDepth: (agent._chainDepth || 0) + 1,
+              visited,
+              summary: summaryForChild,
+              artifactLinks: structuredLinks || null,
+            });
+          }
+        }
 
         // FX.2 — Update the run record with final status + delivery.
         // PART 35 — also persist tool_calls + artifact_links (defined in the

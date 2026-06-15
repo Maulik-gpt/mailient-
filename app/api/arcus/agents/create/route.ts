@@ -91,14 +91,21 @@ export async function POST(request: NextRequest) {
     const userId = session.user.email.toLowerCase();
 
     const body = await request.json();
-    const { name, task_description, cron_schedule, output_channel, slack_channel, skip_confirmations, expires_at } = body;
+    const {
+      name, task_description, cron_schedule, output_channel, slack_channel, skip_confirmations, expires_at,
+      // Next-gen scheduling (all optional; defaults keep the classic schedule path).
+      trigger_type, trigger_config, conditions, pipeline, priority, max_tool_calls,
+    } = body;
 
     if (!name?.trim() || !task_description?.trim()) {
       return NextResponse.json({ error: 'name and task_description are required' }, { status: 400 });
     }
 
+    const triggerType = ['schedule', 'event', 'chained', 'condition'].includes(trigger_type) ? trigger_type : 'schedule';
+
+    // Cron is only meaningful for schedule agents; others get a harmless default.
     const cron = (cron_schedule || '0 7 * * *').trim();
-    if (cron.split(/\s+/).length !== 5) {
+    if (triggerType === 'schedule' && cron.split(/\s+/).length !== 5) {
       return NextResponse.json({ error: `Invalid cron schedule: ${cron}` }, { status: 400 });
     }
 
@@ -115,6 +122,12 @@ export async function POST(request: NextRequest) {
         skip_confirmations: skip_confirmations ?? false,
         expires_at: expires_at || null,
         status: 'active',
+        trigger_type: triggerType,
+        trigger_config: trigger_config && typeof trigger_config === 'object' ? trigger_config : {},
+        conditions: Array.isArray(conditions) ? conditions : [],
+        pipeline: Array.isArray(pipeline) ? pipeline : [],
+        priority: Number.isFinite(priority) ? priority : 5,
+        max_tool_calls: Number.isFinite(max_tool_calls) ? max_tool_calls : null,
       })
       .select()
       .single();

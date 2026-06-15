@@ -154,6 +154,22 @@ CREATE TABLE IF NOT EXISTS arcus_agents (
 CREATE INDEX IF NOT EXISTS idx_arcus_agents_user ON arcus_agents(user_id);
 CREATE INDEX IF NOT EXISTS idx_arcus_agents_status ON arcus_agents(status);
 
+-- Next-gen scheduling (Phase 1) — additive, mirrored from
+-- supabase/migrations/arcus_agents_triggers_v1.sql. Safe defaults keep every
+-- existing agent on the unchanged schedule path.
+ALTER TABLE arcus_agents
+  ADD COLUMN IF NOT EXISTS trigger_type    TEXT NOT NULL DEFAULT 'schedule'
+    CHECK (trigger_type IN ('schedule', 'event', 'chained', 'condition')),
+  ADD COLUMN IF NOT EXISTS trigger_config  JSONB DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS conditions      JSONB DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS pipeline        JSONB DEFAULT '[]'::jsonb,
+  ADD COLUMN IF NOT EXISTS parent_agent_id UUID,
+  ADD COLUMN IF NOT EXISTS agent_state     JSONB DEFAULT '{}'::jsonb,
+  ADD COLUMN IF NOT EXISTS priority        INT  NOT NULL DEFAULT 5,
+  ADD COLUMN IF NOT EXISTS max_tool_calls  INT;
+CREATE INDEX IF NOT EXISTS idx_arcus_agents_trigger_type
+  ON arcus_agents (trigger_type) WHERE trigger_type <> 'schedule';
+
 -- ─── RLS Policies ───────────────────────────────────────────────────────────────
 -- Enable Row Level Security on all tables
 

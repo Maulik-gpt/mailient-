@@ -29,6 +29,25 @@ interface Agent {
   last_run_at: string | null;
   last_report_summary: string | null;
   created_at: string;
+  // Next-gen scheduling (optional — absent = classic schedule agent).
+  trigger_type?: 'schedule' | 'event' | 'condition' | 'chained';
+  conditions?: Array<{ field: string; op: string; value: string | number | string[] }>;
+  pipeline?: string[];
+}
+
+/** Human "how this fires" label for an agent row — schedule cadence, event
+ *  condition, or pipeline. Falls back to the cron label for classic agents. */
+function triggerLabel(agent: Pick<Agent, 'trigger_type' | 'conditions' | 'cron_schedule'>): string {
+  const t = agent.trigger_type || 'schedule';
+  if (t === 'event' || t === 'condition') {
+    const conds = agent.conditions || [];
+    if (!conds.length) return 'On every new email';
+    const c = conds[0];
+    const head = `${c.field} ${c.op} "${c.value}"`;
+    return conds.length > 1 ? `When ${head} +${conds.length - 1}` : `When ${head}`;
+  }
+  if (t === 'chained') return 'Triggered by a pipeline';
+  return cronToLabel(agent.cron_schedule);
 }
 
 // One row from arcus_agent_runs — populated by the cron runner on every
@@ -1205,7 +1224,11 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }
       <div className="p-5 pb-4">
         <div className="flex items-start gap-3.5">
           <div className="px-2.5 py-1 rounded-lg text-[11px] font-bold border flex-shrink-0 mt-0.5 bg-arcus-raised/60 border-arcus-divider/60 text-arcus-fg-secondary">
-            {cronToLabel(agent.cron_schedule).split(' ')[0]}
+            {(agent.trigger_type === 'event' || agent.trigger_type === 'condition')
+              ? 'Event'
+              : agent.trigger_type === 'chained'
+                ? 'Chain'
+                : cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[15px] font-bold text-arcus-fg leading-tight line-clamp-1">{agent.name}</p>
@@ -1256,8 +1279,10 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }
         {/* Info rows */}
         <div className="flex items-center gap-6 mt-4 pt-3.5 border-t border-arcus-divider/50">
           <div>
-            <span className="text-[11px] font-semibold uppercase tracking-widest text-arcus-fg-muted block mb-0.5">Schedule</span>
-            <span className="text-[13px] text-arcus-fg-secondary font-medium">{cronToLabel(agent.cron_schedule)}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-arcus-fg-muted block mb-0.5">
+              {(agent.trigger_type && agent.trigger_type !== 'schedule') ? 'Trigger' : 'Schedule'}
+            </span>
+            <span className="text-[13px] text-arcus-fg-secondary font-medium">{triggerLabel(agent)}</span>
           </div>
           <div>
             <span className="text-[11px] font-semibold uppercase tracking-widest text-arcus-fg-muted block mb-0.5">Next run</span>

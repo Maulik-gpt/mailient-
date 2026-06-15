@@ -65,11 +65,16 @@ export async function POST(request: NextRequest) {
   if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));
-  const { name, taskDescription, cronSchedule, outputChannel, slackChannel, skipConfirmations, expiresAt } = body;
+  const {
+    name, taskDescription, cronSchedule, outputChannel, slackChannel, skipConfirmations, expiresAt,
+    triggerType, triggerConfig, conditions, pipeline, priority, maxToolCalls,
+  } = body;
 
   if (!name?.trim() || !taskDescription?.trim()) {
     return NextResponse.json({ error: 'name and taskDescription are required' }, { status: 400 });
   }
+
+  const tType = ['schedule', 'event', 'chained', 'condition'].includes(triggerType) ? triggerType : 'schedule';
 
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
@@ -84,6 +89,12 @@ export async function POST(request: NextRequest) {
       skip_confirmations: skipConfirmations ?? false,
       expires_at: expiresAt || null,
       status: 'active',
+      trigger_type: tType,
+      trigger_config: triggerConfig && typeof triggerConfig === 'object' ? triggerConfig : {},
+      conditions: Array.isArray(conditions) ? conditions : [],
+      pipeline: Array.isArray(pipeline) ? pipeline : [],
+      priority: Number.isFinite(priority) ? priority : 5,
+      max_tool_calls: Number.isFinite(maxToolCalls) ? maxToolCalls : null,
     })
     .select()
     .single();
@@ -104,7 +115,7 @@ export async function PATCH(request: NextRequest) {
   const { id, ...updates } = body;
   if (!id) return NextResponse.json({ error: 'id is required' }, { status: 400 });
 
-  const allowed = ['name', 'task_description', 'cron_schedule', 'output_channel', 'slack_channel', 'status', 'skip_confirmations', 'expires_at'];
+  const allowed = ['name', 'task_description', 'cron_schedule', 'output_channel', 'slack_channel', 'status', 'skip_confirmations', 'expires_at', 'trigger_type', 'trigger_config', 'conditions', 'pipeline', 'priority', 'max_tool_calls'];
   const sanitized: Record<string, any> = {};
   for (const key of allowed) {
     if (key in updates) sanitized[key] = updates[key];
