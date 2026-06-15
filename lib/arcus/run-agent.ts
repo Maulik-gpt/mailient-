@@ -12,6 +12,7 @@ import { buildSystemPrompt, getConnectedIntegrations } from './system-prompt';
 import { searchMemories, saveMemory } from './memory';
 // Super-agent foundation — load context so a run never starts from zero.
 import { listOpen, bucketByDue } from './super/ledger';
+import { compileMission, renderMission, type Mission } from './super/mission';
 // PART 48 — Multi-VA committee orchestrator. runAgentTask now routes through
 // runAgentAsCommittee by default; the legacy single-LLM path stays available
 // behind an env-var kill switch so we can disable in prod without redeploying.
@@ -83,6 +84,12 @@ HOW YOU WORK:
 4. VERIFY EVERY CLAIM. Only state you did something if the tool actually returned success + an artifact (a draft link, an event link, a booking id). If a tool failed or returned no link, say so plainly and put the item under "Needs Your Attention" — never imply completion you can't prove.
 5. BE THOROUGH, NOT TERSE. A real EA gives the full picture: who, what, the proposed times, the draft link, what's still open. Never pad with filler ("let me know if you want me to summarize", tool-call counts) — but never leave the user with a thin, incomplete summary either. Substance over brevity.
 6. SURFACE WHAT NEEDS THEM. Anything requiring a human decision — a meeting request you couldn't fully book, a draft awaiting send, a judgement call — goes in "Needs Your Attention" with the link. This section is the most important part of the report; it must reflect reality.
+
+MEMORY & FOLLOW-THROUGH — this is what makes you a senior operator, not a junior:
+- START by handling anything in "OPEN COMMITMENTS DUE NOW" above. If none were injected, call ledger_list_due to be sure. Overdue items are your first priority, before new work. Close each with ledger_close_commitment the moment it's actually done — never close a ball you didn't finish.
+- Whenever you (or the user) promise a future action — "follow up Friday", "send the deck after the call", "check if they replied in 3 days" — call ledger_add_commitment so it is NEVER dropped. A real EA forgets nothing.
+- When you learn something durable about the user or a contact ("Sarah replies within 4h", "Acme renewal is annual ~$48k"), call save_fact. When you make a judgment call, log it with save_decision. When you notice a lasting preference (they want more direct drafts, a new VIP), call update_user_model. You get sharper every run — that's the moat.
+- NEVER re-ask or re-derive something already in the user model / memory above. If you do, that's a failure.
 
 Now do the job below to that standard, then write the report in the required format.
 `;
@@ -200,6 +207,9 @@ export async function buildAgentLoopArgs(
     // Next-gen: cross-run memory + pipeline hand-off input (both optional).
     agent_state?: Record<string, any> | null;
     _chainInput?: { summary?: string; parentAgentId?: string } | null;
+    // Super-agent: the compiled Mission (null on first run → compiled + persisted).
+    mission?: Mission | null;
+    autonomy_level?: 'observe' | 'assist' | 'own' | null;
   },
   budget: AgentRunBudget = {},
 ) {
@@ -248,10 +258,47 @@ export async function buildAgentLoopArgs(
 
   const memories = [...memoryLines].join('\n');
 
-  // SUPER-AGENT CONTEXT — surface the user model (already fetched above) + the
-  // Follow-Through Ledger so the run starts informed (Part 2 steps 1-2: never
-  // start from zero, check open loops FIRST). Best-effort; never blocks a run.
+  // SUPER-AGENT MISSION — compile the plain-English task into a structured,
+  // accountable objective ONCE (Part 1.1), persist it, and lead every run with
+  // it. Lazy compile covers every creation path with no route changes.
   let superContext = '';
+  let mission: Mission | null = agent.mission || null;
+  if (!mission && taskDescription.trim()) {
+    try {
+      mission = await compileMission(taskDescription, { userModel, instructions: userInstructions || '', agentName });
+      if (mission && agent.id) {
+        const { getSupabaseAdmin } = await import('../supabase.js');
+        await getSupabaseAdmin().from('arcus_agents').update({ mission }).eq('id', agent.id);
+      }
+    } catch { mission = null; }
+  }
+  const missionBlock = renderMission(mission);
+  if (missionBlock) superContext += missionBlock + '\n\n';
+
+  // AUTONOMY (Part 4) — how far you may act on your own. 'own' acts
+  // autonomously (skip the approval gate); 'assist'/'observe' draft-and-hold.
+  const autonomyLevel = agent.autonomy_level || 'assist';
+  const AUTONOMY_BLOCKS: Record<string, string> = {
+    observe:
+      'AUTONOMY: OBSERVE. Draft and prepare everything, but SEND nothing and BOOK nothing — pure recommendations. ' +
+      'Every reply is a draft for review; every meeting is a proposed time, not a created event. Put it all in "Holding for your approval".',
+    assist:
+      'AUTONOMY: ASSIST. Act autonomously on REVERSIBLE/low-risk things (archive, label, draft replies, log to CRM, propose times). ' +
+      'DRAFT-AND-HOLD on irreversible/medium-risk (sending external email, booking a meeting) — prepare it fully and put it in "Holding for your approval" with your recommendation. Escalate genuinely high-stakes calls with a recommendation.',
+    own:
+      'AUTONOMY: OWN. Act autonomously on nearly everything, including sending replies and booking meetings, within the standing constraints. ' +
+      'Escalate ONLY genuinely high-stakes or novel situations — and when you do, give a specific recommendation, never an open question.',
+  };
+  superContext += AUTONOMY_BLOCKS[autonomyLevel] + '\n\n';
+  superContext +=
+    'CONFIDENCE DRIVES EACH DECISION: ≥85 and within your autonomy → act + log the decision. 70-85 → act if reversible, else draft-and-hold with a recommendation. <85 escalations are RECOMMENDATIONS, never open questions ("My recommendation: counter at 10% with annual prepay. Approve / edit / I\'ll handle differently.").\n\n';
+
+  // 'own' agents act without the approval gate; assist/observe hold for approval.
+  const effectiveSkipConfirmations = autonomyLevel === 'own' ? true : (agent.skip_confirmations ?? false);
+
+  // Then the user model (already fetched above) + the Follow-Through Ledger so
+  // the run starts informed (Part 2 steps 1-2: never start from zero, check open
+  // loops FIRST). Best-effort; never blocks a run.
   if (userModel && userModel.trim()) {
     superContext += `WHAT I KNOW ABOUT YOU (don't re-ask):\n${userModel.trim()}\n\n`;
   }
@@ -279,7 +326,7 @@ export async function buildAgentLoopArgs(
     personality: voicePrompt || undefined,
     userInstructions: userInstructions || undefined,
     isBackgroundAgent: true,
-    skipConfirmations: agent.skip_confirmations ?? false,
+    skipConfirmations: effectiveSkipConfirmations,
     agentTaskDescription: taskDescription,
   });
 
@@ -300,7 +347,7 @@ export async function buildAgentLoopArgs(
     maxToolCalls: budget.maxToolCalls,
     deadlineMs: budget.deadlineMs,
     isBackgroundAgent: true,
-    skipConfirmations: agent.skip_confirmations ?? false,
+    skipConfirmations: effectiveSkipConfirmations,
     agentId: agent.id,
   };
 }
