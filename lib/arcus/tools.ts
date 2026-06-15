@@ -12,6 +12,9 @@
 import { getSupabaseAdmin } from '../supabase.js';
 // @ts-ignore - JS module
 import { CalComService } from '../calcom.js';
+// Super-agent foundation (Stage 1) — the agent reads/writes these itself.
+import { addCommitment, listOpen, bucketByDue, closeCommitment } from './super/ledger';
+import { saveFact, saveDecision } from './super/memory';
 // @ts-ignore — JS module
 import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
@@ -411,6 +414,76 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         reason: { type: 'string', description: 'Optional cancellation reason shown to the attendee.' },
       },
       required: ['bookingId'],
+    },
+  },
+  {
+    name: 'ledger_add_commitment',
+    description:
+      'Record an open commitment in the Follow-Through Ledger so it is NEVER dropped across runs. ' +
+      'Use whenever you (or the user) promise a future action: "follow up Friday", "send the deck after the call", ' +
+      '"check if they replied in 3 days". Future runs see it under what\'s due and chase it. Dedup is automatic.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        what: { type: 'string', description: 'The commitment, imperative: "Send Acme the pricing deck".' },
+        who: { type: 'string', description: 'Person/company it concerns (name or email). Optional.' },
+        due: { type: 'string', description: 'ISO date/time it is due, e.g. "2026-06-20T17:00:00Z". Omit if no hard deadline.' },
+        threadId: { type: 'string', description: 'Gmail thread id this relates to (helps chase + dedup). Optional.' },
+      },
+      required: ['what'],
+    },
+  },
+  {
+    name: 'ledger_list_due',
+    description:
+      'List commitments from the Follow-Through Ledger that are DUE or OVERDUE now. ' +
+      'Call this near the START of a run — overdue items are your first priority, before new work. ' +
+      'Returns each with id, what, who, due, and how overdue it is.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'ledger_list_open',
+    description: 'List ALL open commitments (due or not) so you can see the full set of balls in the air.',
+    input_schema: { type: 'object', properties: {} },
+  },
+  {
+    name: 'ledger_close_commitment',
+    description:
+      'Close a Follow-Through Ledger commitment — ONLY when it is actually done (e.g. the follow-up was sent). ' +
+      'Closing a ball you did not actually complete is a serious error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'Ledger entry id from ledger_list_due / ledger_list_open.' },
+        status: { type: 'string', enum: ['done', 'cancelled'], description: 'done (default) or cancelled if no longer relevant.' },
+      },
+      required: ['id'],
+    },
+  },
+  {
+    name: 'save_fact',
+    description:
+      'Persist a durable fact you learned about the user, a contact, or their world, so future runs never re-derive it. ' +
+      'Examples: "Sarah Chen = priority VC, replies within 4h, prefers Tuesday calls", "Acme renewal is annual, ~$48k". ' +
+      'Be specific and reusable. This is the memory moat — use it generously.',
+    input_schema: {
+      type: 'object',
+      properties: { fact: { type: 'string', description: 'The durable fact, one sentence.' } },
+      required: ['fact'],
+    },
+  },
+  {
+    name: 'save_decision',
+    description:
+      'Record a judgment call you made + (if known) its outcome, so you can pattern-match next time. ' +
+      'Example: decision "Declined the recruiter cold email", outcome "user approved — this pattern is safe".',
+    input_schema: {
+      type: 'object',
+      properties: {
+        decision: { type: 'string', description: 'The call you made and why.' },
+        outcome: { type: 'string', description: 'What happened / how the user reacted, if known. Optional.' },
+      },
+      required: ['decision'],
     },
   },
   {
@@ -2279,6 +2352,13 @@ export async function executeTool(
       case 'calcom_create_booking':   result = await calcomCreateBooking(userId, input, context); break;
       case 'calcom_list_bookings':    result = await calcomListBookings(userId); break;
       case 'calcom_cancel_booking':   result = await calcomCancelBooking(userId, input, context); break;
+      // Super-agent foundation tools
+      case 'ledger_add_commitment':   result = await ledgerAddCommitment(userId, input, context); break;
+      case 'ledger_list_due':         result = await ledgerListDue(userId); break;
+      case 'ledger_list_open':        result = await ledgerListOpen(userId); break;
+      case 'ledger_close_commitment': result = await ledgerCloseCommitment(input, context); break;
+      case 'save_fact':               result = await saveFactTool(userId, input); break;
+      case 'save_decision':           result = await saveDecisionTool(userId, input); break;
       case 'search_notion':      result = await searchNotion(userId, input); break;
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
@@ -3701,6 +3781,66 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
 // Gated by the same session-approval mechanism as send_email. Notifying
 // attendees is irreversible (you can't unsend a cancellation email), so this
 // is treated as Tier 3 — explicit confirm per event.
+// ── Super-agent foundation tools (ledger / memory / user model) ─────────────────
+
+function fmtDue(due: string | null): string {
+  if (!due) return 'no date';
+  const d = new Date(due);
+  const days = Math.round((d.getTime() - Date.now()) / 86_400_000);
+  if (days < 0) return `OVERDUE ${Math.abs(days)}d`;
+  if (days === 0) return 'due today';
+  return `due in ${days}d`;
+}
+
+async function ledgerAddCommitment(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const what = (input?.what || '').trim();
+  if (!what) return failureResult('what is required.', 'validation_error');
+  const entry = await addCommitment({
+    userId, agentId: context.agentId || null, what,
+    who: input.who || null, due: input.due || null,
+    originRunId: context.runId || null, threadId: input.threadId || null,
+  });
+  if (!entry) return failureResult('Could not save the commitment.', 'ledger_error');
+  return { output: `Tracked: "${entry.what}"${entry.who ? ` (${entry.who})` : ''} — ${fmtDue(entry.due)}. id ${entry.id}` };
+}
+
+async function ledgerListDue(userId: string): Promise<ToolResult> {
+  const open = await listOpen(userId);
+  const { overdue, dueToday } = bucketByDue(open);
+  const due = [...overdue, ...dueToday];
+  if (!due.length) return { output: 'Nothing due or overdue in the ledger right now.' };
+  const lines = due.map(e => `- [${e.id}] ${e.what}${e.who ? ` — ${e.who}` : ''} (${fmtDue(e.due)})`);
+  return { output: `Due / overdue commitments (handle these first):\n${lines.join('\n')}` };
+}
+
+async function ledgerListOpen(userId: string): Promise<ToolResult> {
+  const open = await listOpen(userId);
+  if (!open.length) return { output: 'No open commitments in the ledger.' };
+  const lines = open.map(e => `- [${e.id}] ${e.what}${e.who ? ` — ${e.who}` : ''} (${fmtDue(e.due)})`);
+  return { output: `Open commitments (${open.length}):\n${lines.join('\n')}` };
+}
+
+async function ledgerCloseCommitment(input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const id = (input?.id || '').trim();
+  if (!id) return failureResult('id is required.', 'validation_error');
+  const ok = await closeCommitment(id, context.runId || null, input.status === 'cancelled' ? 'cancelled' : 'done');
+  return ok ? { output: `Closed commitment ${id}.` } : failureResult('Could not close that commitment.', 'ledger_error');
+}
+
+async function saveFactTool(userId: string, input: any): Promise<ToolResult> {
+  const fact = (input?.fact || '').trim();
+  if (!fact) return failureResult('fact is required.', 'validation_error');
+  await saveFact(userId, fact);
+  return { output: `Remembered: ${fact}` };
+}
+
+async function saveDecisionTool(userId: string, input: any): Promise<ToolResult> {
+  const decision = (input?.decision || '').trim();
+  if (!decision) return failureResult('decision is required.', 'validation_error');
+  await saveDecision(userId, decision, input.outcome || undefined);
+  return { output: `Logged decision: ${decision}${input.outcome ? ` → ${input.outcome}` : ''}` };
+}
+
 // ── Cal.com scheduling ─────────────────────────────────────────────────────────
 // Prefer the user's OWN connected Cal.com API key (so bookings land on their
 // account); fall back to the app's shared CAL_API_KEY so it still works for

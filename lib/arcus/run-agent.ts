@@ -10,6 +10,8 @@
 import { runAgentLoop } from './loop';
 import { buildSystemPrompt, getConnectedIntegrations } from './system-prompt';
 import { searchMemories, saveMemory } from './memory';
+// Super-agent foundation — load context so a run never starts from zero.
+import { listOpen, bucketByDue } from './super/ledger';
 // PART 48 — Multi-VA committee orchestrator. runAgentTask now routes through
 // runAgentAsCommittee by default; the legacy single-LLM path stays available
 // behind an env-var kill switch so we can disable in prod without redeploying.
@@ -246,6 +248,29 @@ export async function buildAgentLoopArgs(
 
   const memories = [...memoryLines].join('\n');
 
+  // SUPER-AGENT CONTEXT — surface the user model (already fetched above) + the
+  // Follow-Through Ledger so the run starts informed (Part 2 steps 1-2: never
+  // start from zero, check open loops FIRST). Best-effort; never blocks a run.
+  let superContext = '';
+  if (userModel && userModel.trim()) {
+    superContext += `WHAT I KNOW ABOUT YOU (don't re-ask):\n${userModel.trim()}\n\n`;
+  }
+  try {
+    const ledgerOpen = await listOpen(userId).catch(() => [] as any[]);
+    const { overdue, dueToday } = bucketByDue(ledgerOpen);
+    const due = [...overdue, ...dueToday];
+    if (due.length) {
+      const fmt = (e: any) => {
+        if (!e.due) return 'no date';
+        const d = Math.round((new Date(e.due).getTime() - Date.now()) / 86_400_000);
+        return d < 0 ? `OVERDUE ${Math.abs(d)}d` : d === 0 ? 'due today' : `due in ${d}d`;
+      };
+      superContext +=
+        'OPEN COMMITMENTS DUE NOW — handle these FIRST, before new work, then close each with ledger_close_commitment when done:\n' +
+        due.map((e: any) => `- [${e.id}] ${e.what}${e.who ? ` — ${e.who}` : ''} (${fmt(e)})`).join('\n') + '\n\n';
+    }
+  } catch { /* non-fatal */ }
+
   const systemPrompt = buildSystemPrompt({
     userName: 'User',
     userId,
@@ -270,7 +295,7 @@ export async function buildAgentLoopArgs(
     userId,
     systemPrompt,
     history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
-    userMessage: SUPER_AGENT_DIRECTIVE + '\n\n' + taskDescription + reportSuffix,
+    userMessage: SUPER_AGENT_DIRECTIVE + '\n\n' + superContext + taskDescription + reportSuffix,
     connectedIntegrations,
     maxToolCalls: budget.maxToolCalls,
     deadlineMs: budget.deadlineMs,

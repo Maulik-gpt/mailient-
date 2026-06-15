@@ -63,6 +63,15 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   calcom_list_bookings: null,
   calcom_cancel_booking: null,
 
+  // Super-agent foundation — always available (no integration gating).
+  // (User model read/write reuses the existing get/update_user_model tools.)
+  ledger_add_commitment: null,
+  ledger_list_due: null,
+  ledger_list_open: null,
+  ledger_close_commitment: null,
+  save_fact: null,
+  save_decision: null,
+
   // Notion
   search_notion: 'notion',
   fetch_notion_schema: 'notion',
