@@ -118,7 +118,11 @@ function mergedSection(
 // old grouped "All Links" dump so the user gets directed actions, not a
 // reference list. Priority: drafts to review/send first, then meetings to
 // confirm, then logged records, then Slack.
-function nextActionsSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: ArcusVA; links: string }>): string {
+function nextActionsSection(
+  artifacts: ArtifactBuckets,
+  perVALinks: Array<{ va: ArcusVA; links: string }>,
+  needsAttention: string[],
+): string {
   const actions: string[] = [];
 
   for (const item of artifacts.gmail ?? []) actions.push(`→ Review & send: [${item.label}](${item.url})`);
@@ -126,20 +130,28 @@ function nextActionsSection(artifacts: ArtifactBuckets, perVALinks: Array<{ va: 
   for (const item of artifacts.notion ?? []) actions.push(`→ Check the log: [${item.label}](${item.url})`);
   for (const item of artifacts.slack ?? []) actions.push(`→ View message: [${item.label}](${item.url})`);
 
+  // Decisions/requests the agent surfaced but couldn't finish — these MUST show
+  // even when there's no artifact link (a meeting request with no draft is still
+  // something the user needs to see). Dedup against items already covered above.
+  const haveLinks = actions.length > 0;
+  for (const item of needsAttention) {
+    const t = item.trim();
+    if (!looksLikeRealContent(t)) continue;
+    actions.push(t.startsWith('→') || t.startsWith('-') ? t.replace(/^-\s*/, '→ ') : `→ ${t}`);
+  }
+
   // Per-VA freeform link blocks (raw markdown the VA emitted) — append as-is so
   // we never drop a link the structured buckets missed.
   const perVABlocks = perVALinks.filter(p => p.links.trim()).map(p => p.links.trim());
 
   if (!actions.length && !perVABlocks.length) {
-    // Nothing to click, but keep the section present with a clear "you're done"
-    // signal rather than an empty/ambiguous gap.
     return ['## What needs you', '', 'Nothing right now — you’re all caught up.', ''].join('\n');
   }
 
   const lines: string[] = ['## What needs you', ''];
   lines.push(...actions);
   if (perVABlocks.length) {
-    if (actions.length) lines.push('');
+    if (haveLinks || actions.length) lines.push('');
     lines.push(...perVABlocks);
   }
   lines.push('');
@@ -228,8 +240,10 @@ export async function buildCommitteeReport(
 
   const headline = await synthesizeHeadline(ordered, agentName, parsed);
 
+  // needsAttention is surfaced in "What needs you" (below), not as a body
+  // section — so the most important items are never buried.
+  const needsAttentionItems = collect('needsAttention').flatMap(g => g.items);
   const contentSections = [
-    mergedSection('Needs your attention', collect('needsAttention')),
     mergedSection('Revenue & opportunities', collect('revenue')),
     mergedSection('Client updates', collect('client')),
     mergedSection('Operations', collect('operations')),
@@ -248,8 +262,13 @@ export async function buildCommitteeReport(
       const hadFailure = (r.failedTools?.length ?? 0) > 0 || r.status === 'error' || r.status === 'timeout';
       const summary = (r.summary || '').trim();
       const claimsNothing = /\b(clear|nothing|no\b.*(found|triage|repl|action))/i.test(summary);
+      // Reject leaky filler that should never reach the user: tool-call counts,
+      // "let me know if…", "to summarize", "done —", etc.
+      const isFiller =
+        /\b(let me know|if you('?| wa)nt|to summari[sz]e|tool calls?|\d+\s+calls? ran|^done\b|i can (also )?summari)/i.test(summary);
       const usefulSummary =
         summary &&
+        !isFiller &&
         !/^no work in your lane/i.test(summary) &&
         !new RegExp(`^${r.va} VA`, 'i').test(summary) &&
         summary.length >= 12 &&
@@ -292,7 +311,7 @@ export async function buildCommitteeReport(
     '',
     whatHappenedSection(),
     ...contentSections,
-    nextActionsSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' }))),
+    nextActionsSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' })), needsAttentionItems),
     '',
     '---',
     '',

@@ -407,6 +407,34 @@ export async function callLLM(
     ).catch(() => null);
   }
 
+  const MODEL_TIMEOUT = 32000;
+
+  // Pass 0 — PREMIUM-FIRST (the super-agent quality lever). Free models are the
+  // quality ceiling: they're terse, skip steps, and "claim" actions they never
+  // executed. When the operator opts into premium quality, try the top-tier
+  // model(s) FIRST so Arcus reasons at frontier quality; we still fall through
+  // to the full free chain below if the premium call fails.
+  //
+  // Model ids are NOT hardcoded to anything unverified: the default premium
+  // list is the known-good PAID_MODELS already in this file, capability-ordered.
+  // For true frontier quality set ARCUS_PREMIUM_MODELS to a comma-separated list
+  // of OpenRouter ids you've verified (e.g. "anthropic/claude-sonnet-4.5").
+  const premiumOn = process.env.ARCUS_PREMIUM_MODE === 'true' || process.env.ALLOW_PAID_MODELS === 'true';
+  const premiumList = (process.env.ARCUS_PREMIUM_MODELS || '')
+    .split(',').map(s => s.trim()).filter(Boolean);
+  const premiumModels = premiumList.length
+    ? premiumList
+    : ['anthropic/claude-haiku-5', 'google/gemini-2.5-flash', 'openai/gpt-5-nano'];
+  if (premiumOn && premiumModels.length) {
+    log('info', 'Engine', 'Pass 0 — premium-first', { models: premiumModels, hasTools });
+    for (const model of premiumModels) {
+      const r = await tryModel(model, baseBody, MODEL_TIMEOUT);
+      if (r) { log('info', 'Engine', 'Premium model answered', { model }); return r; }
+      await sleep(120);
+    }
+    log('warn', 'Engine', 'Premium-first exhausted — falling through to free chain');
+  }
+
   // Pass 1: sequential free models, all keys race each.
   // Small fixed jitter between models to avoid thundering-herd without adding
   // meaningful latency (100ms flat vs. old 400-1200ms ramp).
@@ -415,7 +443,6 @@ export async function callLLM(
   // prompts and longer for tool calls — an 11s cap was killing the ONE model
   // that still works once the daily free quota is exhausted. Quota-dead models
   // 429 in ~0.5s regardless, so a longer cap only helps the working model.
-  const MODEL_TIMEOUT = 32000;
   const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
   log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
   for (let i = 0; i < list.length; i++) {

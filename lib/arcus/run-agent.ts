@@ -66,6 +66,25 @@ async function fetchUserInstructions(userId: string): Promise<string> {
   }
 }
 
+// Prepended to every background run. Turns the agent from a shallow scanner into
+// a senior executive assistant that FINISHES coherent jobs and never claims work
+// it didn't verify. This is the behavioral core of the super-agent.
+export const SUPER_AGENT_DIRECTIVE = `You are Arcus operating as the user's senior executive assistant on a background run — the calibre of a top-tier $3,000/mo chief of staff. Hold yourself to that bar.
+
+HOW YOU WORK:
+1. PLAN before acting. Read the task, then think through the complete job — every step needed to truly finish it, not just a surface scan.
+2. FINISH the whole job, end to end. Do not stop halfway. If a task has multiple steps that depend on each other, do them in order in this one run:
+   • Meeting / call request → read the full thread; check the user's REAL availability (calendar_get_availability and/or Cal.com calcom_get_slots); draft a reply in the user's voice proposing 2–3 specific open times; if the user clearly wants it booked, create the event/booking and include the join link; then surface it for approval.
+   • Reply needed → actually draft it with draft_reply (which returns a real draft link). Don't say "drafted" unless the tool returned a draft.
+   • Follow-up / stalled item → draft the nudge.
+3. USE THE RIGHT TOOLS. You have the full arsenal (Gmail, Calendar, Cal.com, Notion, Slack, memory, web). Prefer batch tools for volume. Pull context (get_recipient_context, memory) so replies are personal, not generic.
+4. VERIFY EVERY CLAIM. Only state you did something if the tool actually returned success + an artifact (a draft link, an event link, a booking id). If a tool failed or returned no link, say so plainly and put the item under "Needs Your Attention" — never imply completion you can't prove.
+5. BE THOROUGH, NOT TERSE. A real EA gives the full picture: who, what, the proposed times, the draft link, what's still open. Never pad with filler ("let me know if you want me to summarize", tool-call counts) — but never leave the user with a thin, incomplete summary either. Substance over brevity.
+6. SURFACE WHAT NEEDS THEM. Anything requiring a human decision — a meeting request you couldn't fully book, a draft awaiting send, a judgement call — goes in "Needs Your Attention" with the link. This section is the most important part of the report; it must reflect reality.
+
+Now do the job below to that standard, then write the report in the required format.
+`;
+
 export const REPORT_FORMAT_SUFFIX = `
 
 ---
@@ -251,7 +270,7 @@ export async function buildAgentLoopArgs(
     userId,
     systemPrompt,
     history: [] as Array<{ role: 'user' | 'assistant'; content: string }>,
-    userMessage: taskDescription + reportSuffix,
+    userMessage: SUPER_AGENT_DIRECTIVE + '\n\n' + taskDescription + reportSuffix,
     connectedIntegrations,
     maxToolCalls: budget.maxToolCalls,
     deadlineMs: budget.deadlineMs,
@@ -329,14 +348,15 @@ export async function runAgentTask(
   budget: AgentRunBudget = {},
   agentRunId?: string,
 ): Promise<AgentRunResult> {
-  // PART 48 — route through the multi-VA committee orchestrator unless the
-  // kill switch is set. The committee fans out to up to 5 parallel VA runs,
-  // each with a focused prompt + narrowed tool surface, then aggregates
-  // into a single chief-of-staff briefing. Return shape matches the legacy
-  // single-LLM path so the cron runner doesn't need to change.
-  // agentRunId (the arcus_agent_runs.id) flows down to every VA loop so all
-  // their tool calls log against the one run the user sees.
-  const useCommittee = process.env.ARCUS_DISABLE_COMMITTEE !== 'true';
+  // SUPER-AGENT — background runs now execute as ONE coherent agent with the
+  // full toolset, not the parallel multi-VA committee. The committee fragmented
+  // coherent jobs (a meeting request needs inbox + calendar TOGETHER), so the
+  // halves never finished and the report papered over the gap with unverified
+  // claims. A single agent sees its own work end-to-end: read → check
+  // availability → draft proposing times → book with a link → surface for
+  // approval. The committee stays available as an opt-in fallback
+  // (ARCUS_USE_COMMITTEE=true) — nothing deleted, fully reversible.
+  const useCommittee = process.env.ARCUS_USE_COMMITTEE === 'true';
   // Defaults sized for Vercel Hobby's 60s function cap (used when no caller
   // budget is supplied, e.g. the "Run now" path). The cron route passes its own
   // tighter per-agent budget. (On Pro: 80 / 50_000.)
