@@ -68,6 +68,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Phase 2 — fast reactive lane. Point a frequent cron-job (~every 2 min) at
+  // /api/cron/run-agents?only=events: it processes ONLY event/condition agents
+  // and chain hand-offs (schedule agents are skipped), cutting reactive latency
+  // from ~15 min to ~2 min while reusing this whole runner (budget, delivery,
+  // F3.1, run records). The classic 15-min job runs the full set as before.
+  const onlyEvents = new URL(request.url).searchParams.get('only') === 'events';
+
   const supabase = getSupabaseAdmin();
 
   const { data: agents, error } = await supabase
@@ -143,6 +150,7 @@ export async function GET(request: NextRequest) {
   // No cron-time math inside the parallel batch — the schedule decision
   // happens once, here.
   const readyToRun: any[] = [];
+  const polledNotFired: any[] = []; // event agents polled this tick with no match
   for (const agent of agents) {
     // Dormant until the owner is on a paid plan.
     if (!paidMap[agent.user_id]) continue;
@@ -172,14 +180,21 @@ export async function GET(request: NextRequest) {
     // 'chained' agents never fire on the clock — only the chain drainer below.
     if (triggerType === 'chained') continue;
 
-    // Event / condition agents: reactive poll (gated by debounce so dormant
-    // agents don't re-read Gmail every tick).
+    // Event / condition agents: reactive poll. Gated by last_polled_at (NOT
+    // last_run_at) so an idle agent that never fires still won't re-read Gmail
+    // more than once per debounce window — critical now that the fast lane can
+    // hit this route every ~2 min. We stamp last_polled_at whether or not it
+    // fires (fired → in the post-run state update; not-fired → batched below).
     if (triggerType === 'event' || triggerType === 'condition') {
       const debMin = Number(agent.trigger_config?.debounce_min) || 15;
-      if (agent.last_run_at && (now.getTime() - new Date(agent.last_run_at).getTime()) / 60000 < debMin) continue;
+      const lastPolled = agent.agent_state?.last_polled_at || agent.last_run_at;
+      if (lastPolled && (now.getTime() - new Date(lastPolled).getTime()) / 60000 < debMin) continue;
       let reactive;
       try { reactive = await checkEventAgents(agent); } catch { reactive = null; }
-      if (!reactive?.shouldFire) continue;
+      if (!reactive?.shouldFire) {
+        polledNotFired.push(agent); // stamp last_polled_at after the loop
+        continue;
+      }
       agent._triggerSource = 'event';
       agent._matchedEvents = reactive.matchedEvents;
       agent._newProcessedIds = reactive.newProcessedIds;
@@ -187,10 +202,25 @@ export async function GET(request: NextRequest) {
       continue;
     }
 
+    // In the fast event lane we skip schedule agents entirely — the classic
+    // 15-min job owns them.
+    if (onlyEvents) continue;
+
     // schedule (default) — unchanged path.
     if (!shouldAgentRunNow(agent.cron_schedule, agent.last_run_at, userTz)) continue;
     agent._triggerSource = 'schedule';
     readyToRun.push(agent);
+  }
+
+  // Stamp last_polled_at for event agents we polled but that didn't fire, so the
+  // fast lane respects each agent's debounce window regardless of cron cadence.
+  if (polledNotFired.length) {
+    const polledAt = now.toISOString();
+    await Promise.all(polledNotFired.map(a =>
+      supabase.from('arcus_agents')
+        .update({ agent_state: { ...(a.agent_state || {}), last_polled_at: polledAt } })
+        .eq('id', a.id),
+    ));
   }
 
   // ── Chain drainer ─────────────────────────────────────────────────────────
@@ -364,6 +394,7 @@ export async function GET(request: NextRequest) {
             ...prior,
             processed_event_ids: mergeProcessedIds(prior.processed_event_ids, agent._newProcessedIds),
             last_fired_at: completedAt.toISOString(),
+            last_polled_at: completedAt.toISOString(),
           };
         }
         await supabase
