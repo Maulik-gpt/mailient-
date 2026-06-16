@@ -69,7 +69,7 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
   maxWidth = "max-w-md",
 }) => {
   return (
-    <div className="h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden">
+    <div className="dark h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden" style={{ backgroundColor: '#050505', colorScheme: 'dark' }}>
       {/* Left column: sign-in form */}
       <section className={`flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 ${allowScroll ? 'overflow-y-auto custom-scrollbar' : ''}`}>
         <div className={`w-full ${maxWidth}`}>

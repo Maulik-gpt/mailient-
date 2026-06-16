@@ -5,11 +5,16 @@ import { Toaster as Sonner, type ToasterProps } from "sonner"
 import { CircleCheckIcon, InfoIcon, TriangleAlertIcon, OctagonXIcon, Loader2Icon } from "lucide-react"
 
 const Toaster = ({ ...props }: ToasterProps) => {
-  const { theme = "system" } = useTheme()
+  // The toast is intentionally a fixed dark/black surface in BOTH themes — in
+  // light mode a theme-following toast came out invisible (light bg + light
+  // text). Black-with-white-text reads cleanly on the light app and stays
+  // correct on the dark app. So we pin theme="dark" + fixed dark colors below
+  // instead of following `useTheme()`.
+  useTheme()
 
   return (
     <Sonner
-      theme={theme as ToasterProps["theme"]}
+      theme="dark"
       className="toaster group"
       icons={{
         success: (
@@ -30,9 +35,10 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
-          "--normal-bg": "var(--popover)",
-          "--normal-text": "var(--popover-foreground)",
-          "--normal-border": "var(--border)",
+          // Fixed dark surface — visible on both the light and dark app.
+          "--normal-bg": "#0c0c0e",
+          "--normal-text": "#fafafa",
+          "--normal-border": "rgba(255,255,255,0.12)",
           "--border-radius": "var(--radius)",
         } as React.CSSProperties
       }

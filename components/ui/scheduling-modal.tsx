@@ -254,16 +254,18 @@ export function SchedulingModal({ isOpen, onClose, emailId }: SchedulingModalPro
                 period={usageLimitModalData?.period || 'monthly'}
                 currentPlan={usageLimitModalData?.currentPlan || 'starter'}
             />
-            <div className="fixed inset-0 z-[1120] flex items-center justify-center overflow-y-auto">
+            <div className="dark fixed inset-0 z-[1120] flex items-center justify-center overflow-y-auto" style={{ colorScheme: 'dark' }}>
                 {/* Backdrop */}
                 <div
                     className="absolute inset-0 bg-black/80 backdrop-blur-xl transition-opacity animate-in fade-in duration-500"
                     onClick={onClose}
                 />
 
-                {/* Modal */}
+                {/* Modal — dark-designed surface; the `dark` wrapper above forces its
+                    dark:* variants on regardless of the app's global light/dark theme,
+                    so the card is never black-text-on-black in light mode. */}
                 <div
-                    className="relative bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800 w-full max-w-xl md:rounded-[2.5rem] rounded-t-[2rem] shadow-2xl overflow-y-auto max-h-[95vh] md:max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
+                    className="relative bg-[#0d0d0d] border border-neutral-800 w-full max-w-xl md:rounded-[2.5rem] rounded-t-[2rem] shadow-2xl overflow-y-auto max-h-[95vh] md:max-h-[90vh] animate-in zoom-in-95 slide-in-from-bottom-10 duration-500"
                 >
                     {/* Header */}
                     <div className="p-8 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between">
