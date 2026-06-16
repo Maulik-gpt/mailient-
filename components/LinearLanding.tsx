@@ -716,37 +716,19 @@ export function LinearLanding() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.4 }}
-                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                  className="absolute inset-0 z-10 bg-[#050505]"
                 >
-                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
-                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">voice-profiler.js</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">99.4% SIGNATURE MATCH</span>
-                  </div>
-
-                  <div className="my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden space-y-4">
-                    <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-white/[0.04] pb-2">
-                      <span>STYLISTIC CONTEXT SIGNATURE</span>
-                      <span className="text-emerald-400">Direct / Minimalist</span>
-                    </div>
-                    <div className="text-xs leading-relaxed space-y-2 text-neutral-400">
-                      <p className="text-neutral-300 font-sans italic">"Hey Sarah, tomorrow at 10 AM works great. Austin is scheduling the Google Meet link shortly. Let's sync then."</p>
-                      <div className="flex items-center gap-4 text-[10px] pt-2 border-t border-white/[0.02]">
-                        <span className="text-white">Sentences: 3</span>
-                        <span className="text-white">Pronouns: Minimal</span>
-                        <span className="text-white">Valediction: Best, Austin</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
-                    <span>DRAFT GENERATED SUCCESFULLY</span>
-                    <span>SYNCED TO OUTBOX</span>
-                  </div>
+                  {/* Live demo — Arcus drafting a reply in your voice */}
+                  <video
+                    src="/demos/voice-demo.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label="Mailient drafting an email reply in your voice"
+                    className="w-full h-full object-cover"
+                  />
                 </motion.div>
               )}
 
