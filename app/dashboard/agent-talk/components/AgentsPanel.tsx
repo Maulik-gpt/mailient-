@@ -13,6 +13,8 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -77,6 +79,7 @@ interface AgentRun {
     slack?: ArtifactLink[];
   } | null;
   plan: string | null;
+  report_full?: string | null;
 }
 
 // ── Cron helpers ───────────────────────────────────────────────────────────────
@@ -1162,6 +1165,30 @@ function RunRow({ run }: { run: AgentRun }) {
           <ArtifactBucket icon={<Database className="w-3 h-3" />}     count={links.notion?.length ?? 0}   links={links.notion ?? []}   label="Notion" />
           <ArtifactBucket icon={<Slack className="w-3 h-3" />}        count={links.slack?.length ?? 0}    links={links.slack ?? []}    label="Slack" />
         </div>
+      ) : null}
+
+      {run.report_full ? (
+        <details className="mt-2 group/report">
+          <summary className="text-[11px] font-semibold text-arcus-fg-muted/80 cursor-pointer select-none hover:text-arcus-fg-secondary list-none flex items-center gap-1">
+            <ChevronDown className="w-3 h-3 transition-transform group-open/report:rotate-180" />
+            Full report
+          </summary>
+          <div className="mt-1.5 pl-4 border-l border-arcus-divider/50 text-[12px] text-arcus-fg-secondary leading-relaxed arcus-run-report space-y-2">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ node, ...props }) => <a {...props} target="_blank" rel="noopener noreferrer" className="text-arcus-fg underline underline-offset-2 hover:opacity-70" />,
+                h2: ({ node, ...props }) => <p {...props} className="font-bold text-arcus-fg mt-3 first:mt-0" />,
+                h3: ({ node, ...props }) => <p {...props} className="font-semibold text-arcus-fg mt-2" />,
+                ul: ({ node, ...props }) => <ul {...props} className="list-disc pl-4 space-y-0.5" />,
+                p: ({ node, ...props }) => <p {...props} className="leading-relaxed" />,
+                code: ({ node, ...props }) => <code {...props} className="px-1 py-0.5 rounded bg-arcus-raised text-[11px]" />,
+              }}
+            >
+              {run.report_full}
+            </ReactMarkdown>
+          </div>
+        </details>
       ) : null}
     </div>
   );

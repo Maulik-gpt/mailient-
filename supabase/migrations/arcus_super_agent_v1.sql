@@ -22,7 +22,8 @@ ALTER TABLE arcus_agents
 ALTER TABLE arcus_agent_runs
   ADD COLUMN IF NOT EXISTS decisions       JSONB,   -- [{action, confidence, reasoning, outcome}]
   ADD COLUMN IF NOT EXISTS criteria_met    JSONB,   -- {criterion: bool/score}
-  ADD COLUMN IF NOT EXISTS outcome_summary TEXT;    -- the one-line outcome
+  ADD COLUMN IF NOT EXISTS outcome_summary TEXT,    -- the one-line outcome
+  ADD COLUMN IF NOT EXISTS report_full     TEXT;    -- the full executive briefing (dashboard inspectability)
 
 -- ── 1.6 Follow-Through Ledger — open commitments across runs ─────────────────
 CREATE TABLE IF NOT EXISTS arcus_ledger (

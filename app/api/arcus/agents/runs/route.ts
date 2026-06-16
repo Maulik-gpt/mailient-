@@ -52,10 +52,11 @@ export async function GET(request: NextRequest) {
     return q;
   };
 
-  // Try with the super-agent honest-outcome column; fall back if the migration
-  // (arcus_super_agent_v1.sql) hasn't been applied yet, so the route never 500s.
-  let { data, error } = await runQuery(`${BASE_COLS}, outcome_summary`);
-  if (error && /outcome_summary/.test(error.message || '')) {
+  // Try with the super-agent columns (honest outcome + full report); fall back if
+  // the migration (arcus_super_agent_v1.sql) hasn't been applied yet, so the
+  // route never 500s on a partially-migrated DB.
+  let { data, error } = await runQuery(`${BASE_COLS}, outcome_summary, report_full`);
+  if (error && /(outcome_summary|report_full)/.test(error.message || '')) {
     ({ data, error } = await runQuery(BASE_COLS));
   }
 

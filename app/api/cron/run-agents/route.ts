@@ -34,6 +34,7 @@ import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
 import { checkEventAgents, mergeProcessedIds } from '../../../../lib/arcus/triggers/reactive-poll';
 import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/triggers/chain';
+import { reconcileLedger } from '../../../../lib/arcus/super/ledger';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
@@ -345,12 +346,22 @@ export async function GET(request: NextRequest) {
       }
 
       try {
-        const { report, toolCalls, artifactLinks: structuredLinks } = await runAgentTask(agent, {
+        const taskResult = await runAgentTask(agent, {
           // Per-agent override (advanced agents can be given a bigger/smaller
           // tool budget) falls back to the fair per-tick share.
           maxToolCalls: agent.max_tool_calls || perAgentToolCalls,
           deadlineMs: sharedBudget,
         }, runRecordId || undefined);
+        let report = taskResult.report;
+        const { toolCalls, artifactLinks: structuredLinks } = taskResult;
+
+        // Stage 4 hardening — deterministic follow-through safety net. Regardless
+        // of what the agent's narrative said, surface any OVERDUE commitment it
+        // didn't already account for, so a dropped ball is never silent.
+        try {
+          const recon = await reconcileLedger(agent.user_id, agent.id, report);
+          if (recon.addendum) report += recon.addendum;
+        } catch { /* fail soft — ledger may be unmigrated */ }
 
         const runHasPending = await hasPendingActions(agent.id);
 
@@ -474,11 +485,14 @@ export async function GET(request: NextRequest) {
               })
               .eq('id', runRecordId);
           } catch { /* PART 60 columns may not be migrated — non-fatal */ }
-          // outcome_summary is a super-agent column (may not be migrated yet).
+          // outcome_summary + report_full are super-agent columns (may not be
+          // migrated yet). report_full persists the WHOLE executive briefing so
+          // the dashboard run is fully inspectable, not just a 500-char teaser.
           try {
-            if (outcomeSummary) {
-              await supabase.from('arcus_agent_runs').update({ outcome_summary: outcomeSummary }).eq('id', runRecordId);
-            }
+            const superUpdate: Record<string, any> = {};
+            if (outcomeSummary) superUpdate.outcome_summary = outcomeSummary;
+            superUpdate.report_full = report.slice(0, 20000);
+            await supabase.from('arcus_agent_runs').update(superUpdate).eq('id', runRecordId);
           } catch { /* non-fatal */ }
         }
 

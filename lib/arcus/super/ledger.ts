@@ -148,6 +148,47 @@ export async function closeCommitment(id: string, closedRunId?: string | null, s
   }
 }
 
+/**
+ * Post-run reconciliation (Stage 4 hardening). After a run finishes, this is the
+ * DETERMINISTIC safety net that doesn't trust the agent's narrative: it loads the
+ * agent's still-open commitments and, for anything OVERDUE that the report didn't
+ * already mention, returns a compact addendum so a dropped ball can never be
+ * silent. Returns `{ overdueCount, addendum }`; addendum is '' when nothing needs
+ * surfacing. Fails soft → no addendum.
+ */
+export async function reconcileLedger(
+  userId: string,
+  agentId: string | undefined,
+  reportText: string = '',
+): Promise<{ overdueCount: number; addendum: string }> {
+  try {
+    const open = await listOpen(userId, agentId);
+    const { overdue } = bucketByDue(open);
+    if (!overdue.length) return { overdueCount: 0, addendum: '' };
+
+    const reportLower = (reportText || '').toLowerCase();
+    // Only surface items the report didn't already account for (dedupe on the
+    // commitment text) — we don't want to repeat the agent's own follow-through.
+    const unmentioned = overdue.filter(e => {
+      const key = (e.what || '').toLowerCase().slice(0, 40);
+      return key && !reportLower.includes(key);
+    });
+    if (!unmentioned.length) return { overdueCount: overdue.length, addendum: '' };
+
+    const lines = unmentioned.slice(0, 8).map(e => {
+      const due = e.due ? ` (due ${new Date(e.due).toLocaleDateString()})` : '';
+      const who = e.who ? ` — ${e.who}` : '';
+      return `- ${e.what}${who}${due}`;
+    });
+    const addendum =
+      `\n\n---\n⚠️ **Still open and overdue** (carried over, not yet done):\n${lines.join('\n')}`;
+    return { overdueCount: overdue.length, addendum };
+  } catch (e: any) {
+    console.warn('[ledger] reconcile threw:', e?.message);
+    return { overdueCount: 0, addendum: '' };
+  }
+}
+
 /** Mark a commitment in-progress (e.g., chased this run but awaiting a reply). */
 export async function markInProgress(id: string, detail?: Record<string, any>): Promise<boolean> {
   try {
