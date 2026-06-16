@@ -446,9 +446,10 @@ function extractSearchTerm(message: string): string {
 // All XML-like tags that free models (Llama, Gemini, Qwen) emit internally.
 const MODEL_INTERNAL_TAGS = [
   'thinking', 'thought', 'tool', 'tool_call', 'tool_use', 'tool_result',
-  'result', 'output', 'answer', 'reasoning', 'reflection', 'scratchpad',
+  'reasoning', 'reflection', 'scratchpad',
   'system', 'context', 'instruction', 'plan', 'step',
 ];
+const MODEL_WRAP_TAGS = ['answer', 'output', 'result', 'response', 'final', 'message', 'reply'];
 
 function extractThinking(message: string): { thinking: string; cleanText: string } {
   if (typeof message !== 'string') return { thinking: '', cleanText: '' };
@@ -465,14 +466,16 @@ function extractThinking(message: string): { thinking: string; cleanText: string
     cleanText = cleanText.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '');
   }
 
-  // 3. Remove any streaming-open tags (no closing tag yet) — truncate from there
+  // 3. Remove any streaming-open INTERNAL tag (no closing tag yet) — truncate
+  //    from there. NEVER truncate from wrap tags (<answer>/<output>/<result>):
+  //    those hold the real reply and deleting from them blanks the message.
   for (const tag of MODEL_INTERNAL_TAGS) {
     const idx = cleanText.search(new RegExp(`<${tag}[\\s>]`, 'i'));
     if (idx !== -1) cleanText = cleanText.slice(0, idx);
   }
 
-  // 4. Remove any stray opening/closing tags of the internal list
-  for (const tag of MODEL_INTERNAL_TAGS) {
+  // 4. Strip stray tags (internal + wrap) but KEEP wrap-tag content
+  for (const tag of [...MODEL_INTERNAL_TAGS, ...MODEL_WRAP_TAGS]) {
     cleanText = cleanText.replace(new RegExp(`<\\/?${tag}[^>]*>`, 'gi'), '');
   }
 
@@ -3397,13 +3400,15 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
-              // If a question or plan card was already shown, no chat message needed.
-              // PART 21: if the LLM produced no text but tools ran, do NOT fabricate
-              // a "Done — completed X" string. The cards themselves (confirmation,
-              // spec, plan, action result) are the message. Falling back to a
-              // tool-name salad makes the assistant look like it's hallucinating.
-              if (hadQuestionEvent || hadPlanEvent || !finalProcessedText) {
+              // A question/plan card IS the message — no chat text needed there.
+              // But if real work ran (tool steps) and no text came back, NEVER
+              // leave a blank bubble — give a real, useful fallback.
+              if (hadQuestionEvent || hadPlanEvent) {
                 finalProcessedText = '';
+              } else if (!finalProcessedText) {
+                finalProcessedText = currentAgentSteps.length > 0
+                  ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
+                  : '';
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
@@ -3449,10 +3454,11 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
-        // PART 21: never fabricate a "Done — completed X" salad. The cards
-        // already on the message ARE the deliverable. Blank chat text on
-        // stream-finished-without-done is fine.
-        const fallbackText = hadQuestionEvent || hadPlanEvent ? '' : finalContent.trim();
+        const fallbackText = hadQuestionEvent || hadPlanEvent
+          ? ''
+          : finalContent.trim() || (currentAgentSteps.length > 0
+              ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
+              : '');
 
         setMessages(msgs => msgs.map(m => {
           if (m.id !== assistantMsgId || m.type !== 'agent') return m;

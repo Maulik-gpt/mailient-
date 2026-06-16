@@ -26,7 +26,9 @@
       "Bash(awk '/determinePlanType\\\\\\(/{f=1} f{print NR\": \"$0} f&&/^    }/{c++} c>=1&&/^    }/{exit}' lib/subscription-service.js)",
       "Bash(awk '/function S13Plan/{f=1} f{print NR\": \"$0} f&&/^}/{print \"END\"; exit}' app/onboarding/sift-onboarding.tsx)",
       "Bash(grep -rhoand \"text-arcus-[a-z-]*\\\\|text-blue-[0-9]*\\\\|text-emerald-[0-9]*\" app/dashboard/agent-talk/components/ChatPlanCard.tsx)",
-      "Bash(git commit -q -m ' *)"
+      "Bash(git commit -q -m ' *)",
+      "Bash(grep -nA 8 \"MODEL_INTERNAL_TAGS =\" app/dashboard/agent-talk/ChatInterface.tsx)",
+      "Bash(npm run *)"
     ]
   }
 }
