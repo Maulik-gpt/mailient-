@@ -39,16 +39,25 @@ export async function GET(request: NextRequest) {
     : DEFAULT_LIMIT;
 
   const supabase = getSupabaseAdmin();
-  let query = supabase
-    .from('arcus_agent_runs')
-    .select('id, agent_id, started_at, completed_at, duration_ms, status, tool_calls, report_summary, error_message, email_delivery, slack_delivery, artifact_links, plan')
-    .eq('user_id', userId)
-    .order('started_at', { ascending: false })
-    .limit(limit);
+  const BASE_COLS = 'id, agent_id, started_at, completed_at, duration_ms, status, tool_calls, report_summary, error_message, email_delivery, slack_delivery, artifact_links, plan';
 
-  if (agentId) query = query.eq('agent_id', agentId);
+  const runQuery = (cols: string) => {
+    let q = supabase
+      .from('arcus_agent_runs')
+      .select(cols)
+      .eq('user_id', userId)
+      .order('started_at', { ascending: false })
+      .limit(limit);
+    if (agentId) q = q.eq('agent_id', agentId);
+    return q;
+  };
 
-  const { data, error } = await query;
+  // Try with the super-agent honest-outcome column; fall back if the migration
+  // (arcus_super_agent_v1.sql) hasn't been applied yet, so the route never 500s.
+  let { data, error } = await runQuery(`${BASE_COLS}, outcome_summary`);
+  if (error && /outcome_summary/.test(error.message || '')) {
+    ({ data, error } = await runQuery(BASE_COLS));
+  }
 
   if (error?.code === '42P01') return NextResponse.json({ runs: [] });
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

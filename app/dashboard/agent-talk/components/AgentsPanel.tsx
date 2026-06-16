@@ -33,6 +33,9 @@ interface Agent {
   trigger_type?: 'schedule' | 'event' | 'condition' | 'chained';
   conditions?: Array<{ field: string; op: string; value: string | number | string[] }>;
   pipeline?: string[];
+  // Super-agent (optional).
+  mission?: { objective?: string; successCriteria?: string[] } | null;
+  autonomy_level?: 'observe' | 'assist' | 'own' | null;
 }
 
 /** Human "how this fires" label for an agent row — schedule cadence, event
@@ -60,9 +63,10 @@ interface AgentRun {
   started_at: string;
   completed_at: string | null;
   duration_ms: number | null;
-  status: 'running' | 'success' | 'error' | 'transient_error';
+  status: 'running' | 'success' | 'partial' | 'blocked' | 'error' | 'transient_error';
   tool_calls: number | null;
   report_summary: string | null;
+  outcome_summary?: string | null;
   error_message: string | null;
   email_delivery: 'sent' | 'failed' | 'skipped' | null;
   slack_delivery: 'sent' | 'failed' | 'skipped' | null;
@@ -1019,6 +1023,8 @@ function formatDuration(ms: number | null): string | null {
 function statusPill(status: AgentRun['status']) {
   const map: Record<AgentRun['status'], { label: string; cls: string; icon: React.ReactNode }> = {
     success:         { label: 'Success',  cls: 'bg-arcus-raised text-arcus-fg border-arcus-divider',           icon: <Check className="w-3 h-3" /> },
+    partial:         { label: 'Partial',  cls: 'bg-amber-500/10 text-amber-600 border-amber-500/20',           icon: <AlertCircle className="w-3 h-3" /> },
+    blocked:         { label: 'Blocked',  cls: 'bg-rose-500/10 text-rose-600 border-rose-500/20',              icon: <AlertCircle className="w-3 h-3" /> },
     error:           { label: 'Error',    cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <AlertCircle className="w-3 h-3" /> },
     transient_error: { label: 'Retrying', cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
     running:         { label: 'Running',  cls: 'bg-arcus-raised text-arcus-fg-secondary border-arcus-divider', icon: <Loader2 className="w-3 h-3 animate-spin" /> },
@@ -1027,6 +1033,21 @@ function statusPill(status: AgentRun['status']) {
   return (
     <span className={cn('inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border', meta.cls)}>
       {meta.icon}
+      {meta.label}
+    </span>
+  );
+}
+
+function autonomyBadge(level: Agent['autonomy_level']) {
+  if (!level || level === 'assist') return null; // assist is the default — don't clutter
+  const map = {
+    observe: { label: 'Observe', cls: 'bg-arcus-raised text-arcus-fg-muted border-arcus-divider', title: 'Watches and reports — never acts without you' },
+    own:     { label: 'Owns it', cls: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20', title: 'Acts autonomously and tells you after' },
+  } as const;
+  const meta = map[level as 'observe' | 'own'];
+  if (!meta) return null;
+  return (
+    <span title={meta.title} className={cn('inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold border uppercase tracking-wide flex-shrink-0', meta.cls)}>
       {meta.label}
     </span>
   );
@@ -1113,6 +1134,10 @@ function RunRow({ run }: { run: AgentRun }) {
           {deliveryIcon('slack', run.slack_delivery)}
         </div>
       </div>
+
+      {run.outcome_summary ? (
+        <p className="mt-2 text-[12.5px] text-arcus-fg leading-relaxed">{run.outcome_summary}</p>
+      ) : null}
 
       {run.plan ? (
         <details className="mt-2 group/plan">
@@ -1231,8 +1256,11 @@ function AgentCard({ agent, onToggle, onEdit, onDelete, onToggleConf, onRunNow }
                 : cronToLabel(agent.cron_schedule).split(' ')[0]}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-[15px] font-bold text-arcus-fg leading-tight line-clamp-1">{agent.name}</p>
-            <p className="text-[13px] text-arcus-fg-muted mt-1 leading-relaxed line-clamp-2">{agent.task_description}</p>
+            <div className="flex items-center gap-1.5">
+              <p className="text-[15px] font-bold text-arcus-fg leading-tight line-clamp-1">{agent.name}</p>
+              {autonomyBadge(agent.autonomy_level)}
+            </div>
+            <p className="text-[13px] text-arcus-fg-muted mt-1 leading-relaxed line-clamp-2">{agent.mission?.objective || agent.task_description}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0 pt-0.5">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
