@@ -40,7 +40,7 @@ export interface SignInPageProps {
 // --- SUB-COMPONENTS ---
 
 export const GlassInputWrapper = ({ children }: { children: React.ReactNode }) => (
-  <div className="rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 focus-within:border-white/30 focus-within:bg-white/10">
+  <div className="rounded-2xl border border-zinc-200 bg-zinc-50/50 backdrop-blur-sm transition-all duration-300 focus-within:border-zinc-400 focus-within:bg-white dark:border-white/10 dark:bg-white/5 dark:focus-within:border-white/30 dark:focus-within:bg-white/10">
     {children}
   </div>
 );
@@ -69,14 +69,14 @@ export const SignInLayout: React.FC<SignInPageProps> = ({
   maxWidth = "max-w-md",
 }) => {
   return (
-    <div className="dark h-screen flex flex-col md:flex-row bg-[#050505] text-white selection:bg-white selection:text-black overflow-hidden" style={{ backgroundColor: '#050505', colorScheme: 'dark' }}>
+    <div className="h-screen flex flex-col md:flex-row bg-background text-foreground selection:bg-foreground selection:text-background overflow-hidden">
       {/* Left column: sign-in form */}
       <section className={`flex-1 flex items-center justify-center p-8 md:p-12 lg:p-20 relative z-10 ${allowScroll ? 'overflow-y-auto custom-scrollbar' : ''}`}>
         <div className={`w-full ${maxWidth}`}>
           <div className="flex flex-col gap-8">
             <div className="space-y-4">
-              <h1 className="animate-element animate-delay-100 text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] text-white">{title}</h1>
-              <p className="animate-element animate-delay-200 text-white/40 text-sm font-medium tracking-tight max-w-[320px] leading-relaxed">{description}</p>
+              <h1 className="animate-element animate-delay-100 text-5xl md:text-6xl font-bold tracking-tighter leading-[0.9] text-foreground">{title}</h1>
+              <p className="animate-element animate-delay-200 text-muted-foreground text-sm font-medium tracking-tight max-w-[320px] leading-relaxed">{description}</p>
             </div>
 
             <div className="relative">

@@ -327,8 +327,8 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: () => void 
     <button
       onClick={e => { e.stopPropagation(); onChange(); }}
       className={cn(
-        'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none',
-        checked ? 'bg-black dark:bg-white' : 'bg-neutral-300 dark:bg-neutral-800',
+        'relative inline-flex h-6 w-11 flex-shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none cursor-pointer',
+        checked ? 'bg-zinc-900 dark:bg-zinc-600' : 'bg-zinc-200 dark:bg-zinc-800',
       )}
     >
       <span className={cn(
@@ -503,9 +503,9 @@ function PremiumDatePicker({ value, onChange, minDate }: {
     <div className="relative w-full" onClick={e => e.stopPropagation()}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg flex items-center justify-between cursor-pointer hover:border-arcus-divider transition-all select-none shadow-inner"
+        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-all select-none shadow-inner dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:hover:border-zinc-700"
       >
-        <span className={cn(selectedDate ? 'text-arcus-fg font-medium' : 'text-arcus-fg-muted')}>
+        <span className={cn(selectedDate ? 'text-zinc-900 dark:text-zinc-200 font-medium' : 'text-zinc-400 dark:text-zinc-650')}>
           {formattedValue}
         </span>
         <div className="flex items-center gap-2">
@@ -515,47 +515,50 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                 e.stopPropagation();
                 onChange('');
               }}
-              className="p-1 text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg hover:bg-arcus-raised transition-colors"
+              className="p-1 text-zinc-400 hover:text-zinc-600 dark:text-zinc-500 dark:hover:text-zinc-300 rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <CalendarDays className="w-4 h-4 text-arcus-fg-muted" />
+          <CalendarDays className="w-4 h-4 text-zinc-400 dark:text-zinc-555" />
         </div>
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
+          {/* Header navigation */}
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
-              <button onClick={handlePrevYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;&lt;
               </button>
-              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-355 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;
               </button>
             </div>
             
-            <span className="text-[13px] font-extrabold text-arcus-fg tracking-tight font-sans">
+            <span className="text-[13px] font-extrabold text-zinc-800 dark:text-zinc-200 tracking-tight font-sans">
               {MONTH_NAMES[viewMonth]} {viewYear}
             </span>
 
             <div className="flex gap-1">
-              <button onClick={handleNextMonth} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-355 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;
               </button>
-              <button onClick={handleNextYear} className="p-1.5 hover:bg-arcus-surface text-arcus-fg-muted hover:text-arcus-fg-secondary rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;&gt;
               </button>
             </div>
           </div>
 
-          <div className="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase tracking-wider text-arcus-fg-muted mb-2">
+          {/* Week headers */}
+          <div className="grid grid-cols-7 text-center text-[10px] font-extrabold uppercase tracking-wider text-zinc-400 dark:text-zinc-600 mb-2">
             {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
               <div key={d}>{d}</div>
             ))}
           </div>
 
+          {/* Days grid */}
           <div className="grid grid-cols-7 gap-1">
             {cells.map((cell, idx) => {
               const isSelected = value === cell.dateStr;
@@ -567,11 +570,11 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                   disabled={cell.isDisabled}
                   className={cn(
                     'text-[12px] py-1.5 rounded-lg text-center font-bold transition-all',
-                    cell.isCurrentMonth ? 'text-arcus-fg-secondary' : 'text-arcus-fg-muted',
-                    cell.isDisabled && 'text-arcus-raised/30 cursor-not-allowed hover:bg-transparent',
-                    !cell.isDisabled && !isSelected && 'hover:bg-arcus-surface/50',
-                    isTodayCell && !isSelected && 'border border-arcus-border text-arcus-fg',
-                    isSelected && 'bg-arcus-fg text-arcus-fg-inverse font-bold shadow-md'
+                    cell.isCurrentMonth ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-300 dark:text-zinc-700',
+                    cell.isDisabled && 'text-zinc-100 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
+                    !cell.isDisabled && !isSelected && 'hover:bg-zinc-100 dark:hover:bg-zinc-900/50',
+                    isTodayCell && !isSelected && 'border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100',
+                    isSelected && 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
                   )}
                 >
                   {cell.day}
@@ -580,11 +583,12 @@ function PremiumDatePicker({ value, onChange, minDate }: {
             })}
           </div>
 
-          <div className="flex items-center justify-between border-t border-arcus-border/80 mt-3 pt-2.5">
-            <button onClick={handleClear} className="text-[11px] font-extrabold text-arcus-fg-muted hover:text-arcus-fg-secondary transition-colors">
+          {/* Footer action links */}
+          <div className="flex items-center justify-between border-t border-zinc-100 dark:border-zinc-900 mt-3 pt-2.5">
+            <button onClick={handleClear} className="text-[11px] font-extrabold text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors">
               Clear
             </button>
-            <button onClick={handleToday} className="text-[11px] font-extrabold text-arcus-fg-secondary hover:text-arcus-fg transition-colors">
+            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-650 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
               Today
             </button>
           </div>
@@ -655,19 +659,19 @@ function PremiumTimePicker({ value, onChange }: {
     <div className="relative w-full" onClick={e => e.stopPropagation()}>
       <div
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg flex items-center justify-between cursor-pointer hover:border-arcus-divider transition-all select-none shadow-inner"
+        className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-all select-none shadow-inner dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:hover:border-zinc-700"
       >
-        <span className="text-arcus-fg font-bold font-mono">
+        <span className="text-zinc-900 dark:text-zinc-200 font-bold font-mono">
           {displayString}
         </span>
-        <Clock className="w-4 h-4 text-arcus-fg-muted" />
+        <Clock className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-arcus-surface backdrop-blur-xl border border-arcus-border rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3">
+        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
-            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Hour</span>
+            <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-extrabold mb-2">Hour</span>
             <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
               {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(h => (
                 <button
@@ -676,8 +680,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedHour === h
-                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(h).padStart(2, '0')}
@@ -687,8 +691,8 @@ function PremiumTimePicker({ value, onChange }: {
           </div>
 
           {/* Minutes Column */}
-          <div className="flex-1 flex flex-col items-center border-l border-arcus-border/80 pl-2">
-            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Min</span>
+          <div className="flex-1 flex flex-col items-center border-l border-zinc-100 dark:border-zinc-900/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-extrabold mb-2">Min</span>
             <div className="h-40 overflow-y-auto w-full custom-scroll space-y-1">
               {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
                 <button
@@ -697,8 +701,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedMinute === m
-                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-655 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(m).padStart(2, '0')}
@@ -708,8 +712,8 @@ function PremiumTimePicker({ value, onChange }: {
           </div>
 
           {/* AM/PM Column */}
-          <div className="w-14 flex flex-col items-center border-l border-arcus-border/80 pl-2">
-            <span className="text-[10px] uppercase tracking-wider text-arcus-fg-muted font-extrabold mb-2">Period</span>
+          <div className="w-14 flex flex-col items-center border-l border-zinc-100 dark:border-zinc-900/80 pl-2">
+            <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-extrabold mb-2">Period</span>
             <div className="flex flex-col gap-1.5 w-full">
               {(['AM', 'PM'] as const).map(p => (
                 <button
@@ -718,8 +722,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
                     selectedPeriod === p
-                      ? "bg-arcus-fg text-arcus-fg-inverse font-bold shadow-sm"
-                      : "text-arcus-fg-secondary hover:bg-arcus-surface-hover/50 hover:text-arcus-fg"
+                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-655 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {p}
@@ -787,15 +791,15 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-4xl bg-arcus-bg-elevated border border-arcus-border rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-white dark:bg-[#0A0A0C] border border-zinc-200 dark:border-white/10 rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-arcus-border/60 flex-shrink-0">
+        <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-zinc-200 dark:border-zinc-900/60 flex-shrink-0">
           <div>
-            <h2 className="text-[20px] font-extrabold text-arcus-fg tracking-tight">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
-            <p className="text-[14px] text-arcus-fg-muted mt-1">Describe the job and when to run it</p>
+            <h2 className="text-[20px] font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight">{initial?.id ? 'Edit schedule' : 'New schedule'}</h2>
+            <p className="text-[14px] text-zinc-555 mt-1">Describe the job and when to run it</p>
           </div>
-          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-arcus-fg-muted hover:text-arcus-fg hover:bg-arcus-surface border border-transparent hover:border-arcus-border transition-all">
+          <button onClick={onClose} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#121214] border border-transparent hover:border-zinc-200 dark:hover:border-zinc-900 transition-all">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -823,24 +827,24 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-7 space-y-6">
               {/* Task description */}
               <div>
-                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">What should Arcus do?</label>
+                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">What should Arcus do?</label>
                 <textarea
                   value={task}
                   onChange={e => setTask(e.target.value)}
                   placeholder="Describe what you want this agent to do in plain English…"
                   rows={8}
-                  className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5 text-[15px] text-arcus-fg leading-relaxed placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all resize-none animate-none"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-[15px] text-zinc-900 leading-relaxed placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all resize-none animate-none dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-650 dark:focus:border-zinc-700"
                 />
               </div>
 
               {/* Optional name */}
               <div>
-                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Agent name <span className="font-normal text-arcus-fg-muted">(optional)</span></label>
+                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-400 dark:text-zinc-555">(optional)</span></label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="e.g. Morning Client Check"
-                  className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[15px] text-arcus-fg placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
                 />
               </div>
             </div>
@@ -849,7 +853,7 @@ function CreateModal({ onClose, onSave, initial }: {
             <div className="lg:col-span-5 space-y-6">
               {/* Schedule */}
               <div>
-                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Schedule</label>
+                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">Schedule</label>
                 <div className="flex flex-wrap gap-2 mb-4">
                   {SCHEDULE_PATTERNS.map(p => (
                     <button
@@ -858,8 +862,8 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
-                          ? 'bg-arcus-fg text-arcus-fg-inverse border-arcus-fg shadow-sm'
-                          : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
+                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {p.label}
@@ -871,18 +875,18 @@ function CreateModal({ onClose, onSave, initial }: {
                   <div className="flex gap-4 mb-4">
                     {activePat.needsDay && (
                       <div className="flex-1">
-                        <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Day</label>
+                        <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-555 mb-1.5">Day</label>
                         <select
                           value={scheduleWeekday}
                           onChange={e => setScheduleWeekday(e.target.value)}
-                          className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg focus:outline-none focus:border-arcus-divider transition-all appearance-none cursor-pointer font-bold"
+                          className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 focus:outline-none focus:border-zinc-400 transition-all appearance-none cursor-pointer font-bold dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:focus:border-zinc-700"
                         >
                           {WEEK_DAYS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                         </select>
                       </div>
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                      <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Time <span className="font-normal text-arcus-fg-muted">({browserTz})</span></label>
+                      <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-555 mb-1.5">Time <span className="font-normal text-zinc-550 dark:text-zinc-600">({browserTz})</span></label>
                       <PremiumTimePicker
                         value={scheduleTime}
                         onChange={setScheduleTime}
@@ -893,20 +897,20 @@ function CreateModal({ onClose, onSave, initial }: {
 
                 {patternKey === 'custom' && (
                   <div className="mb-4">
-                    <label className="block text-[11px] font-bold text-arcus-fg-muted mb-1.5">Cron expression (UTC)</label>
+                    <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-555 mb-1.5">Cron expression (UTC)</label>
                     <input
                       value={customCron}
                       onChange={e => setCustomCron(e.target.value)}
                       placeholder="e.g. 0 9 * * 1-5"
-                      className="w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg font-mono placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 font-mono placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
                     />
                   </div>
                 )}
 
                 {cron && patternKey !== 'custom' && (
-                  <div className="px-4 py-3 bg-arcus-surface/60 rounded-xl border border-arcus-border">
-                    <p className="text-[13px] text-arcus-fg-secondary">
-                      Runs: <span className="text-arcus-fg font-bold">{cronToLabel(cron)}</span>
+                  <div className="px-4 py-3 bg-zinc-50 rounded-xl border border-zinc-200 dark:bg-[#121214]/60 dark:border-zinc-900">
+                    <p className="text-[13px] text-zinc-600 dark:text-zinc-400">
+                      Runs: <span className="text-zinc-900 dark:text-zinc-200 font-bold">{cronToLabel(cron)}</span>
                     </p>
                   </div>
                 )}
@@ -914,7 +918,7 @@ function CreateModal({ onClose, onSave, initial }: {
 
               {/* Output channel */}
               <div>
-                <label className="block text-[13px] font-bold text-arcus-fg-secondary mb-2">Deliver report to</label>
+                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">Deliver report to</label>
                 <div className="flex gap-2">
                   {(['gmail', 'slack', 'both'] as const).map(ch => (
                     <button
@@ -923,8 +927,8 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
-                          ? 'bg-arcus-fg text-arcus-fg-inverse border-arcus-fg shadow-sm'
-                          : 'bg-arcus-surface border-arcus-border text-arcus-fg-secondary hover:border-arcus-divider hover:text-arcus-fg',
+                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
@@ -939,26 +943,26 @@ function CreateModal({ onClose, onSave, initial }: {
                     value={slackCh}
                     onChange={e => setSlackCh(e.target.value)}
                     placeholder="Slack channel (e.g. #reports)"
-                    className="mt-3 w-full bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3 text-[14px] text-arcus-fg placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider transition-all"
+                    className="mt-3 w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
                   />
                 )}
               </div>
 
               {/* Skip confirmations */}
-              <div className="flex items-center justify-between bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5">
+              <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 dark:bg-[#121214] dark:border-zinc-900">
                 <div>
-                  <p className="text-[14px] font-bold text-arcus-fg">Skip confirmations</p>
-                  <p className="text-[12px] text-arcus-fg-muted mt-0.5">No approval needed before execution</p>
+                  <p className="text-[14px] font-bold text-zinc-900 dark:text-zinc-100">Skip confirmations</p>
+                  <p className="text-[12px] text-zinc-500 dark:text-zinc-550 mt-0.5">No approval needed before execution</p>
                 </div>
                 <Toggle checked={skipConf} onChange={() => setSkipConf(v => !v)} />
               </div>
 
               {/* Expiration date */}
               <div>
-                <div className="flex items-center justify-between bg-arcus-surface border border-arcus-border rounded-xl px-4 py-3.5 mb-2">
+                <div className="flex items-center justify-between bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 mb-2 dark:bg-[#121214] dark:border-zinc-900">
                   <div>
-                    <p className="text-[14px] font-bold text-arcus-fg">Expiration date</p>
-                    <p className="text-[12px] text-arcus-fg-muted mt-0.5">Agent stops running after this date</p>
+                    <p className="text-[14px] font-bold text-zinc-900 dark:text-zinc-100">Expiration date</p>
+                    <p className="text-[12px] text-zinc-500 dark:text-zinc-550 mt-0.5">Agent stops running after this date</p>
                   </div>
                   <Toggle checked={hasExpiry} onChange={() => { setHasExpiry(v => !v); if (hasExpiry) setExpiresAt(''); }} />
                 </div>
@@ -974,14 +978,14 @@ function CreateModal({ onClose, onSave, initial }: {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-3 pt-6 mt-6 border-t border-arcus-border/60">
-            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-arcus-fg-secondary bg-arcus-surface hover:bg-arcus-surface-hover transition-all border border-arcus-border">
+          <div className="flex gap-3 pt-6 mt-6 border-t border-zinc-200 dark:border-zinc-900/60">
+            <button onClick={onClose} className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-zinc-600 bg-zinc-50 hover:bg-zinc-100 transition-all border border-zinc-200 dark:text-zinc-400 dark:bg-[#121214] dark:hover:bg-zinc-900 dark:border-[#242427]">
               Cancel
             </button>
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3.5 rounded-xl text-[15px] font-bold text-arcus-fg-inverse bg-arcus-fg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-zinc-900 hover:bg-zinc-950 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}

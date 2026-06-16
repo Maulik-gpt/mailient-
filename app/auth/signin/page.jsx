@@ -146,14 +146,14 @@ function SignInContent() {
         <div key={s} className="flex items-center gap-2">
           <div className={`
             w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-medium transition-all duration-500
-            ${s < currentStep ? 'bg-white text-black' :
-              s === currentStep ? 'bg-white/10 text-white border border-white/20' :
-                'bg-white/[0.03] text-white/20 border border-white/[0.06]'}
+            ${s < currentStep ? 'bg-zinc-900 text-white dark:bg-white dark:text-black' :
+              s === currentStep ? 'bg-zinc-100 text-zinc-900 border border-zinc-200 dark:bg-white/10 dark:text-white dark:border-white/20' :
+                'bg-zinc-50 text-zinc-400 border border-zinc-200 dark:bg-white/[0.03] dark:text-white/20 dark:border-white/[0.06]'}
           `}>
             {s < currentStep ? <Check className="w-3 h-3" strokeWidth={2.5} /> : s}
           </div>
           {s < 3 && (
-            <div className={`w-8 h-px transition-all duration-500 ${s < currentStep ? 'bg-white/30' : 'bg-white/[0.06]'}`} />
+            <div className={`w-8 h-px transition-all duration-500 ${s < currentStep ? 'bg-zinc-300 dark:bg-white/30' : 'bg-zinc-200 dark:bg-white/[0.06]'}`} />
           )}
         </div>
       ))}
@@ -161,14 +161,14 @@ function SignInContent() {
   );
 
   const GmailWarning = () => (
-    <div className="p-4 bg-amber-500/[0.12] border border-amber-500/40 rounded-2xl mb-6">
+    <div className="p-4 bg-amber-500/[0.08] dark:bg-amber-500/[0.12] border border-amber-500/30 dark:border-amber-500/40 rounded-2xl mb-6">
       <div className="flex gap-3">
-        <Shield className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" strokeWidth={2} />
+        <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" strokeWidth={2} />
         <div className="space-y-1">
-          <h4 className="text-[10px] font-bold text-amber-400 uppercase tracking-widest">Gmail Notice</h4>
-          <p className="text-[11px] text-amber-100/60 block leading-relaxed font-light tracking-tight">
-            Mailient is optimized for <span className="text-white font-semibold">Google Workspace</span>. 
-            Personal <span className="text-white font-semibold">@gmail.com</span> accounts may see security warnings.
+          <h4 className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest">Gmail Notice</h4>
+          <p className="text-[11px] text-amber-900/70 dark:text-amber-100/60 block leading-relaxed font-light tracking-tight">
+            Mailient is optimized for <span className="text-zinc-900 dark:text-white font-semibold">Google Workspace</span>. 
+            Personal <span className="text-zinc-900 dark:text-white font-semibold">@gmail.com</span> accounts may see security warnings.
           </p>
         </div>
       </div>
@@ -179,7 +179,7 @@ function SignInContent() {
     <button
       onClick={handleGoogleSignIn}
       disabled={isLoading}
-      className="w-full h-14 bg-white text-black rounded-2xl font-bold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]"
+      className="w-full h-14 bg-white text-black border border-zinc-200 dark:border-transparent rounded-2xl font-bold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-sm dark:shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]"
     >
       {isLoading ? (
         <div className="w-5 h-5 border-2 border-black/20 border-t-black animate-spin rounded-full" />
@@ -241,20 +241,20 @@ function SignInContent() {
             >
               <StepIndicator currentStep={1} />
               <div className="mb-8">
-                <h2 className="text-white text-lg font-medium tracking-tight mb-2">Welcome back</h2>
-                <p className="text-white/30 text-xs font-medium tracking-tight">Enter your email address to access your workspace.</p>
+                <h2 className="text-foreground text-lg font-medium tracking-tight mb-2">Welcome back</h2>
+                <p className="text-muted-foreground text-xs font-medium tracking-tight">Enter your email address to access your workspace.</p>
               </div>
 
               {error && (
                 <div className="mb-6 p-3 bg-red-500/5 border border-red-500/20 rounded-xl flex gap-3 items-center">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={1.5} />
-                  <p className="text-[11px] text-red-200/60 font-medium tracking-tight">{error}</p>
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" strokeWidth={1.5} />
+                  <p className="text-[11px] text-red-750 dark:text-red-200/60 font-medium tracking-tight">{error}</p>
                 </div>
               )}
 
               <form onSubmit={handleEmailSubmit} className="space-y-5">
                 <div className="animate-element animate-delay-300">
-                   <label className="text-[11px] font-bold text-white/20 uppercase tracking-widest mb-2 block">Email Address</label>
+                   <label className="text-[11px] font-bold text-zinc-400 dark:text-white/20 uppercase tracking-widest mb-2 block">Email Address</label>
                    <GlassInputWrapper>
                     <input 
                       ref={emailInputRef}
@@ -262,7 +262,7 @@ function SignInContent() {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="Enter your email address" 
-                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none text-white placeholder:text-white/10 font-medium" 
+                      className="w-full bg-transparent text-sm p-4 rounded-2xl focus:outline-none text-foreground placeholder:text-zinc-400 dark:placeholder:text-white/20 font-medium" 
                       autoFocus
                       required
                     />
@@ -272,21 +272,21 @@ function SignInContent() {
                 <div className="animate-element animate-delay-500 flex items-center justify-between text-[12px]">
                   <label className="flex items-center gap-3 cursor-pointer group">
                     <input type="checkbox" name="rememberMe" className="custom-checkbox" />
-                    <span className="text-white/40 group-hover:text-white/70 transition-colors tracking-tight">Keep me signed in</span>
+                    <span className="text-muted-foreground group-hover:text-foreground transition-colors tracking-tight">Keep me signed in</span>
                   </label>
                   <button 
                     type="button"
                     onClick={() => router.push('/auth/signup')}
-                    className="text-white/20 hover:text-white transition-colors tracking-tight"
+                    className="text-zinc-400 hover:text-foreground transition-colors tracking-tight"
                   >
-                    no account? <span className="text-white/40 border-b border-white/10 ml-1">create one</span>
+                    no account? <span className="text-zinc-500 dark:text-white/40 border-b border-zinc-300 dark:border-white/10 ml-1">create one</span>
                   </button>
                 </div>
 
                 <button
                   type="submit"
                   disabled={!email.includes('@')}
-                  className="animate-element animate-delay-600 w-full h-[56px] bg-white text-black rounded-2xl font-bold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]"
+                  className="animate-element animate-delay-600 w-full h-[56px] bg-zinc-900 text-white dark:bg-white dark:text-black rounded-2xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2 shadow-sm dark:shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]"
                 >
                   Continue
                   <ArrowRight className="w-4 h-4" />
@@ -306,24 +306,24 @@ function SignInContent() {
               className="space-y-6"
             >
               <StepIndicator currentStep={2} />
-              <button onClick={backToStep1} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
+              <button onClick={backToStep1} className="flex items-center gap-2 text-zinc-400 hover:text-foreground dark:text-white/30 dark:hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 use different email
               </button>
-              <div className="p-5 bg-white/[0.02] border border-white/[0.05] rounded-2xl mb-8 group hover:bg-white/[0.04] transition-all">
+              <div className="p-5 bg-zinc-50 border border-zinc-200 dark:bg-white/[0.02] dark:border-white/[0.05] rounded-2xl mb-8 group hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-all">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/20">Identity</span>
-                  <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isGmail ? 'text-amber-500/60' : 'text-white/20'}`}>
+                  <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400 dark:text-white/20">Identity</span>
+                  <span className={`text-[10px] font-bold uppercase tracking-[0.2em] ${isGmail ? 'text-amber-600 dark:text-amber-500/60' : 'text-zinc-400 dark:text-white/20'}`}>
                     {isGmail ? 'Personal Gmail' : 'Personal'}
                   </span>
                 </div>
-                <div className="text-white font-semibold truncate text-sm tracking-tight">{email}</div>
+                <div className="text-foreground font-semibold truncate text-sm tracking-tight">{email}</div>
               </div>
 
               {error && (
                 <div className="mb-6 p-3 bg-red-500/5 border border-red-500/20 rounded-xl flex gap-3 items-center">
-                  <AlertCircle className="w-4 h-4 text-red-400 shrink-0" strokeWidth={1.5} />
-                  <p className="text-[11px] text-red-200/60 font-medium tracking-tight">{error}</p>
+                  <AlertCircle className="w-4 h-4 text-red-500 dark:text-red-400 shrink-0" strokeWidth={1.5} />
+                  <p className="text-[11px] text-red-750 dark:text-red-200/60 font-medium tracking-tight">{error}</p>
                 </div>
               )}
 
@@ -333,17 +333,17 @@ function SignInContent() {
                   <PremiumGoogleButton />
                 </div>
               ) : (
-                <div className="p-6 bg-white/[0.02] border border-white/[0.08] rounded-2xl space-y-6">
+                <div className="p-6 bg-zinc-50 border border-zinc-200 dark:bg-white/[0.02] dark:border-white/[0.08] rounded-2xl space-y-6">
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center shrink-0">
-                      <Building2 className="w-5 h-5 text-white/40" strokeWidth={1.5} />
+                    <div className="w-10 h-10 rounded-xl bg-zinc-100 border border-zinc-200 dark:bg-white/[0.04] dark:border-white/[0.08] flex items-center justify-center shrink-0">
+                      <Building2 className="w-5 h-5 text-zinc-400 dark:text-white/40" strokeWidth={1.5} />
                     </div>
                     <div>
-                      <h3 className="text-white text-sm font-semibold tracking-tight mb-2">Workspace Preferred</h3>
-                      <p className="text-white/35 text-[11px] leading-relaxed font-light tracking-tight">Mailient is optimized for Google Workspace.</p>
+                      <h3 className="text-foreground text-sm font-semibold tracking-tight mb-2">Workspace Preferred</h3>
+                      <p className="text-muted-foreground text-[11px] leading-relaxed font-light tracking-tight">Mailient is optimized for Google Workspace.</p>
                     </div>
                   </div>
-                  <div className="border-t border-white/[0.06] pt-6"><PremiumGoogleButton /></div>
+                  <div className="border-t border-zinc-200 dark:border-white/[0.06] pt-6"><PremiumGoogleButton /></div>
                 </div>
               )}
             </motion.div>
@@ -360,18 +360,18 @@ function SignInContent() {
               className="space-y-6"
             >
               <StepIndicator currentStep={3} />
-              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-white/30 hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
+              <button onClick={() => setStep(2)} className="flex items-center gap-2 text-zinc-400 hover:text-foreground dark:text-white/30 dark:hover:text-white transition-colors text-xs font-light mb-8 group w-fit">
                 <ArrowLeft className="w-3 h-3 group-hover:-translate-x-0.5 transition-transform" />
                 back to connection
               </button>
               <div className="mb-8">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-8 h-8 rounded-lg bg-white/[0.06] border border-white/[0.1] flex items-center justify-center">
-                    <UserCog className="w-4 h-4 text-white/60" strokeWidth={1.5} />
+                  <div className="w-8 h-8 rounded-lg bg-zinc-50 border border-zinc-200 dark:bg-white/[0.06] dark:border-white/[0.1] flex items-center justify-center">
+                    <UserCog className="w-4 h-4 text-zinc-550 dark:text-white/60" strokeWidth={1.5} />
                   </div>
-                  <h2 className="text-white text-base font-semibold tracking-tight">Admin Setup</h2>
+                  <h2 className="text-foreground text-base font-semibold tracking-tight">Admin Setup</h2>
                 </div>
-                <p className="text-white/30 text-[11px] font-light leading-relaxed tracking-tight">Approve Mailient for your workspace.</p>
+                <p className="text-muted-foreground text-[11px] font-light leading-relaxed tracking-tight">Approve Mailient for your workspace.</p>
               </div>
 
               <div className="space-y-4 mb-10">
@@ -380,24 +380,24 @@ function SignInContent() {
                   { step: '2', title: 'Add Mailient', desc: 'Search by Client ID:', copyable: CLIENT_ID },
                   { step: '3', title: 'Set to Trusted', desc: 'Select app and set access to "Trusted".' }
                 ].map((item, i) => (
-                  <div key={i} className="p-4 bg-white/[0.02] border border-white/[0.06] rounded-xl space-y-3 group hover:bg-white/[0.04] transition-all">
+                  <div key={i} className="p-4 bg-zinc-50 border border-zinc-200 dark:bg-white/[0.02] dark:border-white/[0.06] rounded-xl space-y-3 group hover:bg-zinc-100 dark:hover:bg-white/[0.04] transition-all">
                     <div className="flex items-start gap-3">
-                      <div className="w-5 h-5 rounded-full bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5 border border-white/5">
-                        <span className="text-[9px] font-bold text-white/50">{item.step}</span>
+                      <div className="w-5 h-5 rounded-full bg-zinc-100 dark:bg-white/[0.06] flex items-center justify-center shrink-0 mt-0.5 border border-zinc-200 dark:border-white/5">
+                        <span className="text-[9px] font-bold text-zinc-500 dark:text-white/50">{item.step}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-white/80 text-[11px] font-semibold tracking-tight mb-1">{item.title}</p>
-                        <p className="text-white/30 text-[10px] leading-relaxed font-light tracking-tight">{item.desc}</p>
+                        <p className="text-foreground text-[11px] font-semibold tracking-tight mb-1">{item.title}</p>
+                        <p className="text-muted-foreground text-[10px] leading-relaxed font-light tracking-tight">{item.desc}</p>
                         {item.copyable && (
                           <div className="mt-3 flex items-center gap-2">
-                            <code className="flex-1 text-[9px] font-mono text-white/60 bg-black/40 border border-white/[0.08] rounded-lg px-3 py-2 truncate">{item.copyable || 'unconfigured'}</code>
-                            <button onClick={() => copyToClipboard(item.copyable, `step${item.step}`)} className="shrink-0 p-2 bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] rounded-lg transition-all">
-                              {copiedField === `step${item.step}` ? <CheckCircle2 className="w-3.5 h-3.5 text-white/60" /> : <Copy className="w-3.5 h-3.5 text-white/40" />}
+                            <code className="flex-1 text-[9px] font-mono text-zinc-650 dark:text-white/60 bg-zinc-100 dark:bg-black/40 border border-zinc-200 dark:border-white/[0.08] rounded-lg px-3 py-2 truncate">{item.copyable || 'unconfigured'}</code>
+                            <button onClick={() => copyToClipboard(item.copyable, `step${item.step}`)} className="shrink-0 p-2 bg-zinc-100 hover:bg-zinc-200 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] border border-zinc-200 dark:border-white/[0.08] rounded-lg transition-all">
+                              {copiedField === `step${item.step}` ? <CheckCircle2 className="w-3.5 h-3.5 text-green-600 dark:text-white/60" /> : <Copy className="w-3.5 h-3.5 text-zinc-400 dark:text-white/40" />}
                             </button>
                           </div>
                         )}
                         {item.link && (
-                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-[10px] text-white/40 hover:text-white transition-colors font-medium tracking-tight">
+                          <a href={item.link} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1.5 text-[10px] text-zinc-500 hover:text-foreground dark:text-white/40 dark:hover:text-white transition-colors font-medium tracking-tight">
                             <ExternalLink className="w-3 h-3" />
                             {item.linkText}
                           </a>
@@ -407,8 +407,8 @@ function SignInContent() {
                   </div>
                 ))}
               </div>
-              <button onClick={handleGoogleSignIn} disabled={isLoading} className="w-full h-14 bg-white text-black rounded-2xl font-bold text-sm hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]">
-                {isLoading ? <div className="w-5 h-5 border-2 border-black/20 border-t-black animate-spin rounded-full" /> : <><CheckCircle2 className="w-5 h-5" />I&apos;ve approved — Connect</>}
+              <button onClick={handleGoogleSignIn} disabled={isLoading} className="w-full h-14 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-2xl font-bold text-sm hover:bg-zinc-800 dark:hover:bg-[#F5F5F5] hover:-translate-y-0.5 transition-all flex items-center justify-center gap-3 shadow-sm dark:shadow-[0_20px_40px_rgba(255,255,255,0.1)] disabled:opacity-50 active:scale-[0.98]">
+                {isLoading ? <div className="w-5 h-5 border-2 border-white/20 border-t-white dark:border-black/20 dark:border-t-black animate-spin rounded-full" /> : <><CheckCircle2 className="w-5 h-5" />I&apos;ve approved — Connect</>}
               </button>
             </motion.div>
           )}
@@ -417,26 +417,26 @@ function SignInContent() {
         {/* Admin Modal */}
         <AnimatePresence>
           {showAdminModal && (
-            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/90 backdrop-blur-md">
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-[#0E0E0E] border border-white/[0.08] rounded-[20px] shadow-2xl overflow-hidden">
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 dark:bg-black/90 backdrop-blur-md">
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} className="w-full max-w-lg bg-background border border-border rounded-[20px] shadow-2xl overflow-hidden">
                 <div className="p-10 sm:p-12 space-y-8">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center"><Shield className="w-6 h-6 text-white/50" /></div>
+                      <div className="w-12 h-12 rounded-2xl bg-zinc-100 border border-zinc-200 dark:bg-white/[0.04] dark:border-white/[0.08] flex items-center justify-center"><Shield className="w-6 h-6 text-zinc-500 dark:text-white/50" /></div>
                       <div>
-                        <h2 className="text-xl text-white font-semibold tracking-tight">Approval Required</h2>
-                        <p className="text-white/25 text-xs font-light mt-1">Your workspace admin must authorize Mailient.</p>
+                        <h2 className="text-xl text-foreground font-semibold tracking-tight">Approval Required</h2>
+                        <p className="text-muted-foreground text-xs font-light mt-1">Your workspace admin must authorize Mailient.</p>
                       </div>
                     </div>
-                    <button onClick={() => setShowAdminModal(false)} className="text-white/15 hover:text-white/50 transition-colors"><ArrowRight className="w-5 h-5 rotate-[-45deg]" /></button>
+                    <button onClick={() => setShowAdminModal(false)} className="text-muted-foreground hover:text-foreground transition-colors"><ArrowRight className="w-5 h-5 rotate-[-45deg]" /></button>
                   </div>
                   <div className="space-y-3">
-                    <div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-white/25">Email Template</span><button onClick={() => copyToClipboard(ADMIN_EMAIL_TEMPLATE, 'template')} className="text-[10px] font-bold text-white/40 hover:text-white transition-colors flex items-center gap-2">{copiedField === 'template' ? 'copied' : 'copy template'}</button></div>
-                    <div className="text-[11px] font-mono text-white/50 bg-white/[0.02] p-5 border border-white/[0.06] rounded-xl max-h-[160px] overflow-y-auto whitespace-pre-wrap">{ADMIN_EMAIL_TEMPLATE}</div>
+                    <div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Email Template</span><button onClick={() => copyToClipboard(ADMIN_EMAIL_TEMPLATE, 'template')} className="text-[10px] font-bold text-zinc-500 hover:text-foreground dark:text-white/40 dark:hover:text-white transition-colors flex items-center gap-2">{copiedField === 'template' ? 'copied' : 'copy template'}</button></div>
+                    <div className="text-[11px] font-mono text-muted-foreground bg-zinc-50 dark:bg-white/[0.02] p-5 border border-zinc-200 dark:border-white/[0.06] rounded-xl max-h-[160px] overflow-y-auto whitespace-pre-wrap">{ADMIN_EMAIL_TEMPLATE}</div>
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button onClick={() => setShowAdminModal(false)} className="flex-1 h-11 bg-white/[0.04] text-white/60 rounded-[14px] font-medium text-sm border border-white/[0.06]">Close</button>
-                    <button onClick={() => { setShowAdminModal(false); setStep(3); }} className="flex-1 h-11 bg-white text-black rounded-[14px] font-bold text-sm hover:bg-[#F5F5F5] transition-all flex items-center justify-center gap-2"><UserCog className="w-4 h-4" />I am Admin</button>
+                    <button onClick={() => setShowAdminModal(false)} className="flex-1 h-11 bg-zinc-100 hover:bg-zinc-200 text-zinc-800 dark:bg-white/[0.04] dark:text-white/60 dark:hover:bg-white/[0.08] rounded-[14px] font-medium text-sm border border-zinc-200 dark:border-white/[0.06]">Close</button>
+                    <button onClick={() => { setShowAdminModal(false); setStep(3); }} className="flex-1 h-11 bg-zinc-900 text-white dark:bg-white dark:text-black rounded-[14px] font-bold text-sm hover:bg-zinc-850 dark:hover:bg-[#F5F5F5] transition-all flex items-center justify-center gap-2"><UserCog className="w-4 h-4" />I am Admin</button>
                   </div>
                 </div>
               </motion.div>

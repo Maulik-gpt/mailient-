@@ -85,6 +85,7 @@ interface UserProfile {
   };
   created_at: string;
   updated_at: string;
+  earned_badges?: string[];
 }
 
 export default function ProfileSettingsPage() {
@@ -832,6 +833,20 @@ export default function ProfileSettingsPage() {
                                   <TooltipContent>
                                     <p className="font-extrabold text-cyan-400">💎 Diamond Founder Badge</p>
                                     <p className="text-[10px] text-neutral-400 mt-0.5">Elite Lifetime Founding Member</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              )}
+
+                              {profile?.earned_badges?.includes('founding_member') && (
+                                <Tooltip delayDuration={150}>
+                                  <TooltipTrigger asChild>
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-gradient-to-r from-amber-400 via-orange-500 to-yellow-500 text-black shadow-[0_0_8px_rgba(245,158,11,0.6)] animate-pulse hover:scale-105 transition-transform duration-200 cursor-pointer select-none">
+                                      ⭐ Founding Member
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p className="font-extrabold text-amber-400">⭐ Founding Member Badge</p>
+                                    <p className="text-[10px] text-neutral-400 mt-0.5">One of the first 10 elite signups next</p>
                                   </TooltipContent>
                                 </Tooltip>
                               )}
