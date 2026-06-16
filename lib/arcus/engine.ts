@@ -529,18 +529,19 @@ export async function callLLM(
 export function sanitizeModelText(text: string): string {
   if (!text) return '';
 
-  const CLOSED_TAGS = [
+  const CONTENT_TAGS = [
     'thinking', 'thought', 'tool', 'tool_call', 'tool_use', 'tool_result',
-    'result', 'output', 'answer', 'reasoning', 'reflection', 'scratchpad',
+    'reasoning', 'reflection', 'scratchpad',
     'system', 'context', 'instruction', 'plan', 'step',
   ];
+  const UNWRAP_TAGS = ['answer', 'output', 'result', 'response', 'final', 'message', 'reply'];
 
   let clean = text;
 
-  for (const tag of CLOSED_TAGS) {
+  for (const tag of CONTENT_TAGS) {
     clean = clean.replace(new RegExp(`<${tag}[^>]*>[\\s\\S]*?<\\/${tag}>`, 'gi'), '');
   }
-  for (const tag of CLOSED_TAGS) {
+  for (const tag of [...CONTENT_TAGS, ...UNWRAP_TAGS]) {
     clean = clean.replace(new RegExp(`<\\/?${tag}[^>]*>`, 'gi'), '');
   }
 

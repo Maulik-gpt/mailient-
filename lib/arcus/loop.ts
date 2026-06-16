@@ -1853,12 +1853,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   {
                     role: 'user',
                     content:
-                      'All data has been gathered. Now write your final response. ' +
-                      'CRITICAL: Do NOT list the steps you took or the tools you ran. Do NOT say "Done — completed Searched inbox for..." or list tool names. ' +
-                      'Answer the user\'s actual question using the specific content from the tool results. What did you find? What does the email say? What is the answer? ' +
-                      'If this task requires a report, summary, or document (anything longer than 3 paragraphs), ' +
-                      'call open_canvas with the full content NOW before writing your chat response. ' +
-                      'CRITICAL: Do NOT say "the report is in the Canvas panel" unless you actually call open_canvas in this response.',
+                      'All data has been gathered. Now write your final response in your own voice, first person "I". ' +
+                      'Make it THOROUGH and high-quality: walk me through what you found, EACH judgment call and why you made it, the specifics (names, dates, amounts, what each email said), what you drafted and the thinking behind it, and what needs my attention next. When you did a lot, say a lot — several substantive paragraphs, not a one-liner. ' +
+                      'Do NOT list the steps you took or the tools you ran. Do NOT say "Done — completed Searched inbox for..." or list tool names. The only thing to cut is empty filler ("successfully", "I hope this helps") — never cut reasoning or detail. ' +
+                      'If this is a report, summary, or document, call open_canvas with the full content NOW before writing your chat response. ' +
+                      'Do NOT say "the report is in the Canvas panel" unless you actually call open_canvas in this response.',
                   },
                 ],
                 finalTools,
@@ -2095,9 +2094,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // ── Response quality validator ────────────────────────────────────
           // Reject trivially short or hollow responses when tools ran — forces
           // the model to actually use the data it fetched. Max 2 auto-retries.
+          const minQualityLen = totalToolCalls >= 4 ? 200 : totalToolCalls >= 2 ? 100 : 40;
           const isTrivialResponse =
             totalToolCalls > 0 &&
-            textContent.length < 40 &&
+            textContent.trim().length < minQualityLen &&
+            !isStepListingResponse(textContent, true) &&
             nudgeCount < MAX_NUDGES;
 
           if (isTrivialResponse) {
@@ -2106,9 +2107,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             messages.push({
               role: 'user',
               content:
-                'Your response is too short and doesn\'t use the information from the tool results. ' +
-                'Write a complete, specific answer using the actual content you retrieved. ' +
-                'Include the relevant details, names, dates, and specifics from what was found.',
+                'That response is too thin for the work you just did. Write the FULL answer now, first person: ' +
+                'the key findings with specifics (names, dates, amounts, what each email/result said), every judgment call you made and why, what you produced, and what needs my attention. ' +
+                'Several substantive paragraphs when there is real substance — do not compress it into one or two lines.',
             });
             continue;
           }
@@ -2357,7 +2358,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   'If you saved a draft, say it is saved in my Gmail Drafts and give the subject and link you already have. ' +
                   'If you proposed a time, restate it. Be specific and concrete — never blank, never "let me know if you want a summary".',
               });
-              const forced = await callLLM(messages, [], { temperature: 0.4, maxTokens: 1200 });
+              const forced = await callLLM(messages, [], { temperature: 0.4, maxTokens: 4000 });
               rescue = sanitizeModelText(getRawText(forced.content)).trim();
               if (isStepListingResponse(rescue, true) || isIntentText(rescue)) rescue = '';
             } catch { rescue = ''; }
