@@ -530,7 +530,7 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                01 // Understands your day
+                01 // Your home feed
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -538,7 +538,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Reads the whole inbox.
+                Decide it all from one feed.
               </h3>
               {activeStep === 0 && (
                 <motion.div
@@ -548,13 +548,13 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    It reads every thread, learns who your VIPs are, and surfaces the 3 things that actually need you — silently archiving the noise. Not keyword filters. Real judgment about what matters to your business.
+                    Your home feed is the command center. The urgent calls rise to the top — a meeting to confirm, a VIP waiting on you, a reply that can't slip — each with the decision ready to make in a tap. The noise never reaches it.
                   </p>
-                  <CircleExpandButton 
+                  <CircleExpandButton
                     href="/product/sift"
                     className="text-xs md:text-sm"
                   >
-                    Explore Sift Engine
+                    Explore the Home Feed
                   </CircleExpandButton>
                 </motion.div>
               )}
@@ -608,7 +608,7 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                03 // Runs itself, on schedule
+                03 // Build your own agents
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -616,7 +616,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Works while you sleep.
+                Create an agent in plain English.
               </h3>
               {activeStep === 2 && (
                 <motion.div
@@ -626,13 +626,13 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Set up agents that run on their own — a 7am inbox sweep, a Friday revenue digest, meeting prep before every call. They check your calendar, book the slots, log to Notion, and leave a briefing in your inbox before you wake up.
+                    Describe the job in plain words, pick when it runs, and deploy. A 7am inbox sweep, a Friday revenue digest, meeting prep before every call — your agent checks the calendar, books the slots, logs to Notion, and leaves a briefing in your inbox. Set it once; it runs on its own.
                   </p>
                   <CircleExpandButton
                     href="#pricing"
                     className="text-xs md:text-sm"
                   >
-                    Unlock Autonomous Engine
+                    Build a background agent
                   </CircleExpandButton>
                 </motion.div>
               )}
@@ -656,7 +656,7 @@ export function LinearLanding() {
             <AnimatePresence mode="wait">
               {activeStep === 0 && (
                 <motion.div
-                  key="sift"
+                  key="homefeed"
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
@@ -668,48 +668,42 @@ export function LinearLanding() {
                       <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
-                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">sift-triage.log</span>
+                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">home-feed</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">TRIAGE ACTIVE</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">2 NEED YOU</span>
                   </div>
 
-                  <div className="space-y-4 my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden">
-                    <div className="flex items-center justify-between text-[10px] border-b border-white/[0.04] pb-3 text-neutral-500">
-                      <span>INCOMING INBOX STREAM</span>
-                      <span>3 MATCHES FOUND</span>
-                    </div>
-                    
-                    {/* Item 1 */}
-                    <div className="flex items-center justify-between text-xs py-1 border-b border-white/[0.02]">
-                      <div className="flex items-center gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-white font-medium">review-capital-rounds.eml</span>
+                  <div className="space-y-3 my-6">
+                    {/* Decision card 1 — meeting to confirm */}
+                    <div className="bg-black/40 border border-white/[0.06] p-4 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between text-[10px] text-neutral-500">
+                        <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> MEETING REQUEST · SARAH CHEN</span>
+                        <span className="text-amber-400">DECIDE</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[8px] font-mono">PRIORITY T1</span>
-                    </div>
-
-                    {/* Item 2 */}
-                    <div className="flex items-center justify-between text-xs py-1 border-b border-white/[0.02]">
-                      <div className="flex items-center gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-white font-medium">deck-application-feedback.eml</span>
+                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">&ldquo;Can we sync Thursday or Friday afternoon?&rdquo; — Arcus is holding 2:00 PM Thu, conflict-free.</p>
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 text-center text-[10px] font-bold text-black bg-white rounded-lg py-1.5">Confirm 2:00 PM</span>
+                        <span className="flex-1 text-center text-[10px] font-medium text-neutral-300 bg-white/[0.05] border border-white/10 rounded-lg py-1.5">Propose another</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-blue-950/20 text-blue-400 border border-blue-900/40 text-[8px] font-mono">VENTURE ROUND</span>
                     </div>
 
-                    {/* Item 3 */}
-                    <div className="flex items-center justify-between text-xs py-1">
-                      <div className="flex items-center gap-3">
-                        <span className="w-1.5 h-1.5 rounded-full bg-neutral-650" />
-                        <span className="text-neutral-400">marketing-promotions-digest.eml</span>
+                    {/* Decision card 2 — VIP reply ready */}
+                    <div className="bg-black/40 border border-white/[0.06] p-4 rounded-2xl space-y-3">
+                      <div className="flex items-center justify-between text-[10px] text-neutral-500">
+                        <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> VIP · ACME CAPITAL</span>
+                        <span className="text-emerald-400">DRAFT READY</span>
                       </div>
-                      <span className="px-2 py-0.5 rounded bg-neutral-900/50 text-neutral-500 border border-white/[0.04] text-[8px] font-mono">MUTED</span>
+                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">Reply drafted in your voice. Review &amp; send, or let it go out.</p>
+                      <div className="flex items-center gap-2">
+                        <span className="flex-1 text-center text-[10px] font-bold text-black bg-white rounded-lg py-1.5">Review &amp; send</span>
+                        <span className="flex-1 text-center text-[10px] font-medium text-neutral-300 bg-white/[0.05] border border-white/10 rounded-lg py-1.5">Open thread</span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
-                    <span>INBOX STREAM ACTIVE</span>
-                    <span>SECURE IN-MEMORY SWEEP</span>
+                    <span>41 ARCHIVED · 6 LOGGED</span>
+                    <span>ONLY WHAT NEEDS YOU</span>
                   </div>
                 </motion.div>
               )}
@@ -751,31 +745,38 @@ export function LinearLanding() {
                       <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
                       <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
-                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">calendar-adapter.py</span>
+                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">new-agent</span>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-blue-950/20 text-blue-400 border border-blue-900/60 text-[9px] font-bold">BOOKING CONFIRMED</span>
+                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">READY TO DEPLOY</span>
                   </div>
 
-                  <div className="my-6 bg-black/40 border border-white/[0.04] p-6 rounded-2xl relative overflow-hidden space-y-4">
-                    <div className="flex items-center justify-between text-[10px] text-neutral-500 border-b border-white/[0.04] pb-2">
-                      <span>RESOLVING TIMEZONE CONFLICTS</span>
-                      <span className="text-blue-400">America/New_York</span>
+                  <div className="my-6 space-y-4">
+                    {/* The plain-English job */}
+                    <div>
+                      <span className="text-[10px] text-neutral-500">WHAT SHOULD ARCUS DO?</span>
+                      <div className="mt-1.5 bg-black/40 border border-white/[0.06] rounded-xl p-3.5 text-xs text-neutral-300 font-sans leading-relaxed">
+                        Every morning, sweep my inbox, draft replies to anything from a client in my voice, and send me a briefing of what needs me.
+                      </div>
                     </div>
-                    <div className="space-y-2 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="text-neutral-400 font-medium">Event: Venture round alignment sync</span>
-                        <span className="text-neutral-500 font-mono">30 Min</span>
-                      </div>
-                      <div className="flex items-center justify-between text-neutral-400">
-                        <span>Time: May 22 14:00 EST (Tomorrow)</span>
-                        <span className="text-emerald-400">CONFLICT FREE</span>
-                      </div>
+
+                    {/* Schedule chips */}
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-neutral-500 mr-1">RUNS</span>
+                      <span className="text-[10px] font-bold text-black bg-white rounded-lg px-2.5 py-1">Every day</span>
+                      <span className="text-[10px] text-neutral-400 bg-white/[0.05] border border-white/10 rounded-lg px-2.5 py-1">Weekdays</span>
+                      <span className="text-[10px] text-neutral-400 bg-white/[0.05] border border-white/10 rounded-lg px-2.5 py-1">Weekly</span>
+                      <span className="ml-auto text-[10px] text-emerald-400 font-mono">07:00 AM</span>
+                    </div>
+
+                    {/* Deliver to */}
+                    <div className="flex items-center justify-between text-[10px] text-neutral-500 pt-3 border-t border-white/[0.04]">
+                      <span>DELIVER REPORT TO</span>
+                      <span className="text-neutral-300">Gmail + Slack</span>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
-                    <span>GOOGLE MEET LINK GENERATED</span>
-                    <span>OUTBOX DEPLOY CONFIRMED</span>
+                  <div className="w-full text-center text-[11px] font-bold text-black bg-white rounded-xl py-2.5">
+                    Deploy agent →
                   </div>
                 </motion.div>
               )}
