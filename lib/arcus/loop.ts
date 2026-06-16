@@ -1402,7 +1402,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           if (toolCalls.length > 0) {
             // Prefer raw chain-of-thought for the narrative card; fall back to visible text.
             const narrativeText = thinkingText || textContent;
-            if (narrativeText && narrativeText.length >= 20 && narrativeText.length <= 6000 && !isIntentText(narrativeText)) {
+            // Manus-style opener: on the FIRST turn the model states its commitment
+            // ("On it — I'll find the thread, check your calendar, and draft a reply.
+            // Starting now."). That reads as intent text, which we normally suppress,
+            // but on iteration 0 it's exactly the "I've got it, starting now" beat we
+            // want shown before the step cards move. Always surface it.
+            const firstTurnOpener = iteration === 0 ? (textContent?.trim() || '') : '';
+            if (firstTurnOpener && firstTurnOpener.length >= 12 && firstTurnOpener.length <= 1000) {
+              emit('narrative', { text: firstTurnOpener, iteration });
+            } else if (narrativeText && narrativeText.length >= 20 && narrativeText.length <= 6000 && !isIntentText(narrativeText)) {
               emit('narrative', { text: narrativeText, iteration });
             }
 
