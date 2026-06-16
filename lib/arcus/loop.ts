@@ -2341,33 +2341,42 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         } else if (finalText.trim() || canvasContent) {
           emit('message', { content: finalText, canvasContent: canvasContent || undefined });
         } else {
-          // PART 78 — Empty-reply rescue. The LLM occasionally produces no text
-          // at all (free-model truncation, or sanitizer stripped everything as
-          // leaked tool-call / scratchpad). Rather than ship an empty bubble
-          // with the feedback bar floating in space, fall back to a contextual
-          // one-liner. We pick by what just happened: zero tools = chitchat
-          // ack; tools fired = work-done acknowledgement.
           const userTrim = userMessage.trim().toLowerCase();
           const chitchatRe = /^(hi+|hey+|yo|hello|sup|ok|okay|k|kk|got it|gotcha|right|noted|alright|cool|nice|perfect|thanks?|ty|thx|thank you|lol|haha|lmao|🙏|👍|✅|done|that's all|nevermind|never mind|nothing)\s*[!.\s]*$/i;
           const isChitchat = chitchatRe.test(userTrim);
-          let rescue: string;
-          if (isChitchat) {
-            rescue = /^(thanks?|ty|thx|thank you|🙏)/i.test(userTrim)
-              ? 'Anytime.'
-              : /^(ok|okay|k|kk|got it|gotcha|right|noted|alright|cool|nice|perfect|done)/i.test(userTrim)
-                ? 'Got it.'
-                : "Hey — what's up?";
-          } else if (totalToolCalls > 0) {
-            rescue = `Done — ${totalToolCalls} ${totalToolCalls === 1 ? 'call' : 'calls'} ran. Let me know if you want me to summarize.`;
-          } else {
-            rescue = "I didn't catch a clear next step from that — say more about what you want me to do?";
+          let rescue = '';
+
+          if (!isChitchat && totalToolCalls > 0) {
+            try {
+              emit('thinking', { status: 'Writing summary…' });
+              messages.push({
+                role: 'user',
+                content:
+                  'Write your final reply to me NOW in plain prose, first person. Answer my request directly using the information you already gathered above. ' +
+                  'Do NOT list steps or tool names. Do NOT use <thinking> tags. ' +
+                  'If you saved a draft, say it is saved in my Gmail Drafts and give the subject and link you already have. ' +
+                  'If you proposed a time, restate it. Be specific and concrete — never blank, never "let me know if you want a summary".',
+              });
+              const forced = await callLLM(messages, [], { temperature: 0.4, maxTokens: 1200 });
+              rescue = sanitizeModelText(getRawText(forced.content)).trim();
+              if (isStepListingResponse(rescue, true) || isIntentText(rescue)) rescue = '';
+            } catch { rescue = ''; }
           }
-          log('warn', 'empty_reply_rescued', {
-            runId,
-            isChitchat,
-            toolCalls: totalToolCalls,
-            userPreview: userMessage.slice(0, 80),
-          });
+
+          if (!rescue) {
+            if (isChitchat) {
+              rescue = /^(thanks?|ty|thx|thank you|🙏)/i.test(userTrim)
+                ? 'Anytime.'
+                : /^(ok|okay|k|kk|got it|gotcha|right|noted|alright|cool|nice|perfect|done)/i.test(userTrim)
+                  ? 'Got it.'
+                  : "Hey — what's up?";
+            } else if (totalToolCalls > 0) {
+              rescue = "I went through that, but couldn't pull it into a clean summary just now. If I drafted a reply it's saved in your Gmail Drafts — open your Drafts folder to review and send. Ask me again and I'll lay out exactly what I found.";
+            } else {
+              rescue = "I didn't catch a clear next step from that — say more about what you want me to do?";
+            }
+          }
+          log('warn', 'empty_reply_rescued', { runId, isChitchat, toolCalls: totalToolCalls, userPreview: userMessage.slice(0, 80) });
           finalText = rescue;
           emit('message', { content: rescue });
         }
