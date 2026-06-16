@@ -493,26 +493,67 @@ function GoogleMark({ size = 16 }: { size?: number }) {
 
 function GmailMark({ size = 22 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <path fill="#4caf50" d="M45,16.2l-5,2.75l-5,4.75L35,40h7c1.657,0,3-1.343,3-3V16.2z"/>
-      <path fill="#1e88e5" d="M3,16.2l3.614,1.71L13,23.7V40H6c-1.657,0-3-1.343-3-3V16.2z"/>
-      <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17"/>
-      <path fill="#c62828" d="M3,12.298V16.2l10,7.5V11.2L9.876,8.859C9.132,8.301,8.228,8,7.298,8C4.924,8,3,9.924,3,12.298z"/>
-      <path fill="#fbc02d" d="M45,12.298V16.2l-10,7.5V11.2l3.124-2.341C38.868,8.301,39.772,8,40.702,8C43.076,8,45,9.924,45,12.298z"/>
+    <svg width={size} height={size} viewBox="0 0 192 192" fill="none" aria-hidden="true">
+      <path fill="url(#ob-gm-a)" d="M146 44h38v110c0 6.627-5.373 12-12 12h-20a6 6 0 0 1-6-6z"/>
+      <path fill="#fc413d" d="M46 44H8v110c0 6.627 5.373 12 12 12h20a6 6 0 0 0 6-6z"/>
+      <path fill="url(#ob-gm-b)" d="M39.226 30.456c-8.033-6.752-20.018-5.714-26.77 2.319-6.752 8.032-5.714 20.017 2.319 26.77l76.078 63.949a8 8 0 0 0 10.295 0l76.078-63.95c8.032-6.752 9.07-18.737 2.318-26.77-6.752-8.032-18.737-9.07-26.769-2.318L96 78.18z"/>
+      <defs>
+        <linearGradient id="ob-gm-a" x1="165" x2="165" y1="44" y2="166" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#60d673"/>
+          <stop offset=".17" stopColor="#42c868"/>
+          <stop offset=".39" stopColor="#0ebc5f"/>
+          <stop offset=".62" stopColor="#00a9bb"/>
+          <stop offset=".86" stopColor="#3c90ff"/>
+          <stop offset="1" stopColor="#3186ff"/>
+        </linearGradient>
+        <linearGradient id="ob-gm-b" x1="8" x2="184" y1="46.13" y2="46.13" gradientUnits="userSpaceOnUse">
+          <stop offset=".08" stopColor="#ff63a0"/>
+          <stop offset=".3" stopColor="#fc413d"/>
+          <stop offset=".5" stopColor="#fc413d"/>
+          <stop offset=".65" stopColor="#fc413d"/>
+          <stop offset=".72" stopColor="#fc5c30"/>
+          <stop offset=".86" stopColor="#feb10c"/>
+          <stop offset=".91" stopColor="#fec700"/>
+          <stop offset=".96" stopColor="#ffdb0f"/>
+        </linearGradient>
+      </defs>
     </svg>
   );
 }
 
 function GCalMark({ size = 22 }: { size?: number }) {
-  // Google-blue body so it stays visible on the frosted-glass badge, with the
-  // recognizable binder rings + "31".
   return (
-    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">
-      <rect x="8" y="11" width="32" height="29" rx="5" fill="#4285F4" />
-      <rect x="12" y="19" width="24" height="17" rx="2" fill="#fff" />
-      <rect x="15.5" y="7" width="3.4" height="8" rx="1.7" fill="#4285F4" />
-      <rect x="29.1" y="7" width="3.4" height="8" rx="1.7" fill="#4285F4" />
-      <text x="24" y="32.5" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="700" fontSize="13" fill="#4285F4">31</text>
+    <svg width={size} height={size} viewBox="0 0 192 192" fill="none" aria-hidden="true">
+      <path fill="#bbe2ff" d="M32 36.8C32 20.894 44.894 8 60.8 8h70.4C147.106 8 160 20.894 160 36.8v30.4c0 15.906-12.894 28.8-28.8 28.8H60.8C44.894 96 32 83.106 32 67.2z"/>
+      <path fill="#3c90ff" d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"/>
+      <mask id="ob-gc-a" width="154" height="152" x="19" y="20" maskUnits="userSpaceOnUse" style={{ maskType: 'alpha' }}>
+        <path fill="#3c90ff" d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"/>
+      </mask>
+      <g mask="url(#ob-gc-a)">
+        <path fill="url(#ob-gc-b)" d="M0 0h166v76H0z" transform="matrix(1 0 0 -1 13 172)"/>
+      </g>
+      <mask id="ob-gc-c" width="154" height="152" x="19" y="20" maskUnits="userSpaceOnUse" style={{ maskType: 'alpha' }}>
+        <path fill="#3186ff" d="M19.867 49.392C17.818 33.82 29.94 20 45.645 20h100.71c15.706 0 27.827 13.82 25.778 29.392L166 96l6.133 46.608C174.182 158.18 162.061 172 146.355 172H45.645c-15.706 0-27.827-13.82-25.778-29.392L26 96z"/>
+      </mask>
+      <g mask="url(#ob-gc-c)">
+        <path fill="url(#ob-gc-d)" d="M32 27.2C32 16.596 40.596 8 51.2 8h89.6c10.604 0 19.2 8.596 19.2 19.2V96H32z" filter="url(#ob-gc-e)"/>
+      </g>
+      <path fill="#fff" d="M75.353 133.336q-6.282 0-10.777-2.043t-7.61-5.465q-3.065-3.474-4.342-6.793T51.603 115a2.07 2.07 0 0 1 1.021-1.124l5.67-2.247q.714-.357 1.43-.102.714.204 1.685 2.349 1.022 2.145 2.86 4.546a14.3 14.3 0 0 0 4.495 3.728q2.606 1.328 6.435 1.328 6.18 0 9.807-3.575 3.677-3.575 3.677-9.091 0-5.976-3.882-9.194-3.881-3.269-10.266-3.269h-5.362a1.9 1.9 0 0 1-1.328-.51q-.51-.562-.511-1.277v-5.465q0-.767.51-1.277a1.82 1.82 0 0 1 1.329-.562h4.647q5.721 0 9.194-3.116t3.473-8.07q0-4.902-3.116-7.916t-8.58-3.014q-3.065 0-5.312 1.022a11.5 11.5 0 0 0-3.882 2.86 22.7 22.7 0 0 0-2.809 3.78q-1.174 1.941-1.89 2.145-.714.153-1.379-.255l-5.363-2.605q-.664-.358-.868-1.124t1.226-3.575q1.481-2.86 4.494-5.823a21 21 0 0 1 7.049-4.597q4.035-1.635 9.398-1.634 9.96 0 15.782 5.26 5.823 5.21 5.823 13.791 0 5.925-2.86 10.266-2.81 4.34-7.968 6.13v.204q6.231 1.838 9.806 6.741 3.627 4.853 3.626 11.594 0 9.654-6.742 15.834-6.74 6.18-17.57 6.18zm51.25-1.175q-.868 0-1.533-.664a2.25 2.25 0 0 1-.612-1.583V73.118l-11.492 8.274q-.614.46-1.431.307a1.96 1.96 0 0 1-1.225-.766l-3.32-4.7a1.98 1.98 0 0 1-.358-1.43q.153-.816.817-1.276l20.379-14.557q.256-.204.562-.306.307-.153.715-.153h4.291q.868 0 1.379.613.562.56.562 1.43v69.36q0 .92-.664 1.583a2 2 0 0 1-1.533.664z"/>
+      <defs>
+        <linearGradient id="ob-gc-b" x1="83" x2="83" y1="76" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#4fa0ff"/>
+          <stop offset="1" stopColor="#3186ff"/>
+        </linearGradient>
+        <linearGradient id="ob-gc-d" x1="89.06" x2="89.06" y1="21.75" y2="96.39" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#a9a8ff"/>
+          <stop offset=".8" stopColor="#3c90ff"/>
+        </linearGradient>
+        <filter id="ob-gc-e" width="152" height="112" x="20" y="-4" colorInterpolationFilters="sRGB" filterUnits="userSpaceOnUse">
+          <feFlood floodOpacity="0" result="BackgroundImageFix"/>
+          <feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+          <feGaussianBlur result="effect1_foregroundBlur_37330_7673" stdDeviation="6"/>
+        </filter>
+      </defs>
     </svg>
   );
 }
