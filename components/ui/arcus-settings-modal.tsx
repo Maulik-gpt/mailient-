@@ -17,20 +17,10 @@ interface MemoryItem {
 }
 
 // PART 45 — user-tunable voice + length controls.
+// Voice is fixed (warm + detailed); these types remain only for the
+// onSaveInstructions signature / props compatibility with the parent.
 type CommunicationStyle = 'direct' | 'balanced' | 'warm';
 type Verbosity = 'brief' | 'normal' | 'detailed';
-
-const STYLE_OPTIONS: Array<{ value: CommunicationStyle; label: string; hint: string }> = [
-  { value: 'direct',   label: 'Direct',   hint: 'Crisp. Just the outcome.' },
-  { value: 'balanced', label: 'Balanced', hint: 'One opener, then point.' },
-  { value: 'warm',     label: 'Warm',     hint: 'Leads with warmth.' },
-];
-
-const VERBOSITY_OPTIONS: Array<{ value: Verbosity; label: string; hint: string }> = [
-  { value: 'brief',    label: 'Brief',    hint: 'One-liners.' },
-  { value: 'normal',   label: 'Normal',   hint: 'Outcome + attention items.' },
-  { value: 'detailed', label: 'Detailed', hint: 'Full picture.' },
-];
 
 interface ArcusSettingsModalProps {
   isOpen: boolean;
@@ -186,9 +176,6 @@ export function ArcusSettingsModal({
   const [instructions, setInstructions] = useState(initialInstructions);
   const [instructionsEnabled, setInstructionsEnabled] = useState(initialInstructionsEnabled);
   const [memoryEnabled, setMemoryEnabled] = useState(initialMemoryEnabled);
-  // PART 45 — voice + length user prefs.
-  const [communicationStyle, setCommunicationStyle] = useState<CommunicationStyle>(initialCommunicationStyle);
-  const [verbosity, setVerbosity] = useState<Verbosity>(initialVerbosity);
 
   // Instructions
   const [isEnhancing, setIsEnhancing] = useState(false);
@@ -210,13 +197,11 @@ export function ArcusSettingsModal({
       setInstructions(initialInstructions);
       setInstructionsEnabled(initialInstructionsEnabled);
       setMemoryEnabled(initialMemoryEnabled);
-      setCommunicationStyle(initialCommunicationStyle);
-      setVerbosity(initialVerbosity);
       setEnhanceError('');
       setMemoryError('');
       setShowClearConfirm(false);
     }
-  }, [isOpen, initialInstructions, initialInstructionsEnabled, initialMemoryEnabled, initialCommunicationStyle, initialVerbosity]);
+  }, [isOpen, initialInstructions, initialInstructionsEnabled, initialMemoryEnabled]);
 
   // ── Load memories when tab switches or modal opens ───────────────────────────
   const loadMemories = useCallback(async () => {
@@ -267,7 +252,8 @@ export function ArcusSettingsModal({
   const handleSaveInstructions = async () => {
     setIsSavingInstructions(true);
     try {
-      await onSaveInstructions(instructions, instructionsEnabled, { communicationStyle, verbosity });
+      // Voice is fixed — always persist warm + detailed.
+      await onSaveInstructions(instructions, instructionsEnabled, { communicationStyle: 'warm', verbosity: 'detailed' });
     } finally {
       setIsSavingInstructions(false);
       onClose();
@@ -413,70 +399,17 @@ export function ArcusSettingsModal({
                 transition={{ duration: 0.15 }}
                 className="space-y-5"
               >
-                {/* PART 45 — Voice + length segmented controls. Sit ABOVE the
-                    binding-instructions toggle so the user picks broad tone
-                    first, then layers specific rules underneath. */}
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
-                      Communication style
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {STYLE_OPTIONS.map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setCommunicationStyle(opt.value)}
-                          className={cn(
-                            'flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all',
-                            communicationStyle === opt.value
-                              ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
-                              : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700',
-                          )}
-                        >
-                          <span className="text-[12.5px] font-bold">{opt.label}</span>
-                          <span className={cn(
-                            'text-[10.5px] leading-tight',
-                            communicationStyle === opt.value
-                              ? 'text-white/65 dark:text-black/55'
-                              : 'text-neutral-500 dark:text-white/40',
-                          )}>{opt.hint}</span>
-                        </button>
-                      ))}
-                    </div>
+                {/* Voice is fixed: Arcus is always warm, friendly, and detailed.
+                    The tone/length segmented controls were removed — the only
+                    voice calibration now is the binding instructions below. */}
+                <div className="rounded-xl border border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900 px-3.5 py-3">
+                  <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-1">
+                    Voice
                   </div>
-
-                  <div>
-                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-500 dark:text-white/40 mb-2">
-                      Response length
-                    </div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {VERBOSITY_OPTIONS.map(opt => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setVerbosity(opt.value)}
-                          className={cn(
-                            'flex flex-col items-start gap-0.5 px-3 py-2.5 rounded-xl border text-left transition-all',
-                            verbosity === opt.value
-                              ? 'bg-black dark:bg-white text-white dark:text-black border-transparent shadow-sm'
-                              : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-700 dark:text-white/70 border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700',
-                          )}
-                        >
-                          <span className="text-[12.5px] font-bold">{opt.label}</span>
-                          <span className={cn(
-                            'text-[10.5px] leading-tight',
-                            verbosity === opt.value
-                              ? 'text-white/65 dark:text-black/55'
-                              : 'text-neutral-500 dark:text-white/40',
-                          )}>{opt.hint}</span>
-                        </button>
-                      ))}
-                    </div>
+                  <div className="text-[12.5px] text-neutral-700 dark:text-white/70 leading-snug">
+                    Arcus replies in a <span className="font-semibold text-neutral-900 dark:text-white">warm, friendly, and detailed</span> voice. Layer your own rules below to shape it further.
                   </div>
                 </div>
-
-                <div className="border-t border-neutral-200 dark:border-neutral-800" />
 
                 {/* Toggle */}
                 <ToggleSwitch

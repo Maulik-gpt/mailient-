@@ -507,14 +507,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // to recall them from the bottom of a long system prompt. Tone/length
   // override the prompt's voice defaults; binding rules override everything.
   const activeRulesHint = (() => {
-    const parts: string[] = [];
-    if (opts.communicationStyle) parts.push(`tone:${opts.communicationStyle}`);
-    if (opts.verbosity) parts.push(`length:${opts.verbosity}`);
+    // Fixed voice — warm + detailed, not user-switchable.
+    const parts: string[] = ['tone:warm', 'length:detailed'];
     if (userInstructions && userInstructions.trim()) {
       const compact = userInstructions.replace(/\s+/g, ' ').trim().slice(0, 200);
       parts.push(`rules:${compact}${userInstructions.length > 200 ? '…' : ''}`);
     }
-    return parts.length > 0 ? `\n\n[ACTIVE — apply strictly: ${parts.join(' · ')}]` : '';
+    return `\n\n[ACTIVE — apply strictly: ${parts.join(' · ')}]`;
   })();
   // Tracks every successful tool call this run so PART 4 Rule 1 (draft_reply
   // requires a preceding read_email/gmail_read_thread) and Rule 3
