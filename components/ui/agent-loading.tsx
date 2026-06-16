@@ -3,83 +3,70 @@
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { motion } from "framer-motion";
 
+const SHIMMER =
+    "linear-gradient(110deg, transparent 18%, color-mix(in srgb, var(--arcus-fg) 14%, transparent) 50%, transparent 82%)";
+
+function ShimmerBar({ className = "", delay = 0 }: { className?: string; delay?: number }) {
+    return (
+        <div className={`relative overflow-hidden bg-arcus-fg/[0.06] ${className}`}>
+            <motion.div
+                className="absolute inset-0 w-[220%]"
+                style={{ background: SHIMMER }}
+                animate={{ x: ["-55%", "55%"] }}
+                transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut", delay }}
+            />
+        </div>
+    );
+}
+
 export function AgentLoading() {
     return (
-        <div className="flex h-screen w-full bg-[#000000] text-white overflow-hidden relative">
+        <div className="flex h-screen w-full bg-arcus-bg text-arcus-fg overflow-hidden relative">
             <HomeFeedSidebar />
-            
-            {/* High-Fidelity Page Shadow Skeleton */}
-            <div className="flex-1 flex flex-col pl-48 pr-12 py-6 relative">
-                {/* Top Bar Skeleton Shadow */}
-                <div className="flex items-center justify-between w-full h-14 opacity-20 mb-12">
-                    <div className="w-28 h-6 bg-white/10 rounded-lg relative overflow-hidden">
-                        <motion.div
-                            className="absolute inset-0 w-[200%]"
-                            style={{
-                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 90%)'
-                            }}
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}
-                        />
-                    </div>
-                    <div className="flex items-center gap-4">
-                        <div className="w-9 h-9 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 bg-white/[0.03] animate-pulse" /></div>
-                        <div className="w-9 h-9 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 bg-white/[0.03] animate-pulse" /></div>
-                        <div className="w-9 h-9 rounded-full bg-white/5 relative overflow-hidden"><div className="absolute inset-0 bg-white/[0.03] animate-pulse" /></div>
-                        <div className="w-24 h-9 rounded-xl bg-white/5 relative overflow-hidden"><div className="absolute inset-0 bg-white/[0.03] animate-pulse" /></div>
+
+            <div className="flex-1 flex flex-col md:pl-48 px-6 md:px-12 py-6 relative">
+                {/* Top bar */}
+                <div className="flex items-center justify-between w-full h-14 mb-12">
+                    <ShimmerBar className="w-28 h-6 rounded-lg" />
+                    <div className="flex items-center gap-3">
+                        <ShimmerBar className="w-9 h-9 rounded-full" delay={0.1} />
+                        <ShimmerBar className="w-9 h-9 rounded-full" delay={0.18} />
+                        <ShimmerBar className="w-9 h-9 rounded-full" delay={0.26} />
+                        <ShimmerBar className="w-24 h-9 rounded-xl" delay={0.34} />
                     </div>
                 </div>
 
-                {/* Main Content Skeleton Shadow */}
-                <div className="flex flex-col gap-6 w-full max-w-4xl opacity-20 mt-10">
-                    <div className="flex items-center gap-3 mb-4">
-                        <div className="w-6 h-6 rounded-md bg-white/10" />
-                        <div className="w-20 h-4 bg-white/10 rounded-full" />
+                {/* Main content */}
+                <div className="flex flex-col gap-5 w-full max-w-3xl mt-8">
+                    <div className="flex items-center gap-3 mb-2">
+                        <ShimmerBar className="w-6 h-6 rounded-md" />
+                        <ShimmerBar className="w-24 h-4 rounded-full" delay={0.1} />
                     </div>
-                    <div className="h-3 w-full bg-white/5 rounded-full relative overflow-hidden">
-                         <motion.div
-                            className="absolute inset-0 w-[200%]"
-                            style={{
-                                background: 'linear-gradient(110deg, rgba(255,255,255,0) 10%, rgba(255,255,255,0.18) 50%, rgba(255,255,255,0) 90%)'
-                            }}
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 1.5, ease: [0.4, 0, 0.6, 1] }}
-                        />
-                    </div>
-                    <div className="h-3 w-full bg-white/5 rounded-full relative overflow-hidden">
-                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.2 }}
-                        />
-                    </div>
-                    <div className="h-3 w-[88%] bg-white/5 rounded-full relative overflow-hidden">
-                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.4 }}
-                        />
-                    </div>
-                    <div className="h-3 w-[45%] bg-white/5 rounded-full relative overflow-hidden">
-                         <motion.div
-                            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent w-[200%]"
-                            animate={{ x: ['-100%', '100%'] }}
-                            transition={{ repeat: Infinity, duration: 2.5, ease: "linear", delay: 0.6 }}
-                        />
+
+                    <ShimmerBar className="h-3.5 w-full rounded-full" delay={0.14} />
+                    <ShimmerBar className="h-3.5 w-[92%] rounded-full" delay={0.22} />
+                    <ShimmerBar className="h-3.5 w-[78%] rounded-full" delay={0.3} />
+                    <ShimmerBar className="h-3.5 w-[45%] rounded-full" delay={0.38} />
+
+                    {/* Card placeholder */}
+                    <div className="mt-6 rounded-2xl border border-arcus-border bg-arcus-fg/[0.03] p-5 flex flex-col gap-3">
+                        <ShimmerBar className="h-3 w-[34%] rounded-full" delay={0.24} />
+                        <ShimmerBar className="h-3 w-[72%] rounded-full" delay={0.32} />
+                        <ShimmerBar className="h-3 w-[56%] rounded-full" delay={0.4} />
                     </div>
                 </div>
 
-                {/* Bottom Prompt Box Skeleton Shadow */}
-                <div className="absolute bottom-12 left-12 right-12 opacity-20">
-                    <div className="h-20 w-full max-w-4xl mx-auto bg-white/5 rounded-[28px] border border-white/[0.05] relative overflow-hidden flex items-center justify-between px-8">
-                        <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-full bg-white/10" />
-                            <div className="w-8 h-8 rounded-full bg-white/10" />
+                {/* Bottom prompt box */}
+                <div className="absolute bottom-10 left-6 right-6 md:left-12 md:right-12">
+                    <div className="h-20 w-full max-w-3xl mx-auto rounded-[28px] border border-arcus-border bg-arcus-fg/[0.03] relative overflow-hidden flex items-center justify-between px-7">
+                        <div className="flex items-center gap-3">
+                            <ShimmerBar className="w-8 h-8 rounded-full" />
+                            <ShimmerBar className="w-8 h-8 rounded-full" delay={0.12} />
                         </div>
-                        <div className="h-2.5 w-48 bg-white/10 rounded-full" />
-                        <div className="flex items-center gap-4">
-                            <div className="w-8 h-8 rounded-full bg-white/10" />
-                            <div className="w-8 h-8 rounded-full bg-white/10" />
+                        <ShimmerBar className="h-2.5 w-44 rounded-full" delay={0.22} />
+                        <div className="flex items-center gap-3">
+                            <ShimmerBar className="w-8 h-8 rounded-full" delay={0.3} />
+                            <div className="w-9 h-9 rounded-full bg-arcus-fg/[0.12]" />
                         </div>
                     </div>
                 </div>
