@@ -435,10 +435,18 @@ export async function GET(request: NextRequest) {
           const artifactLinks = structuredLinks && Object.keys(structuredLinks).length
             ? structuredLinks
             : extractArtifactLinks(report);
-          const coreUpdate = {
+          // Part 6 — no fake success. The super-agent report states its own
+          // honest status ("Status: partial/blocked"); trust it over a blanket
+          // 'success'. Also capture the one-line outcome (the report's first
+          // line) as the run's outcome_summary.
+          const statusMatch = report.match(/^\s*status:\s*(success|partial|blocked)/im);
+          const runStatus = statusMatch ? statusMatch[1].toLowerCase() : 'success';
+          const outcomeSummary = (report.split('\n').map(l => l.trim()).find(Boolean) || '')
+            .replace(/^#+\s*/, '').replace(/\*\*/g, '').slice(0, 300);
+          const coreUpdate: Record<string, any> = {
             completed_at: completedAt.toISOString(),
             duration_ms: completedAt.getTime() - runStartedAt.getTime(),
-            status: 'success',
+            status: runStatus,
             tool_calls: toolCalls,
             artifact_links: artifactLinks,
             report_summary: (report.slice(0, 450) + (deliverySuffix || '')).slice(0, 500),
@@ -466,6 +474,12 @@ export async function GET(request: NextRequest) {
               })
               .eq('id', runRecordId);
           } catch { /* PART 60 columns may not be migrated — non-fatal */ }
+          // outcome_summary is a super-agent column (may not be migrated yet).
+          try {
+            if (outcomeSummary) {
+              await supabase.from('arcus_agent_runs').update({ outcome_summary: outcomeSummary }).eq('id', runRecordId);
+            }
+          } catch { /* non-fatal */ }
         }
 
         return agent.name;
