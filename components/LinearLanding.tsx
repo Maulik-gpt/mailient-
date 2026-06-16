@@ -220,13 +220,18 @@ export function LinearLanding() {
     mouseY.set(e.clientY - top);
   };
 
-  // Autoplay Three Things cycle
+  // Autoplay "Three Things" cycle. Per-step duration so the voice-demo step
+  // (02 — Drafts in your voice) holds for the FULL length of its video clip
+  // (public/demos/voice-demo.mp4 ≈ 11.73s) instead of being cut off mid-clip.
+  // If the demo clip is ever replaced, update STEP_DURATIONS[1] to its length.
+  const STEP_DURATIONS = [10000, 11733, 10000]; // ms — [Sift, Voice demo, Sleep]
   useEffect(() => {
-    const timer = setInterval(() => {
+    const timer = setTimeout(() => {
       setActiveStep((prev) => (prev + 1) % 3);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
+    }, STEP_DURATIONS[activeStep] ?? 10000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeStep]);
 
   useEffect(() => {
     document.title = "Mailient — The future isn't faster communication. The future is communication that no longer requires you.";
