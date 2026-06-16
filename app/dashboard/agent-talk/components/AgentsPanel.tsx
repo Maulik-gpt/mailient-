@@ -787,7 +787,7 @@ function CreateModal({ onClose, onSave, initial }: {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 24, scale: 0.98 }}
         transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-        className="relative w-full max-w-4xl bg-arcus-bg-elevated/95 backdrop-blur-2xl border border-arcus-border rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
+        className="relative w-full max-w-4xl bg-arcus-bg-elevated border border-arcus-border rounded-[2.5rem] shadow-2xl overflow-hidden max-h-[95vh] flex flex-col"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-8 pt-7 pb-5 border-b border-arcus-border/60 flex-shrink-0">
