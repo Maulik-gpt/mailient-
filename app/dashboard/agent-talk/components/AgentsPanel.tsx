@@ -505,7 +505,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-all select-none shadow-inner dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:hover:border-zinc-700"
       >
-        <span className={cn(selectedDate ? 'text-zinc-900 dark:text-zinc-200 font-medium' : 'text-zinc-400 dark:text-zinc-650')}>
+        <span className={cn(selectedDate ? 'text-zinc-900 dark:text-zinc-200 font-medium' : 'text-zinc-400 dark:text-zinc-500')}>
           {formattedValue}
         </span>
         <div className="flex items-center gap-2">
@@ -520,19 +520,19 @@ function PremiumDatePicker({ value, onChange, minDate }: {
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <CalendarDays className="w-4 h-4 text-zinc-400 dark:text-zinc-555" />
+          <CalendarDays className="w-4 h-4 text-zinc-400 dark:text-zinc-500" />
         </div>
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
+        <div className="absolute top-full left-0 mt-2 w-72 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4.5 z-[100] select-none animate-in fade-in slide-in-from-top-2 duration-150 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
           {/* Header navigation */}
           <div className="flex items-center justify-between mb-3.5">
             <div className="flex gap-1">
-              <button onClick={handlePrevYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-300 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;&lt;
               </button>
-              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-355 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handlePrevMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-300 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &lt;
               </button>
             </div>
@@ -542,10 +542,10 @@ function PremiumDatePicker({ value, onChange, minDate }: {
             </span>
 
             <div className="flex gap-1">
-              <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-355 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextMonth} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-300 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;
               </button>
-              <button onClick={handleNextYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-650 dark:hover:text-zinc-350 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
+              <button onClick={handleNextYear} className="p-1.5 hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-400 hover:text-zinc-900 dark:text-zinc-500 dark:hover:text-zinc-300 rounded-lg transition-colors text-[10px] font-extrabold font-mono">
                 &gt;&gt;
               </button>
             </div>
@@ -574,7 +574,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                     cell.isDisabled && 'text-zinc-100 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
                     !cell.isDisabled && !isSelected && 'hover:bg-zinc-100 dark:hover:bg-zinc-900/50',
                     isTodayCell && !isSelected && 'border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100',
-                    isSelected && 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
+                    isSelected && 'bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
                   )}
                 >
                   {cell.day}
@@ -588,7 +588,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
             <button onClick={handleClear} className="text-[11px] font-extrabold text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors">
               Clear
             </button>
-            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-650 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
+            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
               Today
             </button>
           </div>
@@ -668,7 +668,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
+        <div className="absolute top-full right-0 lg:left-0 mt-2 w-64 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-top-2 duration-150 flex gap-3 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-extrabold mb-2">Hour</span>
@@ -680,8 +680,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedHour === h
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(h).padStart(2, '0')}
@@ -701,8 +701,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedMinute === m
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-655 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(m).padStart(2, '0')}
@@ -722,8 +722,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
                     selectedPeriod === p
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-655 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {p}

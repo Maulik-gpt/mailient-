@@ -343,7 +343,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
         onClick={() => setIsOpen(!isOpen)}
         className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 flex items-center justify-between cursor-pointer hover:border-zinc-400 transition-all select-none shadow-inner dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:hover:border-zinc-700"
       >
-        <span className={cn(selectedDate ? 'text-zinc-900 dark:text-zinc-200 font-medium' : 'text-zinc-400 dark:text-zinc-650')}>
+        <span className={cn(selectedDate ? 'text-zinc-900 dark:text-zinc-200 font-medium' : 'text-zinc-400 dark:text-zinc-500')}>
           {formattedValue}
         </span>
         <div className="flex items-center gap-2">
@@ -426,7 +426,7 @@ function PremiumDatePicker({ value, onChange, minDate }: {
             <button onClick={handleClear} className="text-[11px] font-extrabold text-zinc-400 hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors">
               Clear
             </button>
-            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-650 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
+            <button onClick={handleToday} className="text-[11px] font-extrabold text-zinc-600 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 transition-colors">
               Today
             </button>
           </div>
@@ -435,7 +435,6 @@ function PremiumDatePicker({ value, onChange, minDate }: {
     </div>
   );
 }
-
 function PremiumTimePicker({ value, onChange }: {
   value: string;
   onChange: (val: string) => void;
@@ -506,7 +505,7 @@ function PremiumTimePicker({ value, onChange }: {
       </div>
 
       {isOpen && (
-        <div className="absolute bottom-full right-0 lg:left-0 mb-2 w-64 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-bottom-2 duration-150 flex gap-3 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
+        <div className="absolute top-full right-0 lg:left-0 mt-2 w-64 bg-white border border-zinc-200 rounded-2xl shadow-2xl p-4 z-[100] select-none animate-in fade-in slide-in-from-top-2 duration-150 flex gap-3 dark:bg-[#0A0A0C]/90 dark:backdrop-blur-xl dark:border-white/10">
           {/* Hours Column */}
           <div className="flex-1 flex flex-col items-center">
             <span className="text-[10px] uppercase tracking-wider text-zinc-400 dark:text-zinc-600 font-extrabold mb-2">Hour</span>
@@ -518,8 +517,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedHour === h
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-450 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(h).padStart(2, '0')}
@@ -539,8 +538,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-1 rounded-lg text-[13px] font-bold transition-all",
                     selectedMinute === m
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-650 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-800 hover:bg-zinc-100 dark:text-zinc-450 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {String(m).padStart(2, '0')}
@@ -560,8 +559,8 @@ function PremiumTimePicker({ value, onChange }: {
                   className={cn(
                     "w-full text-center py-2.5 rounded-lg text-[12px] font-extrabold transition-all",
                     selectedPeriod === p
-                      ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
-                      : "text-zinc-650 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
+                      ? "bg-black text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold"
+                      : "text-zinc-805 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-900/50 dark:hover:text-zinc-200"
                   )}
                 >
                   {p}
@@ -677,7 +676,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                   onChange={e => setTask(e.target.value)}
                   placeholder="Describe what you want this agent to do in plain English…"
                   rows={8}
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-[15px] text-zinc-900 leading-relaxed placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all resize-none dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-650 dark:focus:border-zinc-700"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-[15px] text-zinc-900 leading-relaxed placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all resize-none dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                 />
               </div>
 
@@ -688,7 +687,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   placeholder="e.g. Morning Client Check"
-                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
+                  className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3.5 text-[15px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                 />
               </div>
             </div>
@@ -706,8 +705,8 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                       className={cn(
                         'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
-                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
-                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
+                          ? 'bg-black text-white border-black dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {p.label}
@@ -746,7 +745,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                       value={customCron}
                       onChange={e => setCustomCron(e.target.value)}
                       placeholder="e.g. 0 9 * * 1-5"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 font-mono placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 font-mono placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                     />
                   </div>
                 )}
@@ -771,8 +770,8 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                       className={cn(
                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
-                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
-                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
+                          ? 'bg-black text-white border-black dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
@@ -787,7 +786,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                     value={slackCh}
                     onChange={e => setSlackCh(e.target.value)}
                     placeholder="Slack channel (e.g. #reports)"
-                    className="mt-3 w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
+                    className="mt-3 w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                   />
                 )}
               </div>

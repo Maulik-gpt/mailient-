@@ -655,7 +655,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
   return new ReadableStream({
     async start(controller) {
+      let sentUserFacing = false;
+      let anyToolRan = false;
       const emit = (type: string, data: unknown) => {
+        if (type === 'tool_call') {
+          anyToolRan = true;
+        } else if (type === 'question' || type === 'plan' || type === 'approval_required' || type === 'canvas') {
+          sentUserFacing = true;
+        } else if (type === 'message') {
+          const c = (data as any)?.content;
+          if ((typeof c === 'string' && c.trim()) || (data as any)?.canvasContent) sentUserFacing = true;
+        }
         try { controller.enqueue(encode(sseEvent(type, data))); } catch { /* closed */ }
       };
 
@@ -674,6 +684,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
       let alreadyDone = false;
       const closeStream = (totalSteps = 0) => {
         if (!alreadyDone) {
+          // Backstop: never close a run that did real work without giving the
+          // user something readable. Covers EVERY terminal path (mustStop,
+          // error branches, deadline) regardless of client behaviour.
+          if (!sentUserFacing && anyToolRan) {
+            try {
+              controller.enqueue(encode(sseEvent('message', {
+                content: "I worked through that, but couldn't pull it into a clean summary this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll lay out exactly what I found.",
+              })));
+            } catch { /* closed */ }
+            sentUserFacing = true;
+          }
           alreadyDone = true;
           try { controller.enqueue(encode(sseEvent('done', { runId, durationMs: Date.now() - startedAt, totalSteps }))); } catch { /* closed */ }
         }
