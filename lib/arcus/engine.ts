@@ -169,7 +169,19 @@ function toOpenAIMessages(messages: LLMMessage[]): any[] {
 
   for (const msg of messages) {
     if (typeof msg.content === 'string') {
-      out.push({ role: msg.role, content: msg.content });
+      // Prompt caching: the large, stable system prompt is re-sent on every LLM
+      // call in a run (6-12 calls). Marking it cacheable lets providers reuse it
+      // (Anthropic/Gemini via OpenRouter cache_control; OpenAI auto-caches and
+      // ignores the hint), cutting input cost ~90% on repeated calls within a
+      // run. Only worth it above the provider min (~1k tokens), so gate on size.
+      if (msg.role === 'system' && msg.content.length > 4000) {
+        out.push({
+          role: 'system',
+          content: [{ type: 'text', text: msg.content, cache_control: { type: 'ephemeral' } }],
+        });
+      } else {
+        out.push({ role: msg.role, content: msg.content });
+      }
       continue;
     }
 
