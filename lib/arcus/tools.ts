@@ -2510,7 +2510,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
 
-  const max = Math.min(input.maxResults || 10, 25);
+  const max = Math.min(input.maxResults || 12, 40);
   const params = new URLSearchParams({ q: input.query, maxResults: String(max) });
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
 
@@ -2542,7 +2542,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
       if (!r.ok) return null;
       const m = await r.json();
       const h = m.payload?.headers || [];
-      return { id: m.id, threadId: m.threadId, from: getHeader(h, 'From'), subject: getHeader(h, 'Subject'), date: getHeader(h, 'Date'), snippet: (m.snippet || '').slice(0, 200) };
+      return { id: m.id, threadId: m.threadId, from: getHeader(h, 'From'), subject: getHeader(h, 'Subject'), date: getHeader(h, 'Date'), snippet: (m.snippet || '').slice(0, 320) };
     } catch { return null; }
   }));
 
@@ -5214,32 +5214,52 @@ function touchContact(userId: string, email: string, name: string): void {
 }
 
 async function getContactContext(userId: string, input: any): Promise<ToolResult> {
-  const email = (input.email || '').toLowerCase();
+  const email = (input.email || '').toLowerCase().trim();
   if (!email) return failureResult('Email address required.', 'validation_error');
 
-  try {
-    const supabase = getSupabaseAdmin();
-    const { data } = await supabase
-      .from('arcus_contacts')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('contact_email', email)
-      .maybeSingle();
+  // Superagent depth: understand a contact from THREE sources in parallel —
+  // stored relationship memory, live email history, and saved facts — so the
+  // agent always has real context even when the contacts table is empty.
+  const [stored, history, facts] = await Promise.all([
+    (async () => {
+      try {
+        const supabase = getSupabaseAdmin();
+        const { data } = await supabase
+          .from('arcus_contacts')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('contact_email', email)
+          .maybeSingle();
+        if (!data) return '';
+        return [
+          `**Contact:** ${data.contact_name || email}`,
+          data.last_contact_at ? `**Last contact:** ${new Date(data.last_contact_at).toLocaleDateString()}` : null,
+          data.email_count ? `**Emails exchanged:** ${data.email_count}` : null,
+          data.notes ? `**Notes:** ${data.notes}` : null,
+          data.tags?.length ? `**Tags:** ${data.tags.join(', ')}` : null,
+        ].filter(Boolean).join('\n');
+      } catch { return ''; }
+    })(),
+    (async () => {
+      try {
+        const recent = await searchGmail(userId, { query: `from:${email} OR to:${email}`, maxResults: 8 });
+        if (recent.success === false || /No emails found/i.test(recent.output)) return '';
+        return `**Recent email history:**\n${recent.output}`;
+      } catch { return ''; }
+    })(),
+    (async () => {
+      try {
+        const { searchMemoriesRaw } = await import('./memory');
+        const mem = await searchMemoriesRaw(userId, email, 5);
+        if (!mem.length) return '';
+        return `**What I remember about them:**\n${mem.map((i: any) => `- ${i.text}`).join('\n')}`;
+      } catch { return ''; }
+    })(),
+  ]);
 
-    if (!data) return { output: `No relationship memory yet for ${email}.` };
-
-    const lines = [
-      `**Contact:** ${data.contact_name || email}`,
-      `**Email:** ${data.contact_email}`,
-      data.last_contact_at ? `**Last contact:** ${new Date(data.last_contact_at).toLocaleDateString()}` : null,
-      data.email_count     ? `**Emails exchanged:** ${data.email_count}` : null,
-      data.notes           ? `**Notes:** ${data.notes}` : null,
-      data.tags?.length    ? `**Tags:** ${data.tags.join(', ')}` : null,
-    ].filter(Boolean);
-    return { output: lines.join('\n') };
-  } catch {
-    return failureResult(`No relationship memory for ${email} (run migration: supabase/migrations/arcus_contacts.sql).`, 'migration_missing');
-  }
+  const sections = [stored, history, facts].filter(Boolean);
+  if (!sections.length) return { output: `No stored memory or recent email history found for ${email}. They appear to be a new contact.` };
+  return { output: `Contact context for ${email}:\n\n${sections.join('\n\n')}` };
 }
 
 async function rememberAboutContact(userId: string, input: any): Promise<ToolResult> {
