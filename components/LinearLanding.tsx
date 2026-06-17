@@ -220,11 +220,11 @@ export function LinearLanding() {
     mouseY.set(e.clientY - top);
   };
 
-  // Autoplay "Three Things" cycle. Per-step duration so the voice-demo step
-  // (02 — Drafts in your voice) holds for the FULL length of its video clip
-  // (public/demos/voice-demo.mp4 ≈ 11.73s) instead of being cut off mid-clip.
-  // If the demo clip is ever replaced, update STEP_DURATIONS[1] to its length.
-  const STEP_DURATIONS = [10000, 11733, 20250]; // ms — [Home Feed, Voice demo (clip), Scheduling-agent demo (clip)]
+  // Autoplay "Three Things" cycle. The video steps (1 & 2) advance on the
+  // video's onEnded so the FULL clip always plays regardless of load time;
+  // these durations are generous FALLBACKS that only fire if a video fails to
+  // load/play (so the carousel never freezes). Step 0 (no video) is timer-driven.
+  const STEP_DURATIONS = [10000, 20000, 30000]; // ms — [Home Feed (timer), Voice demo (fallback), Scheduling demo (fallback)]
   useEffect(() => {
     const timer = setTimeout(() => {
       setActiveStep((prev) => (prev + 1) % 3);
@@ -720,11 +720,12 @@ export function LinearLanding() {
                   {/* Live demo — Arcus drafting a reply in your voice */}
                   <video
                     src="/demos/voice-demo.mp4"
+                    poster="/demos/voice-demo.jpg"
                     autoPlay
                     muted
-                    loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
+                    onEnded={() => setActiveStep((prev) => (prev + 1) % 3)}
                     aria-label="Mailient drafting an email reply in your voice"
                     className="w-full h-full object-cover"
                   />
@@ -743,11 +744,12 @@ export function LinearLanding() {
                   {/* Live demo — creating a background scheduling agent in plain English */}
                   <video
                     src="/demos/agent-demo.mp4"
+                    poster="/demos/agent-demo.jpg"
                     autoPlay
                     muted
-                    loop
                     playsInline
-                    preload="metadata"
+                    preload="auto"
+                    onEnded={() => setActiveStep((prev) => (prev + 1) % 3)}
                     aria-label="Creating a background scheduling agent in plain English"
                     className="w-full h-full object-cover"
                   />
