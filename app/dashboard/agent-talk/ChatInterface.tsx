@@ -3151,9 +3151,11 @@ export default function ChatInterface({
               // Open canvas panel if the agent produced canvas content (excluding inline-card types)
               if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.type !== 'confirmation_required' && data.canvasContent.markdown) {
                 const cv = data.canvasContent;
-                // email_draft needs structured content; everything else gets raw markdown string
-                const canvasContent = cv.type === 'email_draft' && cv.meta
-                  ? cv.meta
+                // email_draft needs structured {to,subject,body} from draftMeta —
+                // NOT the raw markdown (which wraps in a "[Open in Gmail]" footer
+                // and leaves To/Subject blank). The tool returns `draftMeta`.
+                const canvasContent = cv.type === 'email_draft' && cv.draftMeta
+                  ? cv.draftMeta
                   : cv.markdown;
                 setCanvasData({
                   type: cv.type || 'notes',
@@ -3171,7 +3173,7 @@ export default function ChatInterface({
                 let extraMeta = {};
                 if (data.canvasContent) {
                   const cv = data.canvasContent;
-                  const canvasContent = cv.type === 'email_draft' && cv.meta ? cv.meta : cv.markdown;
+                  const canvasContent = cv.type === 'email_draft' && cv.draftMeta ? cv.draftMeta : cv.markdown;
                   extraMeta = {
                     result: {
                       type: cv.type || 'notes',
@@ -5309,7 +5311,7 @@ export default function ChatInterface({
 
                                      {/* Plan text — what Arcus is about to do, shown before execution steps */}
                                      {msg.role === 'assistant' && (msg as AgentMessage).meta?.planText && (
-                                       <p className="text-[16px] text-white leading-[1.7] mb-3">
+                                       <p className="text-[16px] text-arcus-fg leading-[1.7] mb-3">
                                          {(msg as AgentMessage).meta!.planText}
                                        </p>
                                      )}
