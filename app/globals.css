@@ -2073,7 +2073,12 @@ textarea,
 .light .bg-\[\#232323\],
 .light .bg-\[\#0a0a0c\],
 .light .bg-\[\#0D0D0D\],
-.light .bg-black {
+/* Invert dark surfaces in light theme — but NEVER buttons/links/CTAs, whose
+   bg-black is an intentional high-contrast control (matches the text-color rule
+   below which already excludes buttons). Without this exclusion, selected
+   schedule chips and the Create button lost their black fill while keeping white
+   text → washed-out white-on-light. */
+.light :not(button):not([role="button"]):not(a).bg-black {
   background-color: var(--sift-bg) !important;
   background-image: none !important;
 }
