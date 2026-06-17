@@ -6503,18 +6503,18 @@ export default function ChatInterface({
               >
                 <div className="p-6 text-center">
                   <div className="w-12 h-12 rounded-full bg-arcus-elevated flex items-center justify-center mx-auto mb-4 border border-arcus-border">
-                    <svg className="w-6 h-6 text-white/40" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className="w-6 h-6 text-arcus-fg-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                     </svg>
                   </div>
-                  <h3 className="text-white text-lg font-bold mb-2 tracking-tight">Regenerate reply?</h3>
-                  <p className="text-white/40 text-[13px] leading-relaxed">
+                  <h3 className="text-arcus-fg text-lg font-bold mb-2 tracking-tight">Regenerate reply?</h3>
+                  <p className="text-arcus-fg-secondary text-[13px] leading-relaxed">
                     This will remove the current response and Arcus will attempt to generate a new one based on your request.
                   </p>
                 </div>
                 <div className="px-6 py-4 bg-arcus-elevated border-t border-arcus-border flex items-center gap-3">
-                  <button onClick={() => setRegenerateModal({ isOpen: false, msgId: null })} className="flex-1 px-4 py-2.5 text-white/50 hover:text-white text-[13px] font-bold transition-colors bg-white/5 hover:bg-white/10 rounded-xl">Cancel</button>
-                  <button onClick={handleConfirmRegenerate} className="flex-1 px-4 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-colors">Regenerate</button>
+                  <button onClick={() => setRegenerateModal({ isOpen: false, msgId: null })} className="flex-1 px-4 py-2.5 text-arcus-fg-secondary hover:text-arcus-fg text-[13px] font-bold transition-colors bg-arcus-bg hover:bg-arcus-surface-hover border border-arcus-border rounded-xl">Cancel</button>
+                  <button onClick={handleConfirmRegenerate} className="flex-1 px-4 py-2.5 bg-arcus-fg text-arcus-bg text-[13px] font-bold rounded-xl hover:opacity-90 transition-opacity">Regenerate</button>
                 </div>
               </motion.div>
             </div>
