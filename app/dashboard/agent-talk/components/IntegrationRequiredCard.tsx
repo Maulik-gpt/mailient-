@@ -257,112 +257,120 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.97 }}
       transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-      className="w-full max-w-[640px] mx-auto mb-3 rounded-[20px] bg-white/[0.04] backdrop-blur-xl border border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] overflow-hidden"
+      className="w-full max-w-[640px] mx-auto mb-4 rounded-3xl bg-[#09090b]/80 backdrop-blur-2xl border border-zinc-200/10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.07]">
-        <div className="flex items-center gap-2">
-          <Zap className="w-4 h-4 text-amber-400/80" />
-          <span className="text-[12px] font-bold text-arcus-fg-secondary uppercase tracking-widest">
-            Required for this agent
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200/10">
+        <div className="flex items-center gap-2.5">
+          <div className="p-1 rounded-lg bg-amber-500/10 text-amber-400">
+            <Zap className="w-4 h-4 fill-amber-400/20" />
+          </div>
+          <span className="text-xs font-bold text-zinc-200 uppercase tracking-widest">
+            Required Integrations
           </span>
         </div>
         <button
           onClick={refresh}
           disabled={isRefreshing}
-          className="p-1.5 rounded-lg text-arcus-fg-muted hover:text-arcus-fg transition-colors disabled:opacity-40"
+          className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-40"
           title="Re-check connections"
         >
-          <RefreshCw className={cn('w-3.5 h-3.5', isRefreshing && 'animate-spin')} />
+          <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin')} />
         </button>
       </div>
 
-      {/* Spec preview — dimmed to show what's waiting to be created */}
-      <div className="mx-4 mt-3 mb-3 px-3 py-2.5 rounded-xl bg-white/[0.025] border border-white/[0.06] opacity-60">
-        <p className="text-[13px] font-bold text-arcus-fg leading-none mb-1">{data.agentName}</p>
-        <p className="text-[11px] text-arcus-fg-muted line-clamp-2 leading-relaxed mb-2">
+      {/* Spec preview — modern Obsidian card styling */}
+      <div className="mx-6 mt-4 p-4.5 rounded-2xl bg-zinc-950/60 border border-zinc-200/5 shadow-inner">
+        <p className="text-[14px] font-bold text-zinc-100 leading-snug mb-1">{data.agentName}</p>
+        <p className="text-[12px] text-zinc-400 leading-relaxed mb-3 font-light">
           {data.agentParams.task_description}
         </p>
-        <div className="flex items-center gap-3 text-[11px] text-arcus-fg-tertiary">
-          <span>📅 {data.agentParams.cron_schedule}</span>
+        <div className="flex items-center gap-4 text-[11px] text-zinc-500 font-mono">
+          <span className="flex items-center gap-1.5 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">
+            <span>📅</span> {data.agentParams.cron_schedule}
+          </span>
           <span>→</span>
-          <span className="capitalize">{data.agentParams.output_channel}</span>
+          <span className="capitalize flex items-center gap-1.5 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">
+            <span>🚀</span> {data.agentParams.output_channel}
+          </span>
         </div>
       </div>
 
       {/* Body */}
-      <div className="px-4 pb-2 space-y-2">
-        <p className="text-[12px] text-arcus-fg-muted leading-snug mb-2">
-          Connect the missing integrations below to activate this agent.
+      <div className="px-6 py-4 space-y-3">
+        <p className="text-[13px] text-zinc-400 leading-relaxed font-light">
+          Activate the integrations below to deploy this agent.
         </p>
 
-        {data.required.map(id => {
-          const info = INTEGRATION_INFO[id] ?? { label: id, Icon: null, description: '' };
-          const isConnected = connectedSet.has(id);
-          const isConnecting = connectingId === id;
+        <div className="space-y-2.5">
+          {data.required.map(id => {
+            const info = INTEGRATION_INFO[id] ?? { label: id, Icon: null, description: '' };
+            const isConnected = connectedSet.has(id);
+            const isConnecting = connectingId === id;
 
-          return (
-            <div
-              key={id}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl border transition-all',
-                isConnected
-                  ? 'bg-emerald-500/10 border-emerald-500/25'
-                  : 'bg-white/[0.03] border-white/[0.07]',
-              )}
-            >
-              {/* Icon */}
-              <div className="w-8 h-8 rounded-lg bg-white/[0.06] flex items-center justify-center shrink-0">
-                {info.Icon
-                  ? <info.Icon className="w-5 h-5" />
-                  : <span className="text-[11px] font-bold text-arcus-fg-muted">{info.label[0]}</span>
-                }
-              </div>
-
-              {/* Label + description */}
-              <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-semibold text-arcus-fg leading-none mb-0.5">{info.label}</p>
-                <p className="text-[11px] text-arcus-fg-muted truncate">{info.description}</p>
-              </div>
-
-              {/* Status / connect */}
-              <AnimatePresence mode="wait" initial={false}>
-                {isConnected ? (
-                  <motion.div
-                    key="connected"
-                    initial={{ opacity: 0, scale: 0.7 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.7 }}
-                    transition={{ type: 'spring', damping: 18, stiffness: 320 }}
-                    className="flex items-center gap-1.5 text-emerald-400 shrink-0"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    <span className="text-[11px] font-semibold">Connected</span>
-                  </motion.div>
-                ) : (
-                  <motion.button
-                    key="connect"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    onClick={() => connectIntegration(id)}
-                    disabled={isConnecting}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold bg-white text-black hover:bg-white/90 transition-all shrink-0 disabled:opacity-60"
-                  >
-                    {isConnecting ? (
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                    ) : lastFailedId === id ? (
-                      <RefreshCw className="w-3 h-3" />
-                    ) : (
-                      <ArrowRight className="w-3 h-3" />
-                    )}
-                    {isConnecting ? 'Connecting…' : lastFailedId === id ? 'Retry' : 'Connect'}
-                  </motion.button>
+            return (
+              <div
+                key={id}
+                className={cn(
+                  'flex items-center gap-4 px-4 py-3 rounded-2xl border transition-all duration-300',
+                  isConnected
+                    ? 'bg-emerald-500/[0.04] border-emerald-500/20 hover:bg-emerald-500/[0.06]'
+                    : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700/60 hover:bg-zinc-900/60',
                 )}
-              </AnimatePresence>
-            </div>
-          );
-        })}
+              >
+                {/* Icon */}
+                <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 shadow-sm">
+                  {info.Icon
+                    ? <info.Icon className="w-5.5 h-5.5" />
+                    : <span className="text-[12px] font-bold text-zinc-400">{info.label[0]}</span>
+                  }
+                </div>
+
+                {/* Label + description */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13.5px] font-semibold text-zinc-200 leading-tight mb-0.5">{info.label}</p>
+                  <p className="text-[11.5px] text-zinc-500 truncate font-light">{info.description}</p>
+                </div>
+
+                {/* Status / connect */}
+                <AnimatePresence mode="wait" initial={false}>
+                  {isConnected ? (
+                    <motion.div
+                      key="connected"
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                      transition={{ type: 'spring', damping: 18, stiffness: 320 }}
+                      className="flex items-center gap-1.5 text-emerald-400 shrink-0 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span className="text-[11px] font-bold tracking-tight">Connected</span>
+                    </motion.div>
+                  ) : (
+                    <motion.button
+                      key="connect"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => connectIntegration(id)}
+                      disabled={isConnecting}
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 disabled:opacity-60 shadow-lg shadow-black/25"
+                    >
+                      {isConnecting ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : lastFailedId === id ? (
+                        <RefreshCw className="w-3 h-3" />
+                      ) : (
+                        <ArrowRight className="w-3 h-3" />
+                      )}
+                      {isConnecting ? 'Connecting…' : lastFailedId === id ? 'Retry' : 'Connect'}
+                    </motion.button>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
 
         <AnimatePresence>
           {error && (
@@ -370,43 +378,45 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
-              className="flex items-start gap-2 mt-1 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20"
+              className="flex items-start gap-2.5 mt-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20"
             >
-              <AlertTriangle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-[12px] text-red-300 leading-snug">{error}</p>
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <p className="text-[12px] text-red-300 leading-relaxed">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-white/[0.06] flex flex-col items-end gap-2">
+      <div className="px-6 py-4 border-t border-zinc-200/10 bg-zinc-950/20 flex flex-col items-center gap-3">
         <button
           onClick={() => createAgent(false)}
           disabled={!allConnected || isCreating}
           className={cn(
-            'flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all w-full justify-center',
+            'flex items-center gap-2 px-6 py-3 rounded-2xl text-[13px] font-extrabold tracking-wide transition-all w-full justify-center shadow-lg',
             allConnected && !isCreating
-              ? 'bg-emerald-500 hover:bg-emerald-400 text-white shadow-[0_0_16px_rgba(52,211,153,0.3)]'
-              : 'bg-white/[0.05] text-arcus-fg-muted cursor-not-allowed',
+              ? 'bg-white text-black hover:bg-zinc-100 hover:scale-[1.01] active:scale-[0.99] shadow-white/5'
+              : 'bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed',
           )}
         >
           {isCreating ? (
-            <><RefreshCw className="w-3 h-3 animate-spin" /> Creating…</>
+            <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Creating Agent…</>
           ) : (
-            <><Zap className="w-3 h-3" /> Create Agent</>
+            <><Zap className="w-3.5 h-3.5 fill-current" /> Create Agent</>
           )}
         </button>
         <button
           onClick={() => createAgent(true)}
           disabled={isCreating}
-          className="text-[11px] text-arcus-fg-muted hover:text-arcus-fg-tertiary transition-colors disabled:opacity-40"
+          className="text-[11.5px] text-zinc-500 hover:text-zinc-300 transition-colors font-medium"
         >
           Create without connecting (agent may fail)
         </button>
       </div>
 
-      <WaitingIndicator />
+       <div className="border-t border-zinc-200/5 bg-zinc-950/40 py-2.5 flex justify-center">
+        <WaitingIndicator />
+      </div>
     </motion.div>
   );
 }
