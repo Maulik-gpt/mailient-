@@ -410,7 +410,7 @@ export function LinearLanding() {
             >
               <video 
                 ref={videoRef}
-                src="/cap.mp4" 
+                src="/founder-demo.mp4" 
                 autoPlay 
                 loop 
                 muted={isMuted} 
