@@ -747,13 +747,35 @@ export function ConnectorsModal({
                     Coming soon
                   </button>
                 ) : selectedApp.id === 'cal_com' ? (
-                  <div className="w-full flex flex-col gap-2.5">
+                  <div className="w-full flex flex-col gap-3">
+                    {/* Step 1 — one click straight to the right page */}
+                    <a
+                      href="https://app.cal.com/settings/developer/api-keys?createKey=Mailient"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cn(
+                        "w-full py-3.5 rounded-2xl font-bold text-[14px] flex items-center justify-center gap-2 transition-all active:scale-95 border",
+                        isDark
+                          ? "bg-white/[0.06] text-white hover:bg-white/[0.1] border-white/10"
+                          : "bg-black/[0.04] text-neutral-900 hover:bg-black/[0.07] border-black/10"
+                      )}
+                    >
+                      <ExternalLink className="w-4 h-4" /> Open Cal.com → create your key
+                    </a>
+
+                    {/* The 3 steps, spelled out so there's nothing to figure out */}
+                    <ol className={cn("text-[12.5px] leading-relaxed list-decimal pl-5 space-y-1", isDark ? "text-white/55" : "text-neutral-600")}>
+                      <li>On the page that opens, click <span className="font-semibold">+ Add</span> → name it <span className="font-semibold">Mailient</span> → <span className="font-semibold">Save</span>.</li>
+                      <li>Copy the key it shows (starts with <span className="font-mono">cal_</span>).</li>
+                      <li>Paste it below and hit Connect.</li>
+                    </ol>
+
                     <input
                       type="password"
                       value={calcomKey}
                       onChange={(e) => setCalcomKey(e.target.value)}
                       onKeyDown={(e) => { if (e.key === 'Enter') connectCalcom(); }}
-                      placeholder="Paste your Cal.com API key (cal_...)"
+                      placeholder="Paste your key (cal_…)"
                       className={cn(
                         "w-full px-4 py-3.5 rounded-2xl border text-[14px] font-medium focus:outline-none transition-all",
                         isDark
@@ -769,16 +791,8 @@ export function ConnectorsModal({
                         isDark ? "bg-white text-black hover:bg-white/90" : "bg-neutral-950 text-white hover:bg-neutral-800"
                       )}
                     >
-                      {calcomConnecting ? 'Connecting…' : <><Zap className={cn("w-4 h-4", isDark ? "fill-black" : "fill-white")} /> Connect</>}
+                      {calcomConnecting ? 'Connecting…' : <><Zap className={cn("w-4 h-4", isDark ? "fill-black" : "fill-white")} /> Connect Cal.com</>}
                     </button>
-                    <a
-                      href="https://app.cal.com/settings/developer/api-keys"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cn("text-center text-[12px] font-medium underline-offset-2 hover:underline", isDark ? "text-white/40" : "text-neutral-500")}
-                    >
-                      Where do I find my API key?
-                    </a>
                   </div>
                 ) : (
                   <button
