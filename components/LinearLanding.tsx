@@ -224,7 +224,7 @@ export function LinearLanding() {
   // (02 — Drafts in your voice) holds for the FULL length of its video clip
   // (public/demos/voice-demo.mp4 ≈ 11.73s) instead of being cut off mid-clip.
   // If the demo clip is ever replaced, update STEP_DURATIONS[1] to its length.
-  const STEP_DURATIONS = [10000, 11733, 10000]; // ms — [Sift, Voice demo, Sleep]
+  const STEP_DURATIONS = [10000, 11733, 20250]; // ms — [Home Feed, Voice demo (clip), Scheduling-agent demo (clip)]
   useEffect(() => {
     const timer = setTimeout(() => {
       setActiveStep((prev) => (prev + 1) % 3);
@@ -738,46 +738,19 @@ export function LinearLanding() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.4 }}
-                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                  className="absolute inset-0 z-10 bg-[#050505]"
                 >
-                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
-                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">new-agent</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">READY TO DEPLOY</span>
-                  </div>
-
-                  <div className="my-6 space-y-4">
-                    {/* The plain-English job */}
-                    <div>
-                      <span className="text-[10px] text-neutral-500">WHAT SHOULD ARCUS DO?</span>
-                      <div className="mt-1.5 bg-black/40 border border-white/[0.06] rounded-xl p-3.5 text-xs text-neutral-300 font-sans leading-relaxed">
-                        Every morning, sweep my inbox, draft replies to anything from a client in my voice, and send me a briefing of what needs me.
-                      </div>
-                    </div>
-
-                    {/* Schedule chips */}
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] text-neutral-500 mr-1">RUNS</span>
-                      <span className="text-[10px] font-bold text-black bg-white rounded-lg px-2.5 py-1">Every day</span>
-                      <span className="text-[10px] text-neutral-400 bg-white/[0.05] border border-white/10 rounded-lg px-2.5 py-1">Weekdays</span>
-                      <span className="text-[10px] text-neutral-400 bg-white/[0.05] border border-white/10 rounded-lg px-2.5 py-1">Weekly</span>
-                      <span className="ml-auto text-[10px] text-emerald-400 font-mono">07:00 AM</span>
-                    </div>
-
-                    {/* Deliver to */}
-                    <div className="flex items-center justify-between text-[10px] text-neutral-500 pt-3 border-t border-white/[0.04]">
-                      <span>DELIVER REPORT TO</span>
-                      <span className="text-neutral-300">Gmail + Slack</span>
-                    </div>
-                  </div>
-
-                  <div className="w-full text-center text-[11px] font-bold text-black bg-white rounded-xl py-2.5">
-                    Deploy agent →
-                  </div>
+                  {/* Live demo — creating a background scheduling agent in plain English */}
+                  <video
+                    src="/demos/agent-demo.mp4"
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-label="Creating a background scheduling agent in plain English"
+                    className="w-full h-full object-cover"
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
