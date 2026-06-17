@@ -1922,19 +1922,20 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             continue;
           }
 
-          // ── Case 2a: Intent text without tools — nudge ────────────────────
-          if (totalToolCalls === 0 && nudgeCount < MAX_NUDGES && isIntentText(textContent)) {
+          // ── Case 2a: Plan/intent text as the answer — nudge to EXECUTE ─────
+          // Fires whether or not tools already ran. The failure mode: the model
+          // does a couple of searches, then writes a forward-looking PLAN ("Here's
+          // the plan: I'll pull… What I'll do: fetch the bodies…") and stops,
+          // instead of actually doing the rest and reporting what it did. A plan
+          // is never a valid final answer — push it to finish the work.
+          if (nudgeCount < MAX_NUDGES && isIntentText(textContent)) {
             nudgeCount++;
             forceNextToolCall = true;
             emit('thinking', { status: 'Working on it…' });
-            // Progressively more forceful nudges
             const nudgeMessages = [
-              // Nudge 1: Direct instruction
-              'Do NOT describe what you will do. Call the actual tools RIGHT NOW to complete this task. Use the tools available to you.',
-              // Nudge 2: Emphatic with specific instruction
-              'STOP narrating. You must call the tools immediately — search_gmail, open_canvas, create_scheduled_agent, draft_reply, schedule_meeting, or whatever tools are needed. Execute the action, do not describe it.',
-              // Nudge 3: Final warning with available tools listed
-              `FINAL WARNING: You are narrating actions instead of performing them. You MUST call at least one tool function now. Available tools: ${availableTools.map(t => t.name).join(', ')}. Pick the right one and call it with the correct parameters. Do NOT respond with text.`,
+              'You wrote a PLAN of what you will do — that is not the answer. Do NOT describe future steps. Call the actual tools RIGHT NOW to finish the work you just described (fetch the bodies, run the analysis, draft, etc.), then report what you actually found.',
+              'STOP describing. Execute the plan you wrote: call the tools immediately (gmail_bulk_read_threads, read_email, draft_reply, etc.) to complete every step, then write your final report in PAST tense — what you found, not what you will do.',
+              `FINAL WARNING: you keep narrating a plan instead of doing it. You MUST call at least one tool now to finish the task. Available tools: ${availableTools.map(t => t.name).join(', ')}. After the tools run, report what you DID — never "I'll" or "here's the plan".`,
             ];
             messages.push({
               role: 'user',
