@@ -806,19 +806,32 @@ function CreateModal({ onClose, onSave, initial }: {
 
         <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-transparent">
           <style dangerouslySetInnerHTML={{ __html: `
+            .custom-scroll {
+              scrollbar-width: thin;
+              scrollbar-color: rgba(161,161,170,0.35) transparent;
+            }
+            .dark .custom-scroll {
+              scrollbar-color: rgba(63,63,70,0.4) transparent;
+            }
             .custom-scroll::-webkit-scrollbar {
-              width: 6px;
-              height: 6px;
+              width: 5px;
+              height: 5px;
             }
             .custom-scroll::-webkit-scrollbar-track {
               background: transparent;
             }
             .custom-scroll::-webkit-scrollbar-thumb {
-              background: rgba(63, 63, 70, 0.4);
+              background: rgba(161,161,170,0.35);
               border-radius: 9999px;
             }
             .custom-scroll::-webkit-scrollbar-thumb:hover {
-              background: rgba(82, 82, 91, 0.6);
+              background: rgba(113,113,122,0.5);
+            }
+            .dark .custom-scroll::-webkit-scrollbar-thumb {
+              background: rgba(63,63,70,0.4);
+            }
+            .dark .custom-scroll::-webkit-scrollbar-thumb:hover {
+              background: rgba(82,82,91,0.6);
             }
           `}} />
 
@@ -862,8 +875,8 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'px-3.5 py-1.5 rounded-lg text-[13px] font-bold transition-all border',
                         patternKey === p.key
-                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
-                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
+                          ? 'bg-black text-white border-black dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {p.label}
@@ -886,7 +899,7 @@ function CreateModal({ onClose, onSave, initial }: {
                       </div>
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                      <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-555 mb-1.5">Time <span className="font-normal text-zinc-550 dark:text-zinc-600">({browserTz})</span></label>
+                      <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5">Time <span className="font-normal text-zinc-500 dark:text-zinc-600">({browserTz})</span></label>
                       <PremiumTimePicker
                         value={scheduleTime}
                         onChange={setScheduleTime}
@@ -902,7 +915,7 @@ function CreateModal({ onClose, onSave, initial }: {
                       value={customCron}
                       onChange={e => setCustomCron(e.target.value)}
                       placeholder="e.g. 0 9 * * 1-5"
-                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 font-mono placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
+                      className="w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 font-mono placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                     />
                   </div>
                 )}
@@ -927,8 +940,8 @@ function CreateModal({ onClose, onSave, initial }: {
                       className={cn(
                         'flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-[14px] font-bold border transition-all',
                         channel === ch
-                          ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
-                          : 'bg-zinc-50 border-zinc-200 text-zinc-655 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
+                          ? 'bg-black text-white border-black dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-200 text-zinc-600 hover:border-zinc-300 hover:text-zinc-900 dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-400 dark:hover:border-zinc-700 dark:hover:text-zinc-200',
                       )}
                     >
                       {ch === 'gmail' && <Mail className="w-3.5 h-3.5" />}
@@ -943,7 +956,7 @@ function CreateModal({ onClose, onSave, initial }: {
                     value={slackCh}
                     onChange={e => setSlackCh(e.target.value)}
                     placeholder="Slack channel (e.g. #reports)"
-                    className="mt-3 w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-655 dark:focus:border-zinc-700"
+                    className="mt-3 w-full bg-zinc-50 border border-zinc-200 rounded-xl px-4 py-3 text-[14px] text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:border-zinc-400 transition-all dark:bg-[#121214] dark:border-[#242427] dark:text-zinc-100 dark:placeholder:text-zinc-500 dark:focus:border-zinc-700"
                   />
                 )}
               </div>
@@ -985,7 +998,7 @@ function CreateModal({ onClose, onSave, initial }: {
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-zinc-900 hover:bg-zinc-950 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-black hover:bg-zinc-900 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}

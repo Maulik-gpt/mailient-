@@ -649,19 +649,32 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
 
         <div className="px-8 py-6 overflow-y-auto custom-scroll flex-1 bg-transparent">
           <style dangerouslySetInnerHTML={{ __html: `
+            .custom-scroll {
+              scrollbar-width: thin;
+              scrollbar-color: rgba(161,161,170,0.35) transparent;
+            }
+            .dark .custom-scroll {
+              scrollbar-color: rgba(63,63,70,0.4) transparent;
+            }
             .custom-scroll::-webkit-scrollbar {
-              width: 6px;
-              height: 6px;
+              width: 5px;
+              height: 5px;
             }
             .custom-scroll::-webkit-scrollbar-track {
               background: transparent;
             }
             .custom-scroll::-webkit-scrollbar-thumb {
-              background: rgba(63, 63, 70, 0.4);
+              background: rgba(161,161,170,0.35);
               border-radius: 9999px;
             }
             .custom-scroll::-webkit-scrollbar-thumb:hover {
-              background: rgba(82, 82, 91, 0.6);
+              background: rgba(113,113,122,0.5);
+            }
+            .dark .custom-scroll::-webkit-scrollbar-thumb {
+              background: rgba(63,63,70,0.4);
+            }
+            .dark .custom-scroll::-webkit-scrollbar-thumb:hover {
+              background: rgba(82,82,91,0.6);
             }
           `}} />
 
@@ -828,7 +841,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-zinc-900 hover:bg-zinc-950 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-black hover:bg-zinc-900 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
