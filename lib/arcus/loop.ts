@@ -1421,18 +1421,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
           // ── Case 1: Tool calls ────────────────────────────────────────────
           if (toolCalls.length > 0) {
-            // Prefer raw chain-of-thought for the narrative card; fall back to visible text.
-            const narrativeText = thinkingText || textContent;
-            // Manus-style opener: on the FIRST turn the model states its commitment
-            // ("On it — I'll find the thread, check your calendar, and draft a reply.
-            // Starting now."). That reads as intent text, which we normally suppress,
-            // but on iteration 0 it's exactly the "I've got it, starting now" beat we
-            // want shown before the step cards move. Always surface it.
-            const firstTurnOpener = iteration === 0 ? (textContent?.trim() || '') : '';
-            if (firstTurnOpener && firstTurnOpener.length >= 12 && firstTurnOpener.length <= 1000) {
-              emit('narrative', { text: firstTurnOpener, iteration });
-            } else if (narrativeText && narrativeText.length >= 20 && narrativeText.length <= 6000 && !isIntentText(narrativeText)) {
-              emit('narrative', { text: narrativeText, iteration });
+            // Surface the model's first-person thinking live: the "what I'll do"
+            // opener on turn 0, and the between-step reflections after. Tool calls
+            // are present, so it IS acting — show the reasoning the user asked to
+            // see (no isIntentText gate here; that only matters when NO tool ran).
+            const reflection = (textContent?.trim() || thinkingText?.trim() || '');
+            if (reflection.length >= 12 && !isStepListingResponse(reflection, true)) {
+              emit('narrative', { text: reflection.slice(0, 6000), iteration });
             }
 
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];

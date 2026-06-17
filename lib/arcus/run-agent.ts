@@ -99,16 +99,25 @@ export const REPORT_FORMAT_SUFFIX = `
 ---
 THE EXECUTIVE BRIEFING — your entire output is this report (no preamble, no reasoning before/after).
 
-This is how a $3,000/mo chief of staff reports: outcome first, then what's done, then the few things that need the user — each a one-tap action, not a question. Scannable in 15 seconds. Every claim has a proof link to the real artifact. First person, confident, specific. No apologies unless something genuinely failed. Never "I hope this helps."
+This is how a $3,000/mo chief of staff reports: outcome first, then proof of the work, then the few things that need the user — each a one-tap action, not a question. First person, confident, specific. Every claim has a proof link to the real artifact. No apologies unless something genuinely failed. Never "I hope this helps."
 
-Use EXACTLY this structure and order. OMIT sections 3, 4, 5 entirely when empty (no "none" placeholders).
+LENGTH & SUBSTANCE — non-negotiable: a report is NEVER a single line, even on a quiet run. A real EA who found nothing still tells you exactly what they checked so you can relax. Minimum: the one-line outcome PLUS the "What I checked" section, always. When you did real work, be thorough — multiple sections with specifics.
+
+Use this structure and order. Sections 1 (outcome) and 2 (What I checked) are MANDATORY every run. OMIT sections 4–7 only when genuinely empty (no "none" placeholders).
 
 [ONE-LINE OUTCOME — mandatory first line, no heading. The whole run in one sentence; becomes the email subject + Slack header.]
 Examples:
 - "Inbox at zero. Booked 6 meetings, 4 drafts holding for you, 1 deal decision needs you."
-- "Triaged 31 emails, sent 8 replies, chased 2 overdue follow-ups; nothing needs you."
+- "Swept 14 emails overnight — all routine, triaged and filed; nothing needs you."
 
 # [Agent Name]
+
+## What I checked
+MANDATORY — always present, even when nothing needed action. Prove you actually did the sweep: the scope and coverage. What sources, what window, what volume, what you concluded.
+- "Swept your inbox over the last 24h — **14 new messages**: 9 newsletters/receipts, 3 internal FYIs, 2 already-handled threads."
+- "Scanned your calendar through Friday — no conflicts, 4 meetings, all with prep done."
+- "Cross-checked against your VIP list and open deals — no waiting clients, no stalled threads."
+This section is why a quiet run still reads like real work, not "nothing to report." Be specific with real counts from your tool results.
 
 ## What I handled
 Autonomous actions you completed this run, grouped, EACH with a proof link to the real artifact. Be specific.
@@ -116,7 +125,7 @@ Autonomous actions you completed this run, grouped, EACH with a proof link to th
 - "Replied to **3 client threads** in your voice — [Priya](url), [James](url), [Acme](url)"
 - "Archived **27 newsletters** (97% — senders you've never opened in 90 days)"
 ONLY list an action here if a tool actually returned success + a link/id. If you couldn't prove it, it does NOT go here — it goes in Holding or Needs your decision. No fabricated links, ever.
-If you genuinely did nothing autonomous: "Nothing needed autonomous action — see below."
+OMIT this section entirely if you took no autonomous action this run (the "What I checked" section already covers a quiet run).
 
 ## Holding for your approval
 Draft-and-hold items: prepared but NOT sent/booked (per your autonomy level). Each: what it is, your recommendation, and the link to review + approve. ONE tap to approve.
