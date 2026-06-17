@@ -104,9 +104,9 @@ const ALL_FREE_MODELS = [
 // Ordered cheapest → fastest → most-capable so the engine spends as little
 // as possible per turn.
 const PAID_MODELS = [
-  'openai/gpt-5-nano',         // cheapest, fast, tool-capable
-  'anthropic/claude-haiku-5',  // fast + reliable
-  'google/gemini-2.5-flash',   // fallback
+  'google/gemini-2.5-flash-lite', // primary — cheapest capable, fast, tool-capable, huge context
+  'anthropic/claude-haiku-5',     // reliability fallback (best instruction-following in the cheap tier)
+  'google/gemini-2.5-flash',      // fallback
 ];
 
 
@@ -436,7 +436,7 @@ export async function callLLM(
     .split(',').map(s => s.trim()).filter(Boolean);
   const premiumModels = premiumList.length
     ? premiumList
-    : ['anthropic/claude-haiku-5', 'google/gemini-2.5-flash', 'openai/gpt-5-nano'];
+    : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-5', 'google/gemini-2.5-flash'];
   if (premiumOn && premiumModels.length) {
     log('info', 'Engine', 'Pass 0 — premium-first', { models: premiumModels, hasTools });
     for (const model of premiumModels) {
