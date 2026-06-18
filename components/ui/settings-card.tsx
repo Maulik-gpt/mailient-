@@ -550,37 +550,6 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                     className="space-y-8"
                                 >
                                     <div className="space-y-4">
-                                        <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">Display & Notifications</h2>
-                                        <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-8 md:p-10 border border-neutral-200 dark:border-white/5 space-y-8">
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <Bell className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-black dark:text-white">Desktop Notifications</span>
-                                                </div>
-                                                <ToggleSwitch checked={settings.notifications} onChange={(v) => updateSetting('notifications', v)} />
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <Volume2 className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-black dark:text-white">Email Sound Effects</span>
-                                                </div>
-                                                <ToggleSwitch checked={settings.soundEffects} onChange={(v) => updateSetting('soundEffects', v)} />
-                                            </div>
-                                            <div className="h-px bg-neutral-50 dark:bg-white/5" />
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <Monitor className="w-4 h-4 text-neutral-500 dark:text-neutral-400" />
-                                                    <span className="text-[15px] font-medium text-black dark:text-white">Compact UI Mode</span>
-                                                </div>
-                                                <ToggleSwitch checked={settings.compactMode} onChange={(v) => updateSetting('compactMode', v)} />
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-
-                                    <div className="space-y-4">
                                         <h2 className="text-[13px] font-bold tracking-tight text-neutral-500 dark:text-neutral-400 px-1">Keyboard Shortcuts</h2>
                                         <div className="bg-neutral-50 dark:bg-white/5 rounded-[2.5rem] p-6 border border-neutral-200 dark:border-white/5">
                                             <div className="flex items-center gap-2 mb-5">
