@@ -4,11 +4,15 @@ export async function middleware(request) {
   const { pathname } = request.nextUrl;
   const ref = request.nextUrl.searchParams.get('ref');
 
-  // Redirect authenticated users away from the landing page to the app
+  // Redirect authenticated users away from the landing page to the app.
+  // The session JWT carries Gmail tokens, so it often exceeds 4KB and gets
+  // SPLIT into chunked cookies (`…session-token.0`, `.1`). Matching the exact
+  // name missed those, leaving signed-in users stranded on the landing and the
+  // "Sign in" button looping. Match the base name with an optional `.N` chunk.
   if (pathname === '/') {
-    const sessionToken =
-      request.cookies.get('next-auth.session-token')?.value ||
-      request.cookies.get('__Secure-next-auth.session-token')?.value;
+    const sessionToken = request.cookies.getAll().some(
+      (c) => /^(__Secure-)?next-auth\.session-token(\.\d+)?$/.test(c.name) && !!c.value,
+    );
 
     if (sessionToken) {
       const url = request.nextUrl.clone();

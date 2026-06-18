@@ -86,9 +86,9 @@ function SignInContent() {
       return;
     }
 
-    // Redirect directly to Tally form to capture the Gmail address for test mode
-    const tallyUrl = `https://tally.so/r/b5KpB6?email=${encodeURIComponent(trimmed)}`;
-    window.location.href = tallyUrl;
+    // Continue → start the real Google sign-in (lands on /onboarding). The old
+    // Tally waitlist redirect was a pre-launch gate and is gone now.
+    handleGoogleSignIn();
   };
 
   const handleGoogleSignIn = async () => {
