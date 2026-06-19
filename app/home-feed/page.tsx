@@ -159,34 +159,24 @@ function HomeFeedContent() {
                 continue; // Next attempt
               }
 
-              // CASE 3: FINAL STATE (Either access granted or access denied after retries)
-              if (isActive || planType === 'free' || planType === 'starter' || planType === 'pro') {
+              // CASE 3 — STRICT ACCESS: the app is paid-only. Access requires an
+              // ACTIVE subscription (paid OR free-trial 'trialing' — both come from
+              // a completed Polar checkout). There is NO free tier: planType 'free'
+              // never grants access on its own.
+              if (isActive && !isExpired) {
                 localStorage.setItem('onboarding_completed', 'true');
-                
-                if (isExpired) {
-                    // Access technically granted by logic but subscription expired
-                    if (!justPaid) {
-                        setShowPricing(true);
-                    } else {
-                        // We just paid but reached timeout
-                        setIsVerifyingPayment(false);
-                        setShowPricing(true);
-                    }
-                } else {
-                    // Valid active plan (e.g. newly upgraded)
-                    setIsVerifyingPayment(false);
-                    setShowPricing(false);
-                }
+                setIsVerifyingPayment(false);
+                setShowPricing(false);
                 return; // Access allowed, stop polling
               }
 
-              // CASE 4: NO SUBSCRIPTION FOUND (Even for free fallback)
-              // If we reached here, something is wrong or onboarding is needed
+              // CASE 4 — not subscribed (free) OR expired → must subscribe. Finish
+              // onboarding first if it isn't done, otherwise send to the paywall.
               if (attempt === maxRetries - 1) {
                 setIsVerifyingPayment(false);
-                console.log('🚫 [HomeFeed] No access. Checking onboarding...');
-                const onboardingResp = await fetch("/api/onboarding/status");
-                const onboardingData = await onboardingResp.json();
+                console.log('🚫 [HomeFeed] No active subscription — paywall.');
+                const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
+                const onboardingData = onboardingResp && onboardingResp.ok ? await onboardingResp.json() : { completed: true };
                 if (!onboardingData.completed) {
                     router.push('/onboarding');
                 } else {

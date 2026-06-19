@@ -46,6 +46,19 @@ export async function GET(request) {
       ...(v3Rows || []).map(r => r.provider === 'gcal' ? 'google_calendar' : r.provider),
     ]);
 
+    // Gmail (and Calendar) are connected via the primary Google sign-in, whose
+    // tokens live in `user_tokens` — NOT integration_credentials. So derive their
+    // connected state from the granted Google scopes: if the user has a token row
+    // whose scopes include gmail/calendar, that integration was actually granted.
+    // This is why "I reconnected Gmail but it still shows disconnected" happened.
+    try {
+      const tokens = await db.getUserTokens(userEmail);
+      const scopes = String(tokens?.scopes || tokens?.scope || '');
+      const hasToken = !!(tokens?.access_token || tokens?.encrypted_access_token);
+      if (hasToken && /gmail/i.test(scopes)) connected.add('gmail');
+      if (hasToken && /calendar/i.test(scopes)) connected.add('google_calendar');
+    } catch { /* token table optional — fall back to the integration rows */ }
+
     // Derived connections
     if (connected.has('notion')) connected.add('notion_calendar');
     if (connected.has('google_calendar')) connected.add('google_meet');
