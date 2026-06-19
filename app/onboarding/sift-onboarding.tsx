@@ -373,7 +373,7 @@ export default function SiftOnboardingPage() {
               {step === 10 && <S10Notion connected={isConnected('notion')} onConnect={() => connectViaPopup('notion')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 11 && <S11Slack connected={isConnected('slack')} onConnect={() => connectViaPopup('slack')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 12 && <S12Agent spec={agentSpec} setSpec={setAgentSpec} created={createdAgent} setCreated={setCreatedAgent} onContinue={(c) => next(c ? { agent: c, agentSpec } : undefined)} onSkip={() => next()} />}
-              {step === 13 && <S13Plan firstName={firstName} plan={planChoice} onChoose={(p) => { setPlanChoice(p); next({ plan: p }); }} />}
+              {step === 13 && <S13Plan firstName={firstName} plan={planChoice} onChoose={(p) => { setPlanChoice(p); next({ plan: p }); }} onSkip={() => { setPlanChoice(null); next(); }} />}
               {step === 14 && <S14Notifications time={briefTime} setTime={setBriefTime} channel={briefChannel} setChannel={setBriefChannel} hasSlack={isConnected('slack')} agent={createdAgent} onUpdate={setCreatedAgent} onContinue={() => next({ briefTime, briefChannel })} />}
               {step === 15 && <S15Done firstName={firstName} agent={createdAgent} scan={scan} briefTime={briefTime} briefChannel={briefChannel} plan={planChoice} onFinish={completeOnboarding} />}
             </motion.div>
@@ -1458,7 +1458,7 @@ const PLAN_PRICING: Record<PlanChoice, { label: string; price: string; unit: str
   lifetime: { label: 'Lifetime', price: '$499',    unit: ' once',        sub: 'Pay once. Yours forever.',  badge: 'Best value' },
 };
 
-function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanChoice | null; onChoose: (p: PlanChoice) => void }) {
+function S13Plan({ firstName, plan, onChoose, onSkip }: { firstName: string; plan: PlanChoice | null; onChoose: (p: PlanChoice) => void; onSkip: () => void }) {
   const [selected, setSelected] = useState<PlanChoice>(plan || 'annual');
   const p = PLAN_PRICING[selected];
   return (
@@ -1514,6 +1514,10 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
       <p className="text-center text-[12.5px] text-[#0A0A0A]/45 mt-6 max-w-sm mx-auto leading-relaxed">
         30 days, money back, from me directly. — Maulik
       </p>
+
+      <div className="mt-5 flex justify-center">
+        <SkipLink onClick={onSkip}>Skip for now — explore first</SkipLink>
+      </div>
     </div>
   );
 }
