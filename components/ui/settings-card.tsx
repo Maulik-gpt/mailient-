@@ -165,6 +165,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
     const isPro = subscriptionData?.planType?.toLowerCase() === 'pro';
     const isStarter = subscriptionData?.planType?.toLowerCase() === 'starter';
     const isFree = !isPro && !isStarter;
+    const isTrial = !!(subscriptionData?.isTrialing || subscriptionData?.status === 'trialing');
 
     useEffect(() => {
         const fetchSubscription = async () => {
@@ -921,13 +922,20 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="space-y-1.5">
                                                     <p className="text-[10px] text-neutral-500 dark:text-neutral-500 font-bold uppercase tracking-widest">Current Plan</p>
-                                                    <h3 className="text-3xl font-serif text-black dark:text-white">{planLabel}</h3>
+                                                    <div className="flex items-center gap-2.5">
+                                                        <h3 className="text-3xl font-serif text-black dark:text-white">{planLabel}</h3>
+                                                        {isTrial && !isExpired && (
+                                                            <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-full border border-emerald-500/20">Free trial</span>
+                                                        )}
+                                                    </div>
                                                     <div className="flex items-center gap-2 pt-1">
                                                         <div className={`w-1.5 h-1.5 rounded-full ${isActive && !isExpired ? 'bg-emerald-500' : isExpired ? 'bg-red-500' : 'bg-neutral-400'}`} />
                                                         <span className="text-[13px] text-neutral-500 dark:text-neutral-400">
-                                                            {isExpired ? 'Expired' : isActive ? 'Active' : 'Inactive'}
+                                                            {isExpired ? 'Expired' : isTrial ? 'Trialing' : isActive ? 'Active' : 'Inactive'}
                                                             {!isFree && subscriptionData?.subscriptionEndsAt && !isExpired && (
-                                                                <> · Renews {new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
+                                                                isTrial
+                                                                    ? <> · Free until {new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}, then $29/mo</>
+                                                                    : <> · Renews {new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</>
                                                             )}
                                                         </span>
                                                     </div>
@@ -1072,18 +1080,24 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                     <div className="bg-red-500/5 border border-red-500/10 rounded-[16px] p-6 space-y-3">
                                                         <div className="flex items-center gap-3 text-red-500">
                                                             <AlertCircle className="w-4 h-4" />
-                                                            <h4 className="text-[15px] font-semibold">Cancel Subscription</h4>
+                                                            <h4 className="text-[15px] font-semibold">{isTrial ? 'Cancel free trial' : 'Cancel Subscription'}</h4>
                                                         </div>
                                                         <p className="text-[13px] text-neutral-500 dark:text-neutral-400 leading-relaxed">
-                                                            You'll keep {isPro ? 'Pro' : 'Starter'} access until{' '}
-                                                            <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'end of period'}</strong>.
+                                                            {isTrial ? (
+                                                                <>You won't be charged. Cancel before{' '}
+                                                                <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'your trial ends'}</strong>{' '}
+                                                                to avoid the $29/mo charge. You keep Pro until then.</>
+                                                            ) : (
+                                                                <>You'll keep {isPro ? 'Pro' : 'Starter'} access until{' '}
+                                                                <strong>{subscriptionData?.subscriptionEndsAt ? new Date(subscriptionData.subscriptionEndsAt).toLocaleDateString() : 'end of period'}</strong>.</>
+                                                            )}
                                                         </p>
                                                         <Button
                                                             onClick={() => setIsConfirmingCancel(true)}
                                                             variant="ghost"
                                                             className="bg-red-500/10 text-red-500 hover:bg-red-500/20 px-5 h-10 rounded-2xl font-medium flex items-center gap-2 text-[13px] transition-all"
                                                         >
-                                                            Cancel plan
+                                                            {isTrial ? 'Cancel free trial' : 'Cancel plan'}
                                                             <ArrowRight className="w-3.5 h-3.5" />
                                                         </Button>
                                                     </div>
@@ -1099,7 +1113,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                                 body: JSON.stringify({ reasons, feedback }),
                                                             });
                                                             if (response.ok) {
-                                                                toast.success('Subscription cancelled. Access remains valid until period end.');
+                                                                toast.success(isTrial ? "Free trial cancelled — you won't be charged. Pro stays active until your trial ends." : 'Subscription cancelled. Access remains valid until period end.');
                                                                 setIsConfirmingCancel(false);
                                                                 const refresh = await fetch('/api/subscription/usage');
                                                                 if (refresh.ok) setSubscriptionData(await refresh.json());

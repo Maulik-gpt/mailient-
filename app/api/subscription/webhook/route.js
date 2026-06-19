@@ -148,7 +148,9 @@ export async function POST(request) {
                     createdAt: data.created_at ? new Date(data.created_at).getTime() / 1000 : null,
                     validUntil: data.current_period_end ? new Date(data.current_period_end).getTime() / 1000 : null,
                     expiresAt: data.cancel_at ? new Date(data.cancel_at).getTime() / 1000 : null,
-                    isRenewal: eventType === 'subscription.updated'
+                    isRenewal: eventType === 'subscription.updated',
+                    // Free-trial subs come from Polar as status 'trialing'.
+                    isTrialing: data.status === 'trialing',
                 };
 
                 // Extract payment method details from Polar webhook data
