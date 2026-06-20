@@ -85,6 +85,17 @@ export default function PricingPage() {
       checkoutUrl = POLAR_CHECKOUT_URLS.lifetime;
     }
 
+    // After this checkout, land the user in the app — NOT back in onboarding.
+    // /payment-success reads mailient_checkout_return; set it explicitly to
+    // /home-feed so a stale onboarding value can't hijack the redirect. The
+    // pending_plan markers let /home-feed's just-paid poller wait for the webhook
+    // to activate the subscription before granting access.
+    try {
+      localStorage.setItem("mailient_checkout_return", "/home-feed");
+      localStorage.setItem("pending_plan", planId);
+      localStorage.setItem("pending_plan_timestamp", String(Date.now()));
+    } catch { /* localStorage unavailable — payment-success still defaults to /home-feed */ }
+
     const params = new URLSearchParams();
     if (session?.user?.email) params.set("email", session.user.email);
     const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://mailient.xyz";
