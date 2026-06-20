@@ -23,10 +23,13 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
-  // STRICT paywall: the feed never renders until a real paid/trial subscription
-  // is confirmed. Default false so unsubscribed users see only the checking
-  // screen, then get redirected — never the actual app behind a dismissible card.
-  const [accessGranted, setAccessGranted] = useState(false);
+  // STRICT paywall, but verified in the BACKGROUND so reloads don't flash a
+  // "checking" screen. Optimistic: render the app immediately (no gate) unless a
+  // recent check in this tab already found no paid/trial plan. The background
+  // check below confirms and redirects free users to /pricing.
+  const [accessGranted, setAccessGranted] = useState(() => {
+    try { return sessionStorage.getItem('mailient_access_denied') !== '1'; } catch { return true; }
+  });
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
@@ -171,6 +174,7 @@ function HomeFeedContent() {
               // trial plan from a completed Polar checkout. No free tier.
               if (isPaidPlan && !isExpired) {
                 localStorage.setItem('onboarding_completed', 'true');
+                try { sessionStorage.removeItem('mailient_access_denied'); } catch {}
                 setIsVerifyingPayment(false);
                 setShowPricing(false);
                 setAccessGranted(true);
@@ -181,6 +185,10 @@ function HomeFeedContent() {
               // onboarding first if it isn't done, otherwise send to the paywall.
               if (attempt === maxRetries - 1) {
                 setIsVerifyingPayment(false);
+                // Remember this tab is unsubscribed so the next reload redirects
+                // instantly instead of optimistically flashing the app.
+                try { sessionStorage.setItem('mailient_access_denied', '1'); } catch {}
+                setAccessGranted(false);
                 console.log('🚫 [HomeFeed] No active subscription — paywall.');
                 const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
                 const onboardingData = onboardingResp && onboardingResp.ok ? await onboardingResp.json() : { completed: true };
@@ -263,23 +271,15 @@ function HomeFeedContent() {
     router.push("/");
   };
 
-  // STRICT paywall gate — the app NEVER renders until a paid/trial subscription
-  // is confirmed (accessGranted). Until then, only a checking screen shows, and
-  // the effect above redirects unsubscribed users to /pricing. The just-paid
-  // verification overlay (isVerifyingPayment) is allowed through to the main
-  // render so it covers the screen with its activation animation.
+  // STRICT paywall, verified in the BACKGROUND. The check runs silently while
+  // the app renders optimistically — no visible "checking" screen on reload.
+  // We only reach this block when a prior check in THIS tab already found no
+  // paid/trial plan (accessGranted=false via the cached deny flag); the effect
+  // above is redirecting them to /pricing, so we render a plain backdrop — not a
+  // spinner/message — to avoid a flash before the redirect lands. The just-paid
+  // overlay (isVerifyingPayment) is always allowed through to the main render.
   if (!isVerifyingPayment && !accessGranted) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-arcus-bg text-arcus-fg">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative w-12 h-12">
-            <div className="w-12 h-12 border-2 border-arcus-border rounded-full" />
-            <div className="absolute inset-0 w-12 h-12 border-t-2 border-arcus-fg rounded-full animate-spin" />
-          </div>
-          <p className="text-[13px] text-arcus-fg-secondary">Checking your access…</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-arcus-bg" />;
   }
 
   return (
