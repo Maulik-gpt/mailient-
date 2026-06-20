@@ -22,12 +22,29 @@ const REQUIRED_TABLES = [
   'arcus_memories',
   'arcus_agent_runs',
   'arcus_agent_scratchpad',
+  'arcus_agents',
+  'arcus_delegation_rules',
 ] as const;
+
+// Columns that must exist or a feature silently no-ops. The triggers migration
+// (arcus_agents_triggers_v1.sql) adds these — without it, every agent defaults
+// to 'schedule' and event/condition/pipeline agents never fire, with no error.
+const REQUIRED_COLUMNS: { table: string; column: string; feature: string }[] = [
+  { table: 'arcus_agents', column: 'trigger_type', feature: 'reactive/event/pipeline triggers' },
+];
 
 type TableStatus = 'ok' | 'missing' | 'error';
 
 interface Probe {
   table: string;
+  status: TableStatus;
+  message?: string;
+}
+
+interface ColumnProbe {
+  table: string;
+  column: string;
+  feature: string;
   status: TableStatus;
   message?: string;
 }
@@ -58,17 +75,40 @@ async function probeTable(table: string): Promise<Probe> {
   }
 }
 
+async function probeColumn(table: string, column: string, feature: string): Promise<ColumnProbe> {
+  try {
+    const supabase = getSupabaseAdmin();
+    // Selecting a single column head-only fails if the column doesn't exist.
+    const { error } = await supabase.from(table).select(column, { head: true }).limit(1);
+    if (!error) return { table, column, feature, status: 'ok' };
+    const code = (error as any).code || '';
+    const msg = error.message || '';
+    if (code === '42703' || code === 'PGRST204' || /column .* does not exist|could not find the .* column/i.test(msg)) {
+      return { table, column, feature, status: 'missing', message: msg };
+    }
+    return { table, column, feature, status: 'error', message: msg };
+  } catch (err: any) {
+    return { table, column, feature, status: 'error', message: err?.message || 'probe failed' };
+  }
+}
+
 export async function GET() {
-  const probes = await Promise.all(REQUIRED_TABLES.map(probeTable));
+  const [probes, columnProbes] = await Promise.all([
+    Promise.all(REQUIRED_TABLES.map(probeTable)),
+    Promise.all(REQUIRED_COLUMNS.map(c => probeColumn(c.table, c.column, c.feature))),
+  ]);
   const missing = probes.filter(p => p.status === 'missing').map(p => p.table);
   const errored = probes.filter(p => p.status === 'error');
-  const allOk = missing.length === 0 && errored.length === 0;
+  const missingColumns = columnProbes.filter(c => c.status === 'missing');
+  const allOk = missing.length === 0 && errored.length === 0 && missingColumns.length === 0;
 
   return NextResponse.json({
     ok: allOk,
     missing,
     errored: errored.map(e => ({ table: e.table, message: e.message })),
+    missingColumns: missingColumns.map(c => ({ table: c.table, column: c.column, feature: c.feature })),
     probes,
+    columnProbes,
     checkedAt: new Date().toISOString(),
   }, {
     status: allOk ? 200 : 503,
