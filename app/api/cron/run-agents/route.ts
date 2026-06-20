@@ -188,9 +188,13 @@ export async function GET(request: NextRequest) {
     // hit this route every ~2 min. We stamp last_polled_at whether or not it
     // fires (fired → in the post-run state update; not-fired → batched below).
     if (triggerType === 'event' || triggerType === 'condition') {
+      // force_poll is set by the Gmail push webhook — a real-time signal that this
+      // mailbox just changed. It bypasses the debounce for ONE poll so a new email
+      // fires its agent in seconds instead of waiting out the debounce window.
+      const forcePoll = agent.agent_state?.force_poll === true;
       const debMin = Number(agent.trigger_config?.debounce_min) || 15;
       const lastPolled = agent.agent_state?.last_polled_at || agent.last_run_at;
-      if (lastPolled && (now.getTime() - new Date(lastPolled).getTime()) / 60000 < debMin) continue;
+      if (!forcePoll && lastPolled && (now.getTime() - new Date(lastPolled).getTime()) / 60000 < debMin) continue;
       let reactive;
       try { reactive = await checkEventAgents(agent); } catch { reactive = null; }
       if (!reactive?.shouldFire) {
@@ -220,7 +224,8 @@ export async function GET(request: NextRequest) {
     const polledAt = now.toISOString();
     await Promise.all(polledNotFired.map(a =>
       supabase.from('arcus_agents')
-        .update({ agent_state: { ...(a.agent_state || {}), last_polled_at: polledAt } })
+        // Clear force_poll too — the real-time nudge has now been serviced.
+        .update({ agent_state: { ...(a.agent_state || {}), last_polled_at: polledAt, force_poll: false } })
         .eq('id', a.id),
     ));
   }
@@ -417,6 +422,7 @@ export async function GET(request: NextRequest) {
             processed_event_ids: mergeProcessedIds(prior.processed_event_ids, agent._newProcessedIds),
             last_fired_at: completedAt.toISOString(),
             last_polled_at: completedAt.toISOString(),
+            force_poll: false, // real-time nudge serviced
           };
         }
         await supabase

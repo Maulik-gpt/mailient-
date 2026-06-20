@@ -10,6 +10,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { renewExpiredChannels } from '../../../../../../lib/arcus-v3/gcal-watch';
+import { renewGmailWatches } from '../../../../../../lib/arcus-v3/gmail-watch';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,8 +24,13 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const results = await renewExpiredChannels();
-    return NextResponse.json({ status: 'ok', ...results });
+    // GCal channels + Gmail watches (the latter no-ops unless GMAIL_PUBSUB_TOPIC
+    // is set). Gmail renewal also bootstraps watches for newly-connected mailboxes.
+    const [gcal, gmail] = await Promise.all([
+      renewExpiredChannels(),
+      renewGmailWatches(),
+    ]);
+    return NextResponse.json({ status: 'ok', gcal, gmail });
   } catch (error) {
     console.error('[Arcus V3] Channel renewal cron error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });

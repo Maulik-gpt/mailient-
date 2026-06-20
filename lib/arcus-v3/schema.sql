@@ -227,3 +227,6 @@ CREATE INDEX IF NOT EXISTS arcus_sched_due_idx ON arcus_scheduled_emails (status
 CREATE INDEX IF NOT EXISTS arcus_sched_user_idx ON arcus_scheduled_emails (user_id, status);
 CREATE UNIQUE INDEX IF NOT EXISTS arcus_sched_dedup_idx
   ON arcus_scheduled_emails (user_id, dedup_key) WHERE dedup_key IS NOT NULL;
+
+-- Gmail real-time push state (mirror of supabase/migrations/arcus_gmail_watch_v1.sql)
+ALTER TABLE arcus_integrations ADD COLUMN IF NOT EXISTS gmail_history_id TEXT;
