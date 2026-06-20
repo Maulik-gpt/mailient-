@@ -81,11 +81,13 @@ export function Footer() {
   const [email, setEmail] = React.useState("");
   const [submitted, setSubmitted] = React.useState(false);
   const [submitting, setSubmitting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !modalType) return;
     setSubmitting(true);
+    setError(null);
     try {
       const response = await fetch('/api/apply', {
         method: 'POST',
@@ -95,12 +97,12 @@ export function Footer() {
       if (response.ok) {
         setSubmitted(true);
       } else {
-        const err = await response.json();
-        alert(err.error || 'Failed to submit application. Please try again.');
+        const err = await response.json().catch(() => ({}));
+        setError(err.error || 'Something went wrong submitting your application. Please try again.');
       }
     } catch (err) {
       console.error('Error submitting application:', err);
-      alert('Failed to submit application. Please try again.');
+      setError('We couldn’t reach the server. Check your connection and try again.');
     } finally {
       setSubmitting(false);
     }
@@ -274,6 +276,11 @@ export function Footer() {
                     className="w-full rounded-2xl bg-white/[0.03] border border-white/5 px-5 py-3.5 text-[14px] text-white placeholder:text-white/25 focus:border-white/10 focus:outline-none transition-all leading-normal"
                   />
                 </div>
+                {error && (
+                  <p className="text-[13px] leading-relaxed text-red-400 font-sans" role="alert">
+                    {error}
+                  </p>
+                )}
                 <button
                   type="submit"
                   disabled={submitting}

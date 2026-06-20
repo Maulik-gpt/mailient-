@@ -1879,6 +1879,9 @@ export default function ChatInterface({
   const [chatTitle, setChatTitle] = useState<string>('');
   const [suggestionInput, setSuggestionInput] = useState<{ text: string; id: number } | undefined>(undefined);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState('');
+  const titleInputRef = useRef<HTMLInputElement>(null);
   const [isStarred, setIsStarred] = useState(false);
   const { resolvedTheme } = useTheme();
   const isDark = resolvedTheme === 'dark';
@@ -1894,6 +1897,35 @@ export default function ChatInterface({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Inline conversation rename (replaces the native prompt()). Focus + select the
+  // input the moment editing starts so the user can just type.
+  useEffect(() => {
+    if (isEditingTitle && titleInputRef.current) {
+      titleInputRef.current.focus();
+      titleInputRef.current.select();
+    }
+  }, [isEditingTitle]);
+
+  const commitTitle = () => {
+    const next = titleDraft.trim();
+    setIsEditingTitle(false);
+    if (!next || next === chatTitle) return;
+    setChatTitle(next);
+    if (currentConversationId) {
+      try {
+        localStorage.setItem(`conv_${currentConversationId}_title`, next);
+        const raw = localStorage.getItem(`conversation_${currentConversationId}`);
+        if (raw) {
+          const data = JSON.parse(raw);
+          data.title = next;
+          localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
+        }
+      } catch { /* localStorage/JSON best-effort — the in-memory title still updates */ }
+    }
+    toast.success('Conversation renamed');
+  };
+
   const [isIntegrationsModalOpen, setIsIntegrationsModalOpen] = useState<boolean>(false);
 
   // Auto-open the connectors modal when we land back from an OAuth redirect
@@ -4943,21 +4975,39 @@ export default function ChatInterface({
                         {!isInitialMode && (
                           <div className="relative" ref={titleMenuRef}>
                             <div className="flex items-center bg-arcus-surface border border-arcus-border rounded-xl overflow-hidden shadow-xl transition-all hover:border-arcus-divider group">
-                              <button
-                                onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                                className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
-                              >
-                                <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
-                                  {chatTitle || 'new conversation'}
-                                </span>
-                              </button>
-                              <div className="w-[1px] h-4 bg-white/[0.12]" />
-                              <button
-                                onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
-                                className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
-                              >
-                                <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
-                              </button>
+                              {isEditingTitle ? (
+                                <input
+                                  ref={titleInputRef}
+                                  value={titleDraft}
+                                  onChange={(e) => setTitleDraft(e.target.value)}
+                                  onBlur={commitTitle}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') { e.preventDefault(); commitTitle(); }
+                                    else if (e.key === 'Escape') { e.preventDefault(); setIsEditingTitle(false); }
+                                  }}
+                                  maxLength={120}
+                                  placeholder="conversation name"
+                                  className="pl-4 pr-3 py-2 bg-transparent text-[13px] font-bold text-black dark:text-white/90 tracking-tight lowercase outline-none w-[240px] placeholder:text-black/30 dark:placeholder:text-white/30"
+                                />
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                                    className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
+                                  >
+                                    <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
+                                      {chatTitle || 'new conversation'}
+                                    </span>
+                                  </button>
+                                  <div className="w-[1px] h-4 bg-white/[0.12]" />
+                                  <button
+                                    onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
+                                    className="px-3 py-2 hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors"
+                                  >
+                                    <ChevronDown className={`w-3.5 h-3.5 text-black dark:text-white/40 group-hover:text-black dark:group-hover:text-white/80 transition-transform duration-300 ease-out ${isTitleMenuOpen ? 'rotate-180' : ''}`} />
+                                  </button>
+                                </>
+                              )}
                             </div>
                           </div>
                         )}
@@ -4978,19 +5028,8 @@ export default function ChatInterface({
                             </button>
                             <button
                               onClick={() => {
-                                const newTitle = prompt('Rename conversation:', chatTitle);
-                                if (newTitle && newTitle !== chatTitle) {
-                                  setChatTitle(newTitle);
-                                  if (currentConversationId) {
-                                    localStorage.setItem(`conv_${currentConversationId}_title`, newTitle);
-                                    const raw = localStorage.getItem(`conversation_${currentConversationId}`);
-                                    if (raw) {
-                                      const data = JSON.parse(raw);
-                                      data.title = newTitle;
-                                      localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
-                                    }
-                                  }
-                                }
+                                setTitleDraft(chatTitle || '');
+                                setIsEditingTitle(true);
                                 setIsTitleMenuOpen(false);
                               }}
                               className="w-full px-3 py-2 text-left text-sm text-black hover:text-black dark:text-white hover:bg-black/[0.05] dark:bg-white/[0.05] transition-colors flex items-center gap-2.5"

@@ -132,6 +132,7 @@ export default function SharePage() {
   const [cloning, setCloning] = useState(false);
   const [revoking, setRevoking] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [showRevokeConfirm, setShowRevokeConfirm] = useState(false);
 
   useEffect(() => {
     const fetchSharedData = async () => {
@@ -195,10 +196,7 @@ export default function SharePage() {
   };
 
   const handleRevokeShare = async () => {
-    if (!confirm("Are you sure you want to revoke this shared link? Anyone else accessing it will instantly receive a link expired screen.")) {
-      return;
-    }
-
+    setShowRevokeConfirm(false);
     setRevoking(true);
     try {
       const res = await fetch(`/api/agent-talk/share/${id}`, {
@@ -341,7 +339,7 @@ export default function SharePage() {
           {/* Revoke share button ONLY visible to the creator/owner */}
           {isOwner && (
             <button
-              onClick={handleRevokeShare}
+              onClick={() => setShowRevokeConfirm(true)}
               disabled={revoking}
               className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 hover:bg-red-500/20 hover:border-red-500/40 text-red-400 text-[11.5px] font-bold transition-all active:scale-95 disabled:opacity-50"
               title="Unshare Link"
@@ -362,6 +360,44 @@ export default function SharePage() {
           )}
         </div>
       </nav>
+
+      {/* Revoke confirmation modal (replaces native confirm) */}
+      {showRevokeConfirm && (
+        <div
+          className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200"
+          onClick={() => setShowRevokeConfirm(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-2xl bg-[#0c0c0c] border border-white/10 p-6 shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 border border-red-500/25 flex items-center justify-center text-red-400 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <h2 className="text-[17px] font-bold text-white tracking-tight">Revoke this shared link?</h2>
+            </div>
+            <p className="text-[13.5px] leading-relaxed text-neutral-400 mb-6">
+              Anyone with the link will immediately see a “link expired” screen. This can’t be undone — you’d need to share the conversation again to create a new link.
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button
+                onClick={() => setShowRevokeConfirm(false)}
+                className="px-4 py-2 rounded-xl text-[13px] font-semibold text-neutral-300 hover:text-white hover:bg-white/[0.06] transition-all active:scale-95"
+              >
+                Keep link
+              </button>
+              <button
+                onClick={handleRevokeShare}
+                disabled={revoking}
+                className="px-4 py-2 rounded-xl bg-red-500/15 border border-red-500/30 hover:bg-red-500/25 text-red-300 text-[13px] font-bold transition-all active:scale-95 disabled:opacity-50"
+              >
+                {revoking ? 'Revoking…' : 'Revoke link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Conversation Stream */}
       <main className="max-w-4xl mx-auto pt-28 pb-44 px-6">
