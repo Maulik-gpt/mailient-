@@ -4,6 +4,18 @@
 > **Method:** Static audit of the live code paths (`lib/arcus/`, `app/api/cron/run-agents`, `app/api/arcus/*`, `app/api/email/*`, `lib/subscription-service.js`, `lib/calcom.js`, `lib/arcus-v3/`). Every claim cites a file/line. No runtime/DB state was inspected — items that depend on deploy config or applied migrations are flagged as **VERIFY**.
 > **Scope note:** Three Arcus generations coexist; **only `lib/arcus/` + `app/api/cron/run-agents` is the live background path.** `lib/arcus-v3/` is a separate, non-live runtime (see §5.1).
 
+---
+## Resolution log (updated 2026-06-20)
+- ✅ **§1.1 Premium models** — confirmed ON in production (`ALLOW_PAID_MODELS=true`). Not an issue.
+- ✅ **§1.2 Cron scheduler** — confirmed external via **cron-job.org** hitting `/api/cron/run-agents`. Not an issue. (Optional: still worth declaring a backup in `vercel.json`.)
+- ✅ **§1.3 Server-side paywall** — FIXED. `assertPaidAccess()` added to `chat`/`execute`/`triage`/`plan` (commit `paywall leak`). §1.4 neutralized as a result.
+- ✅ **§2.1 Delegation "missing migration"** — FALSE ALARM + FIXED. Table ships in `arcus_contacts_and_rules.sql`; corrected the misleading error message.
+- ✅ **§2.3 Notion archive** — FIXED. Now performs a real `archived:true` PATCH loop (reversible), with `dryRun`/`maxArchive`.
+- ✅ **§3.2 Trigger-column health probe** — FIXED. `/api/arcus/health/migrations` now flags a missing `arcus_agents.trigger_type` (silent-no-op detector).
+- ✅ **§5.3 Dead inline tool map** — FIXED. Deleted.
+- ⏭️ **Deliberately deferred (feature-scoped, not bugs):** §2.2 Cal.com OAuth, §2.4 scheduled-send, §3.1 real-time Gmail push. §2.5 (transcript summaries) is a non-goal. §3.3/§3.4 are polish. Rationale in each section below.
+---
+
 ## Severity legend
 - 🔴 **P0 — Launch-critical:** silently breaks the core promise (agents don't run / quality collapses / paywall leaks). Fix before relying on it.
 - 🟠 **P1 — Broken/dead feature:** a tool or capability that fails or no-ops today.
