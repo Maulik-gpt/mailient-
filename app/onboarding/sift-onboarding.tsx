@@ -1514,7 +1514,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
         </ul>
 
         <PrimaryButton onClick={() => onChoose(selected)} className="w-full">
-          {selected === 'monthly' ? 'Start 13-day free trial' : `Continue with ${p.label}`} <ArrowRight className="w-4 h-4" />
+          Continue with {p.label} <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
       </GlassCard>
 
@@ -1654,7 +1654,9 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       <Body className="text-[15.5px] max-w-md mx-auto mb-8">
         {paid
           ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent is deployed and runs on its schedule. Everything waits for your approval before it sends.`
-          : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys automatically — it starts running on its schedule right away. Everything waits for your approval before it sends.`}
+          : plan === 'monthly'
+            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 13-day free trial — no charge today, cancel anytime. Your agent deploys the moment you're in.`
+            : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys automatically — it starts running on its schedule right away. Everything waits for your approval before it sends.`}
       </Body>
 
       <GlassCard className="max-w-sm mx-auto text-left space-y-4 mb-9">
@@ -1679,7 +1681,9 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
           ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</>
           : (paid || !plan)
             ? <>Go to Mailient <ArrowRight className="w-4 h-4" /></>
-            : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
+            : plan === 'monthly'
+              ? <>Start 13-day free trial <ArrowRight className="w-4 h-4" /></>
+              : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
       </PrimaryButton>
     </div>
   );
