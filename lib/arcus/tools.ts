@@ -3906,9 +3906,20 @@ async function saveDecisionTool(userId: string, input: any): Promise<ToolResult>
 }
 
 // ── Cal.com scheduling ─────────────────────────────────────────────────────────
-// Prefer the user's OWN connected Cal.com API key (so bookings land on their
-// account); fall back to the app's shared CAL_API_KEY so it still works for
-// users who haven't connected one.
+// Always prefer the user's OWN connected Cal.com API key so bookings land on
+// THEIR account.
+//
+// Multi-tenant safety: the shared CAL_API_KEY fallback is DANGEROUS in a
+// multi-user deployment — a user who hasn't connected their own key would
+// otherwise read and BOOK on the operator's Cal.com account. So the shared key is
+// only used when the operator explicitly opts into single-tenant mode via
+// CAL_ALLOW_SHARED_KEY=true. Otherwise a keyless user is treated as not-connected.
+//
+// (Why not OAuth instead of API keys? Verified June 2026: Cal.com's personal-
+// account OAuth only grants READ_BOOKING + READ_PROFILE — no scope to list
+// event-types/slots or CREATE bookings. Swapping the API key for OAuth would
+// break the core "book a meeting" capability, so the API key stays the path.
+// See docs/arcus-calcom-auth.md.)
 async function getCalClient(userId?: string): Promise<InstanceType<typeof CalComService> | null> {
   if (userId) {
     try {
@@ -3921,10 +3932,11 @@ async function getCalClient(userId?: string): Promise<InstanceType<typeof CalCom
         .maybeSingle();
       const k = (data?.access_token || '').trim();
       if (k) return new CalComService(k);
-    } catch { /* fall through to shared key */ }
+    } catch { /* fall through to shared-key check */ }
   }
   const shared = (process.env.CAL_API_KEY || '').trim();
-  return shared ? new CalComService(shared) : null;
+  const allowShared = process.env.CAL_ALLOW_SHARED_KEY === 'true';
+  return (shared && allowShared) ? new CalComService(shared) : null;
 }
 
 function calcomBookingUrl(slug: string): string {

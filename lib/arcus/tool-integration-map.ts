@@ -59,7 +59,11 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   calendar_auto_generate_meet_links: 'gcal',
   calendar_buffer_time_insertion: 'gcal',
 
-  // Cal.com — always available (app provides CAL_API_KEY), no per-user OAuth needed
+  // Cal.com — surfaced for everyone but each tool checks for the user's own API
+  // key at call time (getCalClient) and returns calcom_not_configured with a
+  // connect prompt if absent. The shared CAL_API_KEY is single-tenant-only
+  // (CAL_ALLOW_SHARED_KEY=true). Cal.com OAuth is read-only (no booking scope), so
+  // API keys remain the path — see docs/arcus-calcom-auth.md.
   calcom_list_event_types: null,
   calcom_get_slots: null,
   calcom_create_booking: null,
