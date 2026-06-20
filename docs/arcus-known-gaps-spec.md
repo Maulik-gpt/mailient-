@@ -13,7 +13,10 @@
 - ✅ **§2.3 Notion archive** — FIXED. Now performs a real `archived:true` PATCH loop (reversible), with `dryRun`/`maxArchive`.
 - ✅ **§3.2 Trigger-column health probe** — FIXED. `/api/arcus/health/migrations` now flags a missing `arcus_agents.trigger_type` (silent-no-op detector).
 - ✅ **§5.3 Dead inline tool map** — FIXED. Deleted.
-- ⏭️ **Deliberately deferred (feature-scoped, not bugs):** §2.2 Cal.com OAuth, §2.4 scheduled-send, §3.1 real-time Gmail push. §2.5 (transcript summaries) is a non-goal. §3.3/§3.4 are polish. Rationale in each section below.
+- ✅ **§2.4 Scheduled-send** — BUILT. arcus_scheduled_emails + atomic-claim cron dispatcher + schedule/list/cancel tools. Requires applying the migration.
+- ✅ **§3.1 Real-time Gmail push** — BUILT (gated on GMAIL_PUBSUB_TOPIC, fails open to poll). Gmail watch + Pub/Sub webhook → nudges live event agents. Needs the GCP topic to activate; see docs/arcus-gmail-push-setup.md.
+- ✅ **§2.2 Cal.com** — INVESTIGATED + fixed the real bug. OAuth verified read-only (READ_BOOKING/READ_PROFILE, no booking scope) → would regress booking, so API key stays. Closed the shared-key multi-tenant leak instead (CAL_ALLOW_SHARED_KEY gate). See docs/arcus-calcom-auth.md.
+- ⏭️ Remaining: §2.5 (transcript summaries) is a non-goal (no data source). §3.3/§3.4 are polish.
 ---
 
 ## Severity legend
