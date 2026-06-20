@@ -2,11 +2,21 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { ArcusExecutorEngine } from '@/lib/arcus-executor-engine';
 import { DatabaseService } from '@/lib/supabase';
+import { assertPaidAccess } from '@/lib/subscription-protection';
 
 export async function POST(req: Request) {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.email) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // STRICT paywall — Arcus execution is paid-only.
+    const gate = await assertPaidAccess(session.user.email);
+    if (!gate.ok) {
+        return NextResponse.json(
+            { error: gate.error, message: gate.message, upgradeUrl: gate.upgradeUrl },
+            { status: gate.status }
+        );
     }
 
     try {

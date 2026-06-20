@@ -1153,14 +1153,16 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'notion_auto_archive_completed_work',
     description:
-      'Identify completed items in a Notion database by status property value and report what would be archived. The actual archive call requires verified database write permissions — call this for triage; archive in UI for now. ' +
-      'Output: archive plan. Errors: not_found.',
+      'Archive completed items in a Notion database by status value. Finds pages where the status property (default "Status", type status or select) equals one of completedValues (default Done/Completed/Closed/Shipped) and archives them (Notion archive is reversible — pages go to Trash). Pass dryRun:true to preview without archiving; maxArchive (default 50, max 100) caps one call. ' +
+      'Output: archived count + titles. Errors: notion_not_connected, not_found, upstream_notion.',
     input_schema: {
       type: 'object',
       properties: {
         databaseHint: { type: 'string', description: 'Default "tasks".' },
         statusProperty: { type: 'string', description: 'Default "Status".' },
         completedValues: { type: 'array', items: { type: 'string' }, description: 'Default ["Done", "Completed", "Closed", "Shipped"].' },
+        dryRun: { type: 'boolean', description: 'If true, preview the pages that would be archived without archiving. Default false.' },
+        maxArchive: { type: 'number', description: 'Max pages to archive in one call. Default 50, max 100.' },
       },
     },
   },
@@ -5470,7 +5472,7 @@ async function getDelegationRules(userId: string): Promise<ToolResult> {
     );
     return { output: `${data.length} active delegation rule${data.length !== 1 ? 's' : ''}:\n\n${lines.join('\n\n')}` };
   } catch {
-    return failureResult('Delegation rules not yet set up (run migration: supabase/migrations/arcus_delegation_rules.sql).', 'migration_missing');
+    return failureResult('Could not read delegation rules. If this persists, ensure the migration supabase/migrations/arcus_contacts_and_rules.sql has been applied (it creates arcus_delegation_rules).', 'delegation_read_failed');
   }
 }
 
@@ -9429,19 +9431,101 @@ async function notionAutoArchiveCompletedWork(userId: string, input: any): Promi
   if (!dbMatch) return failureResult(`Could not find a database matching "${databaseHint}".`, 'not_found');
   const databaseId = dbMatch[1];
 
-  // Notion archive-page API call deferred — the existing searchNotion
-  // primitive doesn't expose the bearer token, and adding a per-page archive
-  // PATCH loop here would need its own auth wrapper. Until that ships, this
-  // tool returns a triage report so the user can bulk-archive in the Notion
-  // UI with confidence about what needs archiving.
+  const dryRun = input?.dryRun === true;
+  const maxArchive = Math.max(1, Math.min(Number(input?.maxArchive) || 50, 100));
+
+  const token = await getNotionToken(userId);
+  if (!token) return failureResult('Notion is not connected. Connect Notion in Settings → Integrations first.', 'notion_not_connected');
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28',
+  };
+
+  // Resolve the status property's real name + type ('status' vs 'select') so the
+  // filter uses the correct shape — Notion rejects a filter that references the
+  // wrong property type.
+  let propName = statusPropName;
+  let propType: 'status' | 'select' = 'status';
+  try {
+    const dbRes = await fetch(`https://api.notion.com/v1/databases/${databaseId}`, { headers, signal: AbortSignal.timeout(10000) });
+    if (dbRes.ok) {
+      const db = await dbRes.json();
+      const props = db.properties || {};
+      const match = Object.keys(props).find(k => k.toLowerCase() === statusPropName.toLowerCase())
+        || Object.keys(props).find(k => props[k]?.type === 'status' || props[k]?.type === 'select');
+      if (match) {
+        propName = match;
+        propType = props[match]?.type === 'select' ? 'select' : 'status';
+      }
+    }
+  } catch { /* fall back to defaults (status/Status) */ }
+
+  // Find completed pages: OR across the completed status values.
+  const filter = { or: completedValues.map(v => ({ property: propName, [propType]: { equals: v } })) };
+  const matched: { id: string; title: string }[] = [];
+  let cursor: string | undefined;
+  try {
+    for (let page = 0; page < 5 && matched.length < maxArchive; page++) {
+      const body: any = { page_size: 100, filter };
+      if (cursor) body.start_cursor = cursor;
+      const qRes = await fetch(`https://api.notion.com/v1/databases/${databaseId}/query`, {
+        method: 'POST', headers, body: JSON.stringify(body), signal: AbortSignal.timeout(12000),
+      });
+      if (!qRes.ok) {
+        const err = await qRes.text().catch(() => '');
+        return failureResult(`Notion query failed (${qRes.status}): ${err.slice(0, 200)}`, 'upstream_notion');
+      }
+      const qData = await qRes.json();
+      for (const row of (qData.results || [])) {
+        const titleKey = Object.keys(row.properties || {}).find(k => row.properties[k]?.type === 'title');
+        const title = titleKey ? richTextToString(row.properties[titleKey]?.title || []) : '(untitled)';
+        matched.push({ id: row.id, title: title || '(untitled)' });
+        if (matched.length >= maxArchive) break;
+      }
+      if (!qData.has_more) break;
+      cursor = qData.next_cursor;
+    }
+  } catch (e: any) {
+    return failureResult(`Notion query error: ${e?.message || e}`, 'upstream_notion');
+  }
+
+  if (!matched.length) {
+    return { output: `Nothing to archive in "${databaseHint}" — no pages with ${propName} ∈ [${completedValues.join(', ')}].` };
+  }
+
+  if (dryRun) {
+    return {
+      output: [
+        `Would archive ${matched.length} completed page${matched.length !== 1 ? 's' : ''} in "${databaseHint}" (${propName} ∈ [${completedValues.join(', ')}]):`,
+        ...matched.map((m, i) => `${i + 1}. ${m.title}`),
+        '',
+        'Re-run without dryRun to archive these (Notion archive is reversible — pages go to Trash).',
+      ].join('\n'),
+    };
+  }
+
+  // Archive each matched page: PATCH /v1/pages/{id} { archived: true }. Sequential
+  // to stay within Notion rate limits; capped at maxArchive so one call is bounded.
+  let archived = 0;
+  const failures: string[] = [];
+  for (const m of matched) {
+    try {
+      const pRes = await fetch(`https://api.notion.com/v1/pages/${m.id}`, {
+        method: 'PATCH', headers, body: JSON.stringify({ archived: true }), signal: AbortSignal.timeout(10000),
+      });
+      if (pRes.ok) archived++;
+      else failures.push(`${m.title} (${pRes.status})`);
+    } catch (e: any) {
+      failures.push(`${m.title} (${e?.message || 'error'})`);
+    }
+  }
+
   return {
     output: [
-      `Auto-archive triage for database ${databaseId} ("${databaseHint}"):`,
-      `Status property: "${statusPropName}"`,
-      `Completed values: [${completedValues.join(', ')}]`,
-      '',
-      `Manual archive step: open the database in Notion → filter by ${statusPropName} ∈ [${completedValues.join(', ')}] → bulk-select → Archive.`,
-      `Notion archive-page API will be wired here in a future update.`,
+      `Archived ${archived} completed page${archived !== 1 ? 's' : ''} in "${databaseHint}" (${propName} ∈ [${completedValues.join(', ')}]). They're in Notion's Trash and can be restored.`,
+      ...(archived ? matched.slice(0, archived).map((m, i) => `${i + 1}. ${m.title}`) : []),
+      ...(failures.length ? ['', `Could not archive ${failures.length}: ${failures.slice(0, 5).join('; ')}`] : []),
     ].join('\n'),
   };
 }

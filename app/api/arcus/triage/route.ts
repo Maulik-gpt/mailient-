@@ -15,6 +15,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore
 import { auth as nextAuth } from '../../../../lib/auth.js';
+import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
 const auth: any = nextAuth;
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
@@ -93,6 +94,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     const userEmail = session?.user?.email?.toLowerCase();
     if (!userEmail) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // STRICT paywall — Arcus triage is paid-only.
+    const gate = await assertPaidAccess(userEmail);
+    if (!gate.ok) {
+      return NextResponse.json(
+        { error: gate.error, message: gate.message, upgradeUrl: gate.upgradeUrl },
+        { status: gate.status }
+      );
+    }
 
     const body = await req.json().catch(() => ({}));
     const since = body.since || '6h';   // look at emails from last N hours

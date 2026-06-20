@@ -23,6 +23,7 @@ import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/me
 import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
+import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
 
 // Vercel HOBBY (free) plan hard-caps serverless functions at 60s — 300 would be
 // rejected/ignored and the loop would think it had time it doesn't, getting
@@ -217,6 +218,18 @@ export async function POST(request: NextRequest) {
   }
   const userId = session.user.email.toLowerCase();
   const userName = session.user.name?.split(' ')[0] || 'there';
+
+  // STRICT paywall — Arcus compute is paid-only. The client redirect is not
+  // enough; block the API directly so a free/expired user (or a replayed
+  // request) can't drive the agent without a paid/trial plan.
+  const gate = await assertPaidAccess(userId);
+  if (!gate.ok) {
+    log('warn', 'Paywall — no paid/trial plan', { userId, planType: gate.planType });
+    return new Response(
+      JSON.stringify({ error: gate.error, message: gate.message, upgradeUrl: gate.upgradeUrl }),
+      { status: gate.status, headers: { 'Content-Type': 'application/json' } }
+    );
+  }
 
   // Parse body
   let body: {
