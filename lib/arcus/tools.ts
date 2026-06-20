@@ -30,6 +30,7 @@ import {
   type ApprovalActionType,
 } from './session-state';
 import { queuePendingAction } from './agent-approvals';
+import { enqueueScheduledEmail } from './scheduled-send';
 import { getCanvasState, setCanvasState } from './canvas-state';
 import { normalizeUserId } from './user-id';
 
@@ -1302,7 +1303,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'generate_email_sequence',
     description:
-      'Generate a multi-email follow-up sequence for one goal. Returns JSON array of { dayOffset, subject, body } emails. Pair with gmail_batch_send_emails for staggered dispatch (scheduled-send infra is not yet present, so user reviews drafts day-of). ' +
+      'Generate a multi-email follow-up sequence for one goal. Returns JSON array of { dayOffset, subject, body } emails. To dispatch automatically over time, call schedule_email_send for each step with sendAt = now + dayOffset (the cron sends them at that time, no day-of action needed). ' +
       'Output: JSON. Errors: validation_error.',
     input_schema: {
       type: 'object',
@@ -1312,6 +1313,49 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         dayOffsets: { type: 'array', items: { type: 'number' }, description: 'Days from start for each step (default [1, 3, 7, 10, 14]).' },
       },
       required: ['goal'],
+    },
+  },
+  {
+    name: 'schedule_email_send',
+    description:
+      'Schedule an email to be sent automatically at a future time (the cron dispatcher delivers it — the user does NOT need to be online). Use for "send this tomorrow at 9am", staggered follow-up sequences, or timezone-friendly sends. The email IS committed to send once scheduled, so the same confirmation as send_email applies. To reply within a thread, pass threadId. ' +
+      'Output: scheduled id + send time. Errors (success:false): confirmation_required, gmail_not_connected, validation_error.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        to: { type: 'string', description: 'Recipient email address.' },
+        subject: { type: 'string', description: 'Email subject.' },
+        body: { type: 'string', description: 'Full email body (plain text).' },
+        sendAt: { type: 'string', description: 'When to send, as ISO 8601 (e.g. "2026-06-21T09:00:00-04:00"). Must be in the future, at most 1 year out.' },
+        threadId: { type: 'string', description: 'Optional Gmail thread id to reply into.' },
+        dedupKey: { type: 'string', description: 'Optional idempotency key — scheduling the same key twice is a no-op (use for sequence steps to avoid duplicates).' },
+      },
+      required: ['to', 'body', 'sendAt'],
+    },
+  },
+  {
+    name: 'list_scheduled_emails',
+    description:
+      'List the user\'s upcoming scheduled emails (pending sends) with their send times and status. Call before scheduling to avoid duplicates, or to answer "what\'s queued to go out?". ' +
+      'Output: list. Errors: none specific.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        includeSent: { type: 'boolean', description: 'Also include recently sent/failed (default false — pending only).' },
+      },
+    },
+  },
+  {
+    name: 'cancel_scheduled_email',
+    description:
+      'Cancel a pending scheduled email by its id (from list_scheduled_emails) before it sends. Already-sent emails cannot be cancelled. ' +
+      'Output: confirmation. Errors (success:false): not_found, already_sent.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        id: { type: 'string', description: 'The scheduled email id to cancel.' },
+      },
+      required: ['id'],
     },
   },
   {
@@ -2297,6 +2341,9 @@ export async function executeTool(
       case 'gmail_bulk_read_threads':        result = await gmailBulkReadThreads(userId, input); break;
       case 'gmail_batch_draft_replies':      result = await gmailBatchDraftReplies(userId, input, context); break;
       case 'gmail_batch_send_emails':        result = await gmailBatchSendEmails(userId, input, context); break;
+      case 'schedule_email_send':            result = await scheduleEmailSend(userId, input, context); break;
+      case 'list_scheduled_emails':          result = await listScheduledEmails(userId, input); break;
+      case 'cancel_scheduled_email':         result = await cancelScheduledEmail(userId, input); break;
       case 'gmail_auto_label_threads':       result = await gmailAutoLabelThreads(userId, input); break;
       case 'gmail_auto_archive_threads':     result = await gmailAutoArchiveThreads(userId, input); break;
       case 'gmail_extract_data_from_threads': result = await gmailExtractDataFromThreads(userId, input); break;
@@ -3375,6 +3422,128 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
       } as any,
     },
   };
+}
+
+async function scheduleEmailSend(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  // Scheduling commits the email to send, so it carries the SAME approval gate as
+  // send_email (mirrors that flow exactly — state machine + consumeApproval for
+  // live chat, queuePendingAction for background agents). On approval the action
+  // re-runs schedule_email_send (not send_email) so it schedules, not sends-now.
+  if (!context.isBackgroundAgent && context.runState && context.runState !== 'EXECUTING' && context.runState !== 'REPORTING') {
+    return failureResult(
+      `Refusing to schedule a send — current state is ${context.runState}. Call request_confirmation first with { To: "${input.to || ''}", Subject: "${input.subject || ''}" }, wait for the user to click Confirm, then retry schedule_email_send.`,
+      'confirmation_required',
+    );
+  }
+  if (context.conversationId) {
+    const targetKey = normalizeTargetKey('send_email', input);
+    const { approved, failedOpen } = await consumeApproval({
+      conversationId: context.conversationId,
+      userId,
+      actionType: 'send_email',
+      targetKey,
+      isBackgroundAgent: context.isBackgroundAgent,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to schedule. No approved request_confirmation found for emailing ${input.to || 'this recipient'} (subject "${input.subject || ''}"). Call request_confirmation first, wait for Confirm, then retry schedule_email_send.`,
+        'confirmation_required',
+      );
+    }
+  }
+  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
+    await queuePendingAction({
+      agentId: context.agentId,
+      runId: context.runId,
+      userId,
+      toolName: 'schedule_email_send',
+      toolInput: input,
+    });
+    return { output: `Scheduled send queued for user approval.` };
+  }
+
+  // Gmail must be connected for the dispatcher to deliver later — fail early.
+  const token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const supabase = getSupabaseAdmin();
+  const res = await enqueueScheduledEmail(supabase, {
+    userId,
+    to: input.to,
+    subject: input.subject,
+    body: input.body,
+    sendAt: input.sendAt,
+    threadId: input.threadId,
+    dedupKey: input.dedupKey,
+    source: context.isBackgroundAgent ? 'agent' : 'chat',
+    agentId: context.agentId,
+  });
+
+  if (!res.ok) return failureResult(res.error || 'Could not schedule the email.', 'validation_error');
+  if (res.duplicate) {
+    return { output: `Already scheduled (matching dedupKey) — no duplicate created.` };
+  }
+
+  const whenLabel = new Date(res.sendAt!).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
+  });
+  return {
+    output: `Email scheduled. It will send to ${input.to} on ${whenLabel} — no further action needed. (id: ${res.id})`,
+  };
+}
+
+async function listScheduledEmails(userId: string, input: any): Promise<ToolResult> {
+  const supabase = getSupabaseAdmin();
+  const includeSent = input?.includeSent === true;
+  let query = supabase
+    .from('arcus_scheduled_emails')
+    .select('id, to_email, subject, send_at, status, sent_at')
+    .eq('user_id', userId)
+    .order('send_at', { ascending: true })
+    .limit(50);
+  query = includeSent
+    ? query.in('status', ['pending', 'sending', 'sent', 'failed'])
+    : query.in('status', ['pending', 'sending']);
+
+  const { data, error } = await query;
+  if (error) return failureResult(`Could not read scheduled emails: ${error.message}`, 'read_failed');
+  if (!data?.length) return { output: includeSent ? 'No scheduled emails.' : 'No upcoming scheduled emails.' };
+
+  const lines = data.map((r: any, i: number) => {
+    const when = new Date(r.send_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    const tag = r.status === 'pending' || r.status === 'sending' ? when : `${r.status}`;
+    return `${i + 1}. ${r.subject || '(no subject)'} → ${r.to_email} · ${tag}  [id: ${r.id}]`;
+  });
+  return { output: `${data.length} scheduled email${data.length !== 1 ? 's' : ''}:\n\n${lines.join('\n')}` };
+}
+
+async function cancelScheduledEmail(userId: string, input: any): Promise<ToolResult> {
+  if (!input?.id) return failureResult('A scheduled email id is required.', 'validation_error');
+  const supabase = getSupabaseAdmin();
+
+  const { data: row } = await supabase
+    .from('arcus_scheduled_emails')
+    .select('id, status, subject, to_email')
+    .eq('user_id', userId)
+    .eq('id', input.id)
+    .maybeSingle();
+  if (!row) return failureResult('No scheduled email found with that id.', 'not_found');
+  if (row.status === 'sent') return failureResult('That email has already been sent — it cannot be cancelled.', 'already_sent');
+  if (row.status === 'cancelled') return { output: 'That scheduled email was already cancelled.' };
+
+  // Only cancel if still pending — guards against cancelling a row the dispatcher
+  // is mid-send on ('sending').
+  const { data: updated } = await supabase
+    .from('arcus_scheduled_emails')
+    .update({ status: 'cancelled', updated_at: new Date().toISOString() })
+    .eq('id', input.id)
+    .eq('user_id', userId)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
+  if (!updated) return failureResult('That email is already being sent and can no longer be cancelled.', 'already_sent');
+
+  return { output: `Cancelled the scheduled email "${row.subject || '(no subject)'}" to ${row.to_email}.` };
 }
 
 async function scheduleMeeting(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {

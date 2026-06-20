@@ -198,3 +198,32 @@ BEGIN
   DELETE FROM arcus_dedup_cache WHERE expires_at < now();
 END;
 $$ LANGUAGE plpgsql;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- Scheduled email send (mirror of supabase/migrations/arcus_scheduled_emails.sql)
+-- Backs schedule_email_send + the cron dispatcher (drainScheduledEmails).
+-- ──────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS arcus_scheduled_emails (
+  id               UUID        DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id          TEXT        NOT NULL,
+  to_email         TEXT        NOT NULL,
+  subject          TEXT,
+  body             TEXT        NOT NULL,
+  thread_id        TEXT,
+  send_at          TIMESTAMPTZ NOT NULL,
+  status           TEXT        NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending','sending','sent','failed','cancelled')),
+  attempts         INT         NOT NULL DEFAULT 0,
+  last_error       TEXT,
+  sent_message_id  TEXT,
+  dedup_key        TEXT,
+  source           TEXT        DEFAULT 'agent',
+  agent_id         UUID,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW(),
+  sent_at          TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS arcus_sched_due_idx ON arcus_scheduled_emails (status, send_at);
+CREATE INDEX IF NOT EXISTS arcus_sched_user_idx ON arcus_scheduled_emails (user_id, status);
+CREATE UNIQUE INDEX IF NOT EXISTS arcus_sched_dedup_idx
+  ON arcus_scheduled_emails (user_id, dedup_key) WHERE dedup_key IS NOT NULL;

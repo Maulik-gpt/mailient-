@@ -34,6 +34,7 @@ import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
 import { checkEventAgents, mergeProcessedIds } from '../../../../lib/arcus/triggers/reactive-poll';
 import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/triggers/chain';
+import { drainScheduledEmails } from '../../../../lib/arcus/scheduled-send';
 import { reconcileLedger } from '../../../../lib/arcus/super/ledger';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
@@ -251,6 +252,16 @@ export async function GET(request: NextRequest) {
     }
   } catch (e: any) {
     console.warn('[Cron] chain drain failed:', e?.message);
+  }
+
+  // ── Scheduled email dispatcher ────────────────────────────────────────────
+  // Sends any due scheduled emails (schedule_email_send). Runs every tick —
+  // even when no agents are due — so it must come BEFORE the early return below.
+  try {
+    const mail = await drainScheduledEmails(supabase);
+    if (mail.claimed) results.push(`Scheduled mail: ${mail.sent} sent, ${mail.retried} retry, ${mail.failed} failed`);
+  } catch (e: any) {
+    console.warn('[Cron] scheduled-mail drain failed:', e?.message);
   }
 
   if (readyToRun.length === 0) {
