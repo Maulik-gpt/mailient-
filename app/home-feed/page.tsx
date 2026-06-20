@@ -23,6 +23,10 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
+  // STRICT paywall: the feed never renders until a real paid/trial subscription
+  // is confirmed. Default false so unsubscribed users see only the checking
+  // screen, then get redirected — never the actual app behind a dismissible card.
+  const [accessGranted, setAccessGranted] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
@@ -123,12 +127,16 @@ function HomeFeedContent() {
               if (!subResponse.ok) throw new Error(`Status API error: ${subResponse.status}`);
               
               const subData = await subResponse.json();
-              const isActive = subData.subscription?.hasActiveSubscription;
               const isExpired = subData.subscription?.isExpired;
               const planType = subData.subscription?.planType;
+              // STRICT: `hasActiveSubscription` is polluted (it returns true for
+              // free users), so it CANNOT gate access. The real signal is a paid
+              // or trial plan type — 'pro'/'starter'/'annual'/'lifetime' (a trial
+              // reports as 'pro'). 'free'/'none' never grants access.
+              const isPaidPlan = !!planType && planType !== 'free' && planType !== 'none';
 
-              // CASE 1: SUCCESSFUL ACTIVATION (Returning User + (Active OR Free) + Not Expired)
-              const isSuccess = justPaid && !isExpired && (isActive || planType === 'free');
+              // CASE 1: SUCCESSFUL ACTIVATION (just checked out + real plan + not expired)
+              const isSuccess = justPaid && !isExpired && isPaidPlan;
               
               if (isSuccess) {
                 console.log('🎉 [HomeFeed] Activation confirmed!', planType);
@@ -159,14 +167,13 @@ function HomeFeedContent() {
                 continue; // Next attempt
               }
 
-              // CASE 3 — STRICT ACCESS: the app is paid-only. Access requires an
-              // ACTIVE subscription (paid OR free-trial 'trialing' — both come from
-              // a completed Polar checkout). There is NO free tier: planType 'free'
-              // never grants access on its own.
-              if (isActive && !isExpired) {
+              // CASE 3 — STRICT ACCESS: paid-only. Access requires a real paid or
+              // trial plan from a completed Polar checkout. No free tier.
+              if (isPaidPlan && !isExpired) {
                 localStorage.setItem('onboarding_completed', 'true');
                 setIsVerifyingPayment(false);
                 setShowPricing(false);
+                setAccessGranted(true);
                 return; // Access allowed, stop polling
               }
 
@@ -178,9 +185,9 @@ function HomeFeedContent() {
                 const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
                 const onboardingData = onboardingResp && onboardingResp.ok ? await onboardingResp.json() : { completed: true };
                 if (!onboardingData.completed) {
-                    router.push('/onboarding');
+                    router.replace('/onboarding');
                 } else {
-                    router.push('/pricing');
+                    router.replace('/pricing');
                 }
                 return;
               }
@@ -255,6 +262,25 @@ function HomeFeedContent() {
     await signOut({ redirect: false });
     router.push("/");
   };
+
+  // STRICT paywall gate — the app NEVER renders until a paid/trial subscription
+  // is confirmed (accessGranted). Until then, only a checking screen shows, and
+  // the effect above redirects unsubscribed users to /pricing. The just-paid
+  // verification overlay (isVerifyingPayment) is allowed through to the main
+  // render so it covers the screen with its activation animation.
+  if (!isVerifyingPayment && !accessGranted) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-arcus-bg text-arcus-fg">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative w-12 h-12">
+            <div className="w-12 h-12 border-2 border-arcus-border rounded-full" />
+            <div className="absolute inset-0 w-12 h-12 border-t-2 border-arcus-fg rounded-full animate-spin" />
+          </div>
+          <p className="text-[13px] text-arcus-fg-secondary">Checking your access…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="satoshi-home-feed w-full min-h-screen bg-arcus-bg relative flex">

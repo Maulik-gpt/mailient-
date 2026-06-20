@@ -1459,7 +1459,7 @@ const PLAN_PRICING: Record<PlanChoice, { label: string; price: string; unit: str
 };
 
 function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanChoice | null; onChoose: (p: PlanChoice) => void }) {
-  const [selected, setSelected] = useState<PlanChoice>(plan || 'annual');
+  const [selected, setSelected] = useState<PlanChoice>(plan || 'monthly');
   const p = PLAN_PRICING[selected];
   return (
     <div>
@@ -1491,7 +1491,14 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
           <span className="text-[48px] font-medium tracking-tight text-[#0A0A0A]">{p.price}</span>
           <span className="text-[13px] text-[#0A0A0A]/50 ml-2">{p.unit}</span>
         </div>
-        <p className="text-[12px] text-[#0A0A0A]/45 mb-6">{p.sub}</p>
+        <p className="text-[12px] text-[#0A0A0A]/45 mb-2">{p.sub}</p>
+        {selected === 'monthly' && (
+          <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+            <Sparkles className="w-3 h-3 text-emerald-600" strokeWidth={2.5} />
+            <span className="text-[12px] font-semibold text-emerald-700">13 days free, then $29/mo — cancel anytime</span>
+          </div>
+        )}
+        {selected !== 'monthly' && <div className="mb-4" />}
 
         <ul className="space-y-3 text-left mb-7">
           {PLAN_FEATURES.map((f) => (
@@ -1507,7 +1514,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
         </ul>
 
         <PrimaryButton onClick={() => onChoose(selected)} className="w-full">
-          Continue with {p.label} <ArrowRight className="w-4 h-4" />
+          {selected === 'monthly' ? 'Start 13-day free trial' : `Continue with ${p.label}`} <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
       </GlassCard>
 
