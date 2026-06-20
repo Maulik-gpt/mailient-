@@ -1419,16 +1419,27 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
   const [tableError, setTableError] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   const [runningId, setRunningId] = useState<string | null>(null);
   const router = useRouter();
 
   const fetchAgents = async () => {
+    setLoadError(false);
     try {
       const res = await fetch('/api/arcus/agents');
       const data = await res.json();
-      if (data.error?.includes('not set up')) { setTableError(true); return; }
+      if (data.error?.includes('not set up')) {
+        console.warn('[AgentsPanel] arcus_agents table not provisioned:', data.error);
+        setTableError(true);
+        return;
+      }
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
       setAgents(data.agents || []);
-    } catch { /* ignore */ } finally { setLoading(false); }
+    } catch (e) {
+      // Don't silently show an empty state — a failed load is not "no agents".
+      console.error('[AgentsPanel] Failed to load agents:', e);
+      setLoadError(true);
+    } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchAgents(); }, []);
@@ -1521,14 +1532,30 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
 
   const handleToggle = async (agent: Agent) => {
     const newStatus = agent.status === 'paused' ? 'active' : 'paused';
-    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, status: newStatus }) });
+    // Optimistic — flip immediately, roll back if the server rejects so the
+    // toggle never lies about the agent's real state.
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: newStatus } : a));
+    try {
+      const res = await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, status: newStatus }) });
+      if (!res.ok) throw new Error();
+      toast.success(newStatus === 'paused' ? `Paused "${agent.name}"` : `Resumed "${agent.name}"`);
+    } catch {
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, status: agent.status } : a));
+      toast.error(newStatus === 'paused' ? 'Could not pause the agent' : 'Could not resume the agent', { description: 'Please try again.' });
+    }
   };
 
   const handleToggleConf = async (agent: Agent) => {
     const newVal = !agent.skip_confirmations;
-    await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, skip_confirmations: newVal }) });
     setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, skip_confirmations: newVal } : a));
+    try {
+      const res = await fetch('/api/arcus/agents', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: agent.id, skip_confirmations: newVal }) });
+      if (!res.ok) throw new Error();
+      toast.success(newVal ? 'Auto-approve on — actions run without asking' : 'Auto-approve off — actions wait for your OK');
+    } catch {
+      setAgents(prev => prev.map(a => a.id === agent.id ? { ...a, skip_confirmations: agent.skip_confirmations } : a));
+      toast.error('Could not update that setting', { description: 'Please try again.' });
+    }
   };
 
   const deleteAgent = async (agent: Agent) => {
@@ -1698,7 +1725,22 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
       {tableError && (
         <div className="mb-5 p-4 bg-amber-500/5 border border-amber-500/20 rounded-xl flex items-start gap-3">
           <AlertCircle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
-          <p className="text-[13px] text-arcus-fg-secondary">Run the SQL migration in Supabase to enable agents (<code className="text-arcus-fg-secondary">arcus_agents</code> table).</p>
+          <p className="text-[13px] text-arcus-fg-secondary">Agents aren’t available on your account just yet. Our team has been notified — please check back shortly.</p>
+        </div>
+      )}
+
+      {loadError && !loading && (
+        <div className="mb-5 p-4 bg-arcus-raised/60 border border-arcus-divider rounded-xl flex items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-4 h-4 text-arcus-fg-muted flex-shrink-0 mt-0.5" />
+            <p className="text-[13px] text-arcus-fg-secondary">We couldn’t load your agents. Check your connection and try again.</p>
+          </div>
+          <button
+            onClick={() => { setLoading(true); fetchAgents(); }}
+            className="px-3 py-1.5 rounded-lg bg-arcus-fg text-arcus-fg-inverse text-[12px] font-bold hover:opacity-90 active:scale-95 transition-all flex-shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 

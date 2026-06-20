@@ -3962,7 +3962,6 @@ export default function ChatInterface({
   };
 
   const loadConversation = (conversationId: string) => {
-    console.log('DEBUG: loadConversation called with:', conversationId);
     const savedConversation = localStorage.getItem(`conversation_${conversationId}`);
     if (savedConversation) {
       try {
@@ -3977,8 +3976,6 @@ export default function ChatInterface({
         setShowHistory(false);
         setSelectedConversationId(conversationId);
         setChatTitle(conversationData.title || '');
-
-        console.log('DEBUG: Loaded', loadedMessages.length, 'messages for conversation:', conversationId);
 
         // Navigate to the conversation URL
         router.push(`/dashboard/agent-talk/${conversationId}`);
