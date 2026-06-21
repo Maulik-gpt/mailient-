@@ -215,13 +215,6 @@ function BucketHeader({ label, count, icon }: BucketHeaderProps) {
   );
 }
 
-function EmptyBucket({ message }: { message: string }) {
-  return (
-    <div className="py-5 px-4 rounded-2xl border border-dashed border-black/[0.06] dark:border-white/[0.06] text-[13px] text-black/35 dark:text-white/35 leading-relaxed">
-      {message}
-    </div>
-  );
-}
 
 interface ItemCardProps {
   topLeft: string;
@@ -821,7 +814,7 @@ export default function SiftToday() {
           </div>
         )}
 
-        {data && data.gmailConnected && data.emptyAll && (
+        {data && data.gmailConnected && data.decide.length === 0 && data.showUp.length === 0 && data.chase.length === 0 && data.actionItems.length === 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -845,7 +838,7 @@ export default function SiftToday() {
           </motion.div>
         )}
 
-        {data && data.gmailConnected && !data.emptyAll && (
+        {data && data.gmailConnected && (data.decide.length > 0 || data.showUp.length > 0 || data.chase.length > 0 || data.actionItems.length > 0) && (
           <div className="space-y-10">
             {/* PROMISED (action items from /log) */}
             {data.actionItems.length > 0 && (
@@ -883,15 +876,13 @@ export default function SiftToday() {
             )}
 
             {/* DECIDE */}
+            {data.decide.length > 0 && (
             <section>
               <BucketHeader
                 label="Decide"
                 count={data.decide.length}
                 icon={<Reply className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.decide.length === 0 ? (
-                <EmptyBucket message="Inbox is clear — nothing urgent unanswered." />
-              ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
                     {data.decide.map((item) => (
@@ -910,19 +901,17 @@ export default function SiftToday() {
                     ))}
                   </AnimatePresence>
                 </div>
-              )}
             </section>
+            )}
 
             {/* SHOW UP */}
+            {data.showUp.length > 0 && (
             <section>
               <BucketHeader
                 label="Show up"
                 count={data.showUp.length}
                 icon={<CalendarClock className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.showUp.length === 0 ? (
-                <EmptyBucket message="No meetings on the books today." />
-              ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
                     {data.showUp.map((item) => (
@@ -944,19 +933,17 @@ export default function SiftToday() {
                     ))}
                   </AnimatePresence>
                 </div>
-              )}
             </section>
+            )}
 
             {/* CHASE */}
+            {data.chase.length > 0 && (
             <section>
               <BucketHeader
                 label="Chase"
                 count={data.chase.length}
                 icon={<Clock className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.chase.length === 0 ? (
-                <EmptyBucket message="Nobody owes you a reply right now." />
-              ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
                     {data.chase.map((item) => (
@@ -975,8 +962,8 @@ export default function SiftToday() {
                     ))}
                   </AnimatePresence>
                 </div>
-              )}
             </section>
+            )}
           </div>
         )}
 
