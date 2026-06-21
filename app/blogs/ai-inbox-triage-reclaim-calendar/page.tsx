@@ -213,7 +213,7 @@ export default function AIInboxTriagePage() {
       <div className="callout-box">
         <p>
           <strong>Stop spending 3 hours a day on email.</strong> Mailient's Sift AI handles triage. Arcus handles responses. You handle approvals.{" "}
-          <a href="https://tally.so/r/b5KpB6" target="_blank" rel="noopener noreferrer">Join the waitlist →</a>
+          <a href="/auth/signup">Start free trial →</a>
         </p>
       </div>
     </BlogLayout>

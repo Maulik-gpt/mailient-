@@ -193,8 +193,8 @@ function SignUpContent() {
 
   return (
     <SignInLayout
-      title="Welcome"
-      description="Mailient is currently in early access. Secure your spot to redefine your inbox."
+      title="Create your account"
+      description="Start your 13-day free trial and let Mailient run your inbox — autonomous triage, voice-matched drafts, and scheduling on autopilot."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}
     >

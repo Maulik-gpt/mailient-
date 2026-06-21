@@ -382,12 +382,8 @@ export function LinearLanding() {
           {/* Premium CTAs */}
           <BlurFade delay={0.3} duration={0.8} inView>
             <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-              <CircleExpandButton
-                href="https://tally.so/r/b5KpB6"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Join waitlist
+              <CircleExpandButton href="/auth/signup">
+                Start free trial
               </CircleExpandButton>
 
               <CircleExpandButton

@@ -198,7 +198,7 @@ export default function ZeroKnowledgeEncryptionPage() {
       <div className="callout-box">
         <p>
           <strong>Your emails are your business.</strong> Mailient is built to keep it that way.{" "}
-          <a href="https://tally.so/r/b5KpB6" target="_blank" rel="noopener noreferrer">Join the waitlist →</a>
+          <a href="/auth/signup">Start free trial →</a>
         </p>
       </div>
     </BlogLayout>

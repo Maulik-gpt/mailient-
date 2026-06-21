@@ -179,7 +179,7 @@ export default function AILearnsWritingStylePage() {
       <div className="callout-box">
         <p>
           <strong>Your voice. Your replies. AI's work.</strong> Mailient drafts emails that sound like you because it learned from you.{" "}
-          <a href="https://tally.so/r/b5KpB6" target="_blank" rel="noopener noreferrer">Join the waitlist →</a>
+          <a href="/auth/signup">Start free trial →</a>
         </p>
       </div>
     </BlogLayout>

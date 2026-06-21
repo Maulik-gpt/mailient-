@@ -162,12 +162,8 @@ export default function ArcusProductPage() {
           {/* Thick Solid Black Clean Pill Button */}
           <BlurFade delay={0.35} duration={0.8} yOffset={10} inView>
             <div className="flex flex-col items-center gap-12 mt-10">
-              <CircleExpandButton
-                href="https://tally.so/r/b5KpB6"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Join waitlist
+              <CircleExpandButton href="/auth/signup">
+                Start free trial
               </CircleExpandButton>
             </div>
           </BlurFade>

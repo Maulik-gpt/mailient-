@@ -151,7 +151,7 @@ export default function FoundersLoseDealsPage() {
       <div className="callout-box">
         <p>
           <strong>Ready to stop losing deals in your inbox?</strong> Mailient handles your email while you focus on building.{" "}
-          <a href="https://tally.so/r/b5KpB6" target="_blank" rel="noopener noreferrer">Join the waitlist →</a>
+          <a href="/auth/signup">Start free trial →</a>
         </p>
       </div>
     </BlogLayout>

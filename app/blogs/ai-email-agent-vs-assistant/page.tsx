@@ -203,7 +203,7 @@ export default function AgentVsAssistantPage() {
       <div className="callout-box">
         <p>
           <strong>Arcus is not an assistant.</strong> It's an autonomous inbox engine that reads, drafts, schedules, and coordinates — all while you sleep.{" "}
-          <a href="https://tally.so/r/b5KpB6" target="_blank" rel="noopener noreferrer">Join the waitlist →</a>
+          <a href="/auth/signup">Start free trial →</a>
         </p>
       </div>
     </BlogLayout>
