@@ -14,8 +14,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
 // @ts-ignore
-import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
-import { decrypt } from '@/lib/crypto.js';
+import { getSupabaseAdmin } from '@/lib/supabase.js';
 import { GmailService } from '@/lib/gmail';
 import { CalendarService } from '@/lib/calendar';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
@@ -504,21 +503,22 @@ export async function GET(_req: Request) {
     }
     const userEmail = session.user.email as string;
 
-    let accessToken = (session as any)?.accessToken;
-    let refreshToken = (session as any)?.refreshToken;
-
-    if (!accessToken) {
-      try {
-        const db = new DatabaseService();
-        const tokens = await db.getUserTokens(userEmail);
-        if (tokens?.encrypted_access_token) {
-          accessToken = decrypt(tokens.encrypted_access_token);
-          refreshToken = tokens.encrypted_refresh_token ? decrypt(tokens.encrypted_refresh_token) : '';
-        }
-      } catch (e) {
-        console.error('[home-feed/today] token fetch failed:', e);
-      }
+    // Use the robust token layer (getGmailToken/getGcalToken): it checks every
+    // token source (arcus_integrations, integration_credentials, user_tokens) AND
+    // proactively refreshes an expired/expiring token. The old code used the raw
+    // session token, which expires ~1h after sign-in — so every visit after that
+    // hour hit an expired token and ALL THREE buckets silently returned empty
+    // ("always clear" with no error). One refreshed Google grant covers both
+    // Gmail and Calendar scopes, so we fall back across them.
+    let accessToken: string | null = null;
+    try {
+      const { getGmailToken, getGcalToken } = await import('@/lib/arcus/tools/http-tokens');
+      accessToken = (await getGmailToken(userEmail).catch(() => null))
+                 || (await getGcalToken(userEmail).catch(() => null));
+    } catch (e) {
+      console.error('[home-feed/today] token fetch failed:', e);
     }
+    const refreshToken = '';
 
     if (!accessToken) {
       // Even without Gmail, action items from /log AND scheduled-agent runs
