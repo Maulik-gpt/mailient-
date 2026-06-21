@@ -123,6 +123,7 @@ function HomeFeedContent() {
 
           const maxRetries = justPaid ? 20 : 1; // 20 retries x 3s = 60 seconds
           const retryDelay = 3000;
+          let triedVerify = false; // one-shot Polar reconcile before denying
 
           console.log('📡 [HomeFeed] Checking subscription status...', { justPaid, maxRetries });
 
@@ -194,6 +195,34 @@ function HomeFeedContent() {
               // CASE 4 — not subscribed (free) OR expired → must subscribe. Finish
               // onboarding first if it isn't done, otherwise send to the paywall.
               if (attempt === maxRetries - 1) {
+                // SELF-HEAL: the user may have a real Polar subscription that the
+                // webhook failed to sync to our DB (exactly the "trial active in
+                // Polar but dashboard says no subscription" case). Reconcile
+                // directly with Polar ONCE before denying. /api/subscription/verify
+                // queries Polar by email and writes the row if it finds an
+                // active/trialing sub.
+                if (!triedVerify) {
+                  triedVerify = true;
+                  console.log('🩺 [HomeFeed] No sub in DB — reconciling with Polar…');
+                  try {
+                    const vr = await fetch('/api/subscription/verify', { method: 'POST' });
+                    const vd = await vr.json().catch(() => ({}));
+                    const vPlan = vd?.subscription?.planType;
+                    if (vr.ok && vd?.success && vPlan && vPlan !== 'free' && vPlan !== 'none') {
+                      console.log('✅ [HomeFeed] Reconciled from Polar:', vPlan);
+                      localStorage.setItem('onboarding_completed', 'true');
+                      try { sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
+                      setIsVerifyingPayment(false);
+                      setShowPricing(false);
+                      setAccessGranted(true);
+                      return; // healed — access granted
+                    }
+                    console.log('🔎 [HomeFeed] Polar reconcile found nothing active.');
+                  } catch (e) {
+                    console.warn('[HomeFeed] Polar reconcile failed:', e);
+                  }
+                }
+
                 setIsVerifyingPayment(false);
                 // Remember this tab is unsubscribed so the next reload redirects
                 // instantly instead of optimistically flashing the app.
