@@ -35,6 +35,7 @@ import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-
 import { checkEventAgents, mergeProcessedIds } from '../../../../lib/arcus/triggers/reactive-poll';
 import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/triggers/chain';
 import { drainScheduledEmails } from '../../../../lib/arcus/scheduled-send';
+import { drainAutonomyActions } from '../../../../lib/arcus/autonomy-drain';
 import { reconcileLedger } from '../../../../lib/arcus/super/ledger';
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
@@ -267,6 +268,15 @@ export async function GET(request: NextRequest) {
     if (mail.claimed) results.push(`Scheduled mail: ${mail.sent} sent, ${mail.retried} retry, ${mail.failed} failed`);
   } catch (e: any) {
     console.warn('[Cron] scheduled-mail drain failed:', e?.message);
+  }
+
+  // ── Autonomy action dispatcher ────────────────────────────────────────────
+  // Fires auto-approved actions whose undo window has elapsed. Also every tick.
+  try {
+    const auto = await drainAutonomyActions(supabase);
+    if (auto.claimed) results.push(`Autonomy: ${auto.done} done, ${auto.failed} failed`);
+  } catch (e: any) {
+    console.warn('[Cron] autonomy drain failed:', e?.message);
   }
 
   if (readyToRun.length === 0) {

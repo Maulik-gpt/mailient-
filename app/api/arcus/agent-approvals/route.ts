@@ -15,6 +15,16 @@ import { auth as nextAuth } from '@/lib/auth.js';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { executeTool } from '../../../../lib/arcus/tools';
 import { recordLearningEvent } from '../../../../lib/arcus/autonomy';
+import { recordDecision, toolToGrantAction, grantTargetKey } from '../../../../lib/arcus/autonomy-grants';
+
+// Count an approve/reject toward the graduated-autonomy ladder for this target.
+function countTowardAutonomy(userId: string, toolName: string, toolInput: any, decision: 'approved' | 'rejected') {
+  const action = toolToGrantAction(toolName);
+  if (!action) return;
+  const targetKey = grantTargetKey(action, toolInput || {});
+  if (!targetKey) return;
+  recordDecision({ userId, action, targetKey, decision, label: targetKey }).catch(() => {});
+}
 
 // @ts-ignore
 const auth: any = nextAuth;
@@ -143,6 +153,7 @@ export async function POST(request: NextRequest) {
       toolInput: action.tool_input || {},
       decision: 'rejected',
     }).catch(() => {});
+    countTowardAutonomy(action.user_id, action.tool_name, action.tool_input, 'rejected');
 
     return NextResponse.json({ success: true, message: 'Action rejected.' });
   }
@@ -173,6 +184,7 @@ export async function POST(request: NextRequest) {
       toolInput: action.tool_input || {},
       decision: 'approved',
     }).catch(() => {});
+    countTowardAutonomy(action.user_id, action.tool_name, action.tool_input, 'approved');
 
     const label = TOOL_LABELS[action.tool_name] || action.tool_name;
     return NextResponse.json({

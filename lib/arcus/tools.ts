@@ -31,6 +31,7 @@ import {
 } from './session-state';
 import { queuePendingAction } from './agent-approvals';
 import { enqueueScheduledEmail } from './scheduled-send';
+import { applyAutonomyGate } from './autonomy-grants';
 import { getCanvasState, setCanvasState } from './canvas-state';
 import { normalizeUserId } from './user-id';
 
@@ -3347,15 +3348,9 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
     }
   }
 
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({
-      agentId: context.agentId,
-      runId: context.runId,
-      userId,
-      toolName: 'send_email',
-      toolInput: input,
-    });
-    return { output: `Action queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'send_email', toolName: 'send_email', input, context, verb: 'send' });
+    if (gate.handled) return gate.result!;
   }
 
   let token = await getGmailToken(userId);
@@ -3451,15 +3446,9 @@ async function scheduleEmailSend(userId: string, input: any, context: ToolContex
       );
     }
   }
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({
-      agentId: context.agentId,
-      runId: context.runId,
-      userId,
-      toolName: 'schedule_email_send',
-      toolInput: input,
-    });
-    return { output: `Scheduled send queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'send_email', toolName: 'schedule_email_send', input, context, verb: 'schedule' });
+    if (gate.handled) return gate.result!;
   }
 
   // Gmail must be connected for the dispatcher to deliver later — fail early.
@@ -3585,15 +3574,9 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
     }
   }
 
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({
-      agentId: context.agentId,
-      runId: context.runId,
-      userId,
-      toolName: 'schedule_meeting',
-      toolInput: input,
-    });
-    return { output: `Action queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'schedule_meeting', toolName: 'schedule_meeting', input, context, verb: 'book' });
+    if (gate.handled) return gate.result!;
   }
 
   let token = await getGcalToken(userId);
@@ -4004,9 +3987,9 @@ async function calcomCreateBooking(userId: string, input: any, context: ToolCont
       );
     }
   }
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({ agentId: context.agentId, runId: context.runId, userId, toolName: 'calcom_create_booking', toolInput: input });
-    return { output: `Booking queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'calcom_book', toolName: 'calcom_create_booking', input, context, verb: 'book' });
+    if (gate.handled) return gate.result!;
   }
 
   try {
@@ -5758,15 +5741,9 @@ async function sendSlackMessage(userId: string, input: any, context: ToolContext
     }
   }
 
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({
-      agentId: context.agentId,
-      runId: context.runId,
-      userId,
-      toolName: 'send_slack_message',
-      toolInput: input,
-    });
-    return { output: `Action queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'send_slack_message', toolName: 'send_slack_message', input, context, verb: 'post' });
+    if (gate.handled) return gate.result!;
   }
 
   const token = await getSlackToken(userId);
@@ -5916,15 +5893,9 @@ async function slackSendDm(userId: string, input: any, context: ToolContext = {}
     }
   }
 
-  if (context.isBackgroundAgent && !context.skipConfirmations && context.agentId && context.runId) {
-    await queuePendingAction({
-      agentId: context.agentId,
-      runId: context.runId,
-      userId,
-      toolName: 'slack_send_dm',
-      toolInput: input,
-    });
-    return { output: `Action queued for user approval.` };
+  {
+    const gate = await applyAutonomyGate({ userId, action: 'send_slack_dm', toolName: 'slack_send_dm', input, context, verb: 'message' });
+    if (gate.handled) return gate.result!;
   }
 
   const token = await getSlackToken(userId);

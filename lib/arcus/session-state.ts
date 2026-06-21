@@ -19,6 +19,15 @@
 // @ts-ignore — JS module, no .d.ts
 import { getSupabaseAdmin } from '../supabase.js';
 import { normalizeUserId } from './user-id';
+import { recordDecision, mapSessionApprovalToGrant } from './autonomy-grants';
+
+// A live-chat confirm/decline is the strongest precedent signal — count it toward
+// the graduated-autonomy ladder for this contact. Best-effort; never blocks.
+function countSessionDecision(userId: string, actionType: string, targetKey: string, decision: 'approved' | 'rejected') {
+  const grant = mapSessionApprovalToGrant(actionType, targetKey);
+  if (!grant?.targetKey) return;
+  recordDecision({ userId, action: grant.action, targetKey: grant.targetKey, decision, label: grant.targetKey }).catch(() => {});
+}
 
 export type ApprovalActionType =
   | 'send_email'
@@ -222,16 +231,19 @@ export async function approvePending(params: {
 }): Promise<boolean> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(APPROVAL_TABLE)
       .update({ status: 'approved', approved_at: new Date().toISOString() })
       .eq('id', params.approvalId)
       .eq('user_id', normalizeUserId(params.userId))
-      .eq('status', 'pending');
-    if (error) {
-      console.warn('[Arcus:Approvals] approvePending failed:', error.message);
+      .eq('status', 'pending')
+      .select('action_type, target_key')
+      .maybeSingle();
+    if (error || !data) {
+      if (error) console.warn('[Arcus:Approvals] approvePending failed:', error.message);
       return false;
     }
+    countSessionDecision(params.userId, data.action_type, data.target_key, 'approved');
     return true;
   } catch (err: any) {
     console.warn('[Arcus:Approvals] approvePending threw:', err.message);
@@ -283,12 +295,15 @@ export async function declinePending(params: {
 }): Promise<boolean> {
   try {
     const supabase = getSupabaseAdmin();
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from(APPROVAL_TABLE)
       .update({ status: 'declined' })
       .eq('id', params.approvalId)
       .eq('user_id', normalizeUserId(params.userId))
-      .eq('status', 'pending');
+      .eq('status', 'pending')
+      .select('action_type, target_key')
+      .maybeSingle();
+    if (!error && data) countSessionDecision(params.userId, data.action_type, data.target_key, 'rejected');
     return !error;
   } catch {
     return false;

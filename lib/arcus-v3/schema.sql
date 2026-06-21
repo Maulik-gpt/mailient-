@@ -230,3 +230,52 @@ CREATE UNIQUE INDEX IF NOT EXISTS arcus_sched_dedup_idx
 
 -- Gmail real-time push state (mirror of supabase/migrations/arcus_gmail_watch_v1.sql)
 ALTER TABLE arcus_integrations ADD COLUMN IF NOT EXISTS gmail_history_id TEXT;
+
+-- ──────────────────────────────────────────────────────────────────────────────
+-- Graduated Autonomy (mirror of supabase/migrations/arcus_autonomy_v1.sql)
+-- ──────────────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS arcus_autonomy_grants (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  scope TEXT NOT NULL DEFAULT 'contact' CHECK (scope IN ('contact','domain')),
+  action_type TEXT NOT NULL,
+  target_key TEXT NOT NULL,
+  level TEXT NOT NULL DEFAULT 'inherit' CHECK (level IN ('inherit','hold','auto','never')),
+  delay_mode TEXT NOT NULL DEFAULT 'buffer' CHECK (delay_mode IN ('buffer','instant')),
+  approve_count INT NOT NULL DEFAULT 0,
+  reject_count INT NOT NULL DEFAULT 0,
+  suggested BOOLEAN NOT NULL DEFAULT false,
+  label TEXT,
+  last_decision_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, action_type, target_key)
+);
+CREATE INDEX IF NOT EXISTS arcus_autonomy_lookup_idx ON arcus_autonomy_grants (user_id, action_type, target_key);
+
+CREATE TABLE IF NOT EXISTS arcus_autonomy_settings (
+  user_id TEXT PRIMARY KEY,
+  enabled BOOLEAN NOT NULL DEFAULT false,
+  buffer_minutes INT NOT NULL DEFAULT 10,
+  allow_instant BOOLEAN NOT NULL DEFAULT true,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS arcus_autonomy_actions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  agent_id UUID,
+  run_id TEXT,
+  tool_name TEXT NOT NULL,
+  tool_input JSONB NOT NULL,
+  action_type TEXT,
+  target_key TEXT,
+  status TEXT NOT NULL DEFAULT 'auto_scheduled' CHECK (status IN ('auto_scheduled','executing','done','failed','cancelled')),
+  execute_at TIMESTAMPTZ NOT NULL,
+  summary TEXT,
+  result TEXT,
+  error TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  executed_at TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS arcus_autonomy_actions_due_idx ON arcus_autonomy_actions (status, execute_at);
