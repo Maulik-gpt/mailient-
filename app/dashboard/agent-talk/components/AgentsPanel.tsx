@@ -9,6 +9,7 @@ import {
   MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2, Play,
   List, CalendarDays, ChevronLeft, ChevronRight, Compass, ShieldCheck,
   Check, ExternalLink, Calendar as CalendarIcon, Database,
+  Sunrise, DollarSign, Target, BarChart3, Layers,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -374,6 +375,28 @@ function curatedToUITemplate(t: CuratedAgentTemplate): UITemplate {
 }
 
 const TEMPLATES: UITemplate[] = CURATED_AGENT_TEMPLATES.map(curatedToUITemplate);
+
+function getTemplateIcon(id: string) {
+  const iconProps = { className: "w-4 h-4 text-arcus-fg-secondary" };
+  switch (id) {
+    case 'morning_inbox_sweep':
+      return <Sunrise {...iconProps} />;
+    case 'deal_pipeline_tracker':
+      return <DollarSign {...iconProps} />;
+    case 'meeting_prep_concierge':
+      return <CalendarIcon {...iconProps} />;
+    case 'weekly_executive_brief':
+      return <BarChart3 {...iconProps} />;
+    case 'vip_auto_responder':
+      return <Zap {...iconProps} />;
+    case 'stalled_deal_chaser':
+      return <Target {...iconProps} />;
+    case 'triage_draft_digest':
+      return <Layers {...iconProps} />;
+    default:
+      return <Clock {...iconProps} />;
+  }
+}
 
 function PremiumDatePicker({ value, onChange, minDate }: {
   value: string;
@@ -1772,8 +1795,8 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
                 className="bg-arcus-surface/60 backdrop-blur-xl border border-arcus-border rounded-2xl p-4 flex flex-col hover:border-arcus-divider hover:bg-arcus-surface transition-all group"
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0 text-[18px]">
-                    {t.emoji || <Clock className="w-4 h-4 text-arcus-fg-secondary" />}
+                  <div className="w-9 h-9 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0">
+                    {getTemplateIcon(t.id)}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold text-arcus-fg leading-tight truncate">{t.name}</p>
@@ -1812,7 +1835,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
               >
                 <div className="flex items-center gap-2.5 mb-2.5">
                   <div className="w-8 h-8 rounded-xl bg-arcus-raised/80 flex items-center justify-center flex-shrink-0">
-                    <Clock className="w-4 h-4 text-arcus-fg-secondary" />
+                    {getTemplateIcon(t.id)}
                   </div>
                   <p className="text-[14px] font-bold text-arcus-fg leading-tight">{t.name}</p>
                 </div>

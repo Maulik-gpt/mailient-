@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, ChevronLeft, ChevronRight,
   MoreHorizontal, List, Slack, Trash2, Edit2, AlertCircle, CalendarDays, Compass,
+  Sunrise, DollarSign, Target, BarChart3, Layers,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -162,6 +163,26 @@ const TEMPLATES = [
   { name: 'Notion + Inbox Sync', description: 'Every morning at 8am, cross-references your Notion tasks with Gmail, sends a project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my current Notion task list, search my Gmail inbox for emails related to each active project, find which projects have unread messages, and email me a concise project briefing.' },
   { name: 'Lead Harvest', description: 'Every morning at 5am, runs the full lead qualification flow across inbox and web, pushes to Notion.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for any new inbound leads, partnership inquiries, or business development emails, use web search to research and qualify each lead, save qualified leads to my Notion database, and email me a harvest report.' },
 ];
+
+function getTemplateIcon(name: string) {
+  const iconProps = { className: "w-4.5 h-4.5 text-zinc-400" };
+  switch (name) {
+    case 'Morning Inbox Sweep':
+      return <Sunrise {...iconProps} />;
+    case 'Meeting Autopilot':
+      return <CalendarDays {...iconProps} />;
+    case 'Weekly Opportunity Digest':
+      return <BarChart3 {...iconProps} />;
+    case 'Client Pulse':
+      return <Zap {...iconProps} />;
+    case 'Notion + Inbox Sync':
+      return <Layers {...iconProps} />;
+    case 'Lead Harvest':
+      return <Target {...iconProps} />;
+    default:
+      return <Clock {...iconProps} />;
+  }
+}
 
 const SCHEDULE_PATTERNS = [
   { label: 'Every day',     key: 'daily',   needsTime: true,  needsDay: false },
@@ -1100,7 +1121,7 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
-                <Clock className="w-4.5 h-4.5 text-zinc-400" />
+                {getTemplateIcon(t.name)}
               </div>
               <h4 className="text-[15px] font-bold text-zinc-100 leading-tight">{t.name}</h4>
             </div>

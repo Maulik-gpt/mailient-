@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { HomeFeedSidebar } from "@/components/ui/home-feed-sidebar";
 import { motion } from "framer-motion";
 
@@ -20,11 +21,15 @@ function ShimmerBar({ className = "", delay = 0 }: { className?: string; delay?:
 }
 
 export function AgentLoading() {
+    const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
     return (
         <div className="flex h-screen w-full bg-arcus-bg text-arcus-fg overflow-hidden relative">
-            <HomeFeedSidebar />
+            <HomeFeedSidebar onCollapse={setIsSidebarCollapsed} />
 
-            <div className="flex-1 flex flex-col md:pl-48 px-6 md:px-12 py-6 relative">
+            <div className={`flex-1 flex flex-col transition-[margin] duration-300 px-3 sm:px-6 py-4 relative ${
+                isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'
+            }`}>
                 {/* Top bar */}
                 <div className="flex items-center justify-between w-full h-14 mb-12">
                     <ShimmerBar className="w-28 h-6 rounded-lg" />
