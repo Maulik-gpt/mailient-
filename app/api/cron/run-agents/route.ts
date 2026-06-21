@@ -89,7 +89,22 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ message: 'arcus_agents table not found — skipping.' });
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  if (!agents?.length) return NextResponse.json({ message: 'No active agents.', ran: 0 });
+  if (!agents?.length) {
+    // No scheduled agents this tick — but the independent queues must still fire:
+    // scheduled emails created from chat, and autonomy actions whose undo window
+    // elapsed, don't require an active agent to exist. (These also run later in the
+    // normal path; only one branch executes per tick.)
+    const drainResults: string[] = [];
+    try {
+      const mail = await drainScheduledEmails(supabase);
+      if (mail.claimed) drainResults.push(`Scheduled mail: ${mail.sent} sent, ${mail.retried} retry, ${mail.failed} failed`);
+    } catch (e: any) { console.warn('[Cron] scheduled-mail drain failed:', e?.message); }
+    try {
+      const auto = await drainAutonomyActions(supabase);
+      if (auto.claimed) drainResults.push(`Autonomy: ${auto.done} done, ${auto.failed} failed`);
+    } catch (e: any) { console.warn('[Cron] autonomy drain failed:', e?.message); }
+    return NextResponse.json({ message: 'No active agents.', ran: 0, results: drainResults });
+  }
 
   const now = new Date();
   const results: string[] = [];

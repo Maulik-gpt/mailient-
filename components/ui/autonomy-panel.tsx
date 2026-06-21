@@ -10,13 +10,15 @@ interface Grant { action_type: GrantAction; target_key: string; level: string; d
 interface ActionRow { id: string; tool_name: string; summary?: string; status: string; execute_at: string; target_key?: string; }
 interface Settings { enabled: boolean; bufferMinutes: number; allowInstant: boolean; }
 
-const ACTION_LABEL: Record<GrantAction, string> = {
+const ACTION_LABEL: Record<string, string> = {
   send_email: 'Email replies',
   schedule_meeting: 'Meeting bookings',
   send_slack_message: 'Slack messages',
   send_slack_dm: 'Slack DMs',
   calcom_book: 'Cal.com bookings',
 };
+// Never let an unexpected action_type crash the panel via undefined.toLowerCase().
+const actionLabel = (a: string) => ACTION_LABEL[a] || 'Actions';
 
 export default function AutonomyPanel() {
   const [loading, setLoading] = useState(true);
@@ -124,7 +126,7 @@ export default function AutonomyPanel() {
               <div className="flex items-start gap-2.5 min-w-0">
                 <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0 mt-0.5" />
                 <p className="text-[13px] text-arcus-fg leading-snug">
-                  You’ve approved <span className="font-bold">{s.approve_count}</span> {ACTION_LABEL[s.action_type].toLowerCase()} to <span className="font-bold">{s.label || s.target_key}</span>. Let Arcus handle these automatically?
+                  You’ve approved <span className="font-bold">{s.approve_count}</span> {actionLabel(s.action_type).toLowerCase()} to <span className="font-bold">{s.label || s.target_key}</span>. Let Arcus handle these automatically?
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
@@ -171,7 +173,7 @@ export default function AutonomyPanel() {
             <div key={`${g.action_type}|${g.target_key}`} className="p-3 bg-arcus-surface/40 border border-arcus-border rounded-xl flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[13px] font-semibold text-arcus-fg truncate">{g.label || g.target_key}</p>
-                <p className="text-[11.5px] text-arcus-fg-muted">{ACTION_LABEL[g.action_type]}</p>
+                <p className="text-[11.5px] text-arcus-fg-muted">{actionLabel(g.action_type)}</p>
               </div>
               <select
                 value={g.level === 'auto' ? (g.delay_mode === 'instant' ? 'auto_instant' : 'auto_buffer') : g.level}
