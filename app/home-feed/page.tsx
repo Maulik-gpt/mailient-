@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from 'react';
+import { useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import SiftToday from '@/components/ui/sift-today';
@@ -31,6 +31,7 @@ function HomeFeedContent() {
     try { return sessionStorage.getItem('mailient_access_denied') !== '1'; } catch { return true; }
   });
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const verifyRanRef = useRef(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
   const [activatedPlan, setActivatedPlan] = useState('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -85,6 +86,13 @@ function HomeFeedContent() {
     }
 
     if (status === "authenticated" && session?.user?.email) {
+      // Run the access check exactly once per mount. NextAuth can hand us a new
+      // `session` object reference on re-render; without this guard the effect
+      // re-fires and spins up overlapping polling loops — the "stuck in a loop"
+      // the user saw in the console.
+      if (verifyRanRef.current) return;
+      verifyRanRef.current = true;
+
       const checkAccessAndSubscription = async () => {
         try {
           // Detect if user might have just returned from payment or activation
@@ -145,22 +153,24 @@ function HomeFeedContent() {
                 console.log('🎉 [HomeFeed] Activation confirmed!', planType);
                 localStorage.setItem('onboarding_completed', 'true');
                 sessionStorage.setItem('activation_verified_this_session', 'true');
+                try { sessionStorage.removeItem('mailient_access_denied'); } catch {}
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
-                    setPaymentVerified(true);
-                    
-                    // Specific plan name for UI
-                    const planName = planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : 'Free';
-                    setActivatedPlan(planName);
-                
+                setPaymentVerified(true);
+
+                // Specific plan name for UI
+                const planName = planType === 'starter' ? 'Starter' : planType === 'pro' ? 'Pro' : 'Free';
+                setActivatedPlan(planName);
+
+                // Grant access directly — NO page reload. The reload was the source
+                // of the stuck "Activating…" loop: a reload re-ran this effect and,
+                // on slow webhook propagation, could re-enter verification. Showing
+                // the success state then revealing the app in-place is loop-proof.
+                setAccessGranted(true);
                 setTimeout(() => {
                   setIsVerifyingPayment(false);
                   setPaymentVerified(false);
                 }, 2500);
-
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2800);
                 return; // Stop polling
               }
 
@@ -174,7 +184,7 @@ function HomeFeedContent() {
               // trial plan from a completed Polar checkout. No free tier.
               if (isPaidPlan && !isExpired) {
                 localStorage.setItem('onboarding_completed', 'true');
-                try { sessionStorage.removeItem('mailient_access_denied'); } catch {}
+                try { sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
                 setIsVerifyingPayment(false);
                 setShowPricing(false);
                 setAccessGranted(true);
@@ -192,7 +202,13 @@ function HomeFeedContent() {
                 console.log('🚫 [HomeFeed] No active subscription — paywall.');
                 const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
                 const onboardingData = onboardingResp && onboardingResp.ok ? await onboardingResp.json() : { completed: true };
-                if (!onboardingData.completed) {
+                // Loop guard: if we already bounced this tab to /onboarding once and
+                // we're back here unsubscribed, send to the terminal paywall instead
+                // of risking a /home-feed <-> /onboarding ping-pong on a status race.
+                let bounced = false;
+                try { bounced = sessionStorage.getItem('hf_sent_onboarding') === '1'; } catch {}
+                if (!onboardingData.completed && !bounced) {
+                    try { sessionStorage.setItem('hf_sent_onboarding', '1'); } catch {}
                     router.replace('/onboarding');
                 } else {
                     router.replace('/pricing');

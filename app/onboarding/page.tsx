@@ -66,9 +66,13 @@ export default function OnboardingPage() {
 
                 if (data.completed) {
                   serverCompleted = true;
-                  // Already completed onboarding, ensure cached locally for status indicators but don't force redirect
-                  console.log('📋 [Onboarding] Onboarding completed according to server.');
+                  // Onboarding is done — a returning user should land in the app,
+                  // not sit on the onboarding flow. The dashboard's own gate then
+                  // routes them (active sub → dashboard, otherwise → /pricing).
+                  console.log('📋 [Onboarding] Already completed — redirecting to dashboard.');
                   localStorage.setItem('onboarding_completed', 'true');
+                  router.replace('/home-feed');
+                  return;
                 } else if (data.lastStep && data.lastStep >= 1) {
                   // Not completed, resume at the last step they reached (1-indexed flow)
                   const currentParam = new URLSearchParams(window.location.search).get('step');
