@@ -7,11 +7,12 @@ import { useRouter } from 'next/navigation';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, Slack,
   MoreHorizontal, AlertCircle, ChevronDown, Edit2, Trash2, Play,
-  List, CalendarDays, ChevronLeft, ChevronRight, Compass,
+  List, CalendarDays, ChevronLeft, ChevronRight, Compass, ShieldCheck,
   Check, ExternalLink, Calendar as CalendarIcon, Database,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import AutonomyPanel from '@/components/ui/autonomy-panel';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -1414,7 +1415,7 @@ export interface AgentsPanelProps {
 export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'tasks' | 'calendar' | 'marketplace'>('tasks');
+  const [tab, setTab] = useState<'tasks' | 'calendar' | 'marketplace' | 'autonomy'>('tasks');
   const [createOpen, setCreateOpen] = useState(false);
   const [editAgent, setEditAgent] = useState<Agent | null>(null);
   const [templateInit, setTemplateInit] = useState<Partial<Agent> | null>(null);
@@ -1706,6 +1707,7 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
         {([
           { key: 'tasks',    label: 'Tasks',    Icon: List },
           { key: 'calendar', label: 'Calendar', Icon: CalendarDays },
+          { key: 'autonomy', label: 'Autonomy', Icon: ShieldCheck },
           { key: 'marketplace', label: 'Marketplace', Icon: Compass },
         ] as const).map(({ key, label, Icon }) => (
           <button
@@ -1753,6 +1755,8 @@ export function AgentsPanel({ className, onSendMessage }: AgentsPanelProps) {
           agents={agents.filter(a => a.status !== 'paused')}
           onAgentClick={() => {}}
         />
+      ) : tab === 'autonomy' ? (
+        <AutonomyPanel />
       ) : tab === 'marketplace' ? (
         <div>
           <p className="text-[13px] text-arcus-fg-muted mb-5 leading-relaxed">
