@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
-import { sendPlanEmail } from '@/lib/email-service';
+import { sendPlanEmail, sendReceiptEmail } from '@/lib/email-service';
+import { getPolarInvoiceUrl, formatPolarAmount } from '@/lib/polar-invoice';
 import crypto from 'crypto';
 
 /**
@@ -122,6 +123,7 @@ export async function POST(request) {
             case 'subscription.updated':
             case 'subscription.active':
             case 'checkout.completed':
+            case 'order.paid':
             case 'order.created': {
                 // Get user email from various possible locations (exhaustive search)
                 let userEmail = data.customer?.email ||
@@ -199,6 +201,32 @@ export async function POST(request) {
                             else console.warn(`⚠️ Welcome email failed for ${userEmail}:`, result.error);
                         })
                         .catch(err => console.error('❌ Email send threw unexpectedly:', err));
+                }
+
+                // Payment receipt + Polar invoice — gated strictly on 'order.paid'
+                // (the canonical "money received" event) so a single purchase can't
+                // double-send when Polar also emits order.created. Trials start at
+                // $0 and emit no paid order, so they get the welcome email above but
+                // no receipt here, which is correct.
+                const chargedMinor = Number(
+                    data.amount ?? data.total_amount ?? data.net_amount ?? data.amount_total ?? 0,
+                );
+                if (eventType === 'order.paid' && chargedMinor > 0 && data.id) {
+                    const orderId = data.id;
+                    const customerName = data.customer?.name || data.user?.name || null;
+                    const amountLabel = formatPolarAmount(chargedMinor, data.currency || 'USD');
+                    const planLabel = (PLANS[planType] && PLANS[planType].name) || 'Mailient';
+                    const dateLabel = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+                    // Generate + fetch the invoice PDF (best-effort), then email the
+                    // receipt. Done inline so the webhook stays warm long enough for
+                    // the serverless function to complete the send.
+                    try {
+                        const invoiceUrl = await getPolarInvoiceUrl(orderId);
+                        const r = await sendReceiptEmail({ toEmail: userEmail, toName: customerName, planLabel, amountLabel, dateLabel, invoiceUrl });
+                        console.log(`🧾 Receipt email ${r.success ? 'sent' : 'failed'} for order ${orderId} → ${userEmail}${invoiceUrl ? ' (with invoice)' : ' (invoice pending)'}`);
+                    } catch (err) {
+                        console.error('❌ Receipt/invoice send failed:', err?.message || err);
+                    }
                 }
                 break;
             }
