@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -230,18 +230,36 @@ interface ItemCardProps {
   reason: string;
   primaryAction: { label: string; onClick: () => void };
   secondaryAction?: { label: string; href: string };
+  onDismiss?: () => void;
 }
 
-function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAction }: ItemCardProps) {
+function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAction, onDismiss }: ItemCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -4 }}
+      exit={{ opacity: 0, x: -60, transition: { duration: 0.18 } }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -1 }}
+      {...(onDismiss ? {
+        drag: 'x' as const,
+        dragConstraints: { left: 0, right: 0 },
+        dragElastic: { left: 0.8, right: 0.04 },
+        // Swipe left past the threshold to remove the card.
+        onDragEnd: (_e: any, info: { offset: { x: number } }) => { if (info.offset.x < -90) onDismiss(); },
+      } : {})}
       className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
     >
+      {onDismiss && (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDismiss(); }}
+          title="Dismiss (or swipe left)"
+          className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full flex items-center justify-center text-black/30 dark:text-white/30 opacity-0 group-hover:opacity-100 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:text-black/70 dark:hover:text-white/70 transition-all"
+        >
+          <X className="w-3.5 h-3.5" strokeWidth={2.25} />
+        </button>
+      )}
       <div className="flex items-center justify-between gap-3 mb-1">
         <div className="flex items-center gap-2 min-w-0">
           <div className="w-6 h-6 rounded-full bg-black/[0.05] dark:bg-white/[0.07] flex items-center justify-center text-[11px] font-semibold text-black/70 dark:text-white/70 flex-shrink-0 tracking-tight">
@@ -504,12 +522,45 @@ function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
   );
 }
 
+// In-memory snapshot so swapping tabs (which remounts this component) is instant.
+// Stale-while-revalidate: show the cached data immediately, refresh in the
+// background. Lives for the page session; Refresh forces a fresh fetch.
+let TODAY_CACHE: TodayPayload | null = null;
+
+// Swipe-to-dismiss state, persisted with a TTL so a removed item doesn't come
+// back on the next background refresh, but the set can't grow unbounded.
+const DISMISS_KEY = 'mailient_today_dismissed';
+const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+function loadDismissed(): Map<string, number> {
+  const m = new Map<string, number>();
+  try {
+    const raw = JSON.parse(localStorage.getItem(DISMISS_KEY) || '{}') as Record<string, number>;
+    const now = Date.now();
+    for (const [id, at] of Object.entries(raw)) if (now - at < DISMISS_TTL_MS) m.set(id, at);
+  } catch { /* ignore */ }
+  return m;
+}
+function persistDismissed(m: Map<string, number>) {
+  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(Object.fromEntries(m))); } catch { /* ignore */ }
+}
+
 export default function SiftToday() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data, setData] = useState<TodayPayload | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<TodayPayload | null>(() => TODAY_CACHE);
+  const [loading, setLoading] = useState(!TODAY_CACHE);
   const [error, setError] = useState<string | null>(null);
+  const [dismissed, setDismissed] = useState<Map<string, number>>(() =>
+    typeof window !== 'undefined' ? loadDismissed() : new Map());
+
+  const dismissItem = useCallback((id: string) => {
+    setDismissed((prev) => {
+      const next = new Map(prev);
+      next.set(id, Date.now());
+      persistDismissed(next);
+      return next;
+    });
+  }, []);
 
   const [activeDraft, setActiveDraft] = useState<any>(null);
   const [isDraftingNudgeId, setIsDraftingNudgeId] = useState<string | null>(null);
@@ -660,26 +711,30 @@ export default function SiftToday() {
     return '';
   }, [session]);
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  const load = useCallback(async (opts?: { background?: boolean }) => {
+    const bg = !!opts?.background;
+    if (!bg) setLoading(true);
     setError(null);
     try {
       const res = await fetch('/api/home-feed/today', { cache: 'no-store' });
       const json = await res.json();
       if (!json.success) {
-        setError(json.error || 'Failed to load.');
+        if (!bg) setError(json.error || 'Failed to load.');
         return;
       }
+      TODAY_CACHE = json as TodayPayload;
       setData(json as TodayPayload);
     } catch (e: any) {
-      setError(e?.message || 'Network error.');
+      if (!bg) setError(e?.message || 'Network error.');
     } finally {
-      setLoading(false);
+      if (!bg) setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    load();
+    // If a snapshot is already cached, show it instantly and revalidate quietly —
+    // tab swaps no longer wait ~7s. First-ever load shows the skeleton.
+    load({ background: !!TODAY_CACHE });
   }, [load]);
 
   const openArcus = (prompt: string) => {
@@ -712,6 +767,12 @@ export default function SiftToday() {
 
   const lastUpdated = useMemo(() => (data ? formatRelative(data.generatedAt) : null), [data]);
 
+  // Hide swipe-dismissed items from every bucket (survives background refresh).
+  const decideItems = useMemo(() => (data?.decide ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
+  const chaseItems = useMemo(() => (data?.chase ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
+  const showUpItems = useMemo(() => (data?.showUp ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
+  const actionItemsVisible = useMemo(() => (data?.actionItems ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
+
   return (
     <div className="w-full min-h-screen bg-transparent">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
@@ -730,7 +791,7 @@ export default function SiftToday() {
           </div>
           <button
             type="button"
-            onClick={load}
+            onClick={() => load()}
             disabled={loading}
             className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40 flex-shrink-0"
             title="Refresh"
@@ -848,16 +909,16 @@ export default function SiftToday() {
         {data && data.gmailConnected && !data.emptyAll && (
           <div className="space-y-10">
             {/* PROMISED (action items from /log) */}
-            {data.actionItems.length > 0 && (
+            {actionItemsVisible.length > 0 && (
               <section>
                 <BucketHeader
                   label="Promised"
-                  count={data.actionItems.length}
+                  count={actionItemsVisible.length}
                   icon={<CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />}
                 />
                 <div className="space-y-2.5">
                   <AnimatePresence>
-                    {data.actionItems.map((item) => (
+                    {actionItemsVisible.map((item) => (
                       <ItemCard
                         key={item.id}
                         topLeft={item.meetingTitle || 'from your notes'}
@@ -866,6 +927,7 @@ export default function SiftToday() {
                         reason={item.attendees.length > 0
                           ? `Promised after meeting with ${item.attendees.slice(0, 2).join(', ')}${item.attendees.length > 2 ? ` +${item.attendees.length - 2}` : ''}.`
                           : 'From your meeting notes.'}
+                        onDismiss={() => dismissItem(item.id)}
                         primaryAction={{
                           label: item.isOverdue ? 'Handle now' : 'Open',
                           onClick: () => {
@@ -886,21 +948,22 @@ export default function SiftToday() {
             <section>
               <BucketHeader
                 label="Decide"
-                count={data.decide.length}
+                count={decideItems.length}
                 icon={<Reply className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.decide.length === 0 ? (
+              {decideItems.length === 0 ? (
                 <EmptyBucket message="Inbox is clear — nothing urgent unanswered." />
               ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
-                    {data.decide.map((item) => (
+                    {decideItems.map((item) => (
                       <ItemCard
                         key={item.id}
                         topLeft={item.sender.name || item.sender.email}
                         topRight={formatRelative(item.receivedAt)}
                         title={item.subject}
                         reason={item.reason}
+                        onDismiss={() => dismissItem(item.id)}
                         primaryAction={{
                           label: isDraftingDecideId === item.id ? 'Drafting...' : 'Draft reply',
                           onClick: () => handleDraftDecide(item),
@@ -917,21 +980,22 @@ export default function SiftToday() {
             <section>
               <BucketHeader
                 label="Show up"
-                count={data.showUp.length}
+                count={showUpItems.length}
                 icon={<CalendarClock className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.showUp.length === 0 ? (
+              {showUpItems.length === 0 ? (
                 <EmptyBucket message="No meetings on the books today." />
               ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
-                    {data.showUp.map((item) => (
+                    {showUpItems.map((item) => (
                       <ItemCard
                         key={item.id}
                         topLeft={formatStartTime(item.start)}
                         topRight={`${item.attendeeCount} attendee${item.attendeeCount === 1 ? '' : 's'}`}
                         title={item.title}
                         reason={item.isExternal ? 'External meeting — prep it.' : 'Internal meeting.'}
+                        onDismiss={() => dismissItem(item.id)}
                         primaryAction={{
                           label: 'Prep me',
                           onClick: () =>
@@ -951,21 +1015,22 @@ export default function SiftToday() {
             <section>
               <BucketHeader
                 label="Chase"
-                count={data.chase.length}
+                count={chaseItems.length}
                 icon={<Clock className="w-3.5 h-3.5" strokeWidth={2} />}
               />
-              {data.chase.length === 0 ? (
+              {chaseItems.length === 0 ? (
                 <EmptyBucket message="Nobody owes you a reply right now." />
               ) : (
                 <div className="space-y-2.5">
                   <AnimatePresence>
-                    {data.chase.map((item) => (
+                    {chaseItems.map((item) => (
                       <ItemCard
                         key={item.id}
                         topLeft={item.recipient.name || item.recipient.email}
                         topRight={`${item.daysSilent}d silent`}
                         title={item.subject}
                         reason="You sent this. They haven't replied."
+                        onDismiss={() => dismissItem(item.id)}
                         primaryAction={{
                           label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
                           onClick: () => handleDraftNudge(item),
