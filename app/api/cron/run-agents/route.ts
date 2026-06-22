@@ -48,13 +48,12 @@ const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.x
 const STALE_LOCK_MIN = 60;
 
 export const dynamic = 'force-dynamic';
-// Vercel HOBBY (free) plan hard-caps at 60s. We CANNOT use 300 here — Vercel
-// would kill the function at 60s with the committee mid-run (status='running',
-// no report). So we cap at 60 and size the internal budget below it. The
-// committee runs leaner (fewer tool calls, shorter deadline) so it self-
-// terminates and DELIVERS a report inside 60s rather than crashing.
-// (On Vercel Pro, raise this to 300 and FUNCTION_BUDGET_MS to ~285_000.)
-// cron-job.org's own request timeout should be ≥60s so it captures the response.
+// The hard function time limit. Vercel HOBBY caps at 60s; PRO allows up to 300s.
+// Heavy agents (a full autonomous inbox sweep) can't finish in 60s and get killed
+// mid-run — the cause of "Morning Sweep never completed / stuck Running…".
+// Next.js requires this to be a STATIC literal, so it can't be read from env.
+// ON VERCEL PRO: change this one number to 300 — the working budget below derives
+// from it and scales automatically. cron-job.org's request timeout must be ≥ this.
 export const maxDuration = 60;
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -79,6 +78,42 @@ export async function GET(request: NextRequest) {
   const onlyEvents = new URL(request.url).searchParams.get('only') === 'events';
 
   const supabase = getSupabaseAdmin();
+
+  // ── Reap stuck runs ────────────────────────────────────────────────────────
+  // A run/agent left in 'running' longer than the function could possibly live
+  // means Vercel killed the function mid-run before it could write its report.
+  // Close those out so the UI is truthful (a real Error, not a perpetual
+  // "Running…") and the agent is freed to run again. Cutoff = the hard limit plus
+  // a 2-min grace, so we never touch a run that might still be executing.
+  const reapCutoffIso = new Date(Date.now() - (maxDuration + 120) * 1000).toISOString();
+  try {
+    await supabase
+      .from('arcus_agent_runs')
+      .update({
+        status: 'error',
+        error_message: 'Run was cut short by the serverless time limit before it finished. It will retry on the next scheduled run.',
+        completed_at: new Date().toISOString(),
+      })
+      .eq('status', 'running')
+      .lt('started_at', reapCutoffIso);
+    await supabase
+      .from('arcus_agents')
+      .update({ status: 'active' })
+      .eq('status', 'running')
+      .lt('last_run_at', reapCutoffIso);
+  } catch (e: any) {
+    console.warn('[Cron] stuck-run reaper failed:', e?.message);
+  }
+  // Same for autonomy actions a killed function left mid-flight. Mark them failed
+  // (not retried) — a row stuck in 'executing' may have partially sent, so we don't
+  // risk a double-send. (No-op if the autonomy table isn't migrated.)
+  try {
+    await supabase
+      .from('arcus_autonomy_actions')
+      .update({ status: 'failed', error: 'Interrupted by the serverless time limit; not retried to avoid a double-send.', executed_at: new Date().toISOString() })
+      .eq('status', 'executing')
+      .lt('execute_at', reapCutoffIso);
+  } catch { /* table optional */ }
 
   const { data: agents, error } = await supabase
     .from('arcus_agents')
@@ -110,16 +145,14 @@ export async function GET(request: NextRequest) {
   const results: string[] = [];
   let ran = 0;
 
-  // Vercel kills this function at maxDuration (300s). Reserve a generous
-  // margin for report delivery (Gmail/Slack) + DB writes, then split the
-  // remaining wall-clock across the agents due this tick so the committee
-  // self-terminates and writes its report BEFORE Vercel pulls the plug.
-  // Sized for the Vercel Hobby 60s cap: 52s working budget leaves 8s headroom,
-  // with 12s reserved for report delivery (Gmail/Slack) + DB writes. The
-  // committee self-terminates and ships a report inside 60s. (On Pro: 285_000 /
-  // 20_000.)
-  const FUNCTION_BUDGET_MS = 52_000;
-  const DELIVERY_RESERVE_MS = 12_000;
+  // Working budget, sized OFF the real function limit so it scales when you raise
+  // AGENT_FN_MAX_DURATION on Pro. We reserve ~13% (min 8s) of headroom so the
+  // committee self-terminates and writes its report BEFORE Vercel pulls the plug,
+  // and a slice for report delivery (Gmail/Slack) + DB writes. At 60s → ~52s/12s;
+  // at 300s → ~261s/40s.
+  const FN_LIMIT_MS = maxDuration * 1000;
+  const FUNCTION_BUDGET_MS = Math.round(FN_LIMIT_MS - Math.max(8_000, FN_LIMIT_MS * 0.13));
+  const DELIVERY_RESERVE_MS = Math.min(40_000, Math.max(12_000, Math.round(FN_LIMIT_MS * 0.13)));
   const cronStartedAt = Date.now();
   const timeLeftMs = () => FUNCTION_BUDGET_MS - (Date.now() - cronStartedAt);
 
