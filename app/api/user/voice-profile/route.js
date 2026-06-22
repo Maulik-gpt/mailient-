@@ -152,3 +152,45 @@ export async function PUT(request) {
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
+
+/**
+ * PATCH — Conversational refinement. The user types natural-language feedback
+ * ("this doesn't sound like me, I never use emojis, it's too robotic") and we
+ * append it to their voice directives. These ride into every draft as a
+ * [CRITICAL DIRECTIVE] (see buildManualPromptFragment), so corrections stick.
+ */
+export async function PATCH(request) {
+    try {
+        const session = await auth();
+        if (!session?.user?.email) {
+            return Response.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        const userId = session.user.email;
+        const { instruction } = await request.json();
+        if (!instruction || !String(instruction).trim()) {
+            return Response.json({ error: 'instruction is required' }, { status: 400 });
+        }
+
+        const existing = await voiceProfileService.getVoiceProfile(userId) || voiceProfileService.getDefaultVoiceProfile();
+        const ms = existing.manual_settings || {};
+        const prev = (ms.customInstructions || '').trim();
+        // Append the new directive (newline-separated), keep it bounded.
+        const merged = [prev, String(instruction).trim()].filter(Boolean).join('\n').slice(-2000);
+
+        existing.manual_settings = {
+            tone: ms.tone || { formality: 50, detail: 40, warmth: 50, confidence: 30 },
+            habits: Array.isArray(ms.habits) ? ms.habits : [],
+            customInstructions: merged,
+            activeProfile: ms.activeProfile || 'work',
+        };
+        existing.prompt_fragment = voiceProfileService.buildManualPromptFragment(existing.manual_settings, existing);
+        existing.status = existing.status === 'default' ? 'manual' : existing.status;
+        existing.updated_at = new Date().toISOString();
+
+        await voiceProfileService.saveVoiceProfile(userId, existing);
+        return Response.json({ success: true, customInstructions: merged, profile: existing });
+    } catch (error) {
+        console.error('Error refining voice profile:', error);
+        return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+    }
+}

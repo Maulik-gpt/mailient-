@@ -46,6 +46,9 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
   // --- Learning ---
   const [autoImprove, setAutoImprove] = useState(true);
   const [isRunningAnalysis, setIsRunningAnalysis] = useState(false);
+  // Manual source import — paste your own writing instead of scanning Gmail.
+  const [importText, setImportText] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
 
   // --- Live Preview ---
   const [previewText, setPreviewText] = useState('');
@@ -190,6 +193,46 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       toast.error('Failed to run analysis');
     } finally {
       setIsRunningAnalysis(false);
+    }
+  };
+
+  // --- Import pasted writing samples ---
+  const rehydrateFromProfile = (profile: any) => {
+    const ms = profile?.manual_settings;
+    if (!ms) return;
+    setFormality(ms.tone?.formality ?? formality);
+    setDetail(ms.tone?.detail ?? detail);
+    setWarmth(ms.tone?.warmth ?? warmth);
+    setConfidence(ms.tone?.confidence ?? confidence);
+    if (ms.habits?.length) setHabits(ms.habits);
+    if (ms.customInstructions) setCustomInstructions(ms.customInstructions);
+  };
+
+  const handleImport = async () => {
+    if (importText.trim().length < 20) {
+      toast.error('Paste a bit more of your writing first.');
+      return;
+    }
+    setIsImporting(true);
+    try {
+      const res = await fetch('/api/user/voice-profile/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: importText }),
+      });
+      const data = await res.json();
+      if (res.ok && data.profile) {
+        onProfileUpdated?.(data.profile);
+        rehydrateFromProfile(data.profile);
+        setImportText('');
+        toast.success(`Learned your voice from ${data.samplesUsed} sample${data.samplesUsed === 1 ? '' : 's'}.`);
+      } else {
+        toast.error(data.error || 'Import failed');
+      }
+    } catch {
+      toast.error('Failed to import samples');
+    } finally {
+      setIsImporting(false);
     }
   };
 
@@ -344,13 +387,16 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
               </div>
             </div>
 
-            {/* ── CUSTOM INSTRUCTIONS ── */}
+            {/* ── PROMPT-EDIT YOUR VOICE ── */}
             <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-3">
-              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Custom Instructions</h3>
+              <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Tell Arcus how to sound like you</h3>
+              <p className="text-[12px] text-black/40 dark:text-white/30 font-light">
+                Just say what&apos;s off, in plain words — Arcus applies it to every draft as a hard rule.
+              </p>
               <textarea
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
-                placeholder="E.g., I never apologise for response time. I prefer to just get to the point. Oxford commas always."
+                placeholder="E.g., This doesn't sound like me. I never use emojis, and it's too robotic — keep it warm and to the point."
                 className="w-full bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-black/80 dark:text-white/80 font-light leading-relaxed focus:outline-none focus:border-black/15 dark:focus:border-white/15 resize-none placeholder:text-black/30 dark:placeholder:text-white/20 transition-colors"
                 rows={3}
               />
@@ -401,6 +447,32 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                     <>Run analysis <ExternalLink className="w-3 h-3" /></>
                   )}
                 </button>
+              </div>
+
+              {/* Manual import — paste your own writing */}
+              <div className="pt-3 border-t border-emerald-500/[0.08] space-y-3">
+                <div>
+                  <p className="text-[14px] font-semibold text-black/80 dark:text-white/80">Or paste your own writing</p>
+                  <p className="text-[12px] text-black/40 dark:text-white/30 font-light mt-0.5">
+                    Drop in a few emails, messages, or anything you&apos;ve written. Separate samples with a blank line.
+                  </p>
+                </div>
+                <textarea
+                  value={importText}
+                  onChange={(e) => setImportText(e.target.value)}
+                  placeholder={"Paste a few things you've written here…\n\n(blank line between separate samples)"}
+                  className="w-full bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-black/80 dark:text-white/80 font-light leading-relaxed focus:outline-none focus:border-black/15 dark:focus:border-white/15 resize-none placeholder:text-black/30 dark:placeholder:text-white/20 transition-colors"
+                  rows={4}
+                />
+                <div className="flex justify-end">
+                  <button
+                    onClick={handleImport}
+                    disabled={isImporting || importText.trim().length < 20}
+                    className="flex items-center gap-2 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-xl text-[13px] font-semibold hover:opacity-90 transition-all disabled:opacity-40"
+                  >
+                    {isImporting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Learn from this'}
+                  </button>
+                </div>
               </div>
             </div>
 
