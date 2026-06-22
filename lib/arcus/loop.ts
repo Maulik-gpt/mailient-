@@ -646,6 +646,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   const startedAt = Date.now();
   const deadlineAt =
     typeof deadlineMs === 'number' && deadlineMs > 0 ? startedAt + deadlineMs : Infinity;
+  // The report-writing call runs AFTER the tool deadline, so it gets a bit more
+  // rope (the cron's delivery reserve) — still bounded so it can never overshoot
+  // the function limit and get the run killed mid-finalize.
+  const reportDeadlineAt = Number.isFinite(deadlineAt) ? deadlineAt + 12_000 : Infinity;
   // Newsletter/promo filtering should apply to ANY email-listing task, not only
   // ones that match inbox keywords — otherwise promos leak into summaries and
   // "reply to X" results. The only time we keep them is when the user is
@@ -1406,7 +1410,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             }
           }
 
-          const response = await callLLM(messages, availableTools, { forceToolCall: forceNextToolCall });
+          const response = await callLLM(messages, availableTools, { forceToolCall: forceNextToolCall, deadlineAt });
           forceNextToolCall = false;
           messages.push({ role: 'assistant', content: response.content });
 
@@ -1877,6 +1881,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   },
                 ],
                 finalTools,
+                { deadlineAt: reportDeadlineAt },
               );
               // Handle canvas call in the final forced response
               const finalToolCalls = getToolCalls(finalResponse.content);
@@ -1906,6 +1911,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     },
                   ],
                   finalTools,
+                  { deadlineAt: reportDeadlineAt },
                 );
                 const retryText = sanitizeModelText(getText(retryRes.content));
                 if (retryText) forcedText = retryText;
@@ -1999,7 +2005,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 `Available tools: ${availableTools.map(t => t.name).join(', ')}. ` +
                 'You MUST respond with a tool_call, not text.',
             });
-            const lastResort = await callLLM(messages, availableTools, { forceToolCall: true });
+            const lastResort = await callLLM(messages, availableTools, { forceToolCall: true, deadlineAt: reportDeadlineAt });
             messages.push({ role: 'assistant', content: lastResort.content });
             const lastToolCalls = getToolCalls(lastResort.content);
 

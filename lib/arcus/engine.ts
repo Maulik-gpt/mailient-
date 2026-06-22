@@ -299,7 +299,7 @@ function parseOpenAIResponse(data: any): LLMResponse | null {
 export async function callLLM(
   messages: LLMMessage[],
   tools: ToolSchema[],
-  options: { maxTokens?: number; temperature?: number; forceToolCall?: boolean } = {}
+  options: { maxTokens?: number; temperature?: number; forceToolCall?: boolean; deadlineAt?: number } = {}
 ): Promise<LLMResponse> {
   const keys = getKeys();
   if (!keys.length) {
@@ -330,6 +330,8 @@ export async function callLLM(
 
   async function tryOne(key: string, model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
     if (deadKeys.has(key)) return null;
+    // Out of wall-clock budget — don't start a call we can't finish in time.
+    if (timeoutMs <= 0) return null;
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -421,6 +423,19 @@ export async function callLLM(
 
   const MODEL_TIMEOUT = 32000;
 
+  // Deadline-aware per-call timeout. When the caller passes a wall-clock deadline
+  // (background agent runs do — the function is killed at maxDuration), every model
+  // attempt is capped at the time REMAINING (minus a small reserve), not a flat
+  // 32s. Otherwise one step cycling through several slow models could overshoot the
+  // function limit and get hard-killed mid-call → a run stuck forever in 'running'.
+  // Returns <=0 when out of time, which makes tryOne a no-op so the chain unwinds
+  // fast and throws the "busy" error the loop catches to finalize its report.
+  const DEADLINE_RESERVE_MS = 1500;
+  const effectiveTimeout = (): number => {
+    if (options.deadlineAt == null) return MODEL_TIMEOUT;
+    return Math.min(MODEL_TIMEOUT, options.deadlineAt - Date.now() - DEADLINE_RESERVE_MS);
+  };
+
   // Pass 0 — PREMIUM-FIRST (the super-agent quality lever). Free models are the
   // quality ceiling: they're terse, skip steps, and "claim" actions they never
   // executed. When the operator opts into premium quality, try the top-tier
@@ -440,7 +455,7 @@ export async function callLLM(
   if (premiumOn && premiumModels.length) {
     log('info', 'Engine', 'Pass 0 — premium-first', { models: premiumModels, hasTools });
     for (const model of premiumModels) {
-      const r = await tryModel(model, baseBody, MODEL_TIMEOUT);
+      const r = await tryModel(model, baseBody, effectiveTimeout());
       if (r) { log('info', 'Engine', 'Premium model answered', { model }); return r; }
       await sleep(120);
     }
@@ -459,7 +474,7 @@ export async function callLLM(
   log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await sleep(100);
-    const result = await tryModel(list[i], baseBody, MODEL_TIMEOUT);
+    const result = await tryModel(list[i], baseBody, effectiveTimeout());
     if (result) return result;
   }
 
@@ -467,7 +482,7 @@ export async function callLLM(
   log('warn', 'Engine', 'Pass 1 failed — 800ms pause then retrying top models');
   await sleep(800);
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 6)) {
-    const result = await tryModel(model, baseBody, MODEL_TIMEOUT);
+    const result = await tryModel(model, baseBody, effectiveTimeout());
     if (result) return result;
     await sleep(200);
   }
@@ -479,7 +494,7 @@ export async function callLLM(
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
-    const r = await tryModel(model, noToolsBody, MODEL_TIMEOUT);
+    const r = await tryModel(model, noToolsBody, effectiveTimeout());
     if (r) return r;
     await sleep(200);
   }
@@ -491,7 +506,7 @@ export async function callLLM(
     log('warn', 'Engine', 'Pass 3 failed — falling back to paid models', { models: PAID_MODELS });
     await sleep(300);
     for (const model of PAID_MODELS) {
-      const r = await tryModel(model, baseBody, MODEL_TIMEOUT);
+      const r = await tryModel(model, baseBody, effectiveTimeout());
       if (r) {
         log('info', 'Engine', 'Paid fallback succeeded', { model });
         return r;
@@ -500,7 +515,7 @@ export async function callLLM(
     }
     // Final emergency: paid + no tools (some paid models may refuse tools)
     for (const model of PAID_MODELS.slice(0, 2)) {
-      const r = await tryModel(model, noToolsBody, MODEL_TIMEOUT);
+      const r = await tryModel(model, noToolsBody, effectiveTimeout());
       if (r) {
         log('info', 'Engine', 'Paid no-tools fallback succeeded', { model });
         return r;
