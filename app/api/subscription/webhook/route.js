@@ -39,14 +39,14 @@ function validatePolarWebhook(payload, headers, secret) {
             return false;
         }
 
-        // Decode secret
-        let key = secret.trim();
-        if (key.startsWith('polar_whs_')) {
-            key = key.slice('polar_whs_'.length);
-        } else if (key.startsWith('whsec_')) {
-            key = key.slice('whsec_'.length);
-        }
-        const keyBytes = Buffer.from(key, 'base64');
+        // Polar's HMAC key is the FULL secret string (incl. the `polar_whs_` prefix)
+        // taken as raw UTF-8 bytes — NOT prefix-stripped, NOT base64-decoded. This
+        // mirrors Polar's own SDK exactly: it does `new Webhook(base64(secret))`, and
+        // the standardwebhooks lib then base64-DECODES that back to the raw secret
+        // bytes and uses them as the HMAC key. The previous code stripped the prefix
+        // and base64-decoded the remainder → a wrong key → 401 on EVERY event, which
+        // is what got the endpoint auto-disabled. Verified against polarsource/polar-js.
+        const keyBytes = Buffer.from(secret.trim(), 'utf-8');
 
         // Create signature
         const toSign = `${webhookId}.${webhookTimestamp}.${payload}`;
