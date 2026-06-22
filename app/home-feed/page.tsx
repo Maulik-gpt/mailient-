@@ -23,12 +23,20 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
-  // STRICT paywall, but verified in the BACKGROUND so reloads don't flash a
-  // "checking" screen. Optimistic: render the app immediately (no gate) unless a
-  // recent check in this tab already found no paid/trial plan. The background
-  // check below confirms and redirects free users to /pricing.
+  // STRICT paywall — FAIL CLOSED. The dashboard renders optimistically ONLY for a
+  // user who has a durable, recent proof of paid/trial access (the access_ok marker,
+  // set whenever a check confirms a real plan). Everyone else — including a user who
+  // finished onboarding, opened checkout, and closed it without paying — starts
+  // BLOCKED and sees nothing but a backdrop until the background check decides; if
+  // they're unpaid it redirects them to /pricing. This is the difference between a
+  // paywall and a suggestion: defaulting to `true` let non-payers in for the
+  // seconds the check (and Polar self-heal) took to run.
+  const ACCESS_OK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
   const [accessGranted, setAccessGranted] = useState(() => {
-    try { return sessionStorage.getItem('mailient_access_denied') !== '1'; } catch { return true; }
+    try {
+      const at = Number(localStorage.getItem('mailient_access_ok') || 0);
+      return at > 0 && Date.now() - at < ACCESS_OK_TTL_MS;
+    } catch { return false; }
   });
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const verifyRanRef = useRef(false);
@@ -154,7 +162,7 @@ function HomeFeedContent() {
                 console.log('🎉 [HomeFeed] Activation confirmed!', planType);
                 localStorage.setItem('onboarding_completed', 'true');
                 sessionStorage.setItem('activation_verified_this_session', 'true');
-                try { sessionStorage.removeItem('mailient_access_denied'); } catch {}
+                try { localStorage.setItem('mailient_access_ok', String(Date.now())); sessionStorage.removeItem('mailient_access_denied'); } catch {}
                 localStorage.removeItem('pending_plan');
                 localStorage.removeItem('pending_plan_timestamp');
                 setPaymentVerified(true);
@@ -185,7 +193,7 @@ function HomeFeedContent() {
               // trial plan from a completed Polar checkout. No free tier.
               if (isPaidPlan && !isExpired) {
                 localStorage.setItem('onboarding_completed', 'true');
-                try { sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
+                try { localStorage.setItem('mailient_access_ok', String(Date.now())); sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
                 setIsVerifyingPayment(false);
                 setShowPricing(false);
                 setAccessGranted(true);
@@ -211,7 +219,7 @@ function HomeFeedContent() {
                     if (vr.ok && vd?.success && vPlan && vPlan !== 'free' && vPlan !== 'none') {
                       console.log('✅ [HomeFeed] Reconciled from Polar:', vPlan);
                       localStorage.setItem('onboarding_completed', 'true');
-                      try { sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
+                      try { localStorage.setItem('mailient_access_ok', String(Date.now())); sessionStorage.removeItem('mailient_access_denied'); sessionStorage.removeItem('hf_sent_onboarding'); } catch {}
                       setIsVerifyingPayment(false);
                       setShowPricing(false);
                       setAccessGranted(true);
@@ -224,9 +232,9 @@ function HomeFeedContent() {
                 }
 
                 setIsVerifyingPayment(false);
-                // Remember this tab is unsubscribed so the next reload redirects
-                // instantly instead of optimistically flashing the app.
-                try { sessionStorage.setItem('mailient_access_denied', '1'); } catch {}
+                // Remember this tab is unsubscribed AND revoke the durable access
+                // marker so the next visit starts blocked (fail closed), not optimistic.
+                try { sessionStorage.setItem('mailient_access_denied', '1'); localStorage.removeItem('mailient_access_ok'); } catch {}
                 setAccessGranted(false);
                 console.log('🚫 [HomeFeed] No active subscription — paywall.');
                 const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
