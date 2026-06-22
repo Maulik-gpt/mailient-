@@ -82,8 +82,15 @@ export function ConnectorBanner({
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="w-8 h-8 rounded-lg flex items-center justify-center
-                           ring-2 ring-[#0b0b0c] bg-white/[0.08]"
+                // Hover: pop the icon forward (scale + lift + raise z-index) with a
+                // brighter ring, so the cluster feels alive and you can pick one out.
+                whileHover={{ scale: 1.22, y: -4, zIndex: 50 }}
+                whileTap={{ scale: 1.1 }}
+                title={connector.name}
+                className="w-8 h-8 rounded-lg flex items-center justify-center cursor-pointer
+                           ring-2 ring-[#0b0b0c] bg-white/[0.08]
+                           hover:bg-white/[0.16] hover:ring-white/25
+                           transition-[background-color,box-shadow,ring-color] duration-200"
                 style={{ zIndex: featuredConnectors.length - index }}
               >
                 <img

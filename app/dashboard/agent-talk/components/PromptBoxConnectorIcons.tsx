@@ -163,9 +163,12 @@ export function PromptBoxConnectorIconsCompact({
                  bg-neutral-100 dark:bg-gray-800/50 hover:bg-neutral-100 dark:bg-gray-800 transition-colors"
     >
       {firstTwo.map((connector: { id: string; icon: string; name: string; color: string }) => (
-        <div
+        <motion.div
           key={connector.id}
-          className="w-5 h-5 rounded flex items-center justify-center"
+          title={connector.name}
+          whileHover={{ scale: 1.25, y: -2 }}
+          whileTap={{ scale: 1.1 }}
+          className="w-5 h-5 rounded flex items-center justify-center cursor-pointer transition-shadow hover:shadow-md"
           style={{ backgroundColor: `${connector.color}20` }}
         >
           <img
@@ -173,7 +176,7 @@ export function PromptBoxConnectorIconsCompact({
             alt={connector.name}
             className="w-3 h-3"
           />
-        </div>
+        </motion.div>
       ))}
       {remaining > 0 && (
         <span className="text-xs text-neutral-600 dark:text-gray-400 font-medium">
