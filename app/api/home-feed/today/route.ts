@@ -494,7 +494,143 @@ async function fetchAgentRuns(userEmail: string): Promise<AgentRunItem[]> {
   }
 }
 
-export async function GET(_req: Request) {
+// How long a cached snapshot is served before we recompute. The expensive
+// Gmail/Calendar build happens on a miss (or via the cron prewarm); within the TTL
+// every load is a fast DB read.
+const TODAY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Build the full Today snapshot (the expensive Gmail/Calendar fetch). Exported so
+ * the cron can prewarm the cache. Does NOT apply dismissals — those are filtered at
+ * serve time so a fresh dismiss takes effect even against a cached snapshot.
+ */
+export async function computeTodaySnapshot(userEmail: string): Promise<TodayResponse> {
+  let accessToken: string | null = null;
+  try {
+    const { getGmailToken, getGcalToken } = await import('@/lib/arcus/tools/http-tokens');
+    accessToken = (await getGmailToken(userEmail).catch(() => null))
+               || (await getGcalToken(userEmail).catch(() => null));
+  } catch (e) {
+    console.error('[home-feed/today] token fetch failed:', e);
+  }
+
+  if (!accessToken) {
+    const [actionItems, agentRuns] = await Promise.all([
+      fetchActionItems(userEmail),
+      fetchAgentRuns(userEmail),
+    ]);
+    return {
+      decide: [], showUp: [], chase: [], actionItems, agentRuns,
+      emptyAll: actionItems.length === 0 && agentRuns.length === 0,
+      generatedAt: new Date().toISOString(),
+      gmailConnected: false, calendarConnected: false,
+    };
+  }
+
+  const gmail = new GmailService(accessToken, '');
+  (gmail as any).setUserEmail?.(userEmail);
+  const cal = new CalendarService(accessToken, '');
+
+  const wrap = async <T,>(fn: () => Promise<T>, tag: 'gmail' | 'calendar'): Promise<{ value: T | null; expired: boolean }> => {
+    try {
+      return { value: await fn(), expired: false };
+    } catch (e: any) {
+      if (isTokenExpiredErr(e)) {
+        try {
+          const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
+          await markIntegrationNeedsReauth(userEmail.toLowerCase(), tag === 'gmail' ? 'gmail' : 'gcal');
+        } catch {}
+        return { value: null, expired: true };
+      }
+      console.warn(`[home-feed/today] ${tag} fetch failed:`, e?.message);
+      return { value: null, expired: false };
+    }
+  };
+
+  const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
+    wrap(() => fetchDecide(gmail), 'gmail'),
+    wrap(() => fetchShowUp(cal, userEmail), 'calendar'),
+    wrap(() => fetchChase(gmail, userEmail), 'gmail'),
+    fetchActionItems(userEmail),
+    fetchAgentRuns(userEmail),
+  ]);
+
+  const gmailExpired = decideR.expired || chaseR.expired;
+  const calendarExpired = showUpR.expired;
+  const decide = decideR.value || [];
+  const showUp = showUpR.value || [];
+  const chase = chaseR.value || [];
+
+  const needsReconnect = (gmailExpired || calendarExpired)
+    ? { gmail: gmailExpired, calendar: calendarExpired }
+    : undefined;
+
+  return {
+    decide,
+    showUp,
+    chase,
+    actionItems,
+    agentRuns,
+    emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && agentRuns.length === 0 && !needsReconnect,
+    generatedAt: new Date().toISOString(),
+    gmailConnected: !gmailExpired,
+    calendarConnected: !calendarExpired,
+    needsReconnect,
+  };
+}
+
+/** Persist a freshly-computed snapshot. Exported for the cron prewarm. */
+export async function storeTodaySnapshot(userEmail: string, payload: TodayResponse): Promise<void> {
+  try {
+    const supabase = getSupabaseAdmin();
+    await supabase
+      .from('arcus_today_cache')
+      .upsert({ user_id: userEmail.toLowerCase(), payload, generated_at: new Date().toISOString() }, { onConflict: 'user_id' });
+  } catch (e: any) {
+    console.warn('[home-feed/today] cache write failed:', e?.message);
+  }
+}
+
+async function readTodaySnapshot(supabase: any, userEmail: string): Promise<{ payload: TodayResponse; generatedAt: string } | null> {
+  try {
+    const { data } = await supabase
+      .from('arcus_today_cache')
+      .select('payload, generated_at')
+      .eq('user_id', userEmail.toLowerCase())
+      .maybeSingle();
+    if (!data?.payload) return null;
+    return { payload: data.payload as TodayResponse, generatedAt: data.generated_at };
+  } catch {
+    return null;
+  }
+}
+
+async function getDismissedIds(supabase: any, userEmail: string): Promise<Set<string>> {
+  try {
+    const { data } = await supabase
+      .from('arcus_today_dismissals')
+      .select('item_id')
+      .eq('user_id', userEmail.toLowerCase());
+    return new Set((data || []).map((r: any) => r.item_id));
+  } catch {
+    return new Set();
+  }
+}
+
+function applyDismissals(payload: TodayResponse, dismissed: Set<string>): TodayResponse {
+  if (!dismissed.size) return payload;
+  const decide = payload.decide.filter((i) => !dismissed.has(i.id));
+  const showUp = payload.showUp.filter((i) => !dismissed.has(i.id));
+  const chase = payload.chase.filter((i) => !dismissed.has(i.id));
+  const actionItems = payload.actionItems.filter((i) => !dismissed.has(i.id));
+  return {
+    ...payload,
+    decide, showUp, chase, actionItems,
+    emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && payload.agentRuns.length === 0 && !payload.needsReconnect,
+  };
+}
+
+export async function GET(req: Request) {
   try {
     // @ts-ignore
     const session = await (auth as any)();
@@ -502,92 +638,29 @@ export async function GET(_req: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     const userEmail = session.user.email as string;
+    const supabase = getSupabaseAdmin();
+    const force = new URL(req.url).searchParams.get('refresh') === '1';
 
-    // Use the robust token layer (getGmailToken/getGcalToken): it checks every
-    // token source (arcus_integrations, integration_credentials, user_tokens) AND
-    // proactively refreshes an expired/expiring token. The old code used the raw
-    // session token, which expires ~1h after sign-in — so every visit after that
-    // hour hit an expired token and ALL THREE buckets silently returned empty
-    // ("always clear" with no error). One refreshed Google grant covers both
-    // Gmail and Calendar scopes, so we fall back across them.
-    let accessToken: string | null = null;
-    try {
-      const { getGmailToken, getGcalToken } = await import('@/lib/arcus/tools/http-tokens');
-      accessToken = (await getGmailToken(userEmail).catch(() => null))
-                 || (await getGcalToken(userEmail).catch(() => null));
-    } catch (e) {
-      console.error('[home-feed/today] token fetch failed:', e);
-    }
-    const refreshToken = '';
-
-    if (!accessToken) {
-      // Even without Gmail, action items from /log AND scheduled-agent runs
-      // persist via Supabase and can still surface. Fetch them so the user sees
-      // their commitments and overnight agent work.
-      const [actionItems, agentRuns] = await Promise.all([
-        fetchActionItems(userEmail),
-        fetchAgentRuns(userEmail),
-      ]);
-      const empty: TodayResponse = {
-        decide: [], showUp: [], chase: [], actionItems, agentRuns,
-        emptyAll: actionItems.length === 0 && agentRuns.length === 0,
-        generatedAt: new Date().toISOString(),
-        gmailConnected: false, calendarConnected: false,
-      };
-      return NextResponse.json({ success: true, ...empty });
-    }
-
-    const gmail = new GmailService(accessToken, refreshToken || '');
-    (gmail as any).setUserEmail?.(userEmail);
-    const cal = new CalendarService(accessToken, refreshToken || '');
-
-    const wrap = async <T,>(fn: () => Promise<T>, tag: 'gmail' | 'calendar'): Promise<{ value: T | null; expired: boolean }> => {
-      try {
-        return { value: await fn(), expired: false };
-      } catch (e: any) {
-        if (isTokenExpiredErr(e)) {
-          try {
-            const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
-            await markIntegrationNeedsReauth(userEmail.toLowerCase(), tag === 'gmail' ? 'gmail' : 'gcal');
-          } catch {}
-          return { value: null, expired: true };
-        }
-        console.warn(`[home-feed/today] ${tag} fetch failed:`, e?.message);
-        return { value: null, expired: false };
-      }
-    };
-
-    const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
-      wrap(() => fetchDecide(gmail), 'gmail'),
-      wrap(() => fetchShowUp(cal, userEmail), 'calendar'),
-      wrap(() => fetchChase(gmail, userEmail), 'gmail'),
-      fetchActionItems(userEmail),
-      fetchAgentRuns(userEmail),
+    // Read the cached snapshot + current dismissals in parallel.
+    const [cached, dismissed] = await Promise.all([
+      force ? Promise.resolve(null) : readTodaySnapshot(supabase, userEmail),
+      getDismissedIds(supabase, userEmail),
     ]);
 
-    const gmailExpired = decideR.expired || chaseR.expired;
-    const calendarExpired = showUpR.expired;
-    const decide = decideR.value || [];
-    const showUp = showUpR.value || [];
-    const chase = chaseR.value || [];
+    const isFresh = !!cached && (Date.now() - new Date(cached.generatedAt).getTime() < TODAY_CACHE_TTL_MS);
 
-    const needsReconnect = (gmailExpired || calendarExpired)
-      ? { gmail: gmailExpired, calendar: calendarExpired }
-      : undefined;
+    let payload: TodayResponse;
+    if (isFresh) {
+      payload = cached!.payload;
+    } else {
+      payload = await computeTodaySnapshot(userEmail);
+      await storeTodaySnapshot(userEmail, payload); // persist for the next reader / device
+    }
 
-    const payload: TodayResponse = {
-      decide,
-      showUp,
-      chase,
-      actionItems,
-      agentRuns,
-      emptyAll: decide.length === 0 && showUp.length === 0 && chase.length === 0 && actionItems.length === 0 && agentRuns.length === 0 && !needsReconnect,
-      generatedAt: new Date().toISOString(),
-      gmailConnected: !gmailExpired,
-      calendarConnected: !calendarExpired,
-      needsReconnect,
-    };
-    return NextResponse.json({ success: true, ...payload });
+    // Dismissals are applied at serve time (not baked into the cache) so a swipe
+    // takes effect immediately even against a still-fresh cached snapshot.
+    const served = applyDismissals(payload, dismissed);
+    return NextResponse.json({ success: true, ...served, cached: isFresh });
   } catch (err: any) {
     console.error('[home-feed/today] failed:', err?.message);
     return NextResponse.json({ success: false, error: err?.message || 'Failed to build today surface' }, { status: 500 });

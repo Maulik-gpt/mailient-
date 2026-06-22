@@ -279,3 +279,20 @@ CREATE TABLE IF NOT EXISTS arcus_autonomy_actions (
   executed_at TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS arcus_autonomy_actions_due_idx ON arcus_autonomy_actions (status, execute_at);
+
+-- Home-feed deep infra (mirror of supabase/migrations/arcus_home_feed_infra.sql)
+CREATE TABLE IF NOT EXISTS arcus_today_dismissals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id TEXT NOT NULL,
+  item_id TEXT NOT NULL,
+  item_type TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (user_id, item_id)
+);
+CREATE INDEX IF NOT EXISTS arcus_today_dismissals_user_idx ON arcus_today_dismissals (user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS arcus_today_cache (
+  user_id TEXT PRIMARY KEY,
+  payload JSONB NOT NULL,
+  generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);

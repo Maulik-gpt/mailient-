@@ -527,39 +527,26 @@ function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
 // background. Lives for the page session; Refresh forces a fresh fetch.
 let TODAY_CACHE: TodayPayload | null = null;
 
-// Swipe-to-dismiss state, persisted with a TTL so a removed item doesn't come
-// back on the next background refresh, but the set can't grow unbounded.
-const DISMISS_KEY = 'mailient_today_dismissed';
-const DISMISS_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-function loadDismissed(): Map<string, number> {
-  const m = new Map<string, number>();
-  try {
-    const raw = JSON.parse(localStorage.getItem(DISMISS_KEY) || '{}') as Record<string, number>;
-    const now = Date.now();
-    for (const [id, at] of Object.entries(raw)) if (now - at < DISMISS_TTL_MS) m.set(id, at);
-  } catch { /* ignore */ }
-  return m;
-}
-function persistDismissed(m: Map<string, number>) {
-  try { localStorage.setItem(DISMISS_KEY, JSON.stringify(Object.fromEntries(m))); } catch { /* ignore */ }
-}
-
 export default function SiftToday() {
   const router = useRouter();
   const { data: session } = useSession();
   const [data, setData] = useState<TodayPayload | null>(() => TODAY_CACHE);
   const [loading, setLoading] = useState(!TODAY_CACHE);
   const [error, setError] = useState<string | null>(null);
-  const [dismissed, setDismissed] = useState<Map<string, number>>(() =>
-    typeof window !== 'undefined' ? loadDismissed() : new Map());
+  // Dismissals are persisted server-side (durable + cross-device); the Today API
+  // already excludes them on load, so this in-memory set only handles instant
+  // removal for items dismissed in THIS session before the next fetch.
+  const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
 
-  const dismissItem = useCallback((id: string) => {
-    setDismissed((prev) => {
-      const next = new Map(prev);
-      next.set(id, Date.now());
-      persistDismissed(next);
-      return next;
-    });
+  const dismissItem = useCallback((id: string, itemType?: string) => {
+    setDismissed((prev) => new Set(prev).add(id));
+    // Persist; non-blocking. If it fails the item still hides this session and the
+    // next successful dismiss/load reconciles.
+    fetch('/api/home-feed/dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: id, itemType }),
+    }).catch(() => {});
   }, []);
 
   const [activeDraft, setActiveDraft] = useState<any>(null);
@@ -927,7 +914,7 @@ export default function SiftToday() {
                         reason={item.attendees.length > 0
                           ? `Promised after meeting with ${item.attendees.slice(0, 2).join(', ')}${item.attendees.length > 2 ? ` +${item.attendees.length - 2}` : ''}.`
                           : 'From your meeting notes.'}
-                        onDismiss={() => dismissItem(item.id)}
+                        onDismiss={() => dismissItem(item.id, 'actionItem')}
                         primaryAction={{
                           label: item.isOverdue ? 'Handle now' : 'Open',
                           onClick: () => {
@@ -963,7 +950,7 @@ export default function SiftToday() {
                         topRight={formatRelative(item.receivedAt)}
                         title={item.subject}
                         reason={item.reason}
-                        onDismiss={() => dismissItem(item.id)}
+                        onDismiss={() => dismissItem(item.id, 'decide')}
                         primaryAction={{
                           label: isDraftingDecideId === item.id ? 'Drafting...' : 'Draft reply',
                           onClick: () => handleDraftDecide(item),
@@ -995,7 +982,7 @@ export default function SiftToday() {
                         topRight={`${item.attendeeCount} attendee${item.attendeeCount === 1 ? '' : 's'}`}
                         title={item.title}
                         reason={item.isExternal ? 'External meeting — prep it.' : 'Internal meeting.'}
-                        onDismiss={() => dismissItem(item.id)}
+                        onDismiss={() => dismissItem(item.id, 'showUp')}
                         primaryAction={{
                           label: 'Prep me',
                           onClick: () =>
@@ -1030,7 +1017,7 @@ export default function SiftToday() {
                         topRight={`${item.daysSilent}d silent`}
                         title={item.subject}
                         reason="You sent this. They haven't replied."
-                        onDismiss={() => dismissItem(item.id)}
+                        onDismiss={() => dismissItem(item.id, 'chase')}
                         primaryAction={{
                           label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
                           onClick: () => handleDraftNudge(item),
