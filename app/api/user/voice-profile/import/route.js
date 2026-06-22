@@ -38,16 +38,25 @@ export async function POST(request) {
 
         const profile = await voiceProfileService.analyzeVoiceProfile(emails);
 
-        // Preserve any conversational directives the user already set — a re-analyze
-        // shouldn't wipe "never use emojis".
+        // Preserve the user's conversational directives + customInstructions — a
+        // re-analyze must not wipe "never use emojis".
         const existing = await voiceProfileService.getVoiceProfile(userId);
-        const prevCustom = existing?.manual_settings?.customInstructions;
-        if (prevCustom) {
-            profile.manual_settings = { ...(profile.manual_settings || {}), customInstructions: prevCustom };
-            profile.prompt_fragment = voiceProfileService.buildManualPromptFragment(profile.manual_settings, profile);
-        }
+        const prevMs = existing?.manual_settings || {};
+        profile.manual_settings = {
+            ...(profile.manual_settings || {}),
+            customInstructions: prevMs.customInstructions || (profile.manual_settings?.customInstructions || ''),
+            directives: Array.isArray(prevMs.directives) ? prevMs.directives : [],
+        };
+        profile.prompt_fragment = voiceProfileService.buildManualPromptFragment(profile.manual_settings, profile);
+
+        // Record source provenance (metadata only — no raw writing is stored).
+        const now = new Date().toISOString();
+        profile.sources = [
+            ...(Array.isArray(existing?.sources) ? existing.sources : []),
+            { type: 'manual_import', count: emails.length, added_at: now },
+        ].slice(-10);
         profile.status = 'imported';
-        profile.updated_at = new Date().toISOString();
+        profile.updated_at = now;
 
         await voiceProfileService.saveVoiceProfile(userId, profile);
         return Response.json({ success: true, samplesUsed: emails.length, profile });

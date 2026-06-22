@@ -49,6 +49,9 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
   // Manual source import — paste your own writing instead of scanning Gmail.
   const [importText, setImportText] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  // Structured voice directives (the user's own-words corrections).
+  const [directives, setDirectives] = useState<{ id: string; text: string }[]>([]);
+  const [isRefining, setIsRefining] = useState(false);
 
   // --- Live Preview ---
   const [previewText, setPreviewText] = useState('');
@@ -72,6 +75,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       setConfidence(ms.tone?.confidence ?? 30);
       setHabits(ms.habits || []);
       setCustomInstructions(ms.customInstructions || '');
+      setDirectives(Array.isArray(ms.directives) ? ms.directives : []);
       setActiveTab(ms.activeProfile || 'work');
     }
     if (profile?.learning) {
@@ -236,6 +240,61 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
     }
   };
 
+  // --- Refine voice via conversational feedback (distilled into directives) ---
+  const handleRefine = async () => {
+    const instruction = customInstructions.trim();
+    if (instruction.length < 4) {
+      toast.error('Tell Arcus what to change first.');
+      return;
+    }
+    setIsRefining(true);
+    try {
+      const res = await fetch('/api/user/voice-profile', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ instruction }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDirectives(data.directives || []);
+        setCustomInstructions('');
+        if (data.profile) onProfileUpdated?.(data.profile);
+        toast.success(
+          (data.added?.length || 0) > 1 ? `Added ${data.added.length} rules to your voice` : 'Got it — applied to your voice',
+        );
+      } else {
+        toast.error(data.error || 'Could not apply that');
+      }
+    } catch {
+      toast.error('Could not apply that');
+    } finally {
+      setIsRefining(false);
+    }
+  };
+
+  const handleRemoveDirective = async (id: string) => {
+    const prev = directives;
+    setDirectives((d) => d.filter((x) => x.id !== id)); // optimistic
+    try {
+      const res = await fetch('/api/user/voice-profile', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ directiveId: id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setDirectives(data.directives || []);
+        if (data.profile) onProfileUpdated?.(data.profile);
+      } else {
+        setDirectives(prev); // rollback
+        toast.error('Could not remove that rule');
+      }
+    } catch {
+      setDirectives(prev);
+      toast.error('Could not remove that rule');
+    }
+  };
+
   // --- Add Habit ---
   const addHabit = (text: string) => {
     const trimmed = text.trim();
@@ -391,15 +450,48 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
             <div className="bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl p-6 space-y-3">
               <h3 className="text-[11px] uppercase tracking-[0.2em] font-bold text-black/30 dark:text-white/25">Tell Arcus how to sound like you</h3>
               <p className="text-[12px] text-black/40 dark:text-white/30 font-light">
-                Just say what&apos;s off, in plain words — Arcus applies it to every draft as a hard rule.
+                Say what&apos;s off, in plain words. Arcus turns it into rules it follows on every draft.
               </p>
               <textarea
                 value={customInstructions}
                 onChange={(e) => setCustomInstructions(e.target.value)}
+                onKeyDown={(e) => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleRefine(); }}
                 placeholder="E.g., This doesn't sound like me. I never use emojis, and it's too robotic — keep it warm and to the point."
                 className="w-full bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-black/80 dark:text-white/80 font-light leading-relaxed focus:outline-none focus:border-black/15 dark:focus:border-white/15 resize-none placeholder:text-black/30 dark:placeholder:text-white/20 transition-colors"
                 rows={3}
               />
+              <div className="flex justify-end">
+                <button
+                  onClick={handleRefine}
+                  disabled={isRefining || customInstructions.trim().length < 4}
+                  className="flex items-center gap-2 px-5 py-2.5 bg-black text-white dark:bg-white dark:text-black rounded-xl text-[13px] font-semibold hover:opacity-90 transition-all disabled:opacity-40"
+                >
+                  {isRefining ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Apply'}
+                </button>
+              </div>
+
+              {directives.length > 0 && (
+                <div className="space-y-2 pt-2 border-t border-black/[0.06] dark:border-white/[0.06]">
+                  <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-black/25 dark:text-white/20">Your voice rules</p>
+                  <div className="flex flex-wrap gap-2">
+                    {directives.map((d) => (
+                      <span
+                        key={d.id}
+                        className="group inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 rounded-full bg-black/[0.05] dark:bg-white/[0.07] border border-black/[0.06] dark:border-white/[0.08] text-[12.5px] text-black/75 dark:text-white/75"
+                      >
+                        {d.text}
+                        <button
+                          onClick={() => handleRemoveDirective(d.id)}
+                          title="Remove rule"
+                          className="w-4 h-4 rounded-full flex items-center justify-center text-black/30 dark:text-white/30 hover:text-black/70 dark:hover:text-white/70 hover:bg-black/[0.08] dark:hover:bg-white/[0.1] transition-colors"
+                        >
+                          <X className="w-3 h-3" strokeWidth={2.5} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── LEARNING ── */}
