@@ -698,12 +698,15 @@ export default function SiftToday() {
     return '';
   }, [session]);
 
-  const load = useCallback(async (opts?: { background?: boolean }) => {
+  const load = useCallback(async (opts?: { background?: boolean; force?: boolean }) => {
     const bg = !!opts?.background;
     if (!bg) setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/home-feed/today', { cache: 'no-store' });
+      // A manual refresh must bypass the server's 5-min snapshot cache and recompute
+      // from Gmail/Calendar; the background revalidate is happy with the cache.
+      const url = opts?.force ? '/api/home-feed/today?refresh=1' : '/api/home-feed/today';
+      const res = await fetch(url, { cache: 'no-store' });
       const json = await res.json();
       if (!json.success) {
         if (!bg) setError(json.error || 'Failed to load.');
@@ -778,7 +781,7 @@ export default function SiftToday() {
           </div>
           <button
             type="button"
-            onClick={() => load()}
+            onClick={() => load({ force: true })}
             disabled={loading}
             className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40 flex-shrink-0"
             title="Refresh"
