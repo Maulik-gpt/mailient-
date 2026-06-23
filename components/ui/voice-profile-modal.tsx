@@ -51,7 +51,10 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
   const [isImporting, setIsImporting] = useState(false);
   // Structured voice directives (the user's own-words corrections).
   const [directives, setDirectives] = useState<{ id: string; text: string }[]>([]);
+  const [allowEmoji, setAllowEmoji] = useState<boolean | undefined>(undefined);
   const [isRefining, setIsRefining] = useState(false);
+  // Live before/after: the sample reply just before a refine, shown next to the new one.
+  const [beforePreview, setBeforePreview] = useState<string | null>(null);
 
   // --- Live Preview ---
   const [previewText, setPreviewText] = useState('');
@@ -76,6 +79,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       setHabits(ms.habits || []);
       setCustomInstructions(ms.customInstructions || '');
       setDirectives(Array.isArray(ms.directives) ? ms.directives : []);
+      setAllowEmoji(typeof ms.allowEmoji === 'boolean' ? ms.allowEmoji : undefined);
       setActiveTab(ms.activeProfile || 'work');
     }
     if (profile?.learning) {
@@ -101,6 +105,8 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
             tone: { formality, detail, warmth, confidence },
             habits,
             customInstructions,
+            directives,        // so the preview reflects "no emojis", "be blunt", etc.
+            allowEmoji,
             activeProfile: activeTab,
           }
         })
@@ -114,7 +120,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
     } finally {
       setIsLoadingPreview(false);
     }
-  }, [formality, detail, warmth, confidence, habits, customInstructions, activeTab]);
+  }, [formality, detail, warmth, confidence, habits, customInstructions, directives, allowEmoji, activeTab]);
 
   // Trigger preview on settings change (debounced)
   useEffect(() => {
@@ -248,6 +254,8 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       return;
     }
     setIsRefining(true);
+    // Snapshot the current sample as the "before" so the user sees what changed.
+    setBeforePreview(previewText);
     try {
       const res = await fetch('/api/user/voice-profile', {
         method: 'PATCH',
@@ -258,14 +266,27 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       if (res.ok && data.success) {
         setDirectives(data.directives || []);
         setCustomInstructions('');
+        // Move the structured sliders + emoji policy to match the instruction; the
+        // preview effect regenerates the sample (the "after") from these.
+        const ms = data.profile?.manual_settings;
+        if (ms?.tone) {
+          setFormality(ms.tone.formality ?? formality);
+          setDetail(ms.tone.detail ?? detail);
+          setWarmth(ms.tone.warmth ?? warmth);
+          setConfidence(ms.tone.confidence ?? confidence);
+        }
+        if (typeof ms?.allowEmoji === 'boolean') setAllowEmoji(ms.allowEmoji);
         if (data.profile) onProfileUpdated?.(data.profile);
+        const attrCount = data.attributes ? Object.keys(data.attributes).length : 0;
         toast.success(
-          (data.added?.length || 0) > 1 ? `Added ${data.added.length} rules to your voice` : 'Got it — applied to your voice',
+          attrCount > 0 ? 'Applied — watch the sample update below' : 'Got it — applied to your voice',
         );
       } else {
+        setBeforePreview(null);
         toast.error(data.error || 'Could not apply that');
       }
     } catch {
+      setBeforePreview(null);
       toast.error('Could not apply that');
     } finally {
       setIsRefining(false);
@@ -577,11 +598,23 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
               <p className="text-[12px] text-black/40 dark:text-white/25 font-light">
                 Sample reply to: <span className="italic text-black/50 dark:text-white/40">&ldquo;Can we reschedule Thursday&apos;s call to Friday?&rdquo;</span>
               </p>
+              {/* Before (snapshot from just before the last refine) */}
+              {beforePreview && (
+                <div className="rounded-xl border border-black/[0.06] dark:border-white/[0.05] px-5 py-3 mb-2 opacity-70">
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-black/30 dark:text-white/20 mb-1">Before</p>
+                  <p className="text-[13px] text-black/45 dark:text-white/35 font-light leading-relaxed line-through decoration-black/20 dark:decoration-white/20">
+                    {beforePreview}
+                  </p>
+                </div>
+              )}
               <div className="bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.04] rounded-xl px-5 py-4 min-h-[48px] relative">
+                {beforePreview && (
+                  <p className="text-[10px] uppercase tracking-[0.16em] font-bold text-emerald-600 dark:text-emerald-400/60 mb-1">Now</p>
+                )}
                 {isLoadingPreview ? (
                   <div className="flex items-center gap-2 text-black/40 dark:text-white/20 text-[13px]">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    Generating preview...
+                    {beforePreview ? 'Rewriting in your new voice…' : 'Generating preview...'}
                   </div>
                 ) : (
                   <p className="text-[14px] text-black/70 dark:text-white/70 font-light leading-relaxed">
@@ -590,7 +623,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                 )}
               </div>
               <p className="text-[11px] text-black/30 dark:text-white/15 font-light">
-                Adjust sliders above to see your profile in action
+                {beforePreview ? 'This is how I’ll sound now. Refine again to keep tuning.' : 'Adjust sliders above to see your profile in action'}
               </p>
             </div>
           </div>

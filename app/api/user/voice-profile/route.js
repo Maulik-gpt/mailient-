@@ -132,6 +132,7 @@ export async function PUT(request) {
             habits: Array.isArray(habits) ? habits : [],
             customInstructions: typeof customInstructions === 'string' ? customInstructions : '',
             directives: Array.isArray(existing?.manual_settings?.directives) ? existing.manual_settings.directives : [],
+            allowEmoji: existing?.manual_settings?.allowEmoji,
             activeProfile: activeProfile || 'work',
         };
 
@@ -156,38 +157,77 @@ export async function PUT(request) {
     }
 }
 
+// Light heuristic fallback so attributes still shift even if the LLM is down.
+function heuristicAttributes(raw) {
+    const t = raw.toLowerCase();
+    const a = {};
+    if (/no emoji|without emoji|never.*emoji|drop.*emoji|hate emoji/.test(t)) a.allowEmoji = false;
+    if (/\bemoji\b/.test(t) && /(use|add|more|love)/.test(t)) a.allowEmoji = true;
+    if (/short|brief|concise|to the point|less wordy|tighter/.test(t)) a.detail = 15;
+    if (/long|detailed|thorough|more detail|elaborate/.test(t)) a.detail = 80;
+    if (/blunt|direct|to the point|no fluff|matter.of.fact/.test(t)) a.warmth = 85;
+    if (/warm|friendly|kinder|softer|less harsh/.test(t)) a.warmth = 20;
+    if (/casual|relaxed|less formal|less robotic|less stiff|human/.test(t)) a.formality = 25;
+    if (/formal|professional|polished/.test(t)) a.formality = 80;
+    if (/confident|assertive|own it/.test(t)) a.confidence = 85;
+    if (/reserved|tentative|humble/.test(t)) a.confidence = 20;
+    return a;
+}
+
 /**
- * Distill conversational feedback into 1-3 crisp imperative style rules via a free
- * LLM. Falls back to the raw instruction (one rule) if the LLM is unavailable, so
- * refinement always works.
+ * Interpret conversational feedback into (a) 1-3 crisp imperative voice rules and
+ * (b) structured attribute targets (formality/detail/warmth/confidence 0-100 +
+ * allowEmoji). One LLM call; falls back to the raw instruction + a keyword
+ * heuristic so refinement always does *something* even if the model is down.
  */
-async function distillDirectives(instruction) {
+async function interpretVoiceInstruction(instruction) {
     const key = process.env.OPENROUTER_API_KEY || process.env.OPENROUTER_API_KEY2;
     const raw = String(instruction).trim();
-    if (!key) return [raw];
+    const fallback = { rules: [raw], attributes: heuristicAttributes(raw) };
+    if (!key) return fallback;
     try {
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz' },
             body: JSON.stringify({
                 model: 'openai/gpt-oss-120b:free',
-                max_tokens: 200,
+                max_tokens: 300,
                 temperature: 0.1,
+                response_format: { type: 'json_object' },
                 messages: [
-                    { role: 'system', content: 'Turn the user\'s feedback about how their writing should sound into 1-3 SHORT imperative style rules (max ~10 words each), each a standalone instruction an email writer can follow. No preamble. Output ONLY the rules, one per line, no numbering or bullets. Example feedback: "too robotic, I never use emojis" -> "Never use emojis." / "Sound warm and human, not robotic."' },
+                    {
+                        role: 'system',
+                        content: 'You convert a user\'s feedback about how their writing should sound into structured voice settings. ' +
+                            'Output ONLY JSON: {"rules": string[], "attributes": {"formality"?: 0-100, "detail"?: 0-100, "warmth"?: 0-100, "confidence"?: 0-100, "allowEmoji"?: boolean}}. ' +
+                            'rules = 1-3 short imperative style rules (max ~10 words each). ' +
+                            'attributes = ONLY the dimensions the feedback clearly implies (omit the rest). Scales: formality 0=casual..100=formal; detail 0=brief..100=detailed; warmth 0=warm/friendly..100=direct/blunt; confidence 0=reserved..100=assertive. ' +
+                            'Example: "no emojis, less robotic, shorter and blunter" -> {"rules":["Never use emojis.","Keep it short.","Be blunt and direct."],"attributes":{"allowEmoji":false,"formality":25,"detail":15,"warmth":85}}',
+                    },
                     { role: 'user', content: raw },
                 ],
             }),
             signal: AbortSignal.timeout(9000),
         });
-        if (!res.ok) return [raw];
+        if (!res.ok) return fallback;
         const json = await res.json();
         let text = json.choices?.[0]?.message?.content || '';
-        text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '');
-        const rules = text.split('\n').map((l) => l.replace(/^\s*[-*\d.)]+\s*/, '').trim()).filter((l) => l.length >= 3 && l.length <= 140).slice(0, 3);
-        return rules.length ? rules : [raw];
+        text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '').trim();
+        const parsed = JSON.parse(text);
+        const rules = Array.isArray(parsed.rules)
+            ? parsed.rules.map((r) => String(r || '').trim()).filter((r) => r.length >= 3 && r.length <= 140).slice(0, 3)
+            : [];
+        const attrs = {};
+        const a = parsed.attributes || {};
+        for (const k of ['formality', 'detail', 'warmth', 'confidence']) {
+            if (typeof a[k] === 'number') attrs[k] = Math.max(0, Math.min(100, Math.round(a[k])));
+        }
+        if (typeof a.allowEmoji === 'boolean') attrs.allowEmoji = a.allowEmoji;
+        return {
+            rules: rules.length ? rules : [raw],
+            attributes: Object.keys(attrs).length ? attrs : heuristicAttributes(raw),
+        };
     } catch {
-        return [raw];
+        return fallback;
     }
 }
 
@@ -213,7 +253,7 @@ export async function PATCH(request) {
         const ms = existing.manual_settings || {};
         const directives = Array.isArray(ms.directives) ? [...ms.directives] : [];
 
-        const rules = await distillDirectives(instruction);
+        const { rules, attributes } = await interpretVoiceInstruction(instruction);
         const now = new Date().toISOString();
         for (const text of rules) {
             // Skip near-duplicates (case-insensitive).
@@ -223,11 +263,23 @@ export async function PATCH(request) {
         // Keep the list bounded (most recent 30).
         const trimmed = directives.slice(-30);
 
+        // Merge inferred attribute targets onto the existing tone sliders so the
+        // structured controls visibly move to match the plain-English instruction.
+        const prevTone = ms.tone || { formality: 50, detail: 40, warmth: 50, confidence: 30 };
+        const tone = {
+            formality: typeof attributes.formality === 'number' ? attributes.formality : prevTone.formality,
+            detail: typeof attributes.detail === 'number' ? attributes.detail : prevTone.detail,
+            warmth: typeof attributes.warmth === 'number' ? attributes.warmth : prevTone.warmth,
+            confidence: typeof attributes.confidence === 'number' ? attributes.confidence : prevTone.confidence,
+        };
+
         existing.manual_settings = {
-            tone: ms.tone || { formality: 50, detail: 40, warmth: 50, confidence: 30 },
+            tone,
             habits: Array.isArray(ms.habits) ? ms.habits : [],
             customInstructions: ms.customInstructions || '',
             directives: trimmed,
+            // Persisted emoji policy — buildManualPromptFragment hard-bans emojis when false.
+            allowEmoji: typeof attributes.allowEmoji === 'boolean' ? attributes.allowEmoji : ms.allowEmoji,
             activeProfile: ms.activeProfile || 'work',
         };
         existing.prompt_fragment = voiceProfileService.buildManualPromptFragment(existing.manual_settings, existing);
@@ -235,7 +287,7 @@ export async function PATCH(request) {
         existing.updated_at = now;
 
         await voiceProfileService.saveVoiceProfile(userId, existing);
-        return Response.json({ success: true, directives: trimmed, added: rules, profile: existing });
+        return Response.json({ success: true, directives: trimmed, added: rules, attributes, profile: existing });
     } catch (error) {
         console.error('Error refining voice profile:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
