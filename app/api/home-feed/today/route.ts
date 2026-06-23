@@ -638,6 +638,17 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
     }
     const userEmail = session.user.email as string;
+
+    // STRICT paywall backstop: the dashboard page is fail-closed, but this data
+    // endpoint must reject non-payers directly too — otherwise a free/expired user
+    // could pull their inbox/calendar by calling the API straight. (Owners + trial
+    // pass via assertPaidAccess.)
+    const { assertPaidAccess } = await import('@/lib/subscription-protection.js');
+    const gate = await assertPaidAccess(userEmail);
+    if (!gate.ok) {
+      return NextResponse.json({ success: false, error: gate.error, upgradeUrl: gate.upgradeUrl }, { status: gate.status });
+    }
+
     const supabase = getSupabaseAdmin();
     const force = new URL(req.url).searchParams.get('refresh') === '1';
 
