@@ -92,6 +92,14 @@ export async function POST() {
             console.warn('⚠️ Voice sample generation failed (non-fatal):', e.message);
         }
 
+        // Record provenance so the user can see Gmail scan in their "Learning from"
+        // list, preserving any manual-import sources already attached.
+        const priorSources = (await voiceProfileService.getVoiceProfile(userId))?.sources;
+        profile.sources = [
+            ...(Array.isArray(priorSources) ? priorSources.filter((s) => s.type !== 'gmail_scan') : []),
+            { type: 'gmail_scan', count: sentEmails.length, added_at: new Date().toISOString() },
+        ].slice(-10);
+
         await voiceProfileService.saveVoiceProfile(userId, profile);
 
         return Response.json({ success: true, profile });

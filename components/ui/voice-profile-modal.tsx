@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Sparkles, RotateCw, Mic, ExternalLink, Plus, Loader2 } from 'lucide-react';
+import { X, Sparkles, RotateCw, Mic, ExternalLink, Plus, Loader2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface VoiceProfileModalProps {
@@ -49,6 +49,29 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
   // Manual source import — paste your own writing instead of scanning Gmail.
   const [importText, setImportText] = useState('');
   const [isImporting, setIsImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [sources, setSources] = useState<any[]>([]);
+
+  // Read selected text files (.txt/.md/.eml) and append their content as samples
+  // (separated by blank lines so each file is its own sample). PDFs aren't parsed
+  // client-side — we tell the user to paste the text instead.
+  const handleFiles = async (files: FileList | null) => {
+    if (!files?.length) return;
+    const parts: string[] = [];
+    let skippedPdf = false;
+    for (const f of Array.from(files)) {
+      if (/\.pdf$/i.test(f.name) || f.type === 'application/pdf') { skippedPdf = true; continue; }
+      try {
+        let text = await f.text();
+        // .eml: drop the headers, keep the body (everything after the first blank line).
+        if (/\.eml$/i.test(f.name)) { const i = text.indexOf('\n\n'); if (i > -1) text = text.slice(i + 2); }
+        if (text.trim().length >= 10) parts.push(text.trim());
+      } catch { /* skip unreadable file */ }
+    }
+    if (parts.length) setImportText((prev) => [prev.trim(), ...parts].filter(Boolean).join('\n\n'));
+    if (skippedPdf) toast.error('PDFs can’t be read here yet — paste the text instead.');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
   // Structured voice directives (the user's own-words corrections).
   const [directives, setDirectives] = useState<{ id: string; text: string }[]>([]);
   const [allowEmoji, setAllowEmoji] = useState<boolean | undefined>(undefined);
@@ -82,6 +105,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       setAllowEmoji(typeof ms.allowEmoji === 'boolean' ? ms.allowEmoji : undefined);
       setActiveTab(ms.activeProfile || 'work');
     }
+    setSources(Array.isArray(profile?.sources) ? profile.sources : []);
     if (profile?.learning) {
       setAutoImprove(profile.learning.autoImprove ?? true);
     }
@@ -234,6 +258,7 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
       if (res.ok && data.profile) {
         onProfileUpdated?.(data.profile);
         rehydrateFromProfile(data.profile);
+        setSources(Array.isArray(data.profile.sources) ? data.profile.sources : []);
         setImportText('');
         toast.success(`Learned your voice from ${data.samplesUsed} sample${data.samplesUsed === 1 ? '' : 's'}.`);
       } else {
@@ -577,7 +602,21 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                   className="w-full bg-transparent dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06] rounded-xl px-5 py-4 text-[14px] text-black/80 dark:text-white/80 font-light leading-relaxed focus:outline-none focus:border-black/15 dark:focus:border-white/15 resize-none placeholder:text-black/30 dark:placeholder:text-white/20 transition-colors"
                   rows={4}
                 />
-                <div className="flex justify-end">
+                <div className="flex items-center justify-between gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".txt,.md,.eml,text/plain,text/markdown,message/rfc822"
+                    multiple
+                    onChange={(e) => handleFiles(e.target.files)}
+                    className="hidden"
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-black/[0.1] dark:border-white/[0.1] text-[13px] font-semibold text-black/60 dark:text-white/60 hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-all"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Upload file (.txt, .md, .eml)
+                  </button>
                   <button
                     onClick={handleImport}
                     disabled={isImporting || importText.trim().length < 20}
@@ -587,6 +626,22 @@ export const VoiceProfileModal = ({ isOpen, onClose, profile, onReAnalyze, onCre
                   </button>
                 </div>
               </div>
+
+              {/* Sources the profile is learning from */}
+              {sources.length > 0 && (
+                <div className="pt-3 border-t border-emerald-500/[0.08] space-y-2">
+                  <p className="text-[11px] uppercase tracking-[0.16em] font-bold text-black/25 dark:text-white/20">Learning from</p>
+                  <div className="space-y-1.5">
+                    {sources.slice().reverse().map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 text-[12.5px] text-black/55 dark:text-white/55">
+                        {s.type === 'manual_import' ? <FileText className="w-3.5 h-3.5 text-black/35 dark:text-white/30 flex-shrink-0" /> : <Mic className="w-3.5 h-3.5 text-black/35 dark:text-white/30 flex-shrink-0" />}
+                        <span>{s.type === 'manual_import' ? `Imported ${s.count} sample${s.count === 1 ? '' : 's'}` : 'Gmail scan'}</span>
+                        {s.added_at && <span className="text-black/30 dark:text-white/20 ml-auto">{new Date(s.added_at).toLocaleDateString()}</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── LIVE PREVIEW ── */}
