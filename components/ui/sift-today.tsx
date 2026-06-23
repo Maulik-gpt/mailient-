@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X } from 'lucide-react';
+import { motion, AnimatePresence, useMotionValue, useTransform, useReducedMotion } from 'framer-motion';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X, Archive } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -233,29 +233,28 @@ interface ItemCardProps {
   onDismiss?: () => void;
 }
 
-function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAction, onDismiss }: ItemCardProps) {
+// Inner card content (kept separate so the dismiss variant can wrap it with a
+// reveal-behind affordance while AnimatePresence still animates the row in/out).
+function ItemCardBody({ topLeft, topRight, title, reason, primaryAction, secondaryAction, onDismiss, dragProps }: ItemCardProps & { dragProps?: any }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -60, transition: { duration: 0.18 } }}
-      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      {...(dragProps || {})}
       whileHover={{ y: -1 }}
-      {...(onDismiss ? {
-        drag: 'x' as const,
-        dragConstraints: { left: 0, right: 0 },
-        dragElastic: { left: 0.8, right: 0.04 },
-        // Swipe left past the threshold to remove the card.
-        onDragEnd: (_e: any, info: { offset: { x: number } }) => { if (info.offset.x < -90) onDismiss(); },
-      } : {})}
-      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
+      tabIndex={onDismiss ? 0 : undefined}
+      role={onDismiss ? 'article' : undefined}
+      aria-label={onDismiss ? `${topLeft}: ${title}. Press E or Backspace to remove.` : undefined}
+      onKeyDown={onDismiss ? (e: any) => {
+        if (e.key === 'e' || e.key === 'E' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); onDismiss(); }
+      } : undefined}
+      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
     >
       {onDismiss && (
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onDismiss(); }}
-          title="Dismiss (or swipe left)"
-          className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full flex items-center justify-center text-black/30 dark:text-white/30 opacity-0 group-hover:opacity-100 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:text-black/70 dark:hover:text-white/70 transition-all"
+          title="Remove (swipe left, or press E)"
+          aria-label="Remove from list"
+          className="absolute top-2.5 right-2.5 z-10 w-6 h-6 rounded-full flex items-center justify-center text-black/30 dark:text-white/30 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 hover:bg-black/[0.06] dark:hover:bg-white/[0.08] hover:text-black/70 dark:hover:text-white/70 transition-all"
         >
           <X className="w-3.5 h-3.5" strokeWidth={2.25} />
         </button>
@@ -294,6 +293,57 @@ function ItemCard({ topLeft, topRight, title, reason, primaryAction, secondaryAc
           </a>
         )}
       </div>
+    </motion.div>
+  );
+}
+
+// Swipeable row: direct-manipulation drag with a reveal-behind "Remove" affordance,
+// keyboard + hover-button equivalents, and prefers-reduced-motion support. The OUTER
+// motion.div owns enter/exit (so AnimatePresence animates the row); the INNER one
+// drags. Threshold = ~40% of a typical card width (~120px) before release commits.
+function ItemCard(props: ItemCardProps) {
+  const { onDismiss } = props;
+  const reduceMotion = useReducedMotion();
+  const x = useMotionValue(0);
+  // The Remove affordance fades/scales in as the card is dragged left.
+  const revealOpacity = useTransform(x, [-120, -50, 0], [1, 0.25, 0]);
+  const revealScale = useTransform(x, [-120, -40, 0], [1, 0.9, 0.9]);
+
+  if (!onDismiss) {
+    return (
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}>
+        <ItemCardBody {...props} />
+      </motion.div>
+    );
+  }
+
+  const dragProps = reduceMotion ? {} : {
+    style: { x },
+    drag: 'x' as const,
+    dragConstraints: { left: 0, right: 0 },
+    dragElastic: { left: 0.9, right: 0.03 },
+    onDragEnd: (_e: any, info: { offset: { x: number } }) => { if (info.offset.x < -90) onDismiss(); },
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={reduceMotion ? { opacity: 0, transition: { duration: 0.1 } } : { opacity: 0, x: -80, transition: { duration: 0.18 } }}
+      transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+      className="relative"
+    >
+      {/* Reveal-behind: slides in as you drag left so the gesture is discoverable */}
+      <motion.div
+        aria-hidden
+        style={reduceMotion ? undefined : { opacity: revealOpacity, scale: revealScale }}
+        className="absolute inset-0 rounded-2xl bg-red-500/[0.10] dark:bg-red-500/[0.14] flex items-center justify-end pr-6 pointer-events-none"
+      >
+        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-red-500 dark:text-red-400">
+          <Archive className="w-4 h-4" strokeWidth={2} /> Remove
+        </span>
+      </motion.div>
+      <ItemCardBody {...props} dragProps={dragProps} />
     </motion.div>
   );
 }
@@ -538,16 +588,37 @@ export default function SiftToday() {
   // removal for items dismissed in THIS session before the next fetch.
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
 
-  const dismissItem = useCallback((id: string, itemType?: string) => {
+  const undismiss = useCallback((id: string, threadId?: string) => {
+    setDismissed((prev) => { const n = new Set(prev); n.delete(id); return n; }); // restore to exact position
+    fetch('/api/home-feed/dismiss', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ itemId: id, threadId }),
+    }).catch(() => {});
+  }, []);
+
+  // Dismiss = optimistic remove + persist + (for email items) archive the Gmail
+  // thread. Quiet "Removed · Undo" toast restores the card to its exact spot. On
+  // a backend failure we roll the cache back and surface a specific error.
+  const dismissItem = useCallback((id: string, itemType?: string, threadId?: string) => {
     setDismissed((prev) => new Set(prev).add(id));
-    // Persist; non-blocking. If it fails the item still hides this session and the
-    // next successful dismiss/load reconciles.
+    const isEmail = itemType === 'decide' || itemType === 'chase';
     fetch('/api/home-feed/dismiss', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ itemId: id, itemType }),
-    }).catch(() => {});
-  }, []);
+      body: JSON.stringify({ itemId: id, itemType, threadId }),
+    })
+      .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); })
+      .catch(() => {
+        setDismissed((prev) => { const n = new Set(prev); n.delete(id); return n; }); // rollback
+        toast.error("Couldn't remove that", { description: 'Check your connection and try again.' });
+      });
+    toast('Removed', {
+      description: isEmail && threadId ? 'Archived in Gmail' : undefined,
+      action: { label: 'Undo', onClick: () => undismiss(id, isEmail ? threadId : undefined) },
+      duration: 5000,
+    });
+  }, [undismiss]);
 
   const [activeDraft, setActiveDraft] = useState<any>(null);
   const [isDraftingNudgeId, setIsDraftingNudgeId] = useState<string | null>(null);
@@ -953,7 +1024,7 @@ export default function SiftToday() {
                         topRight={formatRelative(item.receivedAt)}
                         title={item.subject}
                         reason={item.reason}
-                        onDismiss={() => dismissItem(item.id, 'decide')}
+                        onDismiss={() => dismissItem(item.id, 'decide', item.threadId)}
                         primaryAction={{
                           label: isDraftingDecideId === item.id ? 'Drafting...' : 'Draft reply',
                           onClick: () => handleDraftDecide(item),
@@ -1020,7 +1091,7 @@ export default function SiftToday() {
                         topRight={`${item.daysSilent}d silent`}
                         title={item.subject}
                         reason="You sent this. They haven't replied."
-                        onDismiss={() => dismissItem(item.id, 'chase')}
+                        onDismiss={() => dismissItem(item.id, 'chase', item.threadId)}
                         primaryAction={{
                           label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
                           onClick: () => handleDraftNudge(item),

@@ -15,6 +15,28 @@ import { getSupabaseAdmin } from '@/lib/supabase.js';
 
 export const dynamic = 'force-dynamic';
 
+// Archive (remove INBOX) or un-archive (add INBOX) a Gmail thread. Best-effort —
+// dismissal persistence never depends on it. Reuses the same refreshing token layer
+// the rest of the app uses, so it works for the live Google sign-in token.
+async function modifyThreadInbox(userId: string, threadId: string, archive: boolean): Promise<void> {
+  if (!threadId) return;
+  try {
+    const { getGmailToken, refreshGoogleToken } = await import('@/lib/arcus/tools/http-tokens');
+    let token = await getGmailToken(userId);
+    if (!token) return;
+    const body = JSON.stringify(archive ? { removeLabelIds: ['INBOX'] } : { addLabelIds: ['INBOX'] });
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/modify`;
+    let res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(8000) });
+    if (res.status === 401) {
+      const fresh = await refreshGoogleToken(userId);
+      if (fresh) res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${fresh}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(8000) });
+    }
+    if (!res.ok) console.warn('[home-feed/dismiss] thread modify failed:', res.status);
+  } catch (e: any) {
+    console.warn('[home-feed/dismiss] archive error:', e?.message);
+  }
+}
+
 export async function POST(req: Request) {
   // @ts-ignore
   const session = await (auth as any)();
@@ -25,12 +47,20 @@ export async function POST(req: Request) {
   const itemId = String(body.itemId || '').trim();
   if (!itemId) return NextResponse.json({ error: 'itemId required' }, { status: 400 });
   const itemType = typeof body.itemType === 'string' ? body.itemType : null;
+  const threadId = typeof body.threadId === 'string' ? body.threadId : '';
 
   try {
     const supabase = getSupabaseAdmin();
-    await supabase
-      .from('arcus_today_dismissals')
-      .upsert({ user_id: userId, item_id: itemId, item_type: itemType }, { onConflict: 'user_id,item_id' });
+    // Persist the dismissal AND archive the email thread (email items only) in
+    // parallel. Archive = "moved out of this queue / handled", never a delete; the
+    // undo path re-adds INBOX. Persistence is authoritative even if archive fails.
+    const archive = (itemType === 'decide' || itemType === 'chase') && threadId
+      ? modifyThreadInbox(userId, threadId, true)
+      : Promise.resolve();
+    await Promise.all([
+      supabase.from('arcus_today_dismissals').upsert({ user_id: userId, item_id: itemId, item_type: itemType }, { onConflict: 'user_id,item_id' }),
+      archive,
+    ]);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     // Non-fatal — the client still hides it optimistically this session.
@@ -48,10 +78,15 @@ export async function DELETE(req: Request) {
   const body = await req.json().catch(() => ({}));
   const itemId = String(body.itemId || '').trim();
   if (!itemId) return NextResponse.json({ error: 'itemId required' }, { status: 400 });
+  const threadId = typeof body.threadId === 'string' ? body.threadId : '';
 
   try {
     const supabase = getSupabaseAdmin();
-    await supabase.from('arcus_today_dismissals').delete().eq('user_id', userId).eq('item_id', itemId);
+    // Undo: drop the dismissal record AND move the thread back to the inbox.
+    await Promise.all([
+      supabase.from('arcus_today_dismissals').delete().eq('user_id', userId).eq('item_id', itemId),
+      threadId ? modifyThreadInbox(userId, threadId, false) : Promise.resolve(),
+    ]);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: 'delete_failed' }, { status: 200 });
