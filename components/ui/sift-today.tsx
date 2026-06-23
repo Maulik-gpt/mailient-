@@ -573,16 +573,40 @@ function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
 }
 
 // In-memory snapshot so swapping tabs (which remounts this component) is instant.
-// Stale-while-revalidate: show the cached data immediately, refresh in the
-// background. Lives for the page session; Refresh forces a fresh fetch.
+// Stale-while-revalidate: show cached data immediately, refresh in the background.
+// Also persisted to localStorage so a full page RELOAD is instant too (not just tab
+// swaps), and so we can serve cache when offline / the token's expired. The payload
+// is small (a few buckets), so localStorage is the pragmatic store; IndexedDB would
+// be the move if this ever held large per-message bodies.
 let TODAY_CACHE: TodayPayload | null = null;
+const TODAY_PERSIST_KEY = 'mailient_today_snapshot';
+const TODAY_PERSIST_TTL = 24 * 60 * 60 * 1000;
+
+function loadPersistedToday(): TodayPayload | null {
+  if (TODAY_CACHE) return TODAY_CACHE;
+  try {
+    const raw = localStorage.getItem(TODAY_PERSIST_KEY);
+    if (!raw) return null;
+    const { at, payload } = JSON.parse(raw);
+    if (!payload || Date.now() - at > TODAY_PERSIST_TTL) return null;
+    TODAY_CACHE = payload as TodayPayload;
+    return TODAY_CACHE;
+  } catch { return null; }
+}
+function persistToday(payload: TodayPayload) {
+  TODAY_CACHE = payload;
+  try { localStorage.setItem(TODAY_PERSIST_KEY, JSON.stringify({ at: Date.now(), payload })); } catch { /* quota */ }
+}
 
 export default function SiftToday() {
   const router = useRouter();
   const { data: session } = useSession();
-  const [data, setData] = useState<TodayPayload | null>(() => TODAY_CACHE);
-  const [loading, setLoading] = useState(!TODAY_CACHE);
+  const [data, setData] = useState<TodayPayload | null>(() => (typeof window !== 'undefined' ? loadPersistedToday() : null));
+  const [loading, setLoading] = useState(() => !(typeof window !== 'undefined' && loadPersistedToday()));
   const [error, setError] = useState<string | null>(null);
+  // True when we're showing cached data because a refresh couldn't reach the server
+  // (offline / token expired) — surfaced as a quiet "cached · updated Xm ago" note.
+  const [servingCached, setServingCached] = useState(false);
   // Dismissals are persisted server-side (durable + cross-device); the Today API
   // already excludes them on load, so this in-memory set only handles instant
   // removal for items dismissed in THIS session before the next fetch.
@@ -602,6 +626,17 @@ export default function SiftToday() {
   // a backend failure we roll the cache back and surface a specific error.
   const dismissItem = useCallback((id: string, itemType?: string, threadId?: string) => {
     setDismissed((prev) => new Set(prev).add(id));
+    // Keep the persisted snapshot honest so the item can't flash back on an
+    // immediate reload (before the server-filtered revalidate lands).
+    if (TODAY_CACHE) {
+      persistToday({
+        ...TODAY_CACHE,
+        decide: TODAY_CACHE.decide.filter((i) => i.id !== id),
+        chase: TODAY_CACHE.chase.filter((i) => i.id !== id),
+        showUp: TODAY_CACHE.showUp.filter((i) => i.id !== id),
+        actionItems: TODAY_CACHE.actionItems.filter((i) => i.id !== id),
+      });
+    }
     const isEmail = itemType === 'decide' || itemType === 'chase';
     fetch('/api/home-feed/dismiss', {
       method: 'POST',
@@ -771,8 +806,10 @@ export default function SiftToday() {
 
   const load = useCallback(async (opts?: { background?: boolean; force?: boolean }) => {
     const bg = !!opts?.background;
-    if (!bg) setLoading(true);
-    setError(null);
+    // Only show the skeleton when there's nothing to show yet — never blank out data
+    // we already have (stale-while-revalidate).
+    if (!bg && !TODAY_CACHE) setLoading(true);
+    if (!bg) setError(null);
     try {
       // A manual refresh must bypass the server's 5-min snapshot cache and recompute
       // from Gmail/Calendar; the background revalidate is happy with the cache.
@@ -780,13 +817,18 @@ export default function SiftToday() {
       const res = await fetch(url, { cache: 'no-store' });
       const json = await res.json();
       if (!json.success) {
-        if (!bg) setError(json.error || 'Failed to load.');
+        // Keep showing cache if we have it (e.g. token expired) with a quiet note.
+        if (TODAY_CACHE) setServingCached(true);
+        else if (!bg) setError(json.error || 'Failed to load.');
         return;
       }
-      TODAY_CACHE = json as TodayPayload;
+      persistToday(json as TodayPayload);
       setData(json as TodayPayload);
+      setServingCached(false);
     } catch (e: any) {
-      if (!bg) setError(e?.message || 'Network error.');
+      // Offline / network error → serve cache + note instead of breaking.
+      if (TODAY_CACHE) setServingCached(true);
+      else if (!bg) setError(e?.message || 'Network error.');
     } finally {
       if (!bg) setLoading(false);
     }
@@ -862,7 +904,7 @@ export default function SiftToday() {
             ) : (
               <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
             )}
-            <span className="hidden sm:inline">{lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
+            <span className="hidden sm:inline">{servingCached && lastUpdated ? `cached · ${lastUpdated} ago` : lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
           </button>
         </div>
 
