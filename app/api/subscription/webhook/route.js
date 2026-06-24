@@ -123,8 +123,10 @@ export async function POST(request) {
             case 'subscription.updated':
             case 'subscription.active':
             case 'checkout.completed':
-            case 'order.paid':
-            case 'order.created': {
+            case 'order.paid': {
+                // NOTE: 'order.created' was removed — Polar emits it before payment is
+                // confirmed, so activating on it granted access to unpaid checkouts.
+                // 'order.paid' is the real "money received" signal.
                 // Get user email from various possible locations (exhaustive search)
                 let userEmail = data.customer?.email ||
                     data.user?.email ||
@@ -174,6 +176,23 @@ export async function POST(request) {
                     || data.payment_method_brand
                     || data.card_brand
                     || null;
+
+                // CARDLESS-TRIAL GUARD. A free trial must be backed by a real payment
+                // commitment — otherwise a user who merely opened the Polar checkout and
+                // closed it (no card) ends up with an active Pro trial. We only grant a
+                // 'trialing' subscription when a payment method is on file. (Configure
+                // the Polar product to REQUIRE a payment method for the trial so every
+                // legitimate trial carries one — see docs/arcus-calcom-auth.md style note.)
+                const hasPaymentMethod = !!(
+                    paymentMethodLast4 ||
+                    paymentMethod ||
+                    data.payment_method_id ||
+                    data.customer?.default_payment_method_id
+                );
+                if (polarDates.isTrialing && !hasPaymentMethod) {
+                    console.warn(`🚫 Cardless trial for ${userEmail} — NOT granting access (no payment method on file). Event: ${eventType}`);
+                    return NextResponse.json({ success: true, skipped: 'cardless_trial' });
+                }
 
                 console.log(`✅ Activating ${planType} plan for ${userEmail}`);
                 console.log('📅 Polar dates:', polarDates);

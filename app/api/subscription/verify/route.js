@@ -80,9 +80,11 @@ export async function POST(request) {
         const polarData = await polarResponse.json();
         console.log(`📦 [VERIFY] Polar subs found for ${userId}:`, (polarData.items || polarData.data || []).length);
 
-        // Find valid subscriptions
+        // Find valid subscriptions. A 'trialing' sub only counts if it's backed by a
+        // payment method — a cardless trial (user opened checkout, never paid) must NOT
+        // grant access. 'active' subs are already past that bar.
         const validSubscriptions = (polarData.items || polarData.data || []).filter(s =>
-            s.status === 'active' || s.status === 'trialing'
+            s.status === 'active' || (s.status === 'trialing' && polarHasPaymentMethod(s))
         );
 
         if (validSubscriptions.length === 0) {
@@ -105,6 +107,18 @@ export async function POST(request) {
             details: error.message
         }, { status: 500 });
     }
+}
+
+// Does this Polar subscription/order carry a payment method? Used to reject
+// cardless trials. Configure the Polar product to require a payment method for the
+// trial and every legitimate trial will satisfy this.
+function polarHasPaymentMethod(s) {
+    return !!(
+        s?.payment_method_id ||
+        s?.payment_method ||
+        s?.card_last4 || s?.payment_method_last4 ||
+        s?.customer?.default_payment_method_id
+    );
 }
 
 async function activateFromPolarData(userId, data, source) {
