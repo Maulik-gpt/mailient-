@@ -190,8 +190,7 @@ export async function POST(request) {
                     data.customer?.default_payment_method_id
                 );
                 if (polarDates.isTrialing && !hasPaymentMethod) {
-                    console.warn(`🚫 Cardless trial for ${userEmail} — NOT granting access (no payment method on file). Event: ${eventType}`);
-                    return NextResponse.json({ success: true, skipped: 'cardless_trial' });
+                    console.warn(`🚫 Note: Trial for ${userEmail} might not have payment method info in payload. Event: ${eventType}`);
                 }
 
                 console.log(`✅ Activating ${planType} plan for ${userEmail}`);
