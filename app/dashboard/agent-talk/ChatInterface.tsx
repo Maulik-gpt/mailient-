@@ -3978,7 +3978,8 @@ export default function ChatInterface({
         setChatTitle(conversationData.title || '');
 
         // Navigate to the conversation URL
-        router.push(`/dashboard/agent-talk/${conversationId}`);
+        loadedConversationIdRef.current = conversationId;
+        window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
         if (onConversationSelect && conversationId !== initialConversationId) {
           onConversationSelect(conversationId);
         }
@@ -4030,7 +4031,8 @@ export default function ChatInterface({
             
             // Give it a tiny bit of transition time
             setTimeout(() => {
-              router.push(`/dashboard/agent-talk/${conversationId}`);
+              loadedConversationIdRef.current = conversationId;
+              window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
             }, 50);
 
             setCurrentConversationId(conversationId);
@@ -4041,7 +4043,8 @@ export default function ChatInterface({
             setChatTitle(data.title || '');
 
             // Navigate to the conversation URL
-            router.push(`/dashboard/agent-talk/${conversationId}`);
+            loadedConversationIdRef.current = conversationId;
+            window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
             if (onConversationSelect) {
               onConversationSelect(conversationId);
             }
@@ -4575,7 +4578,7 @@ export default function ChatInterface({
     }
 
     // Immediately route to the base Arcus page on a single click
-    router.push('/dashboard/agent-talk');
+    window.history.pushState(null, '', '/dashboard/agent-talk');
     onNewChat?.();
 
     // Clear all conversation state for new chat instantly
@@ -4880,7 +4883,7 @@ export default function ChatInterface({
             >
               {/* Chat Column (Order 1 - LEFT) - Premium Refinement */}
               <div
-                className="flex-1 flex flex-col relative h-full min-w-0 order-1 bg-arcus-bg backdrop-blur-3xl border-x border-t border-arcus-border rounded-t-[40px] shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.5)] overflow-hidden"
+                className="flex-1 flex flex-col relative h-full min-w-0 order-1 bg-arcus-bg backdrop-blur-3xl border-l border-arcus-border rounded-none shadow-none overflow-hidden"
                 style={{ display: 'flex', flexDirection: 'column', height: '100%', maxHeight: '100%' }}
               >
                 {/* Header - Glassmorphic fixed height */}
@@ -4984,7 +4987,7 @@ export default function ChatInterface({
                                   }}
                                   maxLength={120}
                                   placeholder="conversation name"
-                                  className="pl-4 pr-3 py-2 bg-transparent text-[13px] font-bold text-black dark:text-white/90 tracking-tight lowercase outline-none w-[240px] placeholder:text-black/30 dark:placeholder:text-white/30"
+                                  className="pl-4 pr-3 py-2 bg-transparent text-[13px] font-bold text-black dark:text-white/90 tracking-tight outline-none w-[240px] placeholder:text-black/30 dark:placeholder:text-white/30"
                                 />
                               ) : (
                                 <>
@@ -4992,8 +4995,8 @@ export default function ChatInterface({
                                     onClick={() => setIsTitleMenuOpen(!isTitleMenuOpen)}
                                     className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                                   >
-                                    <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight lowercase">
-                                      {chatTitle || 'new conversation'}
+                                    <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight">
+                                      {chatTitle || 'New Conversation'}
                                     </span>
                                   </button>
                                   <div className="w-[1px] h-4 bg-white/[0.12]" />

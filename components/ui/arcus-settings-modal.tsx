@@ -77,9 +77,10 @@ function ToggleSwitch({
         className={cn(
           'relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0',
           enabled
-            ? 'bg-black dark:bg-white'
+            ? 'dark:bg-white'
             : 'bg-neutral-200 dark:bg-neutral-700'
         )}
+        style={enabled ? { backgroundColor: 'var(--arcus-fg, #1A1A1A)' } : undefined}
       >
         <motion.div
           layout

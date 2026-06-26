@@ -622,7 +622,7 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                 >
                                     <div className="bg-neutral-900 dark:bg-[#151515] rounded-[24px] border border-neutral-200 dark:border-white/[0.04] overflow-hidden shadow-2xl relative">
                                         {/* X-Style Banner Cover */}
-                                        <div className="relative w-full aspect-[3.2/1] bg-gradient-to-br from-neutral-800 via-neutral-900 to-black border-b border-white/[0.04] overflow-hidden group">
+                                        <div className="relative w-full aspect-[3.2/1] border-b border-white/[0.04] overflow-hidden group">
                                             {accountInfo.banner ? (
                                                 <img 
                                                     src={accountInfo.banner} 
@@ -630,8 +630,23 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center opacity-30">
-                                                    <Sparkles className="w-12 h-12 text-neutral-500 animate-pulse" />
+                                                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-[#121212]" />
+                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-[60px] bg-indigo-500/10 pointer-events-none" />
+                                                    <motion.div
+                                                        animate={{ 
+                                                            scale: [1, 1.04, 1],
+                                                            opacity: [0.3, 0.55, 0.3]
+                                                        }}
+                                                        transition={{ 
+                                                            duration: 5, 
+                                                            repeat: Infinity, 
+                                                            ease: "easeInOut" 
+                                                        }}
+                                                        className="z-10"
+                                                    >
+                                                        <Sparkles className="w-10 h-10 text-indigo-400/80" />
+                                                    </motion.div>
                                                 </div>
                                             )}
                                             

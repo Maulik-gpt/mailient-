@@ -72,21 +72,38 @@ export default function AgentTalkPage() {
         }
     }, [params]);
 
+    // Listen to browser popstate (back/forward history navigation)
+    useEffect(() => {
+        const handlePopState = () => {
+            const pathParts = window.location.pathname.split('/');
+            const urlConversationId = pathParts[pathParts.length - 1];
+            if (urlConversationId &&
+                (urlConversationId.startsWith('conv_') || /^[0-9a-f-]{36}$/.test(urlConversationId))) {
+                setConversationId(urlConversationId);
+            } else {
+                setConversationId(null);
+            }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, []);
+
     const handleConversationSelect = (selectedConversationId: string) => {
-        // Update URL to include conversation ID
-        router.push(`/dashboard/agent-talk/${selectedConversationId}`);
+        // Update URL to include conversation ID without triggering full route transition
+        window.history.pushState(null, '', `/dashboard/agent-talk/${selectedConversationId}`);
+        setConversationId(selectedConversationId);
     };
 
     const handleNewChat = () => {
         // Navigate back to base agent-talk page for new chat
-        router.push('/dashboard/agent-talk');
+        window.history.pushState(null, '', '/dashboard/agent-talk');
         setConversationId(null);
     };
 
     const handleConversationDelete = (deletedConversationId: string) => {
         // If the current conversation was deleted, ensure we're on the base page
         if (conversationId === deletedConversationId) {
-            router.push('/dashboard/agent-talk');
+            window.history.pushState(null, '', '/dashboard/agent-talk');
             setConversationId(null);
         }
     };

@@ -429,7 +429,7 @@ export function ArtifactsGalleryPanel({
                   )}>
                     <Sparkles className={cn("w-6 h-6 animate-pulse", isDark ? "text-[#737373]" : "text-black/25")} />
                   </div>
-                  <h4 className={cn("text-[15px] font-bold tracking-tight mb-2 lowercase", isDark ? "text-[#737373]" : "text-black/70")}>
+                  <h4 className={cn("text-[15px] font-bold tracking-tight mb-2", isDark ? "text-[#737373]" : "text-black/70")}>
                     Your library is empty
                   </h4>
                   <p className={cn("text-[12px] leading-relaxed max-w-[260px]", isDark ? "text-[#737373]" : "text-black/40")}>

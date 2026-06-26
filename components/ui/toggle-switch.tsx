@@ -23,7 +23,7 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
       className={`
         relative inline-flex h-6 w-10 items-center rounded-full transition-all duration-200 ease-in-out
         ${checked
-          ? 'bg-[#1A1A1A] dark:bg-white'
+          ? 'dark:bg-white'
           : 'bg-neutral-200 dark:bg-white/10'
         }
         ${disabled
@@ -32,13 +32,14 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
         }
         ${className}
       `}
+      style={checked ? { backgroundColor: 'var(--arcus-fg, #1A1A1A)' } : undefined}
     >
       <span
         className={`
           inline-block h-5 w-5 transform rounded-full bg-white transition-all duration-200 ease-in-out
           ${checked
-            ? 'translate-x-[18px] bg-white dark:bg-black'
-            : 'translate-x-[2px] bg-white'
+            ? 'translate-x-[18px] dark:bg-black'
+            : 'translate-x-[2px]'
           }
         `}
       />

@@ -53,9 +53,9 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
     const steps = [
         { icon: Link2, text: "Share your invite link", bold: "" },
-        { icon: Sparkles, text: "A friend signs up ", bold: "free" },
-        { icon: Zap, text: "When they upgrade to Pro, you get ", bold: "1 month of Pro, free" },
-        { icon: Zap, text: "It ", bold: "stacks", extra: " — every conversion adds another free month" },
+        { icon: Sparkles, text: "A friend signs up", bold: "free" },
+        { icon: Zap, text: "When they upgrade to Pro, you get", bold: "1 month of Pro, free" },
+        { icon: Zap, text: "It", bold: "stacks", extra: " — every conversion adds another free month" },
     ];
 
     return (
@@ -95,12 +95,12 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
-                            <span className="text-[10px] font-bold text-neutral-600 dark:text-white tracking-widest uppercase opacity-80">Affiliate · Free Pro</span>
+                            <span className="text-[10px] font-bold text-neutral-500 dark:text-white tracking-widest uppercase opacity-80">Affiliate · Free Pro</span>
                         </div>
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
                             Refer friends,<br />get Pro free
                         </h2>
-                        <p className="text-neutral-600 dark:text-white/40 text-sm font-medium">a free month of Pro for every paid referral</p>
+                        <p className="text-neutral-500 dark:text-white/40 text-sm font-medium">a free month of Pro for every paid referral</p>
                     </div>
 
                     <button 
@@ -128,7 +128,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                                     <div className="mt-0.5 p-1 rounded-md bg-black/5 dark:bg-white/5 border border-neutral-200 dark:border-white/10">
                                         <step.icon className="w-3.5 h-3.5 text-black/70 dark:text-white/70" />
                                     </div>
-                                    <p className="text-sm text-neutral-600 dark:text-white/60 leading-tight flex-1">
+                                    <p className="text-sm text-neutral-500 dark:text-white/60 leading-tight flex-1">
                                         {step.text}
                                         <span className="text-black dark:text-white font-bold ml-1">{step.bold}</span>
                                         {step.extra && <span className="text-neutral-400 dark:text-white/40 ml-1">{step.extra}</span>}

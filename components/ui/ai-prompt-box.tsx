@@ -909,15 +909,6 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           className
         )}
       >
-        {isLoading && (
-          <div className="absolute inset-0 overflow-hidden rounded-[32px] pointer-events-none z-0">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.1] to-transparent w-[200%]"
-              animate={{ x: ['-100%', '100%'] }}
-              transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-            />
-          </div>
-        )}
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
             <motion.div
@@ -1268,13 +1259,13 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
                 disabled={isLoading && !onStop}
               >
                 {isLoading ? (
-                  <Square className="h-4 w-4 fill-white dark:fill-black text-white dark:text-black" />
+                  <Square className="h-4 w-4 fill-current text-current animate-pulse" />
                 ) : isRecording ? (
                   <StopCircle className="h-5 w-5 text-red-500" />
                 ) : hasContent ? (
-                  <ArrowUp className="h-4 w-4 text-white dark:text-black stroke-[3px]" />
+                  <ArrowUp className="h-4 w-4 text-current stroke-[3px]" />
                 ) : (
-                  <Mic className="h-5 w-5 text-white dark:text-black transition-colors" />
+                  <Mic className="h-5 w-5 text-current transition-colors" />
                 )}
               </button>
             </PromptInputAction>
