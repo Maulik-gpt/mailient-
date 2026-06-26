@@ -20,6 +20,16 @@ interface ChatHistoryModalProps {
   onNewMission?: () => void;
 }
 
+function capitalizeTitle(str: string): string {
+  if (!str) return '';
+  return str
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConversationDelete, onNewMission }: ChatHistoryModalProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,7 +104,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
   }, [sessions, searchQuery]);
 
   const handleRename = async (id: string, newTitle: string) => {
-    const trimmed = newTitle.trim();
+    const trimmed = capitalizeTitle(newTitle);
     setEditingId(null);
     if (!trimmed) return;
 
@@ -267,7 +277,7 @@ export function ChatHistoryModal({ isOpen, onClose, onConversationSelect, onConv
                           />
                         ) : (
                           <span className="flex-1 text-[14px] font-medium text-arcus-fg-secondary group-hover:text-arcus-fg transition-colors truncate">
-                            {session.title}
+                            {capitalizeTitle(session.title)}
                           </span>
                         )}
 

@@ -23,8 +23,8 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
       className={`
         relative inline-flex h-6 w-10 items-center rounded-full transition-all duration-200 ease-in-out
         ${checked
-          ? 'dark:bg-white'
-          : 'bg-neutral-200 dark:bg-white/10'
+          ? 'bg-[#171717] dark:bg-white'
+          : 'bg-neutral-300 dark:bg-white/10'
         }
         ${disabled
           ? 'cursor-not-allowed opacity-50'
@@ -32,7 +32,6 @@ export function ToggleSwitch({ checked, onChange, disabled = false, className = 
         }
         ${className}
       `}
-      style={checked ? { backgroundColor: 'var(--arcus-fg, #1A1A1A)' } : undefined}
     >
       <span
         className={`

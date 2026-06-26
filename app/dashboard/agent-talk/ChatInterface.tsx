@@ -74,6 +74,16 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
 import { ShortcutsModal } from './components/ShortcutsModal';
 import { ProactiveNudge } from './components/ProactiveNudge';
 
+function capitalizeTitle(str: string): string {
+  if (!str) return '';
+  return str
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 const GRA_DEFORM = { incline: 0.3, noiseAmp: 150, noiseFlow: 2 };
 
 const THINKING_MESSAGES = ["Clarifying Intent", "Reasoning Context", "Architecting Plan", "Executing Tools", "Securing Action", "Delivering Value", "Iterating Results"];
@@ -1908,7 +1918,7 @@ export default function ChatInterface({
   }, [isEditingTitle]);
 
   const commitTitle = () => {
-    const next = titleDraft.trim();
+    const next = capitalizeTitle(titleDraft);
     setIsEditingTitle(false);
     if (!next || next === chatTitle) return;
     setChatTitle(next);
@@ -2483,9 +2493,10 @@ export default function ChatInterface({
       if (response.ok) {
         const data = await response.json();
         if (data.title && data.title.length > 0) {
-          console.log('🏷️ AI-generated chat title:', data.title);
-          setChatTitle(data.title);
-          return data.title;
+          const capitalized = capitalizeTitle(data.title);
+          console.log('🏷️ AI-generated chat title:', capitalized);
+          setChatTitle(capitalized);
+          return capitalized;
         }
       }
     } catch (error) {
@@ -2494,7 +2505,8 @@ export default function ChatInterface({
 
     // Fallback: Use first words of message
     const fallbackTitle = userMessage.trim().split(' ').slice(0, 5).join(' ');
-    return fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
+    const rawFallback = fallbackTitle.length > 40 ? fallbackTitle.substring(0, 40) + '...' : fallbackTitle;
+    return capitalizeTitle(rawFallback);
   };
 
   const handleGlobalShare = async () => {
@@ -3572,7 +3584,7 @@ export default function ChatInterface({
 
         allMsgs = [...allMsgs, agentMsg];
         const unique = allMsgs.filter((msg: any, idx: number, self: any[]) => idx === self.findIndex(t => t.id === msg.id));
-        const convTitle = existing.title || chatTitle || messageText.slice(0, 60);
+        const convTitle = capitalizeTitle(existing.title || chatTitle || messageText.slice(0, 60));
         localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify({ ...existing, messages: unique, lastUpdated: new Date().toISOString(), messageCount: unique.length }));
 
         // Persist to Supabase (fire-and-forget — localStorage is the read cache)
@@ -4550,7 +4562,7 @@ export default function ChatInterface({
     const conversationData = {
       id: conversationIdToUse as string,
       messages: [...historyMessages, newMessage],
-      title: chatTitle || messageText.trim().split(' ').slice(0, 5).join(' '),
+      title: capitalizeTitle(chatTitle || messageText.trim().split(' ').slice(0, 5).join(' ')),
       lastUpdated: new Date().toISOString(),
       messageCount: historyMessages.length + 1
     };
@@ -4614,7 +4626,7 @@ export default function ChatInterface({
         body: JSON.stringify({
           conversationId: currentConversationId,
           messages,
-          title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+          title: capitalizeTitle(chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation'),
         }),
       });
     } catch (error) {
@@ -6227,7 +6239,7 @@ export default function ChatInterface({
                                                 body: JSON.stringify({
                                                   conversationId: currentConversationId,
                                                   messages,
-                                                  title: chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation',
+                                                  title: capitalizeTitle(chatTitle || messages[0]?.content?.toString?.()?.slice(0, 60) || 'Conversation'),
                                                 }),
                                               });
                                               const data = await res.json();

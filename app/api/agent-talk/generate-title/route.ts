@@ -22,6 +22,16 @@ function getKeys(): string[] {
   ].filter(Boolean) as string[];
 }
 
+function capitalizeTitle(str: string): string {
+  if (!str) return '';
+  return str
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
 async function tryGenerateTitle(message: string): Promise<string | null> {
   const keys = getKeys();
   if (keys.length === 0) return null;
@@ -62,7 +72,7 @@ async function tryGenerateTitle(message: string): Promise<string | null> {
         const title = raw.replace(/^["'`*#]+|["'`*#.!?]+$/g, '').trim();
 
         if (title && title.length >= 3 && title.length <= 60) {
-          return title;
+          return capitalizeTitle(title);
         }
       } catch {
         // try next
@@ -85,8 +95,8 @@ function smartFallback(message: string): string {
   const words = stripped.split(/\s+/).filter(w => w.length > 0);
   const meaningful = words.slice(0, 6).join(' ');
 
-  // Capitalize first letter
-  return meaningful.charAt(0).toUpperCase() + meaningful.slice(1);
+  // Capitalize title
+  return capitalizeTitle(meaningful);
 }
 
 export async function POST(request: NextRequest) {
