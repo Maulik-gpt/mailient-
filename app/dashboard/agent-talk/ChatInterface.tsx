@@ -2622,9 +2622,22 @@ export default function ChatInterface({
     setIsLoading(true);
     setIsAgentLoopActive(true);
     setLiveActivityLine('');
-    setAgentSteps([]);          // start empty — only tool_call events populate the timeline
     setLiveThinkingBlocks([]);
     setLiveTaskList(null);
+
+    // Seed the step tracker with an initial "understanding" pill so the user
+    // sees meaningful feedback from the very first frame, before any SSE events.
+    const initThinkingStep: AgentStep = {
+      id: 'al-init-thinking',
+      type: 'thinking',
+      tool: 'thinking',
+      label: 'Understanding your request…',
+      status: 'active',
+      startedAt: Date.now(),
+      iteration: 0,
+      params: {},
+    };
+    setAgentSteps([initThinkingStep]);
 
     // Add placeholder assistant message
     const placeholderMsg: AgentMessage = {
@@ -2633,7 +2646,7 @@ export default function ChatInterface({
       role: 'assistant',
       content: { text: '', list: [], footer: '' },
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
-      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...', agentSteps: [] }
+      meta: { actionType: 'agent_loop', isStreaming: true, liveThinking: 'Thinking...', agentSteps: [initThinkingStep] }
     };
     setMessages(prev => [...prev, placeholderMsg]);
 
@@ -2694,7 +2707,7 @@ export default function ChatInterface({
       let streamFinishedNormally = false;
       let hadQuestionEvent = false;
       let hadPlanEvent = false;
-      let currentAgentSteps: AgentStep[] = [];       // populated only by tool_call events
+      let currentAgentSteps: AgentStep[] = [initThinkingStep]; // seed with the thinking pill
       let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
       let currentTaskList: TaskList | null = null;    // populated by task_list event
       let currentPlanText = '';                       // populated by plan_text event
@@ -2784,12 +2797,17 @@ export default function ChatInterface({
             }
 
             case 'thinking': {
-              // Only update the thinking text shown in AgentThinkingSection.
-              // Never push thinking events into currentAgentSteps — they show in the timeline.
               const thinkStatus = data.status || data.step || 'Thinking...';
+              // Update the label on the initial thinking step pill while it's still active.
+              if (currentAgentSteps.length > 0 && currentAgentSteps[0].id === 'al-init-thinking' && currentAgentSteps[0].status === 'active') {
+                currentAgentSteps = currentAgentSteps.map(s =>
+                  s.id === 'al-init-thinking' ? { ...s, label: thinkStatus } : s
+                );
+                setAgentSteps(currentAgentSteps);
+              }
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
-                return { ...m, meta: { ...(m.meta || {}), liveThinking: thinkStatus } };
+                return { ...m, meta: { ...(m.meta || {}), liveThinking: thinkStatus, agentSteps: currentAgentSteps } };
               }));
               break;
             }
@@ -3187,7 +3205,18 @@ export default function ChatInterface({
               }));
               break;
 
-            case 'message':
+            case 'message': {
+              // Mark the initial thinking step as completed when the final message arrives
+              // (covers the case where no tool calls were made, so the step stayed active).
+              if (currentAgentSteps.some(s => s.status === 'active')) {
+                currentAgentSteps = currentAgentSteps.map(s =>
+                  s.status === 'active'
+                    ? { ...s, status: 'completed' as const, completedAt: Date.now(), label: s.id === 'al-init-thinking' ? 'Analyzed your request' : s.label }
+                    : s
+                );
+                setAgentSteps(currentAgentSteps);
+              }
+
               rawOutput += (data.content || '');
               const { thinking: liveThinkingText, cleanText: roadmapText } = extractThinking(rawOutput);
               finalContent = roadmapText;
@@ -3246,6 +3275,7 @@ export default function ChatInterface({
                 };
               }));
               break;
+            }
 
             case 'suggestions':
               if (Array.isArray(data.suggestions) && data.suggestions.length > 0) {
@@ -3973,6 +4003,27 @@ export default function ChatInterface({
     }
   };
 
+  // Strand-proofing: if a conversation id in the URL turns out to be dead — an
+  // orphan client-generated id that was never persisted, an empty record, or a
+  // failed fetch — don't leave the user stuck on the welcome screen with a dead
+  // id in the URL (the "generates an id then does nothing" bug). Reset cleanly to
+  // a fresh new chat at the base route, no jarring jump.
+  const resetToFreshChat = () => {
+    // NOTE: leave loadedConversationIdRef pinned to the dead id (don't null it),
+    // so the init effect can't immediately re-fetch the same dead id before the
+    // parent's null state propagates.
+    setMessages([]);
+    setCurrentConversationId(null);
+    setIsInitialMode(true);
+    setIsNewConversation(false);
+    setChatTitle('');
+    if (onNewChat) {
+      onNewChat(); // syncs parent state + URL so the dead id can't re-trigger a load
+    } else {
+      window.history.replaceState(null, '', '/dashboard/agent-talk');
+    }
+  };
+
   const loadConversation = (conversationId: string) => {
     const savedConversation = localStorage.getItem(`conversation_${conversationId}`);
     if (savedConversation) {
@@ -4029,9 +4080,9 @@ export default function ChatInterface({
     } else {
       // If not in localStorage, fetch from API
       fetch(`/api/arcus/conversation/${conversationId}`)
-        .then(response => response.json())
+        .then(response => (response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`))))
         .then(data => {
-          if (data && data.messages && Array.isArray(data.messages)) {
+          if (data && Array.isArray(data.messages) && data.messages.length > 0) {
             const formattedMessages = data.messages.map((msg: any) => {
               if (msg.type === 'agent' && typeof msg.content === 'string') {
                 return { ...msg, content: { text: msg.content, list: [], footer: '' } };
@@ -4040,12 +4091,6 @@ export default function ChatInterface({
             });
             setMessages(formattedMessages);
             setConversations(prev => ({ ...prev, [conversationId]: formattedMessages }));
-            
-            // Give it a tiny bit of transition time
-            setTimeout(() => {
-              loadedConversationIdRef.current = conversationId;
-              window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
-            }, 50);
 
             setCurrentConversationId(conversationId);
             setIsInitialMode(false);
@@ -4063,8 +4108,15 @@ export default function ChatInterface({
 
             // Scroll to bottom after messages are loaded
             setTimeout(() => scrollToBottom(true), 150);
+          } else {
+            // Conversation exists nowhere / has no messages → don't strand on welcome.
+            resetToFreshChat();
           }
-        }).catch(err => console.error('Error fetching conversation:', err));
+        })
+        .catch(err => {
+          console.error('Error fetching conversation:', err);
+          resetToFreshChat();
+        });
     }
   };
 
@@ -4505,16 +4557,17 @@ export default function ChatInterface({
       conversationIdToUse = generateConversationId();
       setCurrentConversationId(conversationIdToUse);
       setIsNewConversation(true);
-
-      // Save to localStorage for persistence IMMEDIATELY
       localStorage.setItem(`conv_${conversationIdToUse}_title`, messageText || (attachments ? attachments[0].name : 'New Chat'));
-      console.log('Generated new conversation ID:', conversationIdToUse);
-
-      // Close sidebar if it was open during "New Chat" state
+      // Pin the ref immediately so the initialConversationId useEffect skips
+      // loadConversation and doesn't overwrite our in-flight messages state.
+      loadedConversationIdRef.current = conversationIdToUse as string;
+      // Update the URL right away — smooth transition with no blank/stuck state.
+      window.history.pushState(null, '', `/dashboard/agent-talk/${conversationIdToUse}`);
+      // Sync parent state non-blocking (parent's pushState is idempotent).
+      onConversationSelect?.(conversationIdToUse as string);
       setShowHistory(false);
     } else {
       setIsNewConversation(false);
-      console.log('Continuing existing conversation ID:', currentConversationId);
     }
 
     // Start loading state immediately
@@ -4568,16 +4621,7 @@ export default function ChatInterface({
     };
     localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(conversationData));
 
-    // Navigate to the conversation URL if this is a new conversation
-    if (shouldCreateNewConversation && onConversationSelect && conversationIdToUse) {
-      localStorage.setItem('pending_arcus_id', conversationIdToUse);
-      localStorage.setItem('pending_arcus_message', messageText);
-      localStorage.setItem('pending_arcus_options', JSON.stringify(options || {}));
-      onConversationSelect(conversationIdToUse);
-      return;
-    }
-
-    // Process the AI message directly - don't rely on navigation/loadConversation
+    // Process the AI message — always immediate, no localStorage handoff.
     processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId });
   };
 
