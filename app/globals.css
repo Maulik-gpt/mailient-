@@ -42,7 +42,10 @@
 
 /* --- Premium Interactive Polish --- */
 :root {
-  --custom-cursor: url('/macos-cursor.svg') 11 5, pointer;
+  /* Was a custom SVG ('/macos-cursor.svg') — a triangle pointer that rendered
+     invisible on light backgrounds. Now the standard hand/pointer cursor app-wide.
+     Every `var(--custom-cursor)` usage resolves to this, so no triangle remains. */
+  --custom-cursor: pointer;
   --background: #f7f8f8;
   --foreground: #000000;
   --card: #ffffff;
@@ -1397,16 +1400,16 @@ textarea::-moz-selection {
   /* light gray */
 }
 
-/* Custom cursor for interactive elements */
+/* Hand (pointer) cursor for interactive elements. Previously used a white SVG
+   ('/cursor-white.svg') that was invisible on light backgrounds — removed. */
 button,
 a,
 input[type="button"],
 input[type="submit"],
 select,
-textarea,
 [role="button"],
 .cursor-pointer {
-  cursor: url('/cursor-white.svg'), pointer;
+  cursor: pointer;
 }
 
 /* Base, components, and utilities are already imported via @import "tailwindcss" on line 76 */
