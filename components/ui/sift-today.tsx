@@ -785,7 +785,7 @@ function AttentionBreakdown({ segments }: { segments: AttentionSegment[] }) {
   const total = active.reduce((n, s) => n + s.count, 0);
   if (total === 0) return null;
   return (
-    <div className="mb-4">
+    <div>
       <div className="flex h-2 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.05]">
         {active.map((s) => (
           <div
@@ -809,8 +809,66 @@ function AttentionBreakdown({ segments }: { segments: AttentionSegment[] }) {
   );
 }
 
+// AI recommendation as returned by /api/home-feed/recommendations. The copy is
+// AI-written + grounded; the stat is server-computed from real items.
+interface AiRecDTO {
+  id: string;
+  category: 'connect' | 'productivity';
+  title: string;
+  summary: string;
+  arcusPrompt: string;
+  ctaLabel: string;
+  stat: { value: number; label: string };
+}
+
+function aiToRec(dto: AiRecDTO): Recommendation {
+  return {
+    id: dto.id,
+    tone: dto.category === 'connect' ? 'connect' : 'focus',
+    icon: dto.category === 'connect'
+      ? <MessageSquare className="w-3.5 h-3.5" strokeWidth={2} />
+      : <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />,
+    title: dto.title,
+    summary: dto.summary,
+    stat: dto.stat,
+    cta: { label: dto.ctaLabel, prompt: dto.arcusPrompt },
+  };
+}
+
+// Focus-split donut (Connection vs Productivity) — dependency-free SVG. r chosen
+// so the circumference is 100, making strokeDasharray values direct percentages.
+function FocusDonut({ connect, productivity }: { connect: number; productivity: number }) {
+  const total = connect + productivity;
+  if (total === 0) return null;
+  const r = 15.9155;
+  const connectPct = (connect / total) * 100;
+  return (
+    <div className="relative flex-shrink-0 w-[64px] h-[64px]">
+      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+        <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-black/[0.06] dark:stroke-white/[0.08]" />
+        {connect > 0 && (
+          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" strokeLinecap="round"
+            className="stroke-emerald-500 dark:stroke-emerald-400"
+            strokeDasharray={`${connectPct} ${100 - connectPct}`} strokeDashoffset="0" />
+        )}
+        {productivity > 0 && (
+          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" strokeLinecap="round"
+            className="stroke-black/70 dark:stroke-white/70"
+            strokeDasharray={`${100 - connectPct} ${connectPct}`} strokeDashoffset={`${-connectPct}`} />
+        )}
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-[15px] font-semibold tabular-nums text-black dark:text-white leading-none">{total}</span>
+        <span className="text-[8px] uppercase tracking-[0.08em] text-black/40 dark:text-white/40 mt-0.5">moves</span>
+      </div>
+    </div>
+  );
+}
+
+const REC_CACHE_PREFIX = 'mailient_airecs_';
+
 function RecommendationsSection({
-  decide, chase, actionItems, showUp, agentRuns, checkedAgo, onAct,
+  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, onAct,
 }: {
   decide: DecideItem[];
   chase: ChaseItem[];
@@ -818,12 +876,58 @@ function RecommendationsSection({
   showUp: ShowUpItem[];
   agentRuns: AgentRunItem[];
   checkedAgo: string | null;
+  generatedAt: string;
   onAct: (prompt: string) => void;
 }) {
-  const recs = useMemo(
+  // Instant, always-accurate baseline. Renders immediately; AI recs swap in when
+  // ready, so the section is never blocked and never empty if the model fails.
+  const fallbackRecs = useMemo(
     () => buildRecommendations(decide, chase, actionItems, showUp, agentRuns),
     [decide, chase, actionItems, showUp, agentRuns],
   );
+
+  const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
+
+  // Fetch AI recommendations once per data snapshot (keyed by generatedAt),
+  // cached in sessionStorage so tab swaps / remounts are instant and don't re-bill.
+  useEffect(() => {
+    if (!generatedAt) return;
+    if (decide.length + chase.length + actionItems.length + showUp.length === 0) return;
+    const cacheKey = REC_CACHE_PREFIX + generatedAt;
+    let cancelled = false;
+
+    try {
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) {
+        const dtos = JSON.parse(cached) as AiRecDTO[];
+        if (Array.isArray(dtos) && dtos.length) { setAiRecs(dtos.map(aiToRec)); return; }
+      }
+    } catch { /* ignore */ }
+
+    setAiLoading(true);
+    (async () => {
+      try {
+        const res = await fetch('/api/home-feed/recommendations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decide, chase, actionItems, showUp, agentRuns }),
+        });
+        const json = await res.json().catch(() => null);
+        const dtos: AiRecDTO[] = json?.recommendations || [];
+        if (!cancelled && Array.isArray(dtos) && dtos.length) {
+          setAiRecs(dtos.map(aiToRec));
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(dtos)); } catch { /* quota */ }
+        }
+      } catch { /* keep deterministic fallback */ }
+      finally { if (!cancelled) setAiLoading(false); }
+    })();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [generatedAt]);
+
+  const recs = aiRecs && aiRecs.length ? aiRecs : fallbackRecs;
 
   const segments: AttentionSegment[] = useMemo(() => [
     { key: 'decide', label: 'Replies', count: decide.length, barClass: 'bg-black/75 dark:bg-white/80', dotClass: 'bg-black/75 dark:bg-white/80' },
@@ -831,6 +935,9 @@ function RecommendationsSection({
     { key: 'promised', label: 'Promised', count: actionItems.length, barClass: 'bg-black/30 dark:bg-white/30', dotClass: 'bg-black/30 dark:bg-white/30' },
     { key: 'showup', label: 'Meetings', count: showUp.length, barClass: 'bg-black/[0.16] dark:bg-white/[0.18]', dotClass: 'bg-black/20 dark:bg-white/25' },
   ], [decide.length, chase.length, actionItems.length, showUp.length]);
+
+  const connectCount = recs.filter(r => r.tone === 'connect').length;
+  const productivityCount = recs.filter(r => r.tone !== 'connect').length;
 
   if (recs.length === 0) return null;
 
@@ -841,17 +948,46 @@ function RecommendationsSection({
         count={recs.length}
         icon={<Sparkles className="w-3.5 h-3.5" strokeWidth={2} />}
       />
-      <AttentionBreakdown segments={segments} />
+
+      {/* Mini dashboard: focus-split donut + today's attention breakdown. */}
+      <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02] px-4 py-4 mb-4">
+        <div className="flex items-center gap-5">
+          <div className="flex flex-col items-center gap-2">
+            <FocusDonut connect={connectCount} productivity={productivityCount} />
+            <div className="flex items-center gap-2.5">
+              <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-[0.06em] text-black/45 dark:text-white/45">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" /> Connect
+              </span>
+              <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-[0.06em] text-black/45 dark:text-white/45">
+                <span className="w-1.5 h-1.5 rounded-full bg-black/70 dark:bg-white/70" /> Do
+              </span>
+            </div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[10.5px] uppercase tracking-[0.12em] text-black/35 dark:text-white/35 mb-2.5">Where today sits</p>
+            <AttentionBreakdown segments={segments} />
+          </div>
+        </div>
+      </div>
+
       <div className="space-y-2.5">
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {recs.map((rec) => (
             <RecommendationCard key={rec.id} rec={rec} onAct={onAct} />
           ))}
         </AnimatePresence>
       </div>
-      <p className="mt-3 text-[10.5px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
-        Ranked from live data{checkedAgo ? ` · checked ${checkedAgo} ago` : ''} · no guesses
-      </p>
+
+      <div className="mt-3 flex items-center gap-2 flex-wrap">
+        <p className="text-[10.5px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
+          {aiRecs && aiRecs.length ? 'AI-ranked from your live data' : 'Ranked from your live data'}{checkedAgo ? ` · checked ${checkedAgo} ago` : ''} · no guesses
+        </p>
+        {aiLoading && !aiRecs && (
+          <span className="inline-flex items-center gap-1 text-[10.5px] text-black/35 dark:text-white/35">
+            <Loader2 className="w-3 h-3 animate-spin" strokeWidth={2} /> spotting the moves worth your time…
+          </span>
+        )}
+      </div>
     </section>
   );
 }
@@ -1278,6 +1414,7 @@ export default function SiftToday() {
               showUp={showUpItems}
               agentRuns={data.agentRuns ?? []}
               checkedAgo={lastUpdated}
+              generatedAt={data.generatedAt}
               onAct={openArcus}
             />
 
