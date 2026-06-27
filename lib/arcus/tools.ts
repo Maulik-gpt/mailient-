@@ -49,10 +49,10 @@ import {
   getGcalToken,
   getNotionToken,
   getSlackToken,
-  CALENDAR_SCOPE_MESSAGE,
   GMAIL_SCOPE_MESSAGE,
-  isScopeError,
+  classifyGoogle403,
   gmailHttpFailure,
+  gcal403Failure,
 } from './tools/http-tokens';
 import {
   b64decode,
@@ -2470,7 +2470,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
       try { listRes = await gmailGetWithRetry(url, token); } catch { return failureResult('Gmail search timed out after retries.', 'upstream_gmail'); }
     }
   }
-  if (!listRes.ok) return gmailHttpFailure(listRes.status, 'Gmail search failed');
+  if (!listRes.ok) return gmailHttpFailure(listRes, 'Gmail search failed');
 
   const listData = await listRes.json();
   const messages: any[] = listData.messages || [];
@@ -2512,7 +2512,7 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!res.ok) return gmailHttpFailure(res.status, 'Could not read email');
+  if (!res.ok) return gmailHttpFailure(res, 'Could not read email');
 
   const m = await res.json();
   const h = m.payload?.headers || [];
@@ -2555,7 +2555,7 @@ async function gmailReadThread(userId: string, input: any): Promise<ToolResult> 
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) }); }
   }
   if (!res.ok) {
-    return gmailHttpFailure(res.status, 'Could not read thread');
+    return gmailHttpFailure(res, 'Could not read thread');
   }
 
   const thread = await res.json();
@@ -2619,7 +2619,7 @@ async function gmailGetLabels(userId: string): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }
-  if (!res.ok) return gmailHttpFailure(res.status, 'Could not list labels');
+  if (!res.ok) return gmailHttpFailure(res, 'Could not list labels');
 
   const data = await res.json();
   const labels: any[] = data.labels || [];
@@ -2663,7 +2663,9 @@ async function gmailApplyLabel(userId: string, input: any): Promise<ToolResult> 
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    if (res.status === 403) return classifyGoogle403(err) === 'scope'
+      ? failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing')
+      : failureResult('Gmail is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.', 'gmail_rate_limited');
     return failureResult(`Apply label failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
   }
   return { output: `Applied ${labelIds.length} label(s) to thread ${threadId}.` };
@@ -2701,7 +2703,9 @@ async function gmailArchiveThread(userId: string, input: any): Promise<ToolResul
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    if (res.status === 403) return classifyGoogle403(err) === 'scope'
+      ? failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing')
+      : failureResult('Gmail is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.', 'gmail_rate_limited');
     return failureResult(`Archive failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gmail');
   }
   return { output: `Archived thread ${threadId}.` };
@@ -2718,7 +2722,7 @@ async function gmailGetProfile(userId: string): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }); }
   }
-  if (!res.ok) return gmailHttpFailure(res.status, 'Could not read profile');
+  if (!res.ok) return gmailHttpFailure(res, 'Could not read profile');
 
   const p = await res.json();
   return {
@@ -2742,7 +2746,7 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!listRes.ok) return gmailHttpFailure(listRes.status, 'Could not fetch sent emails');
+  if (!listRes.ok) return gmailHttpFailure(listRes, 'Could not fetch sent emails');
 
   const listData = await listRes.json();
   const messages: any[] = (listData.messages || []).slice(0, limit);
@@ -3157,7 +3161,9 @@ async function draftReply(userId: string, input: any, context: ToolContext = {})
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    if (res.status === 403) return classifyGoogle403(err) === 'scope'
+      ? failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing')
+      : failureResult('Gmail is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.', 'gmail_rate_limited');
     return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
   }
 
@@ -3262,7 +3268,9 @@ async function draftColdEmail(userId: string, input: any): Promise<ToolResult> {
   }
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    if (res.status === 403) return classifyGoogle403(err) === 'scope'
+      ? failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing')
+      : failureResult('Gmail is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.', 'gmail_rate_limited');
     return failureResult(`Failed to save draft (${res.status}): ${err.slice(0, 200)}`, 'draft_save_failed');
   }
 
@@ -3382,7 +3390,9 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    if (res.status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    if (res.status === 403) return classifyGoogle403(err) === 'scope'
+      ? failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing')
+      : failureResult('Gmail is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.', 'gmail_rate_limited');
     return failureResult(`Failed to send email (${res.status}): ${err.slice(0, 200)}`, 'send_failed');
   }
 
@@ -3619,7 +3629,8 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
   }
 
   if (!res.ok) {
-    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    const cal403 = await gcal403Failure(res);
+    if (cal403) return cal403;
     const err = await res.text().catch(() => '');
     return failureResult(`Failed to create event (${res.status}): ${err.slice(0, 200)}`, 'gcal_create_failed');
   }
@@ -3675,7 +3686,8 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
     if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
   }
   if (!res.ok) {
-    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    const cal403 = await gcal403Failure(res);
+    if (cal403) return cal403;
     return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
   }
 
@@ -3738,7 +3750,8 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
     }
   }
   if (!fbRes.ok) {
-    if (isScopeError(fbRes.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    const fb403 = await gcal403Failure(fbRes);
+    if (fb403) return fb403;
     return failureResult(`freeBusy fetch failed (${fbRes.status}).`, 'upstream_gcal');
   }
   const fbData = await fbRes.json();
@@ -4120,7 +4133,8 @@ async function calendarCancelEvent(userId: string, input: any, context: ToolCont
   }
   if (!res.ok) {
     if (res.status === 404 || res.status === 410) return failureResult(`Event ${eventId} not found.`, 'not_found');
-    if (isScopeError(res.status)) return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+    const cal403 = await gcal403Failure(res);
+    if (cal403) return cal403;
     const err = await res.text().catch(() => '');
     return failureResult(`Cancel failed (${res.status}): ${err.slice(0, 200)}`, 'upstream_gcal');
   }
@@ -5023,7 +5037,7 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) { token = newToken; sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
   }
-  if (!sentRes.ok) return gmailHttpFailure(sentRes.status, 'Could not check sent mail');
+  if (!sentRes.ok) return gmailHttpFailure(sentRes, 'Could not check sent mail');
 
   const sentData = await sentRes.json();
   const sentMessages: any[] = sentData.messages || [];

@@ -798,17 +798,45 @@ async function sendEmailReport(toEmail: string, agentName: string, report: strin
   const subject = `${agentName} — Your Arcus Report for ${date}`;
   const html = buildReportHtml(agentName, date, report, hasPending);
 
-  const { error } = await resend.emails.send({
-    from: RESEND_FROM,
-    to: toEmail,
-    subject,
-    html,
-  });
+  // Fix 8 — retry once on transient failures (5xx / network). 4xx (bad email,
+  // auth) are not retried because they will fail again immediately.
+  const MAX_ATTEMPTS = 2;
+  let lastError: Error | null = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const { error } = await resend.emails.send({
+        from: RESEND_FROM,
+        to: toEmail,
+        subject,
+        html,
+      });
 
-  if (error) {
-    const msg = `Resend rejected: ${(error as any).name || 'unknown'} — ${(error as any).message || JSON.stringify(error)}`;
-    console.error('[Cron] sendEmailReport error:', msg);
-    throw new Error(msg);
+      if (error) {
+        const name = (error as any).name || 'unknown';
+        const message = (error as any).message || JSON.stringify(error);
+        const statusCode = (error as any).statusCode ?? 0;
+        lastError = new Error(`Resend rejected: ${name} — ${message}`);
+        // Retry only on server errors (5xx) — client errors (4xx) won't recover.
+        if (statusCode >= 500 && attempt < MAX_ATTEMPTS) {
+          console.warn(`[Cron] sendEmailReport transient error (attempt ${attempt}/${MAX_ATTEMPTS}): ${message}`);
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
+        }
+        console.error('[Cron] sendEmailReport error:', lastError.message);
+        throw lastError;
+      }
+      return; // success
+    } catch (fetchErr: any) {
+      // Network-level error (DNS, timeout, etc.) — retryable.
+      lastError = fetchErr instanceof Error ? fetchErr : new Error(String(fetchErr));
+      if (attempt < MAX_ATTEMPTS) {
+        console.warn(`[Cron] sendEmailReport network error (attempt ${attempt}/${MAX_ATTEMPTS}): ${lastError.message}`);
+        await new Promise(r => setTimeout(r, 1500));
+        continue;
+      }
+      console.error('[Cron] sendEmailReport failed after retries:', lastError.message);
+      throw lastError;
+    }
   }
 }
 
@@ -1048,85 +1076,95 @@ function buildReportHtml(agentName: string, date: string, report: string, hasPen
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function sendSlackReport(userId: string, channel: string | null, agentName: string, report: string, hasPending: boolean = false): Promise<void> {
-  try {
-    // Platform-level bot token takes priority — no user token needed if configured.
-    // Fall back to the user's own Slack OAuth token from arcus_integrations.
-    let token: string | null = process.env.ARCUS_SLACK_BOT_TOKEN || null;
+  // Fix 1-3 — errors are now THROWN instead of swallowed so Promise.allSettled
+  // in the caller correctly reports Slack delivery as 'failed' when it fails.
+  // Previously the entire function was wrapped in try/catch that only logged,
+  // making every failure invisible.
 
-    if (!token) {
-      const { decrypt } = await import('../../../../lib/crypto.js');
-      const supabase = getSupabaseAdmin();
-      const { data } = await supabase
-        .from('arcus_integrations')
-        .select('access_token')
-        .eq('user_id', userId)
-        .eq('provider', 'slack')
-        .maybeSingle();
-      if (!data?.access_token) {
-        console.warn(`[Cron] No Slack token for user ${userId} and ARCUS_SLACK_BOT_TOKEN not set — skipping Slack delivery.`);
-        return;
-      }
-      token = decrypt(data.access_token);
+  // Platform-level bot token takes priority — no user token needed if configured.
+  // Fall back to the user's own Slack OAuth token from arcus_integrations.
+  let token: string | null = process.env.ARCUS_SLACK_BOT_TOKEN || null;
+
+  if (!token) {
+    const { decrypt } = await import('../../../../lib/crypto.js');
+    const supabase = getSupabaseAdmin();
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('access_token')
+      .eq('user_id', userId)
+      .eq('provider', 'slack')
+      .maybeSingle();
+    if (!data?.access_token) {
+      // No token available — this is a config issue, not a transient failure.
+      // Throw so the caller records slack_delivery: 'failed'.
+      throw new Error(`No Slack token for user ${userId} and ARCUS_SLACK_BOT_TOKEN not set.`);
     }
+    token = decrypt(data.access_token);
+  }
 
-    // Resolve the target channel: use configured channel, or DM the user directly.
-    let targetChannel = channel;
-    if (!targetChannel) {
-      // Look up the user's Slack member ID by email, then open a DM.
-      const lookupRes = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(userId)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
-      });
-      const lookupJson = await lookupRes.json() as any;
-      if (!lookupJson.ok || !lookupJson.user?.id) {
-        console.warn(`[Cron] Slack users.lookupByEmail failed for ${userId}: ${lookupJson.error ?? 'unknown'} — skipping Slack delivery.`);
-        return;
-      }
-      const slackUserId = lookupJson.user.id;
-
-      // Open (or reuse) the DM channel with this user.
-      const dmRes = await fetch('https://slack.com/api/conversations.open', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ users: slackUserId }),
-        signal: AbortSignal.timeout(8000),
-      });
-      const dmJson = await dmRes.json() as any;
-      if (!dmJson.ok || !dmJson.channel?.id) {
-        console.warn(`[Cron] Slack conversations.open failed: ${dmJson.error ?? 'unknown'} — skipping Slack delivery.`);
-        return;
-      }
-      targetChannel = dmJson.channel.id;
-    }
-
-    const date = new Date().toLocaleDateString('en-US', {
-      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  // Resolve the target channel: use configured channel, or DM the user directly.
+  let targetChannel = channel;
+  if (!targetChannel) {
+    // Look up the user's Slack member ID by email, then open a DM.
+    const lookupRes = await fetch(`https://slack.com/api/users.lookupByEmail?email=${encodeURIComponent(userId)}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
     });
+    const lookupJson = await lookupRes.json() as any;
+    if (!lookupJson.ok || !lookupJson.user?.id) {
+      // Fix 2 — throw instead of returning silently. Common cause: user's
+      // Mailient email doesn't match their Slack workspace email.
+      throw new Error(`Slack users.lookupByEmail failed for ${userId}: ${lookupJson.error ?? 'users_not_found'} — user's login email may differ from their Slack email.`);
+    }
+    const slackUserId = lookupJson.user.id;
 
-    const blocks = buildSlackBlocks(agentName, date, report, hasPending);
-
-    const res = await fetch('https://slack.com/api/chat.postMessage', {
+    // Open (or reuse) the DM channel with this user.
+    const dmRes = await fetch('https://slack.com/api/conversations.open', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        channel: targetChannel,
-        blocks,
-        text: `${agentName} — Arcus Report for ${date}`,
-      }),
-      signal: AbortSignal.timeout(10000),
+      body: JSON.stringify({ users: slackUserId }),
+      signal: AbortSignal.timeout(8000),
     });
+    const dmJson = await dmRes.json() as any;
+    if (!dmJson.ok || !dmJson.channel?.id) {
+      throw new Error(`Slack conversations.open failed: ${dmJson.error ?? 'unknown'}`);
+    }
+    targetChannel = dmJson.channel.id;
+  }
 
-    const json = await res.json() as any;
-    if (!json.ok) console.error('[Cron] Slack send error:', json.error);
-  } catch (e: any) {
-    console.error('[Cron] sendSlackReport failed:', e.message);
+  const date = new Date().toLocaleDateString('en-US', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+  });
+
+  const blocks = buildSlackBlocks(agentName, date, report, hasPending);
+
+  const res = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      channel: targetChannel,
+      blocks,
+      text: `${agentName} — Arcus Report for ${date}`,
+    }),
+    signal: AbortSignal.timeout(10000),
+  });
+
+  const json = await res.json() as any;
+  if (!json.ok) {
+    // Fix 3 — throw instead of just logging. Covers: invalid_blocks (malformed
+    // mrkdwn), channel_not_found, not_in_channel, token_revoked, etc.
+    throw new Error(`Slack chat.postMessage failed: ${json.error ?? 'unknown'}`);
   }
 }
 
 function buildSlackBlocks(agentName: string, date: string, report: string, hasPending: boolean = false): any[] {
   const mrkdwn = markdownToSlackMrkdwn(report);
 
-  // Split into sections of ≤3000 chars (Slack limit per block)
+  // Fix 5 — Split into sections of ≤3000 chars (Slack limit per block).
+  // The old splitter could cut mid-formatting (*bold or _italic), producing
+  // malformed mrkdwn that Slack rejects with 'invalid_blocks'. Now we:
+  //   1. Split on paragraph boundaries (double newline)
+  //   2. If forced to split mid-paragraph, close any open formatting
   const chunks: string[] = [];
   let remaining = mrkdwn;
   while (remaining.length > 0) {
@@ -1134,11 +1172,21 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
       chunks.push(remaining);
       break;
     }
-    // Split on double newline to keep paragraphs intact
-    const cutAt = remaining.lastIndexOf('\n\n', 2900);
-    const cut = cutAt > 500 ? cutAt : 2900;
-    chunks.push(remaining.slice(0, cut).trimEnd());
-    remaining = remaining.slice(cut).trimStart();
+    // Prefer splitting on paragraph boundary
+    let cutAt = remaining.lastIndexOf('\n\n', 2900);
+    // Fallback: split on any newline
+    if (cutAt <= 500) cutAt = remaining.lastIndexOf('\n', 2900);
+    // Last resort: hard cut
+    if (cutAt <= 500) cutAt = 2900;
+    let chunk = remaining.slice(0, cutAt).trimEnd();
+    // Fix dangling formatting: if there's an odd number of unescaped * or _,
+    // close them to prevent Slack's mrkdwn parser from breaking.
+    const starCount = (chunk.match(/(?<![\\])\*/g) || []).length;
+    if (starCount % 2 !== 0) chunk += '*';
+    const underCount = (chunk.match(/(?<![\\*])_(?!\*)/g) || []).length;
+    if (underCount % 2 !== 0) chunk += '_';
+    chunks.push(chunk);
+    remaining = remaining.slice(cutAt).trimStart();
   }
 
   const pendingBlock = hasPending ? [
@@ -1154,6 +1202,11 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
     },
   ] : [];
 
+  const bodyBlocks = chunks.map(chunk => ({
+    type: 'section',
+    text: { type: 'mrkdwn', text: chunk },
+  }));
+
   const blocks: any[] = [
     // Header
     {
@@ -1167,10 +1220,7 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
     { type: 'divider' },
     ...pendingBlock,
     // Body chunks
-    ...chunks.map(chunk => ({
-      type: 'section',
-      text: { type: 'mrkdwn', text: chunk },
-    })),
+    ...bodyBlocks,
     { type: 'divider' },
     // Footer
     {
@@ -1180,6 +1230,24 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
       ],
     },
   ];
+
+  // Fix 9 — Slack rejects messages with >50 blocks. Truncate body and add a
+  // "view full report" link if we'd exceed the limit. Header (3) + pending (0-1)
+  // + divider + footer (2) = 6 fixed blocks → max 44 body blocks.
+  const MAX_BLOCKS = 50;
+  const fixedBlockCount = blocks.length - bodyBlocks.length;
+  const maxBodyBlocks = MAX_BLOCKS - fixedBlockCount;
+  if (bodyBlocks.length > maxBodyBlocks) {
+    // Remove excess body blocks and add a truncation notice
+    const truncated = bodyBlocks.slice(0, maxBodyBlocks - 1);
+    truncated.push({
+      type: 'section',
+      text: { type: 'mrkdwn', text: '_Report truncated — <https://mailient.xyz/dashboard?tab=agents|view full report on dashboard>_' },
+    });
+    // Rebuild blocks array with truncated body
+    const insertIdx = blocks.indexOf(bodyBlocks[0]);
+    blocks.splice(insertIdx, bodyBlocks.length, ...truncated);
+  }
 
   return blocks;
 }
@@ -1195,29 +1263,69 @@ async function sendErrorNotification(agent: any, errorMessage: string): Promise<
   });
   const report = `# ⚠️ Agent Run Failed — ${agent.name}\n\nYour agent **${agent.name}** encountered an issue during its scheduled run at ${ts}.\n\n**Error:** ${errorMessage}\n\nThe agent has been kept active and will attempt to run again at its next scheduled time. If this error repeats, check your connected integrations or update the agent's task description.\n\n_If you need help, reply to this message or visit [mailient.xyz](https://mailient.xyz)._`;
 
-  await sendEmailReport(agent.user_id, `⚠️ ${agent.name} — Run Failed`, report);
-  await sendSlackReport(agent.user_id, agent.slack_channel || null, `⚠️ ${agent.name} — Run Failed`, report);
+  // Fix 7 — use Promise.allSettled so both channels are always attempted.
+  // Previously sequential await meant email failure blocked Slack notification.
+  const [emailResult, slackResult] = await Promise.allSettled([
+    sendEmailReport(agent.user_id, `⚠️ ${agent.name} — Run Failed`, report),
+    sendSlackReport(agent.user_id, agent.slack_channel || null, `⚠️ ${agent.name} — Run Failed`, report),
+  ]);
+  if (emailResult.status === 'rejected') console.warn(`[Cron] Error notification email failed: ${emailResult.reason?.message || emailResult.reason}`);
+  if (slackResult.status === 'rejected') console.warn(`[Cron] Error notification slack failed: ${slackResult.reason?.message || slackResult.reason}`);
 }
 
 function markdownToSlackMrkdwn(markdown: string): string {
-  return markdown
-    // Convert markdown headings to bold + emoji prefix
-    .replace(/^#{1}\s+(.+)/gm, '\n*📌 $1*\n')
-    .replace(/^#{2}\s+(.+)/gm, '\n*$1*\n')
-    .replace(/^#{3}\s+(.+)/gm, '\n_*$1*_\n')
-    .replace(/^#{4,6}\s+(.+)/gm, '\n_$1_\n')
-    // Bold (already ** in MD — Slack uses *)
-    .replace(/\*\*\*(.+?)\*\*\*/g, '*_$1_*')
-    .replace(/\*\*(.+?)\*\*/g, '*$1*')
-    // Tables → plain text representation
-    .replace(/^\|(.+)\|$/gm, (line) => {
-      const cells = line.split('|').filter((_, i, a) => i > 0 && i < a.length - 1);
-      if (cells.every(c => /^[-:\s]+$/.test(c))) return ''; // separator
-      return cells.map(c => c.trim()).join('  |  ');
-    })
-    // Horizontal rules
-    .replace(/^(-{3,}|\*{3,})$/gm, '──────────────────────────────')
-    // Trim multiple blank lines
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  // Fix 6 — Process in a specific order so conversions don't nest/corrupt.
+  // Key change: strip inner formatting from headings first, convert bold/italic
+  // AFTER headings, and sanitize the result to prevent nested *...* or _..._.
+  let result = markdown;
+
+  // Step 1: Tables → plain text (before any inline formatting)
+  result = result.replace(/^\|(.+)\|$/gm, (line) => {
+    const cells = line.split('|').filter((_, i, a) => i > 0 && i < a.length - 1);
+    if (cells.every(c => /^[-:\s]+$/.test(c))) return ''; // separator row
+    return cells.map(c => c.trim()).join('  |  ');
+  });
+
+  // Step 1.5: Markdown links → Slack link syntax. Slack mrkdwn does NOT
+  // understand `[text](url)` — it would render the literal brackets. It uses
+  // `<url|text>` instead. Without this, every link in a report (and the whole
+  // "🔗 All Links" section) shows up as ugly raw markdown. Images (`![alt](url)`)
+  // collapse to the same link form since Slack can't inline-render them here.
+  // Done BEFORE bold/italic so a `*`/`_` inside a URL isn't mangled, and the
+  // label is sanitized of `<`, `>`, `|` which would break the link grammar.
+  result = result.replace(/!?\[([^\]]*?)\]\((https?:\/\/[^\s)]+)\)/g, (_m, label: string, url: string) => {
+    const cleanLabel = label.replace(/[<>|]/g, '').trim();
+    return cleanLabel ? `<${url}|${cleanLabel}>` : `<${url}>`;
+  });
+
+  // Step 2: Headings — strip any **bold** from heading text first to prevent
+  // nested *...*..* which breaks Slack's parser.
+  result = result.replace(/^#{1}\s+(.+)/gm, (_, text) => {
+    const clean = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1');
+    return `\n*📌 ${clean}*\n`;
+  });
+  result = result.replace(/^#{2}\s+(.+)/gm, (_, text) => {
+    const clean = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1');
+    return `\n*${clean}*\n`;
+  });
+  result = result.replace(/^#{3}\s+(.+)/gm, (_, text) => {
+    const clean = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1');
+    return `\n_*${clean}*_\n`;
+  });
+  result = result.replace(/^#{4,6}\s+(.+)/gm, (_, text) => {
+    const clean = text.replace(/\*\*(.+?)\*\*/g, '$1').replace(/__(.+?)__/g, '$1');
+    return `\n_${clean}_\n`;
+  });
+
+  // Step 3: Bold + italic (only in body text, headings are already done)
+  result = result.replace(/\*\*\*(.+?)\*\*\*/g, '*_$1_*');
+  result = result.replace(/\*\*(.+?)\*\*/g, '*$1*');
+
+  // Step 4: Horizontal rules
+  result = result.replace(/^(-{3,}|\*{3,})$/gm, '──────────────────────────────');
+
+  // Step 5: Collapse blank lines
+  result = result.replace(/\n{3,}/g, '\n\n');
+
+  return result.trim();
 }

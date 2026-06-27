@@ -63,7 +63,7 @@ Rules:
           'HTTP-Referer': 'https://mailient.xyz',
         },
         body: JSON.stringify({
-          model: 'openai/gpt-oss-120b:free',
+          model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
           max_tokens: 400,
           messages: [
             { role: 'system', content: systemPrompt },

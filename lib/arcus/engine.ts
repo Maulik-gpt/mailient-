@@ -73,24 +73,25 @@ function parseRateLimit(body: any): { daily: boolean; resetMs?: number; retryAft
  * these accounts have zero credits and auto only routes to paid models.
  */
 const TOOL_CAPABLE_MODELS = [
-  // Confirmed clean 200 responses
-  'openai/gpt-oss-120b:free',
+  // PRIMARY — NVIDIA Nemotron 3 Ultra (550B-A55B). Free on OpenRouter, 1M
+  // context, native tool/function-calling (verified via /api/v1/models:
+  // supported_parameters includes tools + tool_choice). This is the strongest
+  // free model available and is now Arcus's default brain.
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  // Capable free fallbacks, in descending order of quality.
+  'nvidia/nemotron-3-super-120b-a12b:free',
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
-  'nvidia/nemotron-3-super-120b-a12b:free',
-  // 'z-ai/glm-4.5-air:free' removed — moved to paid-only, now 404s (verified 2026-06).
-  'arcee-ai/trinity-large-thinking:free',
-  // Currently rate-limited upstream — retry-worthy fallbacks
-  'deepseek/deepseek-v4-flash:free',
   'qwen/qwen3-next-80b-a3b-instruct:free',
   'qwen/qwen3-coder:free',
   'meta-llama/llama-3.3-70b-instruct:free',
-  'openai/gpt-oss-20b:free',
+  // Removed (verified 404 / dead on OpenRouter 2026-06): openai/gpt-oss-120b,
+  // openai/gpt-oss-20b (retired per product decision), z-ai/glm-4.5-air,
+  // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking.
 ];
 
 const FALLBACK_MODELS = [
   'nvidia/nemotron-3-nano-30b-a3b:free',
-  'minimax/minimax-m2.5:free',
 ];
 
 const ALL_FREE_MODELS = [

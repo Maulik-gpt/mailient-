@@ -198,7 +198,7 @@ async function interpretVoiceInstruction(instruction) {
             method: 'POST',
             headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz' },
             body: JSON.stringify({
-                model: 'openai/gpt-oss-120b:free',
+                model: 'nvidia/nemotron-3-super-120b-a12b:free',
                 max_tokens: 300,
                 temperature: 0.1,
                 response_format: { type: 'json_object' },

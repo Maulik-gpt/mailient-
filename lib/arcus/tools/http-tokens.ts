@@ -88,6 +88,7 @@ export async function refreshGoogleToken(userId: string): Promise<string | null>
       .from('user_tokens')
       .select('encrypted_refresh_token')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .limit(1)
       .maybeSingle();
 
     if (ut?.encrypted_refresh_token) {
@@ -185,10 +186,14 @@ export async function getGmailToken(userId: string): Promise<string | null> {
     }
 
     // 3. user_tokens (populated automatically on Google login via NextAuth)
+    // .limit(1) is REQUIRED: a user with >1 token row (re-login, email-vs-uid
+    // dupes) makes a bare .maybeSingle() return {data:null, error} — which used
+    // to fall through to "Gmail not connected" for a fully-connected account.
     const { data: ut } = await supabase
       .from('user_tokens')
       .select('encrypted_access_token, access_token_expires_at')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .limit(1)
       .maybeSingle();
     if (ut?.encrypted_access_token) {
       if (isExpiredOrExpiring(ut.access_token_expires_at)) {
@@ -240,10 +245,13 @@ export async function getGcalToken(userId: string): Promise<string | null> {
     }
 
     // 3. user_tokens (Google login covers Calendar scope too)
+    // .limit(1) guards against the multi-row .maybeSingle() error — see
+    // getGmailToken for why this silently broke connected accounts.
     const { data: ut } = await supabase
       .from('user_tokens')
       .select('encrypted_access_token, access_token_expires_at')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+      .limit(1)
       .maybeSingle();
     if (ut?.encrypted_access_token) {
       if (isExpiredOrExpiring(ut.access_token_expires_at)) {
@@ -376,12 +384,75 @@ export function isScopeError(status: number): boolean {
 }
 
 /**
- * Pick the right failure for a non-ok Gmail response. 403 is always a scope
- * problem from Google's side; 404 is a missing message/thread; everything
+ * A Google 403 means ONE of two completely different things, and the response
+ * body is the only way to tell them apart:
+ *
+ *   'scope' — the token genuinely lacks a required OAuth scope. Body carries
+ *             `ACCESS_TOKEN_SCOPE_INSUFFICIENT` / "insufficient authentication
+ *             scopes" / `insufficientPermissions`. THIS is the only 403 that
+ *             should produce a reconnect card + flip the integration to
+ *             needs_reauth.
+ *
+ *   'rate'  — Google is throttling the user/app: `rateLimitExceeded`,
+ *             `userRateLimitExceeded`, `dailyLimitExceeded`, `quotaExceeded`
+ *             (domain usageLimits). The connection is perfectly healthy and
+ *             the call must simply be retried later.
+ *
+ * Treating EVERY 403 as a scope error was the root cause of healthy Gmail/
+ * Calendar accounts being flipped to needs_reauth (shown as "disconnected,
+ * reconnect") the instant a bulk inbox sweep tripped Google's per-user rate
+ * limit. An unrecognised 403 defaults to 'rate' on purpose: a false "you're
+ * throttled, I'll retry" is harmless and self-healing, whereas a false
+ * "reconnect" corrupts a working integration and is what users were hitting.
+ */
+export function classifyGoogle403(body: string): 'scope' | 'rate' {
+  const lower = (body || '').toLowerCase();
+  if (
+    lower.includes('access_token_scope_insufficient') ||
+    lower.includes('insufficient authentication scopes') ||
+    lower.includes('insufficientpermissions') ||
+    lower.includes('insufficient permission')
+  ) {
+    return 'scope';
+  }
+  return 'rate';
+}
+
+/**
+ * Pick the right failure for a non-ok Gmail response. A 403 is split into a
+ * true scope error (reconnect) vs. a transient rate-limit (retry) by reading
+ * the body — see classifyGoogle403. 404 is a missing message/thread; everything
  * else is bucketed as upstream_gmail with the raw status surfaced.
  */
-export function gmailHttpFailure(status: number, contextLabel: string): ToolResult {
-  if (status === 403) return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
-  if (status === 404) return failureResult(`${contextLabel} (404 not found).`, 'not_found');
-  return failureResult(`${contextLabel} (${status}).`, 'upstream_gmail');
+export async function gmailHttpFailure(res: Response, contextLabel: string): Promise<ToolResult> {
+  if (res.status === 403) {
+    const body = await res.text().catch(() => '');
+    if (classifyGoogle403(body) === 'scope') {
+      return failureResult(GMAIL_SCOPE_MESSAGE, 'gmail_scope_missing');
+    }
+    return failureResult(
+      `${contextLabel} — Gmail is briefly rate-limited by Google. The connection is fine; I'll retry shortly.`,
+      'gmail_rate_limited',
+    );
+  }
+  if (res.status === 404) return failureResult(`${contextLabel} (404 not found).`, 'not_found');
+  return failureResult(`${contextLabel} (${res.status}).`, 'upstream_gmail');
+}
+
+/**
+ * Calendar counterpart of gmailHttpFailure's 403 branch. Returns a ToolResult
+ * only when the body proves it is a real scope error; returns null for a
+ * rate-limit/other 403 so the caller can fall through to its normal upstream
+ * handling instead of wrongly telling the user to reconnect Calendar.
+ */
+export async function gcal403Failure(res: Response): Promise<ToolResult | null> {
+  if (res.status !== 403) return null;
+  const body = await res.text().catch(() => '');
+  if (classifyGoogle403(body) === 'scope') {
+    return failureResult(CALENDAR_SCOPE_MESSAGE, 'gcal_scope_missing');
+  }
+  return failureResult(
+    'Calendar is briefly rate-limited by Google. The connection is fine; I\'ll retry shortly.',
+    'gcal_rate_limited',
+  );
 }

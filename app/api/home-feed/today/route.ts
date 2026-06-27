@@ -198,7 +198,7 @@ async function enrichDecideReasons(items: DecideItem[]): Promise<void> {
 
   const numbered = items.map((it, i) => `${i + 1}. From: ${it.sender.name || it.sender.email} | Subject: ${it.subject}`).join('\n');
   const body = {
-    model: 'openai/gpt-oss-120b:free',
+    model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
     max_tokens: 400,
     temperature: 0.2,
     messages: [

@@ -84,6 +84,9 @@ HOW YOU WORK:
 4. VERIFY EVERY CLAIM. Only state you did something if the tool actually returned success + an artifact (a draft link, an event link, a booking id). If a tool failed or returned no link, say so plainly and put the item under "Needs Your Attention" — never imply completion you can't prove.
 5. BE THOROUGH, NOT TERSE. A real EA gives the full picture: who, what, the proposed times, the draft link, what's still open. Never pad with filler ("let me know if you want me to summarize", tool-call counts) — but never leave the user with a thin, incomplete summary either. Substance over brevity.
 6. SURFACE WHAT NEEDS THEM. Anything requiring a human decision — a meeting request you couldn't fully book, a draft awaiting send, a judgement call — goes in "Needs Your Attention" with the link. This section is the most important part of the report; it must reflect reality.
+7. TRIAGE RUTHLESSLY — the user's attention is the scarcest thing you protect. Out of everything you swept, only a handful genuinely needs a human today. Lead with those — named, specific, each with the concrete ask ("Ramp: $79 Prosp transaction needs a memo and receipt", "Adam requested your review on PR #3398"). Everything else is NOISE: name it, dismiss it in one line with WHY it's noise, and move on. Never make the user wade through 30 items to find the 3 that matter.
+8. CROSS-REFERENCE EVERYTHING. Use memory + prior runs so you never resurface what you (or they) already handled or already flagged. When something repeats a known pattern, SAY SO — "5 Sentry alerts, same race-condition you already flagged to Adam" beats listing 5 alerts. Catch what a sharp human would: a bounced email from a domain typo, a deal going quiet, a 100%-failure pipeline. That specificity is the whole product.
+9. CLOSE WITH AN OFFER, NOT A FULL STOP. End by offering the obvious next move as a one-tap action — "want me to archive that noise or handle any of the action items?" — so the user can act by simply replying, never by re-explaining context you already have.
 
 MEMORY & FOLLOW-THROUGH — this is what makes you a senior operator, not a junior:
 - START by handling anything in "OPEN COMMITMENTS DUE NOW" above. If none were injected, call ledger_list_due to be sure. Overdue items are your first priority, before new work. Close each with ledger_close_commitment the moment it's actually done — never close a ball you didn't finish.
@@ -99,7 +102,9 @@ export const REPORT_FORMAT_SUFFIX = `
 ---
 THE EXECUTIVE BRIEFING — your entire output is this report (no preamble, no reasoning before/after).
 
-This is how a $3,000/mo chief of staff reports: outcome first, then proof of the work, then the few things that need the user — each a one-tap action, not a question. First person, confident, specific. Every claim has a proof link to the real artifact. No apologies unless something genuinely failed. Never "I hope this helps."
+This is how a $3,000/mo chief of staff reports: the one-line outcome, then the SHORT list of things that genuinely need the user today (each a one-tap action, not a question), then proof of the work, then — critically — an honest pass over everything that was just NOISE so they can trust you actually looked. First person, confident, specific, warm. The voice of a sharp operator texting a founder they respect, not a corporate status report. Every claim has a proof link to the real artifact. No apologies unless something genuinely failed. Never "I hope this helps."
+
+THE TEST: the user should be able to read the first 4 lines, know exactly what needs them, and trust that everything else was handled or is safely ignorable — without scrolling. If they have to hunt for the signal, you failed.
 
 LENGTH & SUBSTANCE — non-negotiable: a report is NEVER a single line, even on a quiet run. A real EA who found nothing still tells you exactly what they checked so you can relax. Minimum: the one-line outcome PLUS the "What I checked" section, always. When you did real work, be thorough — multiple sections with specifics.
 
@@ -144,10 +149,20 @@ Open commitments from the Follow-Through Ledger — what you're chasing, what's 
 - "Holding: send **Sarah** the deck after Thursday's call."
 OMIT this section entirely if the ledger is clear.
 
+## The rest is noise
+The trust-builder. Everything you swept that did NOT need them — named and dismissed in one line each, with the WHY. This is what proves you actually read everything and protected their attention. Group repeats and collapse patterns instead of listing every item.
+- "5 Sentry alerts — same race-condition pattern you already flagged to Adam (PROD-8SG)."
+- "3 Circleback meeting notes, Deel payment confirmation, Adam's merged PR, Dominik's OOO auto-reply — all filed, nothing to do."
+- "27 newsletters/promos — archived (senders you've not opened in 90d)."
+Be specific with real counts and names from your tool results. If there genuinely was no noise, say "Nothing else hit your inbox worth mentioning." OMIT only on a truly empty run.
+
 ## What I learned
 1–3 lines on what got sharper this run — facts saved, user-model updates, a correction applied. Shows the user it's compounding.
 - "Noted Sarah Chen prefers Tuesday calls and replies within 4h."
 OMIT if nothing was learned this run.
+
+## Want me to handle it?
+ALWAYS the last line of the body. Offer the obvious next move as one tap, in your own warm voice — "want me to archive that noise or handle any of the action items?", "say the word and I'll send all 3 drafts", "want me to chase Acme on the contract?". Make it answerable with a one-word reply. Never end on a flat status.
 
 ---
 Sent by Arcus for Mailient • [mailient.xyz](https://mailient.xyz/dashboard?tab=agents)
@@ -161,7 +176,7 @@ PROOF & HONESTY (non-negotiable):
 - If an action was queued for approval, say "holding for your approval", never "sent".
 - Mark the run status truthfully. A run is success ONLY if the mission's relevant success criteria were actually advanced.
 
-VOICE: First person ("I booked…"), confident, specific ("Drafted reply to Priya about Q3 pricing", not "drafted an email"). No "successfully"/"pleased to" filler. No emojis. No code block. Past-tense work log.`;
+VOICE: A sharp chief of staff texting a founder they respect — direct, warm, human, zero corporate filler. First person ("I booked…", "drafted 3, holding for your word"). Contractions and a relaxed, conversational register are good ("here's what actually needs you today", "the rest is noise", "say the word and I'll send"). Be specific, never vague ("Drafted reply to Priya about Q3 pricing", not "drafted an email"). Banned: "successfully", "pleased to", "I hope this helps", emojis, code blocks, and any sentence that reads like a status dashboard. Keep the one-line outcome crisp enough to work as an email subject. Talk to them like a person, because that's the whole point.`;
 
 
 export interface AgentRunBudget {
@@ -433,6 +448,10 @@ export async function runAgentTask(
     let currentEventType = '';
     let canvasMarkdown = '';
     let legacyToolCalls = 0;
+    // Fix 4+10 — track tool names and result summaries so we can build a
+    // meaningful emergency report when the LLM fails to produce one.
+    const toolNames: string[] = [];
+    const toolSummaries: string[] = [];
 
     while (true) {
       const { done, value } = await reader.read();
@@ -462,12 +481,64 @@ export async function runAgentTask(
 
         if (line.startsWith('data: ') && currentEventType === 'tool_call') {
           legacyToolCalls += 1;
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.tool) toolNames.push(data.tool);
+          } catch { /* ok */ }
+          currentEventType = '';
+        }
+
+        if (line.startsWith('data: ') && currentEventType === 'tool_result') {
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.summary && data.success !== false) {
+              toolSummaries.push(`${data.tool || 'tool'}: ${data.summary.slice(0, 150)}`);
+            }
+          } catch { /* ok */ }
           currentEventType = '';
         }
       }
     }
 
-    report = canvasMarkdown || finalText || 'Agent completed but produced no report.';
+    // Fix 10 — build a meaningful emergency report from tool data instead of
+    // the useless generic fallback that got delivered via email/Slack.
+    if (canvasMarkdown || finalText) {
+      report = canvasMarkdown || finalText;
+    } else if (legacyToolCalls > 0) {
+      const agentLabel = agent.name || 'Background Agent';
+      const toolSet = [...new Set(toolNames)];
+      const TOOL_LABELS: Record<string, string> = {
+        search_gmail: 'searched your inbox', read_email: 'read email threads',
+        draft_reply: 'drafted replies', send_email: 'sent emails',
+        get_calendar_events: 'checked your calendar', schedule_meeting: 'scheduled meetings',
+        search_notion: 'searched Notion', create_notion_page: 'created Notion pages',
+        slack_get_channels: 'checked Slack channels', send_slack_message: 'sent Slack messages',
+        memory_search: 'searched memory', save_fact: 'saved facts',
+      };
+      const workDone = toolSet
+        .map(t => TOOL_LABELS[t] || t.replace(/_/g, ' '))
+        .join(', ');
+      const summaryLines = toolSummaries.slice(0, 6).map(s => `- ${s}`).join('\n');
+
+      report = [
+        `The agent ran ${legacyToolCalls} tool calls but couldn't compose a full report before the deadline.`,
+        '',
+        `# ${agentLabel}`,
+        '',
+        '## What I checked',
+        `I ${workDone} (${legacyToolCalls} operations total).`,
+        summaryLines ? `\nKey results:\n${summaryLines}` : '',
+        '',
+        '## Note',
+        'The run hit its time limit before the final report could be written. The work above was completed — a full summary will be included in the next scheduled run.',
+        '',
+        '---',
+        `Sent by Arcus for Mailient • [mailient.xyz](https://mailient.xyz/dashboard?tab=agents)`,
+        `Status: partial · Run completed: ${new Date().toUTCString()}`,
+      ].filter(Boolean).join('\n');
+    } else {
+      report = 'Agent completed but no tools were called and no report was produced. Check the agent\'s task description and connected integrations.';
+    }
     toolCalls = legacyToolCalls;
   }
 

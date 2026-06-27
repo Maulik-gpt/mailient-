@@ -966,7 +966,11 @@ export async function getConnectedIntegrations(userId: string): Promise<string[]
       supabase.from('integration_credentials').select('provider').eq('user_id', uid),
       supabase.from('user_tokens')
         .select('user_id')
+        // .limit(1): without it, a user with >1 token row makes .maybeSingle()
+        // return {data:null} → googleLoginProviders=[] → the system prompt tells
+        // the AI "Gmail NOT connected" for a fully-connected account.
         .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
+        .limit(1)
         .maybeSingle(),
     ]);
 

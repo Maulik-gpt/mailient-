@@ -286,6 +286,27 @@ export async function buildCommitteeReport(
     return ['## What happened', '', ...lines, ''].join('\n');
   };
 
+  // Close with an offer, not a full stop — the vision's "want me to handle it?"
+  // move. Context-aware so it's specific: holding drafts → offer to send;
+  // open escalations → offer to take them on; otherwise offer to keep watching.
+  // Answerable with a one-word reply. Mirrors REPORT_FORMAT_SUFFIX's
+  // "Want me to handle it?" so both runtimes close the same warm way.
+  const offerToAct = (): string => {
+    const draftCount = artifactLinks.gmail?.length ?? 0;
+    const openItems = needsAttentionItems.filter(looksLikeRealContent).length;
+    let line: string;
+    if (draftCount > 0) {
+      line = draftCount === 1
+        ? 'Say the word and I’ll send that draft for you.'
+        : `Say the word and I’ll send all ${draftCount} drafts.`;
+    } else if (openItems > 0) {
+      line = 'Want me to take any of these off your plate? Just reply.';
+    } else {
+      line = 'Nothing needs you right now — want me to keep watching and ping you the moment something does?';
+    }
+    return ['## Want me to handle it?', '', line, ''].join('\n');
+  };
+
   // One calm, human footer line instead of per-lane tool-call jargon.
   const humanFooter = (): string => {
     const totalMs = Math.max(0, ...ordered.map(r => r.durationMs));
@@ -312,7 +333,7 @@ export async function buildCommitteeReport(
     whatHappenedSection(),
     ...contentSections,
     nextActionsSection(artifactLinks, ordered.map(r => ({ va: r.va, links: parsed.get(r.va)?.links ?? '' })), needsAttentionItems),
-    '',
+    offerToAct(),
     '---',
     '',
     humanFooter(),

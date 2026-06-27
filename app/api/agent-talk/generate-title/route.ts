@@ -8,10 +8,13 @@ export const maxDuration = 15;
 // was a single tiny 1.2B "thinking" model that was unreliable AND leaked
 // <thinking> tags into titles — so titles silently fell back to the user's
 // first words every time. These are reliable + don't emit reasoning tags.
+// NOTE: title generation must use NON-reasoning instruct models — reasoning
+// models (nemotron-3-ultra/super) emit <thinking> tags that pollute titles,
+// the exact bug noted above. gpt-oss retired; these are reliable + tag-free.
 const FREE_MODELS = [
-  'openai/gpt-oss-120b:free',
   'google/gemma-4-31b-it:free',
-  'openai/gpt-oss-20b:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
 ];
 
 function getKeys(): string[] {

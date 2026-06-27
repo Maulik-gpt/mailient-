@@ -138,7 +138,9 @@ async function callLLM(
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: 'openai/gpt-oss-120b:free',
+          // nemotron-3-super (not ultra) — this path needs response_format
+          // json_object, which ultra's API doesn't support but super does.
+          model: 'nvidia/nemotron-3-super-120b-a12b:free',
           messages: [
             { role: 'system', content: systemPrompt },
             { role: 'user', content: userPrompt },
