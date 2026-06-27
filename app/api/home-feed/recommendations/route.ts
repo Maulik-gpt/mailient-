@@ -28,7 +28,10 @@ const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
 
 type Category = 'connect' | 'productivity';
 
-interface InItem { id: string; kind: 'decide' | 'chase' | 'promised' | 'meeting'; label: string; detail: string; metric?: number; }
+// `ref` is the SHORT integer token the model echoes in refIds. Long compound
+// ids get mangled by LLMs (which silently dropped every recommendation); a 1-based
+// integer is trivial to copy back, so matching is reliable.
+interface InItem { ref: number; kind: 'decide' | 'chase' | 'promised' | 'meeting'; label: string; detail: string; metric?: number; }
 
 interface OutRec {
   id: string;
@@ -49,6 +52,19 @@ function clampStr(v: any, max: number): string {
   return typeof v === 'string' ? v.trim().slice(0, max) : '';
 }
 
+// Display-clean a sender/recipient name: strip an email down to its local part,
+// drop quotes/extra whitespace, and Title-Case it so raw fragments like "nand"
+// or "ANAND.K" don't reach the UI looking broken.
+function cleanName(raw: any): string {
+  let s = clampStr(raw, 80).replace(/^["'<]+|["'>]+$/g, '').trim();
+  if (!s) return '';
+  if (s.includes('@')) s = s.split('@')[0].replace(/[._-]+/g, ' ').trim();
+  return s
+    .split(/\s+/)
+    .map(w => (w.length <= 3 && w === w.toUpperCase() ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .join(' ');
+}
+
 // Build the real, id-tagged item list the model is allowed to reference.
 function normalizeItems(body: any): InItem[] {
   const items: InItem[] = [];
@@ -57,22 +73,23 @@ function normalizeItems(body: any): InItem[] {
   const promised = Array.isArray(body?.actionItems) ? body.actionItems : [];
   const meetings = Array.isArray(body?.showUp) ? body.showUp : [];
 
+  let ref = 0;
   for (const d of decide.slice(0, 8)) {
     if (!d?.id) continue;
-    items.push({ id: `decide:${d.id}`, kind: 'decide', label: clampStr(d?.sender?.name || d?.sender?.email, 80) || 'Someone', detail: `Unanswered: "${clampStr(d?.subject, 120)}" — ${clampStr(d?.reason, 140)}` });
+    items.push({ ref: ++ref, kind: 'decide', label: cleanName(d?.sender?.name || d?.sender?.email) || 'Someone', detail: `Unanswered email: "${clampStr(d?.subject, 120)}" — ${clampStr(d?.reason, 140)}` });
   }
   for (const c of chase.slice(0, 8)) {
     if (!c?.id) continue;
-    items.push({ id: `chase:${c.id}`, kind: 'chase', label: clampStr(c?.recipient?.name || c?.recipient?.email, 80) || 'A contact', detail: `You messaged about "${clampStr(c?.subject, 120)}" — no reply in ${Number(c?.daysSilent) || 0} days`, metric: Number(c?.daysSilent) || 0 });
+    items.push({ ref: ++ref, kind: 'chase', label: cleanName(c?.recipient?.name || c?.recipient?.email) || 'A contact', detail: `You emailed about "${clampStr(c?.subject, 120)}" — no reply in ${Number(c?.daysSilent) || 0} days`, metric: Number(c?.daysSilent) || 0 });
   }
   for (const a of promised.slice(0, 8)) {
     if (!a?.id) continue;
-    const who = Array.isArray(a?.attendees) && a.attendees.length ? ` (with ${a.attendees.slice(0, 2).join(', ')})` : '';
-    items.push({ id: `promised:${a.id}`, kind: 'promised', label: clampStr(a?.meetingTitle, 80) || 'A commitment', detail: `${a?.isOverdue ? 'OVERDUE promise' : 'Promise'}: "${clampStr(a?.text, 140)}"${who}`, metric: a?.isOverdue ? 1 : 0 });
+    const who = Array.isArray(a?.attendees) && a.attendees.length ? ` (with ${a.attendees.slice(0, 2).map((n: string) => cleanName(n)).join(', ')})` : '';
+    items.push({ ref: ++ref, kind: 'promised', label: clampStr(a?.meetingTitle, 80) || 'A commitment', detail: `${a?.isOverdue ? 'OVERDUE promise' : 'Promise'}: "${clampStr(a?.text, 140)}"${who}`, metric: a?.isOverdue ? 1 : 0 });
   }
   for (const m of meetings.slice(0, 8)) {
     if (!m?.id) continue;
-    items.push({ id: `meeting:${m.id}`, kind: 'meeting', label: clampStr(m?.title, 80) || 'A meeting', detail: `${m?.isExternal ? 'External' : 'Internal'} meeting, ${Number(m?.attendeeCount) || 0} attendees` });
+    items.push({ ref: ++ref, kind: 'meeting', label: clampStr(m?.title, 80) || 'A meeting', detail: `${m?.isExternal ? 'External' : 'Internal'} meeting, ${Number(m?.attendeeCount) || 0} attendees` });
   }
   return items;
 }
@@ -101,19 +118,19 @@ async function generate(items: InItem[]): Promise<OutRec[] | null> {
   const ks = keys();
   if (!ks.length || !items.length) return null;
 
-  const catalog = items.map(it => `- id=${it.id} | who/what: ${it.label} | ${it.detail}`).join('\n');
+  const catalog = items.map(it => `[${it.ref}] (${it.kind}) ${it.label} — ${it.detail}`).join('\n');
 
   const system =
-    'You are the chief-of-staff brain behind a founder\'s daily briefing. You are given a list of REAL items from their inbox, calendar, and commitments — each with a stable id. ' +
-    'Produce 3 (max 4) high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Aim for a mix of both when the items allow.\n\n' +
+    'You are the chief-of-staff brain behind a founder\'s daily briefing. You are given a numbered list of REAL items from their inbox, calendar, and commitments. ' +
+    'Produce 2-4 high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Aim for a mix of both when the items allow. Group related items into one recommendation rather than repeating yourself.\n\n' +
     'HARD RULES — accuracy is everything:\n' +
-    '- Only ever reference the items provided. Put the exact id(s) each recommendation is about in refIds. NEVER invent an id, a person, a number, a company, or a deadline that is not in the input.\n' +
-    '- Do NOT put any statistics or counts in your text — the system computes those. Keep the summary about the specific people/subjects.\n' +
-    '- title: a short, plain imperative (≤7 words), e.g. "Reconnect with Sarah before it stalls".\n' +
-    '- summary: 1 sentence, specific, naming the real person/subject, why it matters now.\n' +
-    '- arcusPrompt: a single clear instruction the user can hand to their AI assistant (Arcus) to DO this with no further typing — e.g. "Draft a warm follow-up to Sarah Chen about the Q3 proposal she hasn\'t replied to in 6 days." It must be fully self-contained and grounded in the item.\n' +
-    '- ctaLabel: 2-3 words on the button, e.g. "Draft nudge", "Prep me", "Clear it".\n' +
-    'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","refIds":[...]}]}';
+    '- For each recommendation, list the bracket numbers of the item(s) it is about in refIds, e.g. "refIds": [1, 3]. Use ONLY numbers that appear in the list. NEVER invent a person, number, company, or deadline that is not in the items.\n' +
+    '- Do NOT put your own statistics or counts in the text — the system computes and renders those separately. Keep summary about the specific people/subjects.\n' +
+    '- title: a short, plain imperative, ≤7 words (e.g. "Reconnect with Sarah before it stalls").\n' +
+    '- summary: ONE sentence, specific, naming the real person/subject and why it matters now.\n' +
+    '- arcusPrompt: one self-contained instruction the user hands to their AI assistant (Arcus) to DO this with zero further typing (e.g. "Draft a warm, low-pressure follow-up to Sarah Chen about the Q3 proposal she hasn\'t replied to."). Grounded entirely in the referenced items.\n' +
+    '- ctaLabel: 2-3 words for the button (e.g. "Draft nudge", "Prep me", "Clear it").\n' +
+    'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","refIds":[numbers]}]}';
 
   const payload = {
     model: REC_MODEL,
@@ -158,7 +175,7 @@ async function generate(items: InItem[]): Promise<OutRec[] | null> {
 
 // Reject anything the model invented; attach real, server-computed stats.
 function validate(raw: any[], items: InItem[]): OutRec[] {
-  const byId = new Map(items.map(it => [it.id, it]));
+  const byRef = new Map(items.map(it => [it.ref, it]));
   const out: OutRec[] = [];
   for (let i = 0; i < raw.length && out.length < 4; i++) {
     const r = raw[i] || {};
@@ -167,9 +184,12 @@ function validate(raw: any[], items: InItem[]): OutRec[] {
     const summary = clampStr(r.summary, 200);
     const arcusPrompt = clampStr(r.arcusPrompt, 400);
     const ctaLabel = clampStr(r.ctaLabel, 24) || 'Do it with Arcus';
-    // refIds MUST all resolve to real items we sent — this is the anti-hallucination gate.
+    // refIds MUST all resolve to real items we sent — this is the anti-hallucination
+    // gate. Coerce "1" / 1 / "[1]" to the integer ref; drop anything that doesn't match.
     const refIdsRaw = Array.isArray(r.refIds) ? r.refIds : [];
-    const refs = refIdsRaw.map((id: any) => byId.get(String(id))).filter(Boolean) as InItem[];
+    const refs = refIdsRaw
+      .map((id: any) => byRef.get(parseInt(String(id).replace(/[^\d]/g, ''), 10)))
+      .filter(Boolean) as InItem[];
     if (!title || !summary || !arcusPrompt || refs.length === 0) continue;
     out.push({
       id: `airec-${i}`,
@@ -179,7 +199,7 @@ function validate(raw: any[], items: InItem[]): OutRec[] {
       arcusPrompt,
       ctaLabel,
       stat: statFor(refs),
-      refIds: refs.map(r2 => r2.id),
+      refIds: refs.map(r2 => String(r2.ref)),
     });
   }
   return out;

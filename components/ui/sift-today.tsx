@@ -623,12 +623,37 @@ interface Recommendation {
 
 interface AttentionSegment { key: string; label: string; count: number; barClass: string; dotClass: string; }
 
+// Display-clean a name so raw fragments ("nand", "ANAND.K", an email) never reach
+// the UI looking broken. Mirrors the server-side cleanName in the recs endpoint.
+function cleanName(raw: string): string {
+  let s = (raw || '').replace(/^["'<]+|["'>]+$/g, '').trim();
+  if (!s) return 'someone';
+  if (s.includes('@')) s = s.split('@')[0].replace(/[._-]+/g, ' ').trim();
+  return s
+    .split(/\s+/)
+    .map(w => (w.length <= 3 && w === w.toUpperCase() ? w : w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()))
+    .join(' ') || 'someone';
+}
+
 function namesList(names: string[], max = 2): string {
-  const clean = names.map(n => (n || '').trim()).filter(Boolean);
+  const clean = names.map(n => cleanName(n)).filter(n => n && n !== 'someone');
   if (clean.length === 0) return 'a few people';
   const shown = clean.slice(0, max);
   const extra = clean.length - shown.length;
   return extra > 0 ? `${shown.join(', ')} +${extra} more` : shown.join(' and ');
+}
+
+// Turn the route's generic bucket labels into something that reads like a person
+// wrote it, while leaving already-specific (AI-enriched) reasons untouched.
+function humanizeReason(reason: string): string {
+  const map: Record<string, string> = {
+    'Money on the line': 'a revenue thread is waiting on you',
+    'Flagged urgent': 'they flagged it urgent',
+    'Direct question': 'they asked you a direct question',
+    'Wants time on your calendar': 'they want time on your calendar',
+    'Needs your attention': 'it needs your call',
+  };
+  return map[reason?.trim()] || reason || 'waiting on you';
 }
 
 function buildRecommendations(
@@ -649,9 +674,9 @@ function buildRecommendations(
       id: 'rec-overdue',
       tone: 'focus',
       icon: <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: overdue.length === 1 ? 'Close one overdue promise' : `Clear ${overdue.length} overdue promises`,
+      title: overdue.length === 1 ? 'Close an overdue promise' : 'Clear your overdue promises',
       summary: `Starting with “${(first.text || 'a commitment').slice(0, 70)}”${first.attendees.length ? ` (with ${namesList(first.attendees)})` : ''}.`,
-      stat: { value: overdue.length, label: overdue.length === 1 ? 'overdue' : 'overdue' },
+      stat: { value: overdue.length, label: 'overdue' },
       cta: {
         label: 'Help me clear these',
         prompt: `Help me clear my overdue commitments today. Top of the list: ${overdue.slice(0, 3).map(o => o.text).join('; ')}`,
@@ -667,9 +692,9 @@ function buildRecommendations(
       id: 'rec-chase',
       tone: 'connect',
       icon: <Clock className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: chase.length === 1 ? 'Reconnect before it goes cold' : `Reconnect with ${chase.length} people going quiet`,
-      summary: `${(top.recipient.name || top.recipient.email)} hasn’t replied in ${top.daysSilent}d${sorted.length > 1 ? ` — and ${sorted.length - 1} more thread${sorted.length - 1 === 1 ? '' : 's'} are stalling.` : '.'}`,
-      stat: { value: top.daysSilent, label: 'days silent' },
+      title: chase.length === 1 ? `Reconnect with ${cleanName(top.recipient.name || top.recipient.email)}` : 'Reconnect before threads go cold',
+      summary: `${cleanName(top.recipient.name || top.recipient.email)} hasn’t replied in ${top.daysSilent}d${sorted.length > 1 ? ` — and ${sorted.length - 1} more thread${sorted.length - 1 === 1 ? '' : 's'} ${sorted.length - 1 === 1 ? 'is' : 'are'} stalling.` : '.'}`,
+      stat: chase.length === 1 ? { value: top.daysSilent, label: 'days silent' } : { value: chase.length, label: 'going quiet' },
       cta: {
         label: 'Draft warm nudges',
         prompt: `Draft warm, low-pressure follow-up nudges in my voice for the people who haven't replied: ${namesList(sorted.map(c => c.recipient.name || c.recipient.email), 4)}.`,
@@ -684,12 +709,12 @@ function buildRecommendations(
       id: 'rec-decide',
       tone: 'focus',
       icon: <Reply className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: decide.length === 1 ? 'One reply will move things' : `Knock out ${decide.length} replies that need you`,
-      summary: `${(top.sender.name || top.sender.email)} — ${(top.reason || 'waiting on you').slice(0, 80)}`,
-      stat: { value: decide.length, label: 'need a reply' },
+      title: decide.length === 1 ? `Reply to ${cleanName(top.sender.name || top.sender.email)}` : 'Clear the replies that need you',
+      summary: `${cleanName(top.sender.name || top.sender.email)} — ${humanizeReason(top.reason).slice(0, 90)}`,
+      stat: { value: decide.length, label: decide.length === 1 ? 'reply needed' : 'need a reply' },
       cta: {
         label: 'Draft my replies',
-        prompt: `Draft replies in my voice to the threads that need me, starting with ${top.sender.name || top.sender.email} about “${top.subject}”.`,
+        prompt: `Draft replies in my voice to the threads that need me, starting with ${cleanName(top.sender.name || top.sender.email)} about “${top.subject}”.`,
       },
     });
   }
@@ -701,7 +726,7 @@ function buildRecommendations(
       id: 'rec-prep',
       tone: 'connect',
       icon: <CalendarClock className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: externalMeetings.length === 1 ? 'Walk in prepared' : `Prep for ${externalMeetings.length} external meetings`,
+      title: externalMeetings.length === 1 ? 'Walk into your meeting prepared' : 'Prep for your external meetings',
       summary: `“${(next.title || 'Meeting').slice(0, 60)}” — ${next.attendeeCount} attendee${next.attendeeCount === 1 ? '' : 's'}. A two-line brief beats winging it.`,
       stat: { value: externalMeetings.length, label: 'to prep' },
       cta: {
@@ -846,15 +871,21 @@ function FocusDonut({ connect, productivity }: { connect: number; productivity: 
     <div className="relative flex-shrink-0 w-[64px] h-[64px]">
       <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
         <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-black/[0.06] dark:stroke-white/[0.08]" />
-        {connect > 0 && (
-          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" strokeLinecap="round"
-            className="stroke-emerald-500 dark:stroke-emerald-400"
-            strokeDasharray={`${connectPct} ${100 - connectPct}`} strokeDashoffset="0" />
-        )}
-        {productivity > 0 && (
-          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" strokeLinecap="round"
-            className="stroke-black/70 dark:stroke-white/70"
-            strokeDasharray={`${100 - connectPct} ${connectPct}`} strokeDashoffset={`${-connectPct}`} />
+        {/* butt caps + a tiny 1.5-unit gap between segments so the two arcs read as
+            distinct data, not an overlapping loading spinner. */}
+        {connect > 0 && productivity > 0 ? (
+          <>
+            <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
+              className="stroke-emerald-500 dark:stroke-emerald-400"
+              strokeDasharray={`${Math.max(0, connectPct - 1.5)} ${100 - Math.max(0, connectPct - 1.5)}`} strokeDashoffset="0" />
+            <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
+              className="stroke-black/70 dark:stroke-white/70"
+              strokeDasharray={`${Math.max(0, (100 - connectPct) - 1.5)} ${100 - Math.max(0, (100 - connectPct) - 1.5)}`} strokeDashoffset={`${-connectPct}`} />
+          </>
+        ) : (
+          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
+            className={connect > 0 ? 'stroke-emerald-500 dark:stroke-emerald-400' : 'stroke-black/70 dark:stroke-white/70'}
+            strokeDasharray="100 0" strokeDashoffset="0" />
         )}
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -959,7 +990,7 @@ function RecommendationsSection({
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" /> Connect
               </span>
               <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-[0.06em] text-black/45 dark:text-white/45">
-                <span className="w-1.5 h-1.5 rounded-full bg-black/70 dark:bg-white/70" /> Do
+                <span className="w-1.5 h-1.5 rounded-full bg-black/70 dark:bg-white/70" /> Get done
               </span>
             </div>
           </div>
@@ -980,7 +1011,10 @@ function RecommendationsSection({
 
       <div className="mt-3 flex items-center gap-2 flex-wrap">
         <p className="text-[10.5px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
-          {aiRecs && aiRecs.length ? 'AI-ranked from your live data' : 'Ranked from your live data'}{checkedAgo ? ` · checked ${checkedAgo} ago` : ''} · no guesses
+          {aiRecs && aiRecs.length
+            ? 'AI-ranked from your live data · verified before any action'
+            : 'Ranked from your live data · no guesses'}
+          {checkedAgo ? ` · ${checkedAgo} ago` : ''}
         </p>
         {aiLoading && !aiRecs && (
           <span className="inline-flex items-center gap-1 text-[10.5px] text-black/35 dark:text-white/35">
