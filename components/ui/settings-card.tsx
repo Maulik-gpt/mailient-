@@ -630,23 +630,25 @@ export function SettingsCard({ onClose, onOpenHelp }: SettingsCardProps) {
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <div className="w-full h-full flex items-center justify-center relative overflow-hidden">
-                                                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-[#121212]" />
-                                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 rounded-full blur-[60px] bg-indigo-500/10 pointer-events-none" />
-                                                    <motion.div
-                                                        animate={{ 
-                                                            scale: [1, 1.04, 1],
-                                                            opacity: [0.3, 0.55, 0.3]
+                                                // Premium STATIC empty cover — intentional design, not a loader
+                                                // (the old infinite opacity pulse read as a perpetual spinner).
+                                                <div className="w-full h-full relative overflow-hidden">
+                                                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-950 via-zinc-900 to-[#0e0e0e]" />
+                                                    {/* soft ambient glows for depth */}
+                                                    <div className="absolute -top-12 right-10 w-56 h-56 rounded-full blur-[72px] bg-indigo-500/12 pointer-events-none" />
+                                                    <div className="absolute -bottom-16 left-8 w-56 h-56 rounded-full blur-[84px] bg-violet-500/10 pointer-events-none" />
+                                                    {/* fine dot-grid texture */}
+                                                    <div
+                                                        className="absolute inset-0 pointer-events-none opacity-50"
+                                                        style={{
+                                                            backgroundImage: 'radial-gradient(circle at center, rgba(255,255,255,0.06) 1px, transparent 1px)',
+                                                            backgroundSize: '22px 22px',
                                                         }}
-                                                        transition={{ 
-                                                            duration: 5, 
-                                                            repeat: Infinity, 
-                                                            ease: "easeInOut" 
-                                                        }}
-                                                        className="z-10"
-                                                    >
-                                                        <Sparkles className="w-10 h-10 text-indigo-400/80" />
-                                                    </motion.div>
+                                                    />
+                                                    {/* faint static brand glyph */}
+                                                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                                        <Sparkles className="w-9 h-9 text-white/15" strokeWidth={1.5} />
+                                                    </div>
                                                 </div>
                                             )}
                                             

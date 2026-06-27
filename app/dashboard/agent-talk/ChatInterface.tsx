@@ -4986,7 +4986,7 @@ export default function ChatInterface({
                         {/* Leftmost: Title and Dropdown with refined Zinc styling */}
                         {!isInitialMode && (
                           <div className="relative" ref={titleMenuRef}>
-                            <div className="flex items-center bg-arcus-surface border border-arcus-border rounded-xl overflow-hidden shadow-xl transition-all hover:border-arcus-divider group">
+                            <div className="flex items-center bg-arcus-surface border border-arcus-border rounded-xl overflow-hidden shadow-sm transition-all hover:border-arcus-divider group">
                               {isEditingTitle ? (
                                 <input
                                   ref={titleInputRef}
@@ -5008,7 +5008,7 @@ export default function ChatInterface({
                                     className="pl-4 pr-3 py-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.05] transition-colors flex items-center gap-2.5 max-w-[280px]"
                                   >
                                     <span className="text-[13px] font-bold text-black dark:text-white/90 truncate tracking-tight">
-                                      {chatTitle || 'New Conversation'}
+                                      {chatTitle ? capitalizeTitle(chatTitle) : 'New Conversation'}
                                     </span>
                                   </button>
                                   <div className="w-[1px] h-4 bg-white/[0.12]" />
