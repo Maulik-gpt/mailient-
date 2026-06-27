@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useReducedMotion } from 'framer-motion';
-import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X, Archive } from 'lucide-react';
+import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Check, SlidersHorizontal, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X, Archive } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -621,7 +621,6 @@ interface Recommendation {
   cta: { label: string; prompt: string };
 }
 
-interface AttentionSegment { key: string; label: string; count: number; barClass: string; dotClass: string; }
 
 // Display-clean a name so raw fragments ("nand", "ANAND.K", an email) never reach
 // the UI looking broken. Mirrors the server-side cleanName in the recs endpoint.
@@ -805,30 +804,28 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
 
 // The "where your attention goes today" bar — a dependency-free stacked bar +
 // legend, all counts pulled straight from the real buckets.
-function AttentionBreakdown({ segments }: { segments: AttentionSegment[] }) {
-  const active = segments.filter(s => s.count > 0);
-  const total = active.reduce((n, s) => n + s.count, 0);
-  if (total === 0) return null;
+// A live "still working" dot for the briefing header — a soft ping ring.
+function PulseDot() {
   return (
-    <div>
-      <div className="flex h-2 rounded-full overflow-hidden bg-black/[0.04] dark:bg-white/[0.05]">
-        {active.map((s) => (
-          <div
-            key={s.key}
-            className={s.barClass}
-            style={{ width: `${Math.max(6, (s.count / total) * 100)}%` }}
-            title={`${s.label}: ${s.count}`}
-          />
-        ))}
-      </div>
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 mt-2.5">
-        {active.map((s) => (
-          <div key={s.key} className="flex items-center gap-1.5">
-            <span className={cn('w-2 h-2 rounded-full', s.dotClass)} />
-            <span className="text-[11.5px] text-black/55 dark:text-white/55 tracking-tight">{s.label}</span>
-            <span className="text-[11.5px] tabular-nums font-semibold text-black/75 dark:text-white/75">{s.count}</span>
-          </div>
-        ))}
+    <span className="relative flex h-2.5 w-2.5">
+      <span className="absolute inline-flex h-full w-full rounded-full bg-black/30 dark:bg-white/30 opacity-75 animate-ping" />
+      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-black/70 dark:bg-white/70" />
+    </span>
+  );
+}
+
+// Skeleton recommendation card — shown while the AI is composing the picks, so
+// the RECOMMENDATIONS section reads as "loading", not empty.
+function SkeletonRecCard() {
+  return (
+    <div className="bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5">
+      <div className="flex items-start gap-3">
+        <div className="mt-0.5 w-9 h-9 rounded-xl bg-black/[0.05] dark:bg-white/[0.06] animate-pulse flex-shrink-0" />
+        <div className="flex-1 min-w-0 space-y-2.5 py-1">
+          <div className="h-3 w-[60%] rounded-full bg-black/[0.07] dark:bg-white/[0.07] animate-pulse" />
+          <div className="h-2.5 w-[88%] rounded-full bg-black/[0.04] dark:bg-white/[0.04] animate-pulse" />
+        </div>
+        <div className="h-6 w-16 rounded-full bg-black/[0.05] dark:bg-white/[0.06] animate-pulse flex-shrink-0" />
       </div>
     </div>
   );
@@ -860,46 +857,24 @@ function aiToRec(dto: AiRecDTO): Recommendation {
   };
 }
 
-// Focus-split donut (Connection vs Productivity) — dependency-free SVG. r chosen
-// so the circumference is 100, making strokeDasharray values direct percentages.
-function FocusDonut({ connect, productivity }: { connect: number; productivity: number }) {
-  const total = connect + productivity;
-  if (total === 0) return null;
-  const r = 15.9155;
-  const connectPct = (connect / total) * 100;
-  return (
-    <div className="relative flex-shrink-0 w-[64px] h-[64px]">
-      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-        <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5" className="stroke-black/[0.06] dark:stroke-white/[0.08]" />
-        {/* butt caps + a tiny 1.5-unit gap between segments so the two arcs read as
-            distinct data, not an overlapping loading spinner. */}
-        {connect > 0 && productivity > 0 ? (
-          <>
-            <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
-              className="stroke-emerald-500 dark:stroke-emerald-400"
-              strokeDasharray={`${Math.max(0, connectPct - 1.5)} ${100 - Math.max(0, connectPct - 1.5)}`} strokeDashoffset="0" />
-            <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
-              className="stroke-black/70 dark:stroke-white/70"
-              strokeDasharray={`${Math.max(0, (100 - connectPct) - 1.5)} ${100 - Math.max(0, (100 - connectPct) - 1.5)}`} strokeDashoffset={`${-connectPct}`} />
-          </>
-        ) : (
-          <circle cx="18" cy="18" r={r} fill="none" strokeWidth="3.5"
-            className={connect > 0 ? 'stroke-emerald-500 dark:stroke-emerald-400' : 'stroke-black/70 dark:stroke-white/70'}
-            strokeDasharray="100 0" strokeDashoffset="0" />
-        )}
-      </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-[15px] font-semibold tabular-nums text-black dark:text-white leading-none">{total}</span>
-        <span className="text-[8px] uppercase tracking-[0.08em] text-black/40 dark:text-white/40 mt-0.5">moves</span>
-      </div>
-    </div>
-  );
-}
-
 const REC_CACHE_PREFIX = 'mailient_airecs_';
 
+// Read AI recs from sessionStorage synchronously so frame 1 already knows whether
+// to show the cached picks or the loading skeletons (no deterministic flash).
+function readCachedRecs(generatedAt: string): Recommendation[] | null {
+  if (!generatedAt || typeof window === 'undefined') return null;
+  try {
+    const cached = sessionStorage.getItem(REC_CACHE_PREFIX + generatedAt);
+    if (cached) {
+      const dtos = JSON.parse(cached) as AiRecDTO[];
+      if (Array.isArray(dtos) && dtos.length) return dtos.map(aiToRec);
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+
 function RecommendationsSection({
-  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, onAct,
+  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, servingCached, onAct, onRefresh,
 }: {
   decide: DecideItem[];
   chase: ChaseItem[];
@@ -908,7 +883,9 @@ function RecommendationsSection({
   agentRuns: AgentRunItem[];
   checkedAgo: string | null;
   generatedAt: string;
+  servingCached?: boolean;
   onAct: (prompt: string) => void;
+  onRefresh: () => void;
 }) {
   // Instant, always-accurate baseline. Renders immediately; AI recs swap in when
   // ready, so the section is never blocked and never empty if the model fails.
@@ -917,8 +894,11 @@ function RecommendationsSection({
     [decide, chase, actionItems, showUp, agentRuns],
   );
 
-  const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(null);
-  const [aiLoading, setAiLoading] = useState(false);
+  const hasData = decide.length + chase.length + actionItems.length + showUp.length > 0;
+  const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(() => readCachedRecs(generatedAt));
+  // Start in the reviewing state when we'll fetch (data present + no cache), so the
+  // skeletons show from the first frame instead of flashing deterministic cards.
+  const [aiLoading, setAiLoading] = useState<boolean>(() => hasData && !readCachedRecs(generatedAt));
 
   // Fetch AI recommendations once per data snapshot (keyed by generatedAt),
   // cached in sessionStorage so tab swaps / remounts are instant and don't re-bill.
@@ -959,68 +939,128 @@ function RecommendationsSection({
   }, [generatedAt]);
 
   const recs = aiRecs && aiRecs.length ? aiRecs : fallbackRecs;
+  // "reviewing" = the AI is still composing the picks; drives the live header,
+  // the in-progress checklist row, and the recommendation skeletons.
+  const reviewing = aiLoading && !aiRecs;
 
-  const segments: AttentionSegment[] = useMemo(() => [
-    { key: 'decide', label: 'Replies', count: decide.length, barClass: 'bg-black/75 dark:bg-white/80', dotClass: 'bg-black/75 dark:bg-white/80' },
-    { key: 'chase', label: 'Follow-ups', count: chase.length, barClass: 'bg-black/45 dark:bg-white/45', dotClass: 'bg-black/45 dark:bg-white/45' },
-    { key: 'promised', label: 'Promised', count: actionItems.length, barClass: 'bg-black/30 dark:bg-white/30', dotClass: 'bg-black/30 dark:bg-white/30' },
-    { key: 'showup', label: 'Meetings', count: showUp.length, barClass: 'bg-black/[0.16] dark:bg-white/[0.18]', dotClass: 'bg-black/20 dark:bg-white/25' },
-  ], [decide.length, chase.length, actionItems.length, showUp.length]);
+  if (recs.length === 0 && !reviewing) return null;
 
-  const connectCount = recs.filter(r => r.tone === 'connect').length;
-  const productivityCount = recs.filter(r => r.tone !== 'connect').length;
-
-  if (recs.length === 0) return null;
+  // REVIEWING YOUR ACTIVITY — the three steps the briefing actually runs, with
+  // REAL counts from the buckets (never mock numbers). The first two are done the
+  // moment the data is in; the third completes when the AI returns its picks.
+  const bold = 'font-semibold text-black/75 dark:text-white/75';
+  const steps: { id: string; label: React.ReactNode; done: boolean }[] = [
+    {
+      id: 'scan',
+      label: <>Scanned your inbox — <span className={bold}>{decide.length}</span> {decide.length === 1 ? 'thread needs' : 'threads need'} a reply</>,
+      done: true,
+    },
+    {
+      id: 'check',
+      label: <>Checked <span className={bold}>{chase.length}</span> follow-ups, <span className={bold}>{showUp.length}</span> meetings, <span className={bold}>{actionItems.length}</span> promises</>,
+      done: true,
+    },
+    {
+      id: 'spot',
+      label: reviewing
+        ? 'Spotting the moves worth your time…'
+        : <>Spotted <span className={bold}>{recs.length}</span> {recs.length === 1 ? 'move' : 'moves'} worth your time</>,
+      done: !reviewing,
+    },
+  ];
+  const doneCount = steps.filter(s => s.done).length;
 
   return (
     <section className="mb-12">
-      <BucketHeader
-        label="Worth your time"
-        count={recs.length}
-        icon={<Sparkles className="w-3.5 h-3.5" strokeWidth={2} />}
-      />
+      {/* Live briefing header */}
+      <div className="flex items-center justify-center gap-2.5 mb-7">
+        {reviewing ? <PulseDot /> : <Sparkles className="w-4 h-4 text-black/55 dark:text-white/55" strokeWidth={2} />}
+        <span className="text-[13.5px] font-semibold text-black/80 dark:text-white/80 tracking-tight">
+          {reviewing ? 'Writing a fresh briefing — a quick catch-up…' : `Your briefing${checkedAgo ? ` · ${checkedAgo} ago` : ''}`}
+        </span>
+      </div>
 
-      {/* Mini dashboard: focus-split donut + today's attention breakdown. */}
-      <div className="rounded-2xl border border-black/[0.06] dark:border-white/[0.06] bg-black/[0.015] dark:bg-white/[0.02] px-4 py-4 mb-4">
-        <div className="flex items-center gap-5">
-          <div className="flex flex-col items-center gap-2">
-            <FocusDonut connect={connectCount} productivity={productivityCount} />
-            <div className="flex items-center gap-2.5">
-              <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-[0.06em] text-black/45 dark:text-white/45">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" /> Connect
-              </span>
-              <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-[0.06em] text-black/45 dark:text-white/45">
-                <span className="w-1.5 h-1.5 rounded-full bg-black/70 dark:bg-white/70" /> Get done
-              </span>
-            </div>
+      {/* Kept-briefing pill — only when we're serving a saved snapshot (offline / stale). */}
+      {servingCached && (
+        <div className="mb-7 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Clock className="w-4 h-4 text-black/40 dark:text-white/40 flex-shrink-0" strokeWidth={2} />
+            <span className="text-[13px] text-black/60 dark:text-white/55 truncate">Your last briefing — kept in case you need it</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[10.5px] uppercase tracking-[0.12em] text-black/35 dark:text-white/35 mb-2.5">Where today sits</p>
-            <AttentionBreakdown segments={segments} />
-          </div>
+          <button
+            type="button"
+            onClick={onRefresh}
+            className="inline-flex items-center gap-1 text-[12.5px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors flex-shrink-0"
+          >
+            Refresh <ChevronDown className="w-3.5 h-3.5" strokeWidth={2.25} />
+          </button>
         </div>
+      )}
+
+      {/* REVIEWING YOUR ACTIVITY */}
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-[11.5px] font-semibold tracking-[0.14em] uppercase text-black/55 dark:text-white/55">Reviewing your activity</h2>
+        <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.06] text-black/50 dark:text-white/50">
+          {doneCount} of {steps.length}
+        </span>
+      </div>
+      <div className="space-y-3 mb-9">
+        {steps.map((s) => (
+          <motion.div
+            key={s.id}
+            initial={{ opacity: 0, x: -6 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="flex items-center gap-3"
+          >
+            {s.done ? (
+              <Check className="w-[16px] h-[16px] text-black/70 dark:text-white/70 flex-shrink-0" strokeWidth={2.75} />
+            ) : (
+              <Loader2 className="w-[15px] h-[15px] text-black/40 dark:text-white/40 animate-spin flex-shrink-0" strokeWidth={2.5} />
+            )}
+            <span className={cn('text-[14px] tracking-tight', s.done ? 'text-black/65 dark:text-white/60' : 'text-black dark:text-white')}>
+              {s.label}
+            </span>
+          </motion.div>
+        ))}
       </div>
 
+      {/* RECOMMENDATIONS */}
+      <h2 className="text-[11.5px] font-semibold tracking-[0.14em] uppercase text-black/55 dark:text-white/55 mb-4">Recommendations</h2>
       <div className="space-y-2.5">
-        <AnimatePresence mode="popLayout">
-          {recs.map((rec) => (
-            <RecommendationCard key={rec.id} rec={rec} onAct={onAct} />
-          ))}
-        </AnimatePresence>
+        {reviewing ? (
+          <>
+            <SkeletonRecCard />
+            <SkeletonRecCard />
+          </>
+        ) : (
+          <AnimatePresence mode="popLayout">
+            {recs.map((rec) => (
+              <RecommendationCard key={rec.id} rec={rec} onAct={onAct} />
+            ))}
+          </AnimatePresence>
+        )}
       </div>
 
-      <div className="mt-3 flex items-center gap-2 flex-wrap">
-        <p className="text-[10.5px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
-          {aiRecs && aiRecs.length
-            ? 'AI-ranked from your live data · verified before any action'
-            : 'Ranked from your live data · no guesses'}
-          {checkedAgo ? ` · ${checkedAgo} ago` : ''}
-        </p>
-        {aiLoading && !aiRecs && (
-          <span className="inline-flex items-center gap-1 text-[10.5px] text-black/35 dark:text-white/35">
-            <Loader2 className="w-3 h-3 animate-spin" strokeWidth={2} /> spotting the moves worth your time…
-          </span>
-        )}
+      {/* Footer */}
+      <div className="mt-7 pt-4 border-t border-black/[0.05] dark:border-white/[0.06] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px]">
+        <span className="text-black/35 dark:text-white/35">Refreshes daily when you log in</span>
+        <span className="text-black/15 dark:text-white/15">|</span>
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="inline-flex items-center gap-1.5 font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" strokeWidth={2} /> Refresh briefing
+        </button>
+        <span className="text-black/15 dark:text-white/15">|</span>
+        <button
+          type="button"
+          onClick={() => onAct('Customize my daily briefing — what should I prioritize, include, or leave out going forward?')}
+          className="inline-flex items-center gap-1.5 font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors"
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={2} /> Customize briefing
+        </button>
       </div>
     </section>
   );
@@ -1449,7 +1489,9 @@ export default function SiftToday() {
               agentRuns={data.agentRuns ?? []}
               checkedAgo={lastUpdated}
               generatedAt={data.generatedAt}
+              servingCached={servingCached}
               onAct={openArcus}
+              onRefresh={() => load({ force: true })}
             />
 
             {/* PROMISED (action items from /log) */}
