@@ -22,6 +22,7 @@ import { getGmailToken, getGcalToken, getNotionToken, getSlackToken } from '@/li
 import { getSupabaseAdmin } from '@/lib/supabase.js';
 // @ts-ignore — JS module
 import { CalComService } from '@/lib/calcom.js';
+import { getBriefingPrefs, type BriefingPrefs } from '@/lib/arcus/briefing-prefs';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 25;
@@ -136,15 +137,30 @@ function statFor(refs: InItem[]): { value: number; label: string } {
   return { value: refs.length, label: 'items' };
 }
 
-async function generate(items: InItem[]): Promise<OutRec[] | null> {
+async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[] | null> {
   const ks = keys();
   if (!ks.length || !items.length) return null;
 
   const catalog = items.map(it => `[${it.ref}] (${it.kind}) ${it.label} — ${it.detail}`).join('\n');
 
+  // User's Customize-Briefing preferences shape (but never override accuracy).
+  const max = prefs.maxRecommendations;
+  const focusLine =
+    prefs.focus === 'connections' ? 'WHEN RANKING, lean toward relationship/connection moves (people going quiet, follow-ups, intros) over pure task-clearing.\n'
+    : prefs.focus === 'productivity' ? 'WHEN RANKING, lean toward productivity moves (clearing replies, overdue work, prep) over relationship outreach.\n'
+    : '';
+  const toneLine =
+    prefs.tone === 'direct' ? 'TONE: crisp and direct in titles and summaries — no filler.\n'
+    : prefs.tone === 'detailed' ? 'TONE: warm but include a touch more why-now context in each one-sentence summary.\n'
+    : 'TONE: warm and human, like a sharp chief of staff.\n';
+  const customLine = prefs.customInstructions
+    ? `The user has a STANDING PREFERENCE for their briefing: "${prefs.customInstructions.replace(/"/g, "'")}". Honor it where it applies, but NEVER invent items to satisfy it.\n`
+    : '';
+
   const system =
     'You are the chief-of-staff brain behind a founder\'s daily briefing. You are given a numbered list of REAL items pulled from ACROSS their connected apps — Gmail (incl. bounced sends), Google Calendar/Meet, Cal.com bookings, Notion pages, and Slack DMs. Each item is tagged with its source kind.\n' +
-    'Produce 2-4 high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Aim for a mix of both when the items allow. Group related items into one recommendation rather than repeating yourself.\n' +
+    `Produce up to ${max} high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Group related items into one recommendation rather than repeating yourself.\n` +
+    focusLine + toneLine + customLine +
     'PRIORITIZE recommendations that CONNECT TWO OR MORE APPS when the items plausibly relate — e.g. an email gone quiet whose Notion deal page is stale, a Cal.com booking with no prep doc, a bounced send to fix from a Notion contact, a Slack ask that mirrors an unanswered email. A cross-app move is the most valuable thing you can surface. Only join items when they clearly concern the same person/company/topic — never invent a connection.\n\n' +
     'HARD RULES — accuracy is everything:\n' +
     '- For each recommendation, list the bracket numbers of the item(s) it is about in refIds, e.g. "refIds": [1, 3]. Use ONLY numbers that appear in the list. NEVER invent a person, number, company, or deadline that is not in the items.\n' +
@@ -187,7 +203,7 @@ async function generate(items: InItem[]): Promise<OutRec[] | null> {
       if (fenced) text = fenced[1].trim();
       const parsed = JSON.parse(text);
       const raw: any[] = Array.isArray(parsed?.recommendations) ? parsed.recommendations : Array.isArray(parsed) ? parsed : [];
-      return validate(raw, items);
+      return validate(raw, items, max);
     } catch {
       payload.model = FALLBACK_MODEL;
       continue;
@@ -197,10 +213,11 @@ async function generate(items: InItem[]): Promise<OutRec[] | null> {
 }
 
 // Reject anything the model invented; attach real, server-computed stats.
-function validate(raw: any[], items: InItem[]): OutRec[] {
+function validate(raw: any[], items: InItem[], maxRecs: number): OutRec[] {
   const byRef = new Map(items.map(it => [it.ref, it]));
   const out: OutRec[] = [];
-  for (let i = 0; i < raw.length && out.length < 4; i++) {
+  const cap = [2, 3, 4].includes(maxRecs) ? maxRecs : 4;
+  for (let i = 0; i < raw.length && out.length < cap; i++) {
     const r = raw[i] || {};
     const category: Category = r.category === 'connect' ? 'connect' : r.category === 'productivity' ? 'productivity' : 'productivity';
     const title = clampStr(r.title, 70);
@@ -408,17 +425,30 @@ async function gatherSlack(userEmail: string): Promise<RawSignal[]> {
   return named.map((n) => ({ kind: 'slack', label: n.name, detail: `Slack DM from ${n.name} is waiting on your reply: "${n.text.slice(0, 90)}"` }));
 }
 
-async function gatherServerSignals(userEmail: string): Promise<RawSignal[]> {
-  const results = await Promise.allSettled([
-    gatherGmailBounces(userEmail),
-    gatherCalendarPrep(userEmail),
-    gatherCalcom(userEmail),
-    gatherNotion(userEmail),
-    gatherSlack(userEmail),
-  ]);
+// Only fetch from the apps the user left enabled in Customize Briefing — saves
+// latency and respects the toggle. (No token → the gatherer returns [] anyway.)
+async function gatherServerSignals(userEmail: string, apps: BriefingPrefs['apps']): Promise<RawSignal[]> {
+  const tasks: Promise<RawSignal[]>[] = [];
+  if (apps.gmail) tasks.push(gatherGmailBounces(userEmail));
+  if (apps.calendar) tasks.push(gatherCalendarPrep(userEmail));
+  if (apps.calcom) tasks.push(gatherCalcom(userEmail));
+  if (apps.notion) tasks.push(gatherNotion(userEmail));
+  if (apps.slack) tasks.push(gatherSlack(userEmail));
+  const results = await Promise.allSettled(tasks);
   const out: RawSignal[] = [];
   for (const r of results) if (r.status === 'fulfilled' && Array.isArray(r.value)) out.push(...r.value);
   return out;
+}
+
+// Drop client-bucket items for apps the user toggled off (promised/notes always
+// stay — they're the user's own commitments, not an app feed).
+function filterByApps(items: InItem[], apps: BriefingPrefs['apps']): InItem[] {
+  const enabled: Record<string, boolean> = {
+    decide: apps.gmail, chase: apps.gmail, bounce: apps.gmail,
+    meeting: apps.calendar, booking: apps.calcom, notion: apps.notion, slack: apps.slack,
+    promised: true,
+  };
+  return items.filter(it => enabled[it.kind] !== false);
 }
 
 // Continue the numeric-ref counter from the client items so every signal — local
@@ -443,19 +473,22 @@ export async function POST(req: Request) {
     const userEmail = session.user.email as string;
     const body = await req.json().catch(() => ({}));
 
+    // The user's Customize-Briefing prefs shape what we gather and how we rank.
+    const prefs = await getBriefingPrefs(userEmail);
+
     // Client buckets (Gmail/Calendar/ledger, already computed + freshest) + the
-    // cross-app signals we gather server-side from every connected app, in one
-    // shared numeric-ref space.
+    // cross-app signals we gather server-side from every ENABLED app, in one
+    // shared numeric-ref space, then drop any app the user toggled off.
     const clientItems = normalizeItems(body);
-    const serverSignals = await gatherServerSignals(userEmail).catch(() => []);
-    const items = appendServerSignals(clientItems, serverSignals);
+    const serverSignals = await gatherServerSignals(userEmail, prefs.apps).catch(() => []);
+    const items = filterByApps(appendServerSignals(clientItems, serverSignals), prefs.apps);
 
     if (!items.length) {
       return NextResponse.json({ success: true, recommendations: [], source: 'empty' });
     }
 
     const apps = Array.from(new Set(items.map(i => APP_OF[i.kind])));
-    const recs = await generate(items);
+    const recs = await generate(items, prefs);
     if (!recs || !recs.length) {
       // Signal the client to keep its instant deterministic recommendations.
       return NextResponse.json({ success: true, recommendations: [], source: 'fallback', apps });

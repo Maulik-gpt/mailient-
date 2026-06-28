@@ -6,6 +6,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { motion, AnimatePresence, useMotionValue, useTransform, useReducedMotion } from 'framer-motion';
 import { Reply, CalendarClock, Clock, ArrowUpRight, RefreshCw, Loader2, Mail, ExternalLink, CheckCircle2, Check, SlidersHorizontal, Sun, Sunrise, Sunset, Moon, AlertTriangle, Sparkles, FileText, MessageSquare, ChevronDown, X, Archive } from 'lucide-react';
 import { SiftDraftModal } from '@/components/ui/sift-draft-modal';
+import { CustomizeBriefingModal } from '@/components/ui/customize-briefing-modal';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -886,7 +887,7 @@ function readCachedApps(generatedAt: string): string[] {
 }
 
 function RecommendationsSection({
-  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, servingCached, onAct, onRefresh,
+  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, servingCached, onAct, onRefresh, onCustomize,
 }: {
   decide: DecideItem[];
   chase: ChaseItem[];
@@ -898,6 +899,7 @@ function RecommendationsSection({
   servingCached?: boolean;
   onAct: (prompt: string) => void;
   onRefresh: () => void;
+  onCustomize: () => void;
 }) {
   // Instant, always-accurate baseline. Renders immediately; AI recs swap in when
   // ready, so the section is never blocked and never empty if the model fails.
@@ -1083,7 +1085,7 @@ function RecommendationsSection({
         <span className="text-black/15 dark:text-white/15">|</span>
         <button
           type="button"
-          onClick={() => onAct('Customize my daily briefing — what should I prioritize, include, or leave out going forward?')}
+          onClick={onCustomize}
           className="inline-flex items-center gap-1.5 font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors"
         >
           <SlidersHorizontal className="w-3.5 h-3.5" strokeWidth={2} /> Customize briefing
@@ -1102,6 +1104,7 @@ export default function SiftToday() {
   // True when we're showing cached data because a refresh couldn't reach the server
   // (offline / token expired) — surfaced as a quiet "cached · updated Xm ago" note.
   const [servingCached, setServingCached] = useState(false);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
   // Dismissals are persisted server-side (durable + cross-device); the Today API
   // already excludes them on load, so this in-memory set only handles instant
   // removal for items dismissed in THIS session before the next fetch.
@@ -1519,6 +1522,7 @@ export default function SiftToday() {
               servingCached={servingCached}
               onAct={openArcus}
               onRefresh={() => load({ force: true })}
+              onCustomize={() => setCustomizeOpen(true)}
             />
 
             {/* PROMISED (action items from /log) */}
@@ -1668,6 +1672,13 @@ export default function SiftToday() {
             onRedraft={() => redraftRef.current?.()}
           />
         )}
+
+        {/* Customize Briefing — saving re-fetches so the new prefs take effect now. */}
+        <CustomizeBriefingModal
+          isOpen={customizeOpen}
+          onClose={() => setCustomizeOpen(false)}
+          onSaved={() => load({ force: true })}
+        />
       </div>
     </div>
   );
