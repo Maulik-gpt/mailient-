@@ -1330,7 +1330,7 @@ function ArcusErrorCard({
       return errorMessage && errorMessage.length < 240 ? errorMessage : 'Something went wrong. Please try again.';
     }
     if (exhaustedAttempts) {
-      return `Tried ${MAX_ATTEMPTS} times — OpenRouter's free pool is saturated. Try again in a minute or upgrade for paid model fallback.`;
+      return `The models are slammed right now. Give it a minute and try again.`;
     }
     if (retrying) return `Retry attempt ${attempt} running…`;
     if (nextRetryInMs !== null) {
