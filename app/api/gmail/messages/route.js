@@ -28,24 +28,34 @@ export async function GET(request) {
     }
 
     const userEmail = session.user.email;
-    let accessToken = session.accessToken;
-    let refreshToken = session.refreshToken;
+    let refreshToken = session.refreshToken || '';
 
-    // Fetch tokens from database if missing from session
+    // Resolve the Gmail access token through the UNIFIED, hardened resolver
+    // (lib/arcus/tools/http-tokens.getGmailToken): it checks arcus_integrations →
+    // integration_credentials → user_tokens, proactively refreshes an expiring
+    // token, and survives duplicate token rows. This is the SAME source of truth
+    // the connectors / Settings UI uses — so "Gmail connected in Settings" and
+    // "the inbox loads" can no longer disagree. The old path read only the
+    // NextAuth session token (stale after a re-login) + the legacy user_tokens
+    // row, which is exactly why a user connected via the connectors modal saw
+    // "Failed to load Inbox" while Settings showed connected.
+    let accessToken = null;
+    try {
+      const { getGmailToken } = await import('@/lib/arcus/tools/http-tokens');
+      accessToken = await getGmailToken(userEmail);
+    } catch (e) {
+      console.error('getGmailToken failed:', e?.message);
+    }
+
+    // Fallbacks: a present NextAuth session token, then the legacy user_tokens row.
+    if (!accessToken && session.accessToken) accessToken = session.accessToken;
     const db = new DatabaseService();
-    if (!accessToken || !refreshToken) {
+    if (!accessToken) {
       try {
-        console.log('📦 Fetching tokens from database for:', userEmail);
+        console.log('📦 Falling back to user_tokens for:', userEmail);
         const userTokens = await db.getUserTokens(userEmail);
-
-        if (userTokens) {
-          if (userTokens.encrypted_access_token) {
-            accessToken = decrypt(userTokens.encrypted_access_token);
-          }
-          if (userTokens.encrypted_refresh_token) {
-            refreshToken = decrypt(userTokens.encrypted_refresh_token);
-          }
-        }
+        if (userTokens?.encrypted_access_token) accessToken = decrypt(userTokens.encrypted_access_token);
+        if (userTokens?.encrypted_refresh_token) refreshToken = decrypt(userTokens.encrypted_refresh_token);
       } catch (dbError) {
         console.error('Database error getting tokens:', dbError);
       }
@@ -121,7 +131,15 @@ export async function GET(request) {
       msg.includes('no refresh token available') ||
       msg.includes('invalid_grant') ||
       msg.includes('401');
-    if (isTokenExpired) {
+    // A genuine scope-missing 403 (token valid but lacks Gmail read scope) is also
+    // a reconnect case — surface it as an actionable 401, not a generic red error.
+    // We do NOT treat a bare 403 as reauth (that can be a transient rate-limit).
+    const isScopeMissing =
+      msg.includes('insufficient') ||
+      msg.includes('access_token_scope') ||
+      msg.includes('insufficient authentication scopes') ||
+      msg.includes('scope');
+    if (isTokenExpired || isScopeMissing) {
       try {
         const session2 = await auth();
         const uid = session2?.user?.email?.toLowerCase();
