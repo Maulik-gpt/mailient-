@@ -437,31 +437,10 @@ export async function callLLM(
     return Math.min(MODEL_TIMEOUT, options.deadlineAt - Date.now() - DEADLINE_RESERVE_MS);
   };
 
-  // Pass 0 — PREMIUM-FIRST (the super-agent quality lever). Free models are the
-  // quality ceiling: they're terse, skip steps, and "claim" actions they never
-  // executed. When the operator opts into premium quality, try the top-tier
-  // model(s) FIRST so Arcus reasons at frontier quality; we still fall through
-  // to the full free chain below if the premium call fails.
-  //
-  // Model ids are NOT hardcoded to anything unverified: the default premium
-  // list is the known-good PAID_MODELS already in this file, capability-ordered.
-  // For true frontier quality set ARCUS_PREMIUM_MODELS to a comma-separated list
-  // of OpenRouter ids you've verified (e.g. "anthropic/claude-sonnet-4.5").
-  const premiumOn = process.env.ARCUS_PREMIUM_MODE === 'true' || process.env.ALLOW_PAID_MODELS === 'true';
-  const premiumList = (process.env.ARCUS_PREMIUM_MODELS || '')
-    .split(',').map(s => s.trim()).filter(Boolean);
-  const premiumModels = premiumList.length
-    ? premiumList
-    : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-5', 'google/gemini-2.5-flash'];
-  if (premiumOn && premiumModels.length) {
-    log('info', 'Engine', 'Pass 0 — premium-first', { models: premiumModels, hasTools });
-    for (const model of premiumModels) {
-      const r = await tryModel(model, baseBody, effectiveTimeout());
-      if (r) { log('info', 'Engine', 'Premium model answered', { model }); return r; }
-      await sleep(120);
-    }
-    log('warn', 'Engine', 'Premium-first exhausted — falling through to free chain');
-  }
+  // ORDER POLICY: free models ALWAYS go first; paid models are tried ONLY after
+  // every free model has been rate-limited/exhausted (Pass 4 below). There is no
+  // premium-first pass — paid is a pure fallback, never the opening move, so we
+  // never spend money while a free model could have answered.
 
   // Pass 1: sequential free models, all keys race each.
   // Small fixed jitter between models to avoid thundering-herd without adding
@@ -500,11 +479,12 @@ export async function callLLM(
     await sleep(200);
   }
 
-  // F2.3 — Pass 4: paid-model escape hatch. Activated when every free model
-  // returned null AND the operator enabled paid fallback via env. Without
-  // this, $29/mo users hit the same "All models busy" error free users do.
-  if (process.env.ALLOW_PAID_MODELS === 'true' && PAID_MODELS.length) {
-    log('warn', 'Engine', 'Pass 3 failed — falling back to paid models', { models: PAID_MODELS });
+  // Pass 4: paid-model fallback. Fires automatically once every free model has
+  // been rate-limited/exhausted — this is the ONLY time we touch paid models, so
+  // the user gets a real answer instead of an error, with no premium-first spend.
+  // On by default; set DISABLE_PAID_FALLBACK=true only if you truly want free-only.
+  if (PAID_MODELS.length && process.env.DISABLE_PAID_FALLBACK !== 'true') {
+    log('warn', 'Engine', 'Free models exhausted — falling back to paid models', { models: PAID_MODELS });
     await sleep(300);
     for (const model of PAID_MODELS) {
       const r = await tryModel(model, baseBody, effectiveTimeout());

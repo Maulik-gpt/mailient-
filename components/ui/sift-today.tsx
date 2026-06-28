@@ -1181,10 +1181,9 @@ export default function SiftToday() {
          setActiveDraft(null);
          toast.error('Gmail sign-in expired', { description: 'Reconnect Google from the prompt-box connectors to keep drafting.', duration: 7000 });
        } else {
-         setActiveDraft((prev: any) => prev ? {
-           ...prev,
-           content: renderMarkdown(`Hi ${(item.recipient.name || item.recipient.email).split(' ')[0]},\n\nJust following up on my note below — would love your thoughts when you get a chance.\n\nBest,`),
-         } : null);
+         // Same as the reply path — no placeholder/quota fallback; paid model fallback
+         // handles a rate-limited free pool, so a real draft comes through.
+         setActiveDraft(null);
        }
     } finally {
        setIsDraftingNudgeId(null);
@@ -1256,10 +1255,10 @@ export default function SiftToday() {
          setActiveDraft(null);
          toast.error('Gmail sign-in expired', { description: 'Reconnect Google from the prompt-box connectors to keep drafting.', duration: 7000 });
        } else {
-         setActiveDraft((prev: any) => prev ? {
-           ...prev,
-           content: renderMarkdown(`Hi ${(item.sender.name || item.sender.email).split(' ')[0]},\n\nThanks for your message — let me come back to you on this shortly.\n\nBest,`),
-         } : null);
+         // No placeholder/quota fallback — the model layer falls back to paid once
+         // the free pool is rate-limited, so a real draft comes through. On a genuine
+         // outage we just close, no fake starter, no error.
+         setActiveDraft(null);
        }
     } finally {
        setIsDraftingDecideId(null);
