@@ -1412,6 +1412,14 @@ textarea,
   cursor: var(--custom-cursor);
 }
 
+/* Calmer loading motion. The default Tailwind speeds (spin 1s, ping 1s, pulse 2s)
+   read as fast/flickery — especially when several spinners or skeletons appear at
+   once. Slow them down a touch app-wide. Declared after the Tailwind import so the
+   later cascade wins on animation-duration only. */
+.animate-spin  { animation-duration: 1.5s; }
+.animate-ping  { animation-duration: 1.9s; }
+.animate-pulse { animation-duration: 2.6s; }
+
 /* Base, components, and utilities are already imported via @import "tailwindcss" on line 76 */
 
 @layer base {

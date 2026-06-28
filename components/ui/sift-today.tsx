@@ -1181,9 +1181,12 @@ export default function SiftToday() {
          setActiveDraft(null);
          toast.error('Gmail sign-in expired', { description: 'Reconnect Google from the prompt-box connectors to keep drafting.', duration: 7000 });
        } else {
-         // Same as the reply path — no placeholder/quota fallback; paid model fallback
-         // handles a rate-limited free pool, so a real draft comes through.
-         setActiveDraft(null);
+         // Same as the reply path — keep the box open with one honest line, no
+         // auto-close, no fake draft, no endless spinner.
+         setActiveDraft((prev: any) => prev ? {
+           ...prev,
+           content: '<p><em>Couldn’t draft this one right now — the AI models are busy. Close this and try again in a minute.</em></p>',
+         } : null);
        }
     } finally {
        setIsDraftingNudgeId(null);
@@ -1255,10 +1258,13 @@ export default function SiftToday() {
          setActiveDraft(null);
          toast.error('Gmail sign-in expired', { description: 'Reconnect Google from the prompt-box connectors to keep drafting.', duration: 7000 });
        } else {
-         // No placeholder/quota fallback — the model layer falls back to paid once
-         // the free pool is rate-limited, so a real draft comes through. On a genuine
-         // outage we just close, no fake starter, no error.
-         setActiveDraft(null);
+         // Keep the box OPEN on failure — don't auto-close (that read as a glitch),
+         // don't fake a draft, and don't spin "Crafting…" forever. Show one honest
+         // line the user can read, then close or retry.
+         setActiveDraft((prev: any) => prev ? {
+           ...prev,
+           content: '<p><em>Couldn’t draft this one right now — the AI models are busy. Close this and try again in a minute.</em></p>',
+         } : null);
        }
     } finally {
        setIsDraftingDecideId(null);
