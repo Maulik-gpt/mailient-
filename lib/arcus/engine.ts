@@ -28,6 +28,7 @@ function log(level: 'info' | 'warn' | 'error', module: string, msg: string, extr
 // (capped at 90s) so subsequent calls skip it until it's available again.
 // This prevents hammering a rate-limited model across parallel tool results.
 const modelCooldownUntil = new Map<string, number>();
+let paidDisabledUntil = 0;
 
 function isModelCooling(model: string): boolean {
   const until = modelCooldownUntil.get(model);
@@ -358,7 +359,10 @@ export async function callLLM(
           return null;
         }
         const txt = await res.text().catch(() => '');
-        if (res.status === 401 || res.status === 403) {
+        if (res.status === 402) {
+          paidDisabledUntil = Date.now() + 30 * 60 * 1000;
+          log('warn', 'Engine', 'Account has no OpenRouter credit (402) — pausing paid fallback 30m', { model });
+        } else if (res.status === 401 || res.status === 403) {
           deadKeys.add(key);
           log('error', 'Engine', `Key dead`, { key: `…${key.slice(-4)}`, status: res.status });
         } else {
@@ -483,7 +487,7 @@ export async function callLLM(
   // been rate-limited/exhausted — this is the ONLY time we touch paid models, so
   // the user gets a real answer instead of an error, with no premium-first spend.
   // On by default; set DISABLE_PAID_FALLBACK=true only if you truly want free-only.
-  if (PAID_MODELS.length && process.env.DISABLE_PAID_FALLBACK !== 'true') {
+  if (PAID_MODELS.length && process.env.DISABLE_PAID_FALLBACK !== 'true' && Date.now() >= paidDisabledUntil) {
     log('warn', 'Engine', 'Free models exhausted — falling back to paid models', { models: PAID_MODELS });
     await sleep(300);
     for (const model of PAID_MODELS) {
