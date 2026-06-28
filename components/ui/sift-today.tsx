@@ -858,6 +858,7 @@ function aiToRec(dto: AiRecDTO): Recommendation {
 }
 
 const REC_CACHE_PREFIX = 'mailient_airecs_';
+const REC_APPS_PREFIX = 'mailient_airec_apps_';
 
 // Read AI recs from sessionStorage synchronously so frame 1 already knows whether
 // to show the cached picks or the loading skeletons (no deterministic flash).
@@ -871,6 +872,17 @@ function readCachedRecs(generatedAt: string): Recommendation[] | null {
     }
   } catch { /* ignore */ }
   return null;
+}
+
+// The connected apps the recommendations drew on (e.g. Gmail, Notion, Slack) —
+// surfaced in the footer so the user can see it's reading cross-app, not just Gmail.
+function readCachedApps(generatedAt: string): string[] {
+  if (!generatedAt || typeof window === 'undefined') return [];
+  try {
+    const cached = sessionStorage.getItem(REC_APPS_PREFIX + generatedAt);
+    if (cached) { const a = JSON.parse(cached); if (Array.isArray(a)) return a; }
+  } catch { /* ignore */ }
+  return [];
 }
 
 function RecommendationsSection({
@@ -896,6 +908,7 @@ function RecommendationsSection({
 
   const hasData = decide.length + chase.length + actionItems.length + showUp.length > 0;
   const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(() => readCachedRecs(generatedAt));
+  const [aiApps, setAiApps] = useState<string[]>(() => readCachedApps(generatedAt));
   // Start in the reviewing state when we'll fetch (data present + no cache), so the
   // skeletons show from the first frame instead of flashing deterministic cards.
   const [aiLoading, setAiLoading] = useState<boolean>(() => hasData && !readCachedRecs(generatedAt));
@@ -926,9 +939,16 @@ function RecommendationsSection({
         });
         const json = await res.json().catch(() => null);
         const dtos: AiRecDTO[] = json?.recommendations || [];
-        if (!cancelled && Array.isArray(dtos) && dtos.length) {
-          setAiRecs(dtos.map(aiToRec));
-          try { sessionStorage.setItem(cacheKey, JSON.stringify(dtos)); } catch { /* quota */ }
+        const apps: string[] = Array.isArray(json?.apps) ? json.apps : [];
+        if (!cancelled) {
+          if (apps.length) {
+            setAiApps(apps);
+            try { sessionStorage.setItem(REC_APPS_PREFIX + generatedAt, JSON.stringify(apps)); } catch { /* quota */ }
+          }
+          if (Array.isArray(dtos) && dtos.length) {
+            setAiRecs(dtos.map(aiToRec));
+            try { sessionStorage.setItem(cacheKey, JSON.stringify(dtos)); } catch { /* quota */ }
+          }
         }
       } catch { /* keep deterministic fallback */ }
       finally { if (!cancelled) setAiLoading(false); }
@@ -1041,6 +1061,13 @@ function RecommendationsSection({
           </AnimatePresence>
         )}
       </div>
+
+      {/* Cross-app provenance — shows the connected apps these picks drew on. */}
+      {aiApps.length > 1 && (
+        <p className="mt-5 text-center text-[10.5px] uppercase tracking-[0.12em] text-black/30 dark:text-white/30">
+          Drawing on {aiApps.join(' · ')}
+        </p>
+      )}
 
       {/* Footer */}
       <div className="mt-7 pt-4 border-t border-black/[0.05] dark:border-white/[0.06] flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-[12px]">
