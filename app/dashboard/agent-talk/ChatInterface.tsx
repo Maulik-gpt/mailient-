@@ -1857,6 +1857,11 @@ export default function ChatInterface({
   const router = useRouter();
   const [message, setMessage] = useState<string>('');
   const [messages, setMessages] = useState<Message[]>([]);
+  // Prefill handed over from SiftToday's recommendation buttons. Drained on mount
+  // and then AUTO-SENT by the effect after handleSend — previously this only
+  // setMessage()'d, which the child prompt box never reads, so the action ran
+  // nothing. Stored in state so we can fire handleSend once the chat has settled.
+  const [pendingPrefill, setPendingPrefill] = useState<string | null>(null);
 
   // SiftToday → Arcus prefill bridge. The home-feed action buttons stash a
   // prompt in sessionStorage before navigating here; we drain it on mount.
@@ -1865,7 +1870,7 @@ export default function ChatInterface({
       const prefill = sessionStorage.getItem('arcus_prefill');
       if (prefill) {
         sessionStorage.removeItem('arcus_prefill');
-        setMessage(prefill);
+        setPendingPrefill(prefill);
       }
     } catch { /* sessionStorage unavailable — ignore */ }
   }, []);
@@ -4625,7 +4630,20 @@ export default function ChatInterface({
     processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId });
   };
 
-
+  // Auto-run a prefill handed over from SiftToday's recommendation buttons. We
+  // wait until the chat has settled (not already loading) and fire handleSend
+  // exactly once — so the recommendation actually EXECUTES a full Arcus run (with
+  // every connected integration available to the agent), instead of silently
+  // filling an input box the user then has to send themselves.
+  useEffect(() => {
+    if (!pendingPrefill || isLoading) return;
+    const text = pendingPrefill;
+    setPendingPrefill(null);
+    const t = setTimeout(() => { handleSend(text); }, 80);
+    return () => clearTimeout(t);
+    // handleSend is stable enough for this one-shot trigger; deps kept minimal.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pendingPrefill, isLoading]);
 
   const startNewChat = () => {
     // Save current conversation asynchronously in the background before starting new one
