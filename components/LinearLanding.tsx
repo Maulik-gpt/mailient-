@@ -133,16 +133,10 @@ export function LinearLanding() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const DESCRIPTIONS = [
-    "It read 200 emails, drafted 18 replies in your voice, and booked 3 meetings — while you slept.",
-    "Not an inbox tool. A chief of staff that handles your whole inbox while you sleep.",
-    "Give it a goal. It plans, executes, and reports back — across Gmail, Calendar, Notion, and Slack.",
-    "Wake up to a briefing: what it did, why it did it, and the two things that need you.",
-    "It learns who you are — your voice, your VIPs, what's strategic vs. routine — and acts on it.",
-    "One message. It triages the inbox, drafts every reply, logs to your CRM, and preps your day.",
-    "Replies that sound exactly like you. Because it cloned your voice from your sent mail.",
-    "Every action logged, every link clickable. No black box — you see exactly what it did.",
-    "The AI chief of staff that kills communication overload for founders.",
-    "Less inbox. More building."
+    "By 7am: 240 unread triaged, 18 replies drafted in your voice, 3 meetings booked.",
+    "Overnight it cleared the noise and left every reply that mattered waiting for one tap.",
+    "You wake up to the 3 messages that actually need you. It handled the other 200.",
+    "Stop living in your inbox. It reads, replies, schedules, and follows up — so you don't.",
   ];
 
   const [descIndex, setDescIndex] = useState(0);
@@ -367,7 +361,7 @@ export function LinearLanding() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
             <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.12] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent pb-4">
-              An AI chief of staff <br />that works while you sleep.
+              Email, meetings, messages — <br />handled before you open them.
             </h1>
           </BlurFade>
 
@@ -784,7 +778,7 @@ export function LinearLanding() {
               </h2>
 
               <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Arcus isn't a chatbot that suggests. It's a chief of staff that acts. Give it a goal in plain English — "handle my inbox and prep tomorrow" — and it plans the steps, works across Gmail, Calendar, Notion, and Slack in parallel, and reports back with every decision it made and why. It learns who you are over time, so it gets sharper every run.
+                Arcus reads every email, meeting request, and message — then handles them. Say "clear my inbox and prep tomorrow" and it triages the flood, drafts the replies in your voice, books the calls, and chases the follow-ups across Gmail, Calendar, Notion, and Slack. Then it shows you exactly what it did and the few things that still need you.
               </p>
 
               <div className="pt-6">
@@ -1102,7 +1096,7 @@ export function LinearLanding() {
             </h2>
             <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
               <WordBlurStream
-                text="Waking up to email is an operational drag. Arcus shifts inbox tasks to overnight autopilot, delivering focus leverage back to founders."
+                text="Most mornings you wake up already behind — dozens of unread threads, meeting requests, replies you owe. Arcus clears all of it overnight, so you start the day on top of it instead of buried."
                 msPerWord={80}
                 startupMs={300}
                 holdMs={5000}
@@ -1120,9 +1114,9 @@ export function LinearLanding() {
                   <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                   <span>The Chaos of Yesterday</span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Reactive Intake Fatigue</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Buried before 9am</h3>
                 <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  Waking up to 45 unread threads, urgent meeting booking queries, and complex response drag.
+                  45 unread threads, meeting requests piling up, and replies you owe — all waiting on you.
                 </p>
 
                 {/* Stress rows with beautiful high-fidelity styling */}
@@ -1159,9 +1153,9 @@ export function LinearLanding() {
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
                   <span>Overnight Clarity</span>
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">Autonomous Morning Briefing</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Cleared while you slept</h3>
                 <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  Start the morning with resolved outbox drafts, confirmed bookings, and a single dashboard brief.
+                  Replies drafted and waiting, meetings booked, and one short brief of what's still left.
                 </p>
 
                 {/* Clarity rows with premium detailed cards */}
