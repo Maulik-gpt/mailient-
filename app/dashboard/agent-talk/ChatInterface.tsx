@@ -4045,11 +4045,11 @@ export default function ChatInterface({
         setSelectedConversationId(conversationId);
         setChatTitle(conversationData.title || '');
 
-        // Navigate to the conversation URL
+        // Navigate to the conversation URL — parent owns the URL (single nav).
         loadedConversationIdRef.current = conversationId;
-        window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
-        if (onConversationSelect && conversationId !== initialConversationId) {
-          onConversationSelect(conversationId);
+        if (conversationId !== initialConversationId) {
+          if (onConversationSelect) onConversationSelect(conversationId);
+          else window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
         }
 
         // Scroll to bottom after messages are loaded
@@ -4104,12 +4104,10 @@ export default function ChatInterface({
             setSelectedConversationId(conversationId);
             setChatTitle(data.title || '');
 
-            // Navigate to the conversation URL
+            // Navigate to the conversation URL — parent owns the URL (single nav).
             loadedConversationIdRef.current = conversationId;
-            window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
-            if (onConversationSelect) {
-              onConversationSelect(conversationId);
-            }
+            if (onConversationSelect) onConversationSelect(conversationId);
+            else window.history.pushState(null, '', `/dashboard/agent-talk/${conversationId}`);
 
             // Scroll to bottom after messages are loaded
             setTimeout(() => scrollToBottom(true), 150);
@@ -4566,10 +4564,11 @@ export default function ChatInterface({
       // Pin the ref immediately so the initialConversationId useEffect skips
       // loadConversation and doesn't overwrite our in-flight messages state.
       loadedConversationIdRef.current = conversationIdToUse as string;
-      // Update the URL right away — smooth transition with no blank/stuck state.
-      window.history.pushState(null, '', `/dashboard/agent-talk/${conversationIdToUse}`);
-      // Sync parent state non-blocking (parent's pushState is idempotent).
-      onConversationSelect?.(conversationIdToUse as string);
+      // Parent owns the URL (single nav). Fall back to a direct pushState only
+      // when there's no parent handler (embedded use) — doing both was a double
+      // navigation that Next 16 re-processes via useParams.
+      if (onConversationSelect) onConversationSelect(conversationIdToUse as string);
+      else window.history.pushState(null, '', `/dashboard/agent-talk/${conversationIdToUse}`);
       setShowHistory(false);
     } else {
       setIsNewConversation(false);
@@ -4651,9 +4650,11 @@ export default function ChatInterface({
       saveConversation().catch(console.error);
     }
 
-    // Immediately route to the base Arcus page on a single click
-    window.history.pushState(null, '', '/dashboard/agent-talk');
-    onNewChat?.();
+    // The PARENT page owns URL changes (handleNewChat pushState's + sets state).
+    // Doing our own pushState too made it a DOUBLE navigation, which Next 16
+    // re-processes via useParams — the repeated re-render that read as a reload.
+    // Defer to the parent; fall back to a direct pushState only when embedded.
+    if (onNewChat) { onNewChat(); } else { window.history.pushState(null, '', '/dashboard/agent-talk'); }
 
     // Clear all conversation state for new chat instantly
     setMessages([]);
