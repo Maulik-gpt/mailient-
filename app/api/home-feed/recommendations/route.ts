@@ -171,8 +171,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
     '- ctaLabel: 2-3 words for the button (e.g. "Draft nudge", "Prep me", "Clear it").\n' +
     'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","refIds":[numbers]}]}';
 
-  const payload = {
-    model: REC_MODEL,
+  const basePayload = {
     max_tokens: 900,
     temperature: 0.3,
     response_format: { type: 'json_object' },
@@ -182,31 +181,42 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
     ],
   };
 
-  for (const key of ks) {
-    try {
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz', 'X-Title': 'Mailient' },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(14000),
-      });
-      if (!res.ok) {
-        // On a model-side issue, retry the next key with the lighter fallback model.
-        payload.model = FALLBACK_MODEL;
+  // Free models first; paid models LAST, reached only after the free pool is
+  // rate-limited — so a rate-limited free pool still returns AI recs instead of
+  // falling back. On by default (opt out with DISABLE_PAID_FALLBACK). Paid models
+  // are billed, so they're not subject to the free-per-day caps that exhaust the
+  // free chain.
+  const paidModels = process.env.DISABLE_PAID_FALLBACK === 'true'
+    ? []
+    : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean).length
+        ? (process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean)
+        : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-5', 'google/gemini-2.5-flash']);
+  const modelChain = [REC_MODEL, FALLBACK_MODEL, ...paidModels];
+
+  for (const model of modelChain) {
+    for (const key of ks) {
+      try {
+        const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz', 'X-Title': 'Mailient' },
+          body: JSON.stringify({ ...basePayload, model }),
+          signal: AbortSignal.timeout(14000),
+        });
+        if (!res.ok) continue; // try the next key, then the next model
+        const json = await res.json();
+        let text: string = json.choices?.[0]?.message?.content || '';
+        text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '').trim();
+        // json_object should already be clean JSON, but tolerate a ```json fence.
+        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+        if (fenced) text = fenced[1].trim();
+        const parsed = JSON.parse(text);
+        const raw: any[] = Array.isArray(parsed?.recommendations) ? parsed.recommendations : Array.isArray(parsed) ? parsed : [];
+        const recs = validate(raw, items, max);
+        if (recs.length) return recs; // got usable AI recs
+        // parsed but nothing valid — try the next key/model rather than giving up.
+      } catch {
         continue;
       }
-      const json = await res.json();
-      let text: string = json.choices?.[0]?.message?.content || '';
-      text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '').trim();
-      // json_object should already be clean JSON, but tolerate a ```json fence.
-      const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-      if (fenced) text = fenced[1].trim();
-      const parsed = JSON.parse(text);
-      const raw: any[] = Array.isArray(parsed?.recommendations) ? parsed.recommendations : Array.isArray(parsed) ? parsed : [];
-      return validate(raw, items, max);
-    } catch {
-      payload.model = FALLBACK_MODEL;
-      continue;
     }
   }
   return null;
