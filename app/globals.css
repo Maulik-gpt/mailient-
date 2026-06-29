@@ -1102,20 +1102,28 @@ body,
   opacity: 0.4;
   will-change: transform;
 }
+/* Pure grey wash — no hue. Soft graphite in light, a faint light-grey lift in
+   dark. Gives the frosted blur tonal depth to carry without introducing color. */
 .glass-ambient::before {
   top: -14%; left: -6%;
   width: 46%; height: 52%;
-  background: radial-gradient(circle at 35% 35%, rgba(99, 102, 241, 0.30), transparent 70%);
+  background: radial-gradient(circle at 35% 35%, rgba(0, 0, 0, 0.10), transparent 70%);
   animation: glass-drift-a 30s ease-in-out infinite;
 }
 .glass-ambient::after {
   bottom: -16%; right: -4%;
   width: 50%; height: 56%;
-  background: radial-gradient(circle at 60% 40%, rgba(168, 85, 247, 0.24), transparent 70%);
+  background: radial-gradient(circle at 60% 40%, rgba(0, 0, 0, 0.07), transparent 70%);
   animation: glass-drift-b 36s ease-in-out infinite;
 }
-.dark .glass-ambient::before { opacity: 0.28; }
-.dark .glass-ambient::after  { opacity: 0.24; }
+.dark .glass-ambient::before {
+  opacity: 0.5;
+  background: radial-gradient(circle at 35% 35%, rgba(255, 255, 255, 0.06), transparent 70%);
+}
+.dark .glass-ambient::after {
+  opacity: 0.5;
+  background: radial-gradient(circle at 60% 40%, rgba(255, 255, 255, 0.04), transparent 70%);
+}
 
 @keyframes glass-drift-a {
   0%, 100% { transform: translate(0, 0) scale(1); }
