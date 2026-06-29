@@ -191,7 +191,16 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
     : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean).length
         ? (process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean)
         : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-5', 'google/gemini-2.5-flash']);
-  const modelChain = [REC_MODEL, FALLBACK_MODEL, ...paidModels];
+  // Extra free models so the chain doesn't dead-end when super/gemma are both
+  // rate-limited upstream. All IDs verified against the live OpenRouter free
+  // catalog; non-reasoning instruct models that honor json_object well.
+  // extractJsonObject() also tolerates any that leak prose.
+  const EXTRA_FREE = [
+    'google/gemma-4-26b-a4b-it:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'qwen/qwen3-next-80b-a3b-instruct:free',
+  ];
+  const modelChain = [REC_MODEL, FALLBACK_MODEL, ...EXTRA_FREE, ...paidModels];
 
   for (const model of modelChain) {
     for (const key of ks) {
@@ -202,22 +211,53 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
           body: JSON.stringify({ ...basePayload, model }),
           signal: AbortSignal.timeout(14000),
         });
-        if (!res.ok) continue; // try the next key, then the next model
+        if (!res.ok) {
+          console.warn(`[recs] ${model} key…${key.slice(-4)} -> HTTP ${res.status}`);
+          continue; // try the next key, then the next model
+        }
         const json = await res.json();
-        let text: string = json.choices?.[0]?.message?.content || '';
-        text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '').trim();
-        // json_object should already be clean JSON, but tolerate a ```json fence.
-        const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-        if (fenced) text = fenced[1].trim();
-        const parsed = JSON.parse(text);
+        const text: string = json.choices?.[0]?.message?.content || '';
+        const parsed = extractJsonObject(text);
+        if (!parsed) {
+          console.warn(`[recs] ${model} returned unparseable content (${text.slice(0, 80)}…)`);
+          continue;
+        }
         const raw: any[] = Array.isArray(parsed?.recommendations) ? parsed.recommendations : Array.isArray(parsed) ? parsed : [];
         const recs = validate(raw, items, max);
-        if (recs.length) return recs; // got usable AI recs
-        // parsed but nothing valid — try the next key/model rather than giving up.
-      } catch {
+        if (recs.length) {
+          console.log(`[recs] ${model} -> ${recs.length} recs`);
+          return recs; // got usable AI recs
+        }
+        console.warn(`[recs] ${model} parsed but ${raw.length} raw -> 0 valid after refId check`);
+      } catch (e: any) {
+        console.warn(`[recs] ${model} key…${key.slice(-4)} threw: ${e?.message || e}`);
         continue;
       }
     }
+  }
+  console.warn('[recs] all models/keys exhausted — no AI recs');
+  return null;
+}
+
+/**
+ * Pull a JSON object out of a model response, tolerant of reasoning models that
+ * wrap the JSON in prose, ```fences, or stray <thinking> tags. Returns the parsed
+ * object, or null if nothing parseable is found.
+ */
+function extractJsonObject(raw: string): any | null {
+  if (!raw) return null;
+  let t = raw.replace(/<\/?(?:thinking|thought|reasoning|answer)[^>]*>/gi, '').trim();
+  // ```json … ``` fence
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  // direct parse
+  try { return JSON.parse(t); } catch { /* fall through */ }
+  // last resort: grab the outermost {...} span (handles "Here is the JSON: {…}")
+  const first = t.indexOf('{');
+  const last = t.lastIndexOf('}');
+  if (first !== -1 && last > first) {
+    const span = t.slice(first, last + 1);
+    try { return JSON.parse(span); } catch { /* give up */ }
   }
   return null;
 }
