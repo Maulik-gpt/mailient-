@@ -1628,9 +1628,26 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
   const finish = async () => {
     setBusy(true);
     await onFinish();
-    // Already paid (returned from checkout) or no plan chosen → straight in.
-    if (paid || !plan) {
-      router.push('/home-feed');
+    // Returned from checkout (?paid=1)? The param alone is NOT proof — verify the
+    // real subscription server-side before letting them into the app. A verified
+    // paid/active plan → in. Otherwise (incl. abandoned checkout) → back to the
+    // paywall at step 13; never grant access on an unverified URL param.
+    if (paid) {
+      try {
+        const r = await fetch(`/api/subscription/status?t=${Date.now()}`);
+        const d = r.ok ? await r.json() : null;
+        const pt = d?.subscription?.planType;
+        const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !d?.subscription?.isExpired;
+        if (isPaid) { router.push('/home-feed'); return; }
+      } catch { /* fall through to paywall */ }
+      setBusy(false);
+      router.replace('/onboarding?step=13');
+      return;
+    }
+    // No plan chosen yet → send them to pick one (the paywall), not into the app.
+    if (!plan) {
+      setBusy(false);
+      router.replace('/onboarding?step=13');
       return;
     }
     // Send to Polar checkout, remembering where to come back to so the user
