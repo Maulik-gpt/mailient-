@@ -218,7 +218,7 @@ function ItemCardBody({ topLeft, topRight, title, reason, primaryAction, seconda
       onKeyDown={onDismiss ? (e: any) => {
         if (e.key === 'e' || e.key === 'E' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); onDismiss(); }
       } : undefined}
-      className="liquid-glass group rounded-2xl px-4 py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
     >
       {onDismiss && (
         <button
@@ -403,7 +403,7 @@ function AgentRunCard({ run }: { run: AgentRunItem }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="glass-card rounded-2xl overflow-hidden"
+      className="bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl overflow-hidden hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors"
     >
       {/* Collapsed header — always visible, the 10-second glance */}
       <button type="button" onClick={toggle} className="w-full text-left px-4 py-3.5 group">
@@ -627,107 +627,6 @@ function humanizeReason(reason: string): string {
   return map[reason?.trim()] || reason || 'waiting on you';
 }
 
-function buildRecommendations(
-  decide: DecideItem[],
-  chase: ChaseItem[],
-  actionItems: ActionItem[],
-  showUp: ShowUpItem[],
-  agentRuns: AgentRunItem[],
-): Recommendation[] {
-  const recs: Recommendation[] = [];
-  const overdue = actionItems.filter(a => a.isOverdue);
-  const externalMeetings = showUp.filter(m => m.isExternal);
-
-  // 1. Overdue commitments — pure focus/productivity, most time-sensitive.
-  if (overdue.length > 0) {
-    const first = overdue[0];
-    recs.push({
-      id: 'rec-overdue',
-      tone: 'focus',
-      icon: <CheckCircle2 className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: overdue.length === 1 ? 'Close an overdue promise' : 'Clear your overdue promises',
-      summary: `Starting with “${(first.text || 'a commitment').slice(0, 70)}”${first.attendees.length ? ` (with ${namesList(first.attendees)})` : ''}.`,
-      stat: { value: overdue.length, label: 'overdue' },
-      cta: {
-        label: 'Help me clear these',
-        prompt: `Help me clear my overdue commitments today. Top of the list: ${overdue.slice(0, 3).map(o => o.text).join('; ')}`,
-      },
-    });
-  }
-
-  // 2. Relationships going quiet — strengthen connections.
-  if (chase.length > 0) {
-    const sorted = [...chase].sort((a, b) => b.daysSilent - a.daysSilent);
-    const top = sorted[0];
-    recs.push({
-      id: 'rec-chase',
-      tone: 'connect',
-      icon: <Clock className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: chase.length === 1 ? `Reconnect with ${cleanName(top.recipient.name || top.recipient.email)}` : 'Reconnect before threads go cold',
-      summary: `${cleanName(top.recipient.name || top.recipient.email)} hasn’t replied in ${top.daysSilent}d${sorted.length > 1 ? ` — and ${sorted.length - 1} more thread${sorted.length - 1 === 1 ? '' : 's'} ${sorted.length - 1 === 1 ? 'is' : 'are'} stalling.` : '.'}`,
-      stat: chase.length === 1 ? { value: top.daysSilent, label: 'days silent' } : { value: chase.length, label: 'going quiet' },
-      cta: {
-        label: 'Draft warm nudges',
-        prompt: `Draft warm, low-pressure follow-up nudges in my voice for the people who haven't replied: ${namesList(sorted.map(c => c.recipient.name || c.recipient.email), 4)}.`,
-      },
-    });
-  }
-
-  // 3. Priority replies waiting — productivity.
-  if (decide.length > 0) {
-    const top = decide[0]; // already priority-ranked by the route
-    recs.push({
-      id: 'rec-decide',
-      tone: 'focus',
-      icon: <Reply className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: decide.length === 1 ? `Reply to ${cleanName(top.sender.name || top.sender.email)}` : 'Clear the replies that need you',
-      summary: `${cleanName(top.sender.name || top.sender.email)} — ${humanizeReason(top.reason).slice(0, 90)}`,
-      stat: { value: decide.length, label: decide.length === 1 ? 'reply needed' : 'need a reply' },
-      cta: {
-        label: 'Draft my replies',
-        prompt: `Draft replies in my voice to the threads that need me, starting with ${cleanName(top.sender.name || top.sender.email)} about “${top.subject}”.`,
-      },
-    });
-  }
-
-  // 4. External meeting prep — strengthen connections + show up sharp.
-  if (externalMeetings.length > 0) {
-    const next = externalMeetings[0];
-    recs.push({
-      id: 'rec-prep',
-      tone: 'connect',
-      icon: <CalendarClock className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: externalMeetings.length === 1 ? 'Walk into your meeting prepared' : 'Prep for your external meetings',
-      summary: `“${(next.title || 'Meeting').slice(0, 60)}” — ${next.attendeeCount} attendee${next.attendeeCount === 1 ? '' : 's'}. A two-line brief beats winging it.`,
-      stat: { value: externalMeetings.length, label: 'to prep' },
-      cta: {
-        label: 'Prep me',
-        prompt: `Prep me for my external meetings today: ${externalMeetings.slice(0, 3).map(m => m.title).join('; ')}. Pull recent context on each attendee.`,
-      },
-    });
-  }
-
-  // 5. Momentum — positive reinforcement from real agent output.
-  const automated = agentRuns.reduce((n, r) => n + r.artifactCounts.gmail + r.artifactCounts.calendar + r.artifactCounts.notion + r.artifactCounts.slack, 0);
-  if (automated > 0 && recs.length < 3) {
-    recs.push({
-      id: 'rec-momentum',
-      tone: 'momentum',
-      icon: <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />,
-      title: `Your agents moved ${automated} thing${automated === 1 ? '' : 's'} forward`,
-      summary: `Handled while you were away across ${agentRuns.length} run${agentRuns.length === 1 ? '' : 's'}. Want to point them at something else?`,
-      stat: { value: automated, label: 'automated' },
-      cta: {
-        label: 'Set up another agent',
-        prompt: 'Help me set up a new background agent — what high-leverage, recurring work should I hand off next?',
-      },
-    });
-  }
-
-  // Balanced top 3: keep the most time-sensitive, but never show only one flavor.
-  return recs.slice(0, 3);
-}
-
 const TONE_CHIP: Record<RecTone, string> = {
   connect: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/[0.08] dark:bg-emerald-400/[0.08]',
   focus: 'text-black/70 dark:text-white/70 bg-black/[0.05] dark:bg-white/[0.07]',
@@ -743,7 +642,7 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -1 }}
-      className="liquid-glass group rounded-2xl px-4 py-3.5"
+      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
     >
       <div className="flex items-start gap-3">
         <div className={cn('mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ring-1 ring-black/[0.03] dark:ring-white/[0.04]', TONE_CHIP[rec.tone])}>
@@ -872,20 +771,9 @@ function RecommendationsSection({
   onRefresh: () => void;
   onCustomize: () => void;
 }) {
-  // Instant, always-accurate baseline. Renders immediately; AI recs swap in when
-  // ready, so the section is never blocked and never empty if the model fails.
-  const fallbackRecs = useMemo(
-    () => buildRecommendations(decide, chase, actionItems, showUp, agentRuns),
-    [decide, chase, actionItems, showUp, agentRuns],
-  );
-
   const hasData = decide.length + chase.length + actionItems.length + showUp.length > 0;
   const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(() => readCachedRecs(generatedAt));
   const [aiApps, setAiApps] = useState<string[]>(() => readCachedApps(generatedAt));
-  // True only when the server told us the AI genuinely couldn't run (rate-limited
-  // / out of credit) and we're showing deterministic quick picks. Drives an honest
-  // label instead of claiming a fresh AI briefing ran.
-  const [recsFallback, setRecsFallback] = useState(false);
   // Start in the reviewing state when we'll fetch (data present + no cache), so the
   // skeletons show from the first frame instead of flashing deterministic cards.
   const [aiLoading, setAiLoading] = useState<boolean>(() => hasData && !readCachedRecs(generatedAt));
@@ -917,10 +805,7 @@ function RecommendationsSection({
         const json = await res.json().catch(() => null);
         const dtos: AiRecDTO[] = json?.recommendations || [];
         const apps: string[] = Array.isArray(json?.apps) ? json.apps : [];
-        // 'fallback'/'error' = the AI couldn't run; 'ai' = real picks; 'empty' = nothing to surface.
-        const fellBack = json?.source === 'fallback' || json?.source === 'error';
         if (!cancelled) {
-          setRecsFallback(fellBack);
           if (apps.length) {
             setAiApps(apps);
             try { sessionStorage.setItem(REC_APPS_PREFIX + generatedAt, JSON.stringify(apps)); } catch { /* quota */ }
@@ -930,7 +815,7 @@ function RecommendationsSection({
             try { sessionStorage.setItem(cacheKey, JSON.stringify(dtos)); } catch { /* quota */ }
           }
         }
-      } catch { if (!cancelled) setRecsFallback(true); /* keep deterministic fallback */ }
+      } catch { /* AI unavailable — section stays hidden, never canned */ }
       finally { if (!cancelled) setAiLoading(false); }
     })();
 
@@ -938,7 +823,9 @@ function RecommendationsSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedAt]);
 
-  const recs = aiRecs && aiRecs.length ? aiRecs : fallbackRecs;
+  // ONLY real AI recommendations — no deterministic mock fallback. If the AI
+  // produced nothing usable, the recommendations section simply doesn't render.
+  const recs = aiRecs && aiRecs.length ? aiRecs : [];
   // "reviewing" = the AI is still composing the picks; drives the live header,
   // the in-progress checklist row, and the recommendation skeletons.
   const reviewing = aiLoading && !aiRecs;
@@ -964,9 +851,7 @@ function RecommendationsSection({
       id: 'spot',
       label: reviewing
         ? 'Spotting the moves worth your time…'
-        : recsFallback
-          ? <>AI briefing paused — showing <span className={bold}>{recs.length}</span> quick {recs.length === 1 ? 'pick' : 'picks'}</>
-          : <>Spotted <span className={bold}>{recs.length}</span> {recs.length === 1 ? 'move' : 'moves'} worth your time</>,
+        : <>Spotted <span className={bold}>{recs.length}</span> {recs.length === 1 ? 'move' : 'moves'} worth your time</>,
       done: !reviewing,
     },
   ];
@@ -976,13 +861,11 @@ function RecommendationsSection({
     <section className="mb-12">
       {/* Live briefing header */}
       <div className="flex items-center justify-center gap-2.5 mb-7">
-        {reviewing ? <PulseDot /> : recsFallback ? <Clock className="w-4 h-4 text-black/45 dark:text-white/45" strokeWidth={2} /> : <Sparkles className="w-4 h-4 text-black/55 dark:text-white/55" strokeWidth={2} />}
+        {reviewing ? <PulseDot /> : <Sparkles className="w-4 h-4 text-black/55 dark:text-white/55" strokeWidth={2} />}
         <span className="text-[13.5px] font-semibold text-black/80 dark:text-white/80 tracking-tight">
           {reviewing
             ? 'Writing a fresh briefing — a quick catch-up…'
-            : recsFallback
-              ? 'Quick picks — AI briefing paused'
-              : `Your briefing${checkedAgo ? ` · ${checkedAgo} ago` : ''}`}
+            : `Your briefing${checkedAgo ? ` · ${checkedAgo} ago` : ''}`}
         </span>
       </div>
 
@@ -1385,18 +1268,8 @@ export default function SiftToday() {
   const actionItemsVisible = useMemo(() => (data?.actionItems ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
 
   return (
-    <div className="relative isolate w-full min-h-screen bg-transparent">
-      {/* Liquid-glass refraction filter (shared id, declared once here) */}
-      <svg className="hidden pointer-events-none absolute h-0 w-0" aria-hidden>
-        <filter id="liquid-glass-distortion">
-          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="1" seed="2" result="noise" />
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
-      </svg>
-      {/* Ambient color wash so the glass blur/refraction carries color */}
-      <div className="glass-ambient" aria-hidden />
-
-      <div className="relative z-[1] max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
+    <div className="w-full min-h-screen bg-transparent">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
         {/* Header */}
         <div className="flex items-end justify-between mb-12 gap-4">
           <div className="min-w-0">
