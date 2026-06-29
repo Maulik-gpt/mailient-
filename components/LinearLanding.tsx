@@ -360,8 +360,8 @@ export function LinearLanding() {
           
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
-            <h1 className="text-5xl md:text-[84px] font-medium tracking-[-0.04em] leading-[1.12] max-w-5xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent pb-4">
-              Email, meetings, messages — <br />handled before you open them.
+            <h1 className="text-4xl md:text-[60px] font-medium tracking-[-0.035em] leading-[1.08] max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent pb-2">
+              Your inbox, handled before you open it.
             </h1>
           </BlurFade>
 
