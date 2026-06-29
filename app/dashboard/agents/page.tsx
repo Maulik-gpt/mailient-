@@ -1299,6 +1299,27 @@ function ScheduledPageInner() {
   const [tableError, setTableError] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [activatingTemplate, setActivatingTemplate] = useState<typeof TEMPLATES[0] | null>(null);
+  const [gateOk, setGateOk] = useState(false);
+
+  // PAYWALL: agents is a paid surface. Unpaid users go to the single paywall —
+  // onboarding step 13 — until they pay & activate. Fails closed.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch(`/api/subscription/status?t=${Date.now()}`);
+        const d = r.ok ? await r.json() : null;
+        const pt = d?.subscription?.planType;
+        const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !d?.subscription?.isExpired;
+        if (cancelled) return;
+        if (isPaid) { setGateOk(true); }
+        else { router.replace('/onboarding?step=13'); }
+      } catch {
+        if (!cancelled) router.replace('/onboarding?step=13');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [router]);
 
   const setTab = (t: 'calendar' | 'tasks' | 'marketplace') => {
     const params = new URLSearchParams(searchParams.toString());
@@ -1320,7 +1341,7 @@ function ScheduledPageInner() {
     } finally { setLoading(false); }
   };
 
-  useEffect(() => { fetchAgents(); }, []);
+  useEffect(() => { if (gateOk) fetchAgents(); }, [gateOk]);
 
   const saveTimezone = async (tz: string) => {
     if (!tz) return;
@@ -1401,6 +1422,12 @@ function ScheduledPageInner() {
       cancel: { label: 'Cancel', onClick: () => {} },
     });
   };
+
+  // Hold the UI behind a plain backdrop until the paywall gate resolves, so the
+  // paid agents surface never flashes for an unpaid user before the redirect.
+  if (!gateOk) {
+    return <div className="bg-zinc-950" style={{ height: '100dvh' }} />;
+  }
 
   return (
     <div className="bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>

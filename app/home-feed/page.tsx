@@ -243,20 +243,11 @@ function HomeFeedContent() {
                 // marker so the next visit starts blocked (fail closed), not optimistic.
                 try { sessionStorage.setItem('mailient_access_denied', '1'); localStorage.removeItem('mailient_access_ok'); } catch {}
                 setAccessGranted(false);
-                console.log('🚫 [HomeFeed] No active subscription — paywall.');
-                const onboardingResp = await fetch("/api/onboarding/status").catch(() => null);
-                const onboardingData = onboardingResp && onboardingResp.ok ? await onboardingResp.json() : { completed: true };
-                // Loop guard: if we already bounced this tab to /onboarding once and
-                // we're back here unsubscribed, send to the terminal paywall instead
-                // of risking a /home-feed <-> /onboarding ping-pong on a status race.
-                let bounced = false;
-                try { bounced = sessionStorage.getItem('hf_sent_onboarding') === '1'; } catch {}
-                if (!onboardingData.completed && !bounced) {
-                    try { sessionStorage.setItem('hf_sent_onboarding', '1'); } catch {}
-                    router.replace('/onboarding');
-                } else {
-                    router.replace('/pricing');
-                }
+                console.log('🔒 [HomeFeed] No active subscription — sending to paywall (onboarding step 13).');
+                // Unpaid users always land on the single paywall surface: onboarding
+                // step 13. Onboarding parks them there (it won't bounce back here
+                // unpaid), so there's no ping-pong to guard against.
+                router.replace('/onboarding?step=13');
                 return;
               }
 

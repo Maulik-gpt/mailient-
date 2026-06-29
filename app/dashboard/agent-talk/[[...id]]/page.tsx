@@ -34,7 +34,7 @@ export default function AgentTalkPage() {
                     if (response.ok) {
                         const data = await response.json();
                         if (!data.completed) {
-                            // Onboarding not completed, redirect to onboarding
+                            // Onboarding not completed, resume onboarding
                             router.push('/onboarding');
                             return;
                         }
@@ -43,6 +43,25 @@ export default function AgentTalkPage() {
                     console.error('Error checking onboarding status:', error);
                     // On error, redirect to onboarding to be safe
                     router.push('/onboarding');
+                    return;
+                }
+
+                // PAYWALL: Arcus AI is a paid surface. A user who finished onboarding
+                // but never paid must NOT get in — send them to the single paywall,
+                // onboarding step 13, until they pay & activate. Fails closed.
+                try {
+                    const subRes = await fetch(`/api/subscription/status?t=${Date.now()}`);
+                    const subData = subRes.ok ? await subRes.json() : null;
+                    const pt = subData?.subscription?.planType;
+                    const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !subData?.subscription?.isExpired;
+                    if (!isPaid) {
+                        console.log('🔒 [AgentTalk] No active subscription — paywall (onboarding step 13).');
+                        router.replace('/onboarding?step=13');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('Error checking subscription:', error);
+                    router.replace('/onboarding?step=13');
                     return;
                 }
 
