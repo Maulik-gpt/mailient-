@@ -218,7 +218,7 @@ function ItemCardBody({ topLeft, topRight, title, reason, primaryAction, seconda
       onKeyDown={onDismiss ? (e: any) => {
         if (e.key === 'e' || e.key === 'E' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); onDismiss(); }
       } : undefined}
-      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+      className="liquid-glass group rounded-2xl px-4 py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
     >
       {onDismiss && (
         <button
@@ -403,7 +403,7 @@ function AgentRunCard({ run }: { run: AgentRunItem }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl overflow-hidden hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors"
+      className="glass-card rounded-2xl overflow-hidden"
     >
       {/* Collapsed header — always visible, the 10-second glance */}
       <button type="button" onClick={toggle} className="w-full text-left px-4 py-3.5 group">
@@ -743,7 +743,7 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -1 }}
-      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
+      className="liquid-glass group rounded-2xl px-4 py-3.5"
     >
       <div className="flex items-start gap-3">
         <div className={cn('mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ring-1 ring-black/[0.03] dark:ring-white/[0.04]', TONE_CHIP[rec.tone])}>
@@ -1372,8 +1372,18 @@ export default function SiftToday() {
   const actionItemsVisible = useMemo(() => (data?.actionItems ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
 
   return (
-    <div className="w-full min-h-screen bg-transparent">
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
+    <div className="relative isolate w-full min-h-screen bg-transparent">
+      {/* Liquid-glass refraction filter (shared id, declared once here) */}
+      <svg className="hidden pointer-events-none absolute h-0 w-0" aria-hidden>
+        <filter id="liquid-glass-distortion">
+          <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="1" seed="2" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+      {/* Ambient color wash so the glass blur/refraction carries color */}
+      <div className="glass-ambient" aria-hidden />
+
+      <div className="relative z-[1] max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
         {/* Header */}
         <div className="flex items-end justify-between mb-12 gap-4">
           <div className="min-w-0">

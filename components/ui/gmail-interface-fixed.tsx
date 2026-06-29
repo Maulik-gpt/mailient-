@@ -1751,13 +1751,24 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
 
     return (
         <LayoutGroup>
-            <div 
-                className={forceTraditionalView 
-                    ? "w-full bg-transparent flex flex-col overflow-hidden satoshi-dashboard" 
+            <div
+                className={forceTraditionalView
+                    ? "relative isolate w-full bg-transparent flex flex-col overflow-hidden satoshi-dashboard"
                     : "min-h-screen bg-[#F9F8F6] dark:bg-[#0c0c0c] flex overflow-hidden satoshi-dashboard"
-                } 
+                }
                 style={{ fontFamily: "Satoshi, sans-serif" }}
             >
+                {forceTraditionalView && (
+                    <>
+                        <svg className="hidden pointer-events-none absolute h-0 w-0" aria-hidden>
+                            <filter id="liquid-glass-distortion">
+                                <feTurbulence type="fractalNoise" baseFrequency="0.01 0.01" numOctaves="1" seed="2" result="noise" />
+                                <feDisplacementMap in="SourceGraphic" in2="noise" scale="10" xChannelSelector="R" yChannelSelector="G" />
+                            </filter>
+                        </svg>
+                        <div className="glass-ambient" aria-hidden />
+                    </>
+                )}
                 <UsageLimitModal
                     isOpen={isUsageLimitModalOpen}
                     onClose={() => setIsUsageLimitModalOpen(false)}
@@ -2334,7 +2345,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                 <p className="mt-4 text-sm text-neutral-500 dark:text-neutral-400">Loading emails...</p>
                                             </div>
                                         ) : traditionalEmails.length > 0 ? (
-                                            <div className="space-y-px bg-white dark:bg-neutral-900/20 border border-neutral-200 dark:border-neutral-800/50 rounded-2xl overflow-hidden shadow-2xl">
+                                            <div className="glass-card space-y-px rounded-2xl overflow-hidden">
                                                 {traditionalEmails.map((email) => (
                                                     <React.Fragment key={email.id}>
                                                         <div

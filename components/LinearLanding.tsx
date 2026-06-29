@@ -133,10 +133,9 @@ export function LinearLanding() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const DESCRIPTIONS = [
-    "By 7am: 240 unread triaged, 18 replies drafted in your voice, 3 meetings booked.",
-    "Overnight it cleared the noise and left every reply that mattered waiting for one tap.",
-    "You wake up to the 3 messages that actually need you. It handled the other 200.",
-    "Stop living in your inbox. It reads, replies, schedules, and follows up — so you don't.",
+    "By 7am: 240 triaged, 18 replies drafted, 3 meetings booked.",
+    "Wake up to the 3 messages that need you. It handled the other 200.",
+    "It reads, replies, schedules, and follows up — so you don't.",
   ];
 
   const [descIndex, setDescIndex] = useState(0);
@@ -778,7 +777,7 @@ export function LinearLanding() {
               </h2>
 
               <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Arcus reads every email, meeting request, and message — then handles them. Say "clear my inbox and prep tomorrow" and it triages the flood, drafts the replies in your voice, books the calls, and chases the follow-ups across Gmail, Calendar, Notion, and Slack. Then it shows you exactly what it did and the few things that still need you.
+                Tell it "clear my inbox and prep tomorrow." It triages the flood, drafts replies in your voice, books the calls, and chases follow-ups across Gmail, Calendar, Notion, and Slack — then shows you the few things that still need you.
               </p>
 
               <div className="pt-6">
@@ -1096,7 +1095,7 @@ export function LinearLanding() {
             </h2>
             <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
               <WordBlurStream
-                text="Most mornings you wake up already behind — dozens of unread threads, meeting requests, replies you owe. Arcus clears all of it overnight, so you start the day on top of it instead of buried."
+                text="Most mornings you wake up already behind. Arcus clears it overnight — so you start on top of it, not buried."
                 msPerWord={80}
                 startupMs={300}
                 holdMs={5000}
@@ -1116,7 +1115,7 @@ export function LinearLanding() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Buried before 9am</h3>
                 <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  45 unread threads, meeting requests piling up, and replies you owe — all waiting on you.
+                  45 unread, meetings piling up, replies you owe — all on you.
                 </p>
 
                 {/* Stress rows with beautiful high-fidelity styling */}
@@ -1155,7 +1154,7 @@ export function LinearLanding() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Cleared while you slept</h3>
                 <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  Replies drafted and waiting, meetings booked, and one short brief of what's still left.
+                  Replies drafted, meetings booked, one short brief of what's left.
                 </p>
 
                 {/* Clarity rows with premium detailed cards */}
