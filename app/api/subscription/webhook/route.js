@@ -91,17 +91,23 @@ export async function POST(request) {
             headers[key.toLowerCase()] = value;
         });
 
-        // Validate webhook signature
+        // Validate webhook signature. In production a missing secret is FATAL —
+        // processing unsigned webhooks would let anyone POST a forged 'order.paid'
+        // with any email and self-grant Pro. Only allow unsigned in non-production
+        // (local dev) where Polar can't reach us anyway.
         const webhookSecret = process.env.POLAR_WEBHOOK_SECRET;
-        const isValid = validatePolarWebhook(rawBody, headers, webhookSecret);
-
-        if (!isValid && webhookSecret) {
-            console.warn('❌ Invalid Polar webhook signature');
-            return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
-        }
-
         if (!webhookSecret) {
-            console.warn('⚠️ POLAR_WEBHOOK_SECRET not configured - processing without validation');
+            if (process.env.NODE_ENV === 'production') {
+                console.error('❌ POLAR_WEBHOOK_SECRET not configured in production — refusing unsigned webhook');
+                return NextResponse.json({ error: 'Webhook not configured' }, { status: 503 });
+            }
+            console.warn('⚠️ POLAR_WEBHOOK_SECRET not set (non-production) — processing without validation');
+        } else {
+            const isValid = validatePolarWebhook(rawBody, headers, webhookSecret);
+            if (!isValid) {
+                console.warn('❌ Invalid Polar webhook signature');
+                return NextResponse.json({ error: 'Invalid signature' }, { status: 401 });
+            }
         }
 
         // Test Supabase connection
@@ -119,14 +125,17 @@ export async function POST(request) {
 
         // Handle different Polar webhook events
         switch (eventType) {
-            case 'subscription.created':
-            case 'subscription.updated':
-            case 'subscription.active':
-            case 'checkout.completed':
-            case 'order.paid': {
-                // NOTE: 'order.created' was removed — Polar emits it before payment is
-                // confirmed, so activating on it granted access to unpaid checkouts.
-                // 'order.paid' is the real "money received" signal.
+            case 'subscription.updated':   // renewals / plan changes on an existing paid sub
+            case 'subscription.active':    // Polar validated the sub's payment method
+            case 'order.paid': {           // money actually received
+                // NOTE: 'order.created', 'checkout.completed' AND 'subscription.created'
+                // were removed as activation triggers — Polar emits all three BEFORE
+                // payment is captured (checkout.completed fires when the user finishes
+                // the checkout *form*; subscription.created fires for a trial before any
+                // charge), so activating on them granted access to unpaid/abandoned
+                // checkouts and cardless trials. The only trustworthy "access now"
+                // signals are order.paid + subscription.active, both implying a real
+                // payment commitment. The cardless-trial guard below is the backstop.
                 // Get user email from various possible locations (exhaustive search)
                 let userEmail = data.customer?.email ||
                     data.user?.email ||
@@ -189,8 +198,13 @@ export async function POST(request) {
                     data.payment_method_id ||
                     data.customer?.default_payment_method_id
                 );
+                // BLOCK (not just warn): a trial with no payment method on file is a
+                // cardless trial — exactly the abandoned-checkout case that leaks Pro
+                // access without payment. Do NOT activate. A real trial that required a
+                // card will carry payment method info and pass through.
                 if (polarDates.isTrialing && !hasPaymentMethod) {
-                    console.warn(`🚫 Note: Trial for ${userEmail} might not have payment method info in payload. Event: ${eventType}`);
+                    console.warn(`🚫 BLOCKED cardless trial for ${userEmail} (no payment method). Event: ${eventType}`);
+                    return NextResponse.json({ ok: true, skipped: 'cardless_trial' });
                 }
 
                 console.log(`✅ Activating ${planType} plan for ${userEmail}`);
