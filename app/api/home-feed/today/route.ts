@@ -649,6 +649,13 @@ export async function GET(req: Request) {
       return NextResponse.json({ success: false, error: gate.error, upgradeUrl: gate.upgradeUrl }, { status: gate.status });
     }
 
+    // Make the "handled before you open it" promise real: a paid, Gmail-connected
+    // user gets their first overnight agent automatically (idempotent, one-time).
+    try {
+      const { ensureMorningSweepAgent } = await import('@/lib/arcus/ensure-default-agent');
+      await ensureMorningSweepAgent(userEmail);
+    } catch { /* never block the feed */ }
+
     const supabase = getSupabaseAdmin();
     const force = new URL(req.url).searchParams.get('refresh') === '1';
 
