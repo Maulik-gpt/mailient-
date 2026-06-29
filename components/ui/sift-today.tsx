@@ -882,6 +882,10 @@ function RecommendationsSection({
   const hasData = decide.length + chase.length + actionItems.length + showUp.length > 0;
   const [aiRecs, setAiRecs] = useState<Recommendation[] | null>(() => readCachedRecs(generatedAt));
   const [aiApps, setAiApps] = useState<string[]>(() => readCachedApps(generatedAt));
+  // True only when the server told us the AI genuinely couldn't run (rate-limited
+  // / out of credit) and we're showing deterministic quick picks. Drives an honest
+  // label instead of claiming a fresh AI briefing ran.
+  const [recsFallback, setRecsFallback] = useState(false);
   // Start in the reviewing state when we'll fetch (data present + no cache), so the
   // skeletons show from the first frame instead of flashing deterministic cards.
   const [aiLoading, setAiLoading] = useState<boolean>(() => hasData && !readCachedRecs(generatedAt));
@@ -913,7 +917,10 @@ function RecommendationsSection({
         const json = await res.json().catch(() => null);
         const dtos: AiRecDTO[] = json?.recommendations || [];
         const apps: string[] = Array.isArray(json?.apps) ? json.apps : [];
+        // 'fallback'/'error' = the AI couldn't run; 'ai' = real picks; 'empty' = nothing to surface.
+        const fellBack = json?.source === 'fallback' || json?.source === 'error';
         if (!cancelled) {
+          setRecsFallback(fellBack);
           if (apps.length) {
             setAiApps(apps);
             try { sessionStorage.setItem(REC_APPS_PREFIX + generatedAt, JSON.stringify(apps)); } catch { /* quota */ }
@@ -923,7 +930,7 @@ function RecommendationsSection({
             try { sessionStorage.setItem(cacheKey, JSON.stringify(dtos)); } catch { /* quota */ }
           }
         }
-      } catch { /* keep deterministic fallback */ }
+      } catch { if (!cancelled) setRecsFallback(true); /* keep deterministic fallback */ }
       finally { if (!cancelled) setAiLoading(false); }
     })();
 
@@ -957,7 +964,9 @@ function RecommendationsSection({
       id: 'spot',
       label: reviewing
         ? 'Spotting the moves worth your time…'
-        : <>Spotted <span className={bold}>{recs.length}</span> {recs.length === 1 ? 'move' : 'moves'} worth your time</>,
+        : recsFallback
+          ? <>AI briefing paused — showing <span className={bold}>{recs.length}</span> quick {recs.length === 1 ? 'pick' : 'picks'}</>
+          : <>Spotted <span className={bold}>{recs.length}</span> {recs.length === 1 ? 'move' : 'moves'} worth your time</>,
       done: !reviewing,
     },
   ];
@@ -967,9 +976,13 @@ function RecommendationsSection({
     <section className="mb-12">
       {/* Live briefing header */}
       <div className="flex items-center justify-center gap-2.5 mb-7">
-        {reviewing ? <PulseDot /> : <Sparkles className="w-4 h-4 text-black/55 dark:text-white/55" strokeWidth={2} />}
+        {reviewing ? <PulseDot /> : recsFallback ? <Clock className="w-4 h-4 text-black/45 dark:text-white/45" strokeWidth={2} /> : <Sparkles className="w-4 h-4 text-black/55 dark:text-white/55" strokeWidth={2} />}
         <span className="text-[13.5px] font-semibold text-black/80 dark:text-white/80 tracking-tight">
-          {reviewing ? 'Writing a fresh briefing — a quick catch-up…' : `Your briefing${checkedAgo ? ` · ${checkedAgo} ago` : ''}`}
+          {reviewing
+            ? 'Writing a fresh briefing — a quick catch-up…'
+            : recsFallback
+              ? 'Quick picks — AI briefing paused'
+              : `Your briefing${checkedAgo ? ` · ${checkedAgo} ago` : ''}`}
         </span>
       </div>
 
