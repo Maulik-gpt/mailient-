@@ -70,9 +70,20 @@ function PaymentSuccessContent() {
 
                 const data = await response.json();
 
-                if (data.subscription?.hasActiveSubscription) {
-                    // Great! Webhook activated the subscription
-                    celebrateSuccess(data.subscription.planType);
+                // STRICT: `hasActiveSubscription` is polluted (true for free
+                // users) and must NOT grant access. Activation is confirmed only
+                // by a real paid/trial plan type that hasn't expired — same gate
+                // the home feed uses. This is what stops a checkout-visitor who
+                // never paid from being celebrated through to the app.
+                const planType: string | undefined = data.subscription?.planType;
+                const isExpired: boolean = !!data.subscription?.isExpired;
+                const isPaidPlan = !!planType && planType !== 'free' && planType !== 'none' && !isExpired;
+
+                if (isPaidPlan) {
+                    // Mark this tab as durably allowed so the home feed reveals
+                    // instantly without re-running its own verification race.
+                    try { localStorage.setItem('mailient_access_ok', String(Date.now())); sessionStorage.removeItem('mailient_access_denied'); } catch { /* */ }
+                    celebrateSuccess(planType!);
                 } else {
                     // Subscription not yet active - webhook may be delayed
                     currentRetry++;
@@ -130,10 +141,16 @@ function PaymentSuccessContent() {
 
             const data = await response.json();
 
-            if (response.ok && data.success) {
-                // Success! The verification endpoint activated the subscription
+            const vPlan: string | undefined = data?.subscription?.planType;
+            const vPaid = !!vPlan && vPlan !== 'free' && vPlan !== 'none';
+            if (response.ok && data.success && vPaid) {
+                // Success! Polar confirmed a real paid/trial subscription.
                 console.log('✅ Polar verification successful!');
-                celebrateSuccess(data.subscription.planType);
+                try { localStorage.setItem('mailient_access_ok', String(Date.now())); sessionStorage.removeItem('mailient_access_denied'); } catch { /* */ }
+                celebrateSuccess(vPlan!);
+            } else if (response.ok && data.success && !vPaid) {
+                // Reconciled, but no paid plan — do not grant access.
+                setVerificationMessage('No active paid subscription was found on your account. If you just paid, give it a moment and try again, or contact support.');
             } else if (response.status === 404) {
                 // No valid subscription found in Whop
                 setVerificationMessage(data.suggestion || 'No valid subscription found. Please ensure your payment was completed.');

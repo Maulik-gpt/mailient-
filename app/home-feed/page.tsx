@@ -31,9 +31,16 @@ function HomeFeedContent() {
   // they're unpaid it redirects them to /pricing. This is the difference between a
   // paywall and a suggestion: defaulting to `true` let non-payers in for the
   // seconds the check (and Polar self-heal) took to run.
-  const ACCESS_OK_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+  // Short optimistic grace window. The flag is only ever written after a STRICT
+  // paid/trial confirmation (here or on /payment-success), so it can't be set by a
+  // checkout-visitor who never paid. We keep it brief — long enough to avoid a
+  // backdrop flash for a known subscriber across reloads, short enough that a
+  // lapsed/stale flag can't ride for days. The server re-check runs on every mount
+  // and revokes the flag the instant a plan is no longer paid/active.
+  const ACCESS_OK_TTL_MS = 12 * 60 * 60 * 1000; // 12h
   const [accessGranted, setAccessGranted] = useState(() => {
     try {
+      if (sessionStorage.getItem('mailient_access_denied') === '1') return false;
       const at = Number(localStorage.getItem('mailient_access_ok') || 0);
       return at > 0 && Date.now() - at < ACCESS_OK_TTL_MS;
     } catch { return false; }
