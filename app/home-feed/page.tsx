@@ -23,28 +23,13 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
-  // STRICT paywall — FAIL CLOSED. The dashboard renders optimistically ONLY for a
-  // user who has a durable, recent proof of paid/trial access (the access_ok marker,
-  // set whenever a check confirms a real plan). Everyone else — including a user who
-  // finished onboarding, opened checkout, and closed it without paying — starts
-  // BLOCKED and sees nothing but a backdrop until the background check decides; if
-  // they're unpaid it redirects them to /pricing. This is the difference between a
-  // paywall and a suggestion: defaulting to `true` let non-payers in for the
-  // seconds the check (and Polar self-heal) took to run.
-  // Short optimistic grace window. The flag is only ever written after a STRICT
-  // paid/trial confirmation (here or on /payment-success), so it can't be set by a
-  // checkout-visitor who never paid. We keep it brief — long enough to avoid a
-  // backdrop flash for a known subscriber across reloads, short enough that a
-  // lapsed/stale flag can't ride for days. The server re-check runs on every mount
-  // and revokes the flag the instant a plan is no longer paid/active.
-  const ACCESS_OK_TTL_MS = 12 * 60 * 60 * 1000; // 12h
-  const [accessGranted, setAccessGranted] = useState(() => {
-    try {
-      if (sessionStorage.getItem('mailient_access_denied') === '1') return false;
-      const at = Number(localStorage.getItem('mailient_access_ok') || 0);
-      return at > 0 && Date.now() - at < ACCESS_OK_TTL_MS;
-    } catch { return false; }
-  });
+  // STRICT paywall — always start DENIED. The server-side layout gate
+  // (home-feed/layout.tsx) already blocked unauthenticated and unpaid users
+  // before this client component mounted. This client-side check is a second
+  // layer that re-confirms the subscription on every mount so a user whose
+  // plan lapses mid-session still gets redirected on the next navigation.
+  // Never optimistically grant access from localStorage — that was the bypass.
+  const [accessGranted, setAccessGranted] = useState(false);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const verifyRanRef = useRef(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
@@ -252,7 +237,16 @@ function HomeFeedContent() {
 
             } catch (err) {
               console.error('⚠️ Polling error:', err);
-              if (attempt === maxRetries - 1) setIsVerifyingPayment(false);
+              if (attempt === maxRetries - 1) {
+                // Fail closed: can't verify → deny. A transient error should
+                // not grant access to an unconfirmed user.
+                setIsVerifyingPayment(false);
+                try { sessionStorage.setItem('mailient_access_denied', '1'); localStorage.removeItem('mailient_access_ok'); } catch {}
+                setAccessGranted(false);
+                console.log('🔒 [HomeFeed] API error on final attempt — failing closed.');
+                router.replace('/onboarding?step=13');
+                return;
+              }
             }
           }
         } catch (error) {

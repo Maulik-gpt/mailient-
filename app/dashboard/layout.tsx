@@ -1,5 +1,3 @@
-import { auth } from '@/lib/auth.js';
-import { redirect } from 'next/navigation';
 import "./dashboard.css";
 
 export const metadata = {
@@ -7,11 +5,15 @@ export const metadata = {
   description: 'Chat with your AI email agent for email agentic performance.',
 };
 
-export default function DashboardLayout({
+import { requirePaidSubscription } from '@/lib/access-gate';
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  await requirePaidSubscription();
+
   return (
     <div className="min-h-screen">
       {children}
