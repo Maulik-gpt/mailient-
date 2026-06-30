@@ -35,7 +35,6 @@ import {
   AlertCircle
 } from "lucide-react";
 import { Navbar } from "@/components/Navbar";
-import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
@@ -228,67 +227,6 @@ export function LinearLanding() {
 
   useEffect(() => {
     document.title = "Mailient — The future isn't faster communication. The future is communication that no longer requires you.";
-  }, []);
-
-  // Google One Tap — shows the native prompt to unauthenticated visitors.
-  // Authenticated users are redirected away from "/" by middleware, so this
-  // only ever fires for logged-out visitors. The credential is verified by the
-  // `google-one-tap` NextAuth Credentials provider in lib/auth.js.
-  useEffect(() => {
-    const CLIENT_ID = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (!CLIENT_ID) return;
-
-    // One Tap only returns an identity token — no Gmail access/refresh token,
-    // which this app can't function without. So we use the tap to launch the
-    // REAL Google OAuth (Gmail scopes + offline access), pre-selecting the
-    // account the user just chose via login_hint. This is why the old
-    // credential-only sign-in "did nothing": even on success the session had no
-    // Gmail token and onboarding had nothing to work with.
-    const emailFromCredential = (cred: string): string | undefined => {
-      try {
-        const payload = cred.split(".")[1]?.replace(/-/g, "+").replace(/_/g, "/");
-        if (!payload) return undefined;
-        return JSON.parse(atob(payload))?.email || undefined;
-      } catch {
-        return undefined;
-      }
-    };
-
-    const handleCredential = async (response: { credential?: string }) => {
-      if (!response?.credential) return;
-      const email = emailFromCredential(response.credential);
-      await signIn(
-        "google",
-        { callbackUrl: "/onboarding" },
-        email ? { login_hint: email } : undefined,
-      );
-    };
-
-    const init = () => {
-      const g = (window as any).google;
-      if (!g?.accounts?.id) return;
-      g.accounts.id.initialize({
-        client_id: CLIENT_ID,
-        callback: handleCredential,
-        auto_select: false,
-        cancel_on_tap_outside: false,
-        context: "signin",
-        use_fedcm_for_prompt: true,
-      });
-      g.accounts.id.prompt();
-    };
-
-    if (document.getElementById("google-one-tap-script")) {
-      init();
-      return;
-    }
-    const script = document.createElement("script");
-    script.id = "google-one-tap-script";
-    script.src = "https://accounts.google.com/gsi/client";
-    script.async = true;
-    script.defer = true;
-    script.onload = init;
-    document.body.appendChild(script);
   }, []);
 
   const currentText = DESCRIPTIONS[descIndex];
