@@ -125,10 +125,9 @@ export function HomeFeedSidebar({
 
     return (
         <TooltipProvider>
-            <AnimatePresence mode="wait">
-                <motion.div 
+                <motion.div
                     initial={false}
-                    animate={{ 
+                    animate={{
                         width: isCollapsed ? 72 : 260,
                         x: typeof window !== 'undefined' && window.innerWidth < 768 
                             ? (isOpen ? 0 : -260) 
@@ -171,6 +170,7 @@ export function HomeFeedSidebar({
                     <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-500 relative`}>
                         <motion.div
                             layout
+                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
                             role="button"
                             aria-label={isCollapsed ? 'Open menu' : 'Go to home'}
                             className="flex items-center gap-3 cursor-pointer group"
@@ -181,10 +181,7 @@ export function HomeFeedSidebar({
                                 else router.push('/home-feed');
                             }}
                         >
-                            <motion.div
-                                layout
-                                className="w-11 h-11 relative flex items-center justify-center rounded-[14px] overflow-hidden bg-black shadow-lg group-hover:scale-105 transition-transform"
-                            >
+                            <div className="w-11 h-11 relative flex items-center justify-center rounded-[14px] overflow-hidden bg-black shadow-lg group-hover:scale-105 transition-transform">
                                 {/* Brand logo. When collapsed it simply fades out on hover to
                                     reveal the three-bars menu beneath — a clean crossfade,
                                     no scaling. When expanded it stays put. */}
@@ -198,16 +195,16 @@ export function HomeFeedSidebar({
                                         <HugeiconsIcon icon={Menu01Icon} size={22} strokeWidth={2} />
                                     </span>
                                 )}
-                            </motion.div>
+                            </div>
 
-                            <AnimatePresence mode="popLayout">
+                            <AnimatePresence initial={false}>
                                 {!isCollapsed && (
                                     <motion.span
-                                        initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
-                                        animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
-                                        exit={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
-                                        transition={{ duration: 0.2, ease: "easeOut" }}
-                                        className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        transition={{ duration: 0.15 }}
+                                        className="text-xl font-bold tracking-tight text-[#1A1A1A] dark:text-white whitespace-nowrap"
                                     >
                                         Mailient
                                     </motion.span>
@@ -243,26 +240,25 @@ export function HomeFeedSidebar({
                                 return (
                                     <Tooltip key={item.id} delayDuration={0}>
                                         <TooltipTrigger asChild>
-                                            <motion.button
-                                                layout
-                                                initial={false}
+                                            <button
                                                 onClick={() => router.push(item.route)}
-                                                className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
+                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 group relative ${
                                                     isActive
                                                     ? 'bg-black/5 dark:bg-white/[0.08] text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-white/[0.1]'
                                                     : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/[0.05]'
                                                 }`}
                                             >
-                                                <motion.div layout>
+                                                <span className="w-6 flex justify-center shrink-0">
                                                     <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-amber-500' : 'text-[#666666] dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={ isActive ? 2 : 1.5} />
-                                                </motion.div>
-                                                
-                                                <AnimatePresence mode="popLayout">
+                                                </span>
+
+                                                <AnimatePresence initial={false}>
                                                     {!isCollapsed && (
-                                                        <motion.span 
-                                                            initial={{ opacity: 0, x: -5 }}
-                                                            animate={{ opacity: 1, x: 0 }}
-                                                            exit={{ opacity: 0, x: -5 }}
+                                                        <motion.span
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                            transition={{ duration: 0.15 }}
                                                             className="text-[14px] tracking-tight whitespace-nowrap"
                                                         >
                                                             {item.label}
@@ -271,12 +267,12 @@ export function HomeFeedSidebar({
                                                 </AnimatePresence>
 
                                                 {isActive && !isCollapsed && (
-                                                    <motion.div 
+                                                    <motion.div
                                                         layoutId="active-nav-indicator"
-                                                        className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]" 
+                                                        className="absolute right-2 w-1.5 h-1.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.5)]"
                                                     />
                                                 )}
-                                            </motion.button>
+                                            </button>
                                         </TooltipTrigger>
                                         {isCollapsed && <TooltipContent side="right" className="bg-black text-white border-white/10 rounded-lg">{item.label}</TooltipContent>}
                                     </Tooltip>
@@ -294,8 +290,7 @@ export function HomeFeedSidebar({
                             return (
                                 <Tooltip key={item.id} delayDuration={0}>
                                     <TooltipTrigger asChild>
-                                        <motion.button
-                                            layout
+                                        <button
                                             onClick={() => {
                                                 if (item.onClick) {
                                                     item.onClick();
@@ -303,29 +298,30 @@ export function HomeFeedSidebar({
                                                     router.push(item.route);
                                                 }
                                             }}
-                                            className={`w-full flex items-center ${isCollapsed ? 'justify-center' : 'gap-3 px-3'} py-2.5 rounded-xl transition-all duration-200 group ${
-                                                isActive 
+                                            className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-colors duration-200 group ${
+                                                isActive
                                                 ? 'bg-black/5 dark:bg-arcus-raised text-[#1A1A1A] dark:text-white font-semibold border border-[#EBE9E2] dark:border-arcus-divider'
                                                 : 'text-[#666666] dark:text-arcus-fg-tertiary hover:text-[#1A1A1A] dark:hover:text-white hover:bg-black/5 dark:hover:bg-arcus-elevated'
                                             }`}
                                         >
-                                            <motion.div layout>
+                                            <span className="w-6 flex justify-center shrink-0">
                                                 <Icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-[#1A1A1A] dark:text-white' : 'text-[#666666] dark:text-arcus-fg-tertiary group-hover:text-black dark:group-hover:text-white'}`} strokeWidth={1.5} />
-                                            </motion.div>
-                                            
-                                            <AnimatePresence mode="popLayout">
+                                            </span>
+
+                                            <AnimatePresence initial={false}>
                                                 {!isCollapsed && (
-                                                    <motion.span 
-                                                        initial={{ opacity: 0, x: -5 }}
-                                                        animate={{ opacity: 1, x: 0 }}
-                                                        exit={{ opacity: 0, x: -5 }}
+                                                    <motion.span
+                                                        initial={{ opacity: 0 }}
+                                                        animate={{ opacity: 1 }}
+                                                        exit={{ opacity: 0 }}
+                                                        transition={{ duration: 0.15 }}
                                                         className="text-[14px] tracking-tight whitespace-nowrap"
                                                     >
                                                         {item.label}
                                                     </motion.span>
                                                 )}
                                             </AnimatePresence>
-                                        </motion.button>
+                                        </button>
                                     </TooltipTrigger>
                                     {isCollapsed && <TooltipContent side="right" className="bg-black text-white border-white/10 rounded-lg">{item.label}</TooltipContent>}
                                 </Tooltip>
@@ -426,8 +422,7 @@ export function HomeFeedSidebar({
                     </div>
                     <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
                 </motion.div>
-            </AnimatePresence>
-            
+
             {/* Mobile Backdrop */}
             <AnimatePresence>
                 {isOpen && (
