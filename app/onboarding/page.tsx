@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
+import { useEffect, useRef, Suspense } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import SiftOnboardingPage from "./sift-onboarding";
@@ -9,6 +9,11 @@ import posthog from "posthog-js";
 export default function OnboardingPage() {
   const router = useRouter();
   const { data: session, status } = useSession();
+  // Guard: NextAuth can emit a new session object reference on re-renders even
+  // when nothing changed. Without this, checkOnboardingStatus re-fires, sees
+  // the URL already at step 14/15 (written by replaceState), and bounces the
+  // user back to step 13 while they're mid-checkout. Run exactly once.
+  const statusCheckedRef = useRef(false);
 
   // Redirect if not authenticated or if onboarding is already completed
   useEffect(() => {
@@ -21,6 +26,9 @@ export default function OnboardingPage() {
 
     // Check if onboarding is already completed
     if (status === "authenticated" && session?.user?.email) {
+      if (statusCheckedRef.current) return;
+      statusCheckedRef.current = true;
+
       const userEmail = session?.user?.email;
       console.log(`📋 [Onboarding] Checking status for: ${userEmail}`);
 
@@ -55,13 +63,17 @@ export default function OnboardingPage() {
             return;
           }
 
-          // User is parked on the paywall (step 13) — do NOT re-redirect.
-          // The SiftOnboardingPage component handles plan selection and checkout
-          // from here. Re-running the status check would either no-op (already on
-          // step 13) or, worse, temporarily bounce to /home-feed before the
-          // subscription check denies access — creating a visible redirect loop.
-          if (currentStep === '13') {
-            console.log('🔒 [Onboarding] Already on step 13 (paywall) — staying put.');
+          // Steps 13-15 are the checkout funnel (plan select → notifications → done).
+          // Do NOT run the status check from here once the user is in this funnel:
+          // - Step 13: paywall / plan picker
+          // - Step 14: notifications preferences (between plan pick and checkout)
+          // - Step 15: "you're all set" / checkout trigger / paid verification
+          // Re-running the check at steps 14-15 would see `completed=true + unpaid`
+          // (payment not yet captured) and bounce the user back to step 13, creating
+          // a loop that prevents them from ever reaching checkout.
+          const stepNum = currentStep ? parseInt(currentStep, 10) : 0;
+          if (stepNum >= 13 && stepNum <= 15) {
+            console.log(`🔒 [Onboarding] In checkout funnel (step ${currentStep}) — staying put.`);
             return;
           }
 

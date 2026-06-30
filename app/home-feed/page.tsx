@@ -122,8 +122,7 @@ function HomeFeedContent() {
 
             const isFromPayment = referrer.includes('polar.sh') ||
               referrer.includes('whop.com') ||
-              referrer.includes('/payment-success') ||
-              referrer.includes('/pricing');
+              referrer.includes('/payment-success');
 
             const hasPendingPlan = pendingPlan && pendingTimestamp &&
               (Date.now() - parseInt(pendingTimestamp)) < 10 * 60 * 1000; // 10 min window
@@ -322,14 +321,30 @@ function HomeFeedContent() {
     router.push("/");
   };
 
-  // STRICT paywall, verified in the BACKGROUND. The check runs silently while
-  // the app renders optimistically — no visible "checking" screen on reload.
-  // We only reach this block when a prior check in THIS tab already found no
-  // paid/trial plan (accessGranted=false via the cached deny flag); the effect
-  // above is redirecting them to /pricing, so we render a plain backdrop — not a
-  // spinner/message — to avoid a flash before the redirect lands. The just-paid
-  // overlay (isVerifyingPayment) is always allowed through to the main render.
-  if (!isVerifyingPayment && !accessGranted) {
+  // STRICT paywall — the full app is NEVER rendered until access is confirmed.
+  // Two states before access is granted:
+  //   1. Verifying payment (just came from checkout): show activation overlay only.
+  //   2. Not verifying: redirect is already firing; show blank backdrop.
+  // The success animation (checkmark) plays inside the full-app render after
+  // accessGranted flips to true (React batches setAccessGranted + setPaymentVerified
+  // together so the spinner → success transition is seamless).
+  if (!accessGranted) {
+    if (isVerifyingPayment) {
+      return (
+        <div className="min-h-screen bg-black flex flex-col items-center justify-center gap-6">
+          <div className="relative">
+            <div className="w-16 h-16 border-2 border-neutral-200 dark:border-white/5 rounded-full" />
+            <div className="absolute inset-0 w-16 h-16 border-t-2 border-white rounded-full animate-spin" />
+          </div>
+          <div className="space-y-2 text-center">
+            <h2 className="text-xl font-serif text-white">Activating your subscription</h2>
+            <p className="text-neutral-500 text-sm max-w-[280px] leading-relaxed">
+              We&apos;re confirming your payment with Polar.<br/>This will only take a moment.
+            </p>
+          </div>
+        </div>
+      );
+    }
     return <div className="min-h-screen bg-arcus-bg" />;
   }
 
