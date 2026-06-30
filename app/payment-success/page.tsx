@@ -181,8 +181,11 @@ function PaymentSuccessContent() {
                 const response = await fetch('/api/subscription/status');
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.subscription?.hasActiveSubscription) {
-                        celebrateSuccess(data.subscription.planType);
+                    // STRICT: use planType check, not the polluted hasActiveSubscription flag
+                    const pt = data.subscription?.planType;
+                    const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !data.subscription?.isExpired;
+                    if (isPaid) {
+                        celebrateSuccess(pt);
                         return;
                     }
                 }
@@ -276,13 +279,9 @@ function PaymentSuccessContent() {
                                     Try Again
                                 </button>
 
-                                {/* Tertiary action - go to dashboard */}
-                                <button
-                                    onClick={() => router.push('/home-feed')}
-                                    className="w-full py-3 bg-transparent hover:bg-white/5 text-white/60 rounded-xl transition-colors text-sm"
-                                >
-                                    Go to Dashboard Anyway
-                                </button>
+                                {/* Removed: "Go to Dashboard Anyway" — this was a direct
+                                   paywall bypass. Unpaid users must verify payment or
+                                   contact support; they cannot skip into the app. */}
 
                                 <p className="text-white/40 text-xs pt-2">
                                     Need help? Contact us at{' '}

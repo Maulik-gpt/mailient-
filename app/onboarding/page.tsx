@@ -39,6 +39,7 @@ export default function OnboardingPage() {
         try {
           const urlParams = new URLSearchParams(window.location.search);
           const forceRedo = urlParams.get('force') === 'true';
+          const currentStep = urlParams.get('step');
 
           if (forceRedo) {
             console.log('🚀 [Onboarding] Force re-do detected. Skipping status checks.');
@@ -51,6 +52,16 @@ export default function OnboardingPage() {
           // for webhook lag). Bouncing here would steal them off step 15 on a race.
           if (urlParams.get('paid') === '1') {
             console.log('💳 [Onboarding] paid=1 return — deferring to component.');
+            return;
+          }
+
+          // User is parked on the paywall (step 13) — do NOT re-redirect.
+          // The SiftOnboardingPage component handles plan selection and checkout
+          // from here. Re-running the status check would either no-op (already on
+          // step 13) or, worse, temporarily bounce to /home-feed before the
+          // subscription check denies access — creating a visible redirect loop.
+          if (currentStep === '13') {
+            console.log('🔒 [Onboarding] Already on step 13 (paywall) — staying put.');
             return;
           }
 

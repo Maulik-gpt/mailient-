@@ -18,66 +18,77 @@ export async function GET() {
     console.log(`🔍 Checking onboarding redirect for: ${userEmail}`);
     console.log(`👤 Profile: ${!!profile}, Completed: ${profile?.onboarding_completed}`);
 
+    // Helper: check whether the user has a real, paid (non-free) subscription.
+    const hasPaidSubscription = async (): Promise<boolean> => {
+      try {
+        const { data: subscription } = await db.supabase
+          .from('user_subscriptions')
+          .select('status, plan_type, subscription_ends_at')
+          .ilike('user_id', userEmail)
+          .maybeSingle();
+
+        if (!subscription) return false;
+
+        console.log(`💳 Subscription found: status=${subscription.status}, plan=${subscription.plan_type}`);
+
+        const now = new Date();
+        const endDate = subscription.subscription_ends_at ? new Date(subscription.subscription_ends_at) : null;
+        const isNotExpired = !endDate || endDate > now;
+
+        // Strict: only active/trialing AND a real paid plan type grants access.
+        return (
+          (subscription.status === 'active' || subscription.status === 'trialing') &&
+          !!subscription.plan_type &&
+          subscription.plan_type !== 'free' &&
+          subscription.plan_type !== 'none' &&
+          isNotExpired
+        );
+      } catch (subError) {
+        console.log('⚠️ Subscription check failed:', subError);
+        return false;
+      }
+    };
+
     // Check if onboarding is explicitly completed
     if (profile?.onboarding_completed) {
-      return NextResponse.json({ redirectTo: "/home-feed" });
+      // Onboarding is marked done, but access to the app requires a PAID
+      // subscription. Without one the user must be parked on the paywall
+      // (onboarding step 13) — never sent to /home-feed.
+      if (await hasPaidSubscription()) {
+        return NextResponse.json({ redirectTo: "/home-feed" });
+      }
+      console.log('🔒 Onboarding completed but UNPAID — parking on paywall (step 13).');
+      return NextResponse.json({ redirectTo: "/onboarding?step=13" });
     }
 
-    // FALLBACK: Check if user selected a plan (means they went through onboarding)
-    if (profile?.preferences?.plan) {
-      console.log(`✅ Auto-completing onboarding (plan pref found)`);
+    // Not completed — check if they have a paid subscription anyway (e.g.
+    // webhook created the sub but they never finished the UI flow). If so,
+    // mark onboarding complete and let them in.
+    if (await hasPaidSubscription()) {
+      console.log('✅ Paid subscription found for incomplete-onboarding user — auto-completing.');
       try {
-        await db.supabase
-          .from('user_profiles')
-          .update({ onboarding_completed: true })
-          .eq('id', profile.id);
+        if (profile?.id) {
+          await db.supabase
+            .from('user_profiles')
+            .update({ onboarding_completed: true })
+            .eq('id', profile.id);
+        } else {
+          await db.supabase
+            .from('user_profiles')
+            .upsert({
+              user_id: userEmail,
+              email: userEmail,
+              onboarding_completed: true,
+              updated_at: new Date().toISOString()
+            }, { onConflict: 'user_id' });
+        }
       } catch (e) {
-        console.error('Error auto-completing onboarding:', e);
+        console.error('Error auto-completing onboarding from subscription:', e);
       }
       return NextResponse.json({ redirectTo: "/home-feed" });
     }
 
-    // FALLBACK: Check for active subscription
-    try {
-      const { data: subscription } = await db.supabase
-        .from('user_subscriptions')
-        .select('status, plan_type, subscription_ends_at')
-        .ilike('user_id', userEmail)
-        .maybeSingle();
-
-      if (subscription) {
-        console.log(`💳 Subscription found: ${subscription.status}, ${subscription.plan_type}`);
-        // User has any subscription - they completed payment
-        if (subscription.status === 'active' || (subscription.plan_type && subscription.plan_type !== 'none')) {
-          try {
-            if (profile?.id) {
-              await db.supabase
-                .from('user_profiles')
-                .update({ onboarding_completed: true })
-                .eq('id', profile.id);
-            } else {
-              // If no profile, we can still redirect them to home-feed
-              // and optionally create a skeleton profile
-              await db.supabase
-                .from('user_profiles')
-                .upsert({
-                  user_id: userEmail,
-                  email: userEmail,
-                  onboarding_completed: true,
-                  updated_at: new Date().toISOString()
-                }, { onConflict: 'user_id' });
-            }
-          } catch (e) {
-            console.error('Error auto-completing onboarding from subscription:', e);
-          }
-          return NextResponse.json({ redirectTo: "/home-feed" });
-        }
-      }
-    } catch (subError) {
-      console.log('Subscription check skipped:', subError);
-    }
-
-    // No onboarding completion found - redirect to onboarding
+    // No paid subscription, onboarding not complete — start/resume onboarding.
     return NextResponse.json({ redirectTo: "/onboarding" });
   } catch (error) {
     console.error("Error checking onboarding redirect:", error);

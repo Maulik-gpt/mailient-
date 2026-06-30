@@ -1627,7 +1627,6 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
 
   const finish = async () => {
     setBusy(true);
-    await onFinish();
     // Returned from checkout (?paid=1)? The param alone is NOT proof — verify the
     // real subscription server-side before letting them into the app. A verified
     // paid/active plan → in. Otherwise (incl. abandoned checkout) → back to the
@@ -1638,7 +1637,14 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         const d = r.ok ? await r.json() : null;
         const pt = d?.subscription?.planType;
         const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !d?.subscription?.isExpired;
-        if (isPaid) { router.push('/home-feed'); return; }
+        if (isPaid) {
+          // Payment verified — NOW mark onboarding complete. Doing this before
+          // verification was the root cause of unpaid users being flagged as
+          // "completed" and slipping through the redirect API.
+          await onFinish();
+          router.push('/home-feed');
+          return;
+        }
       } catch { /* fall through to paywall */ }
       setBusy(false);
       router.replace('/onboarding?step=13');
@@ -1652,6 +1658,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
     }
     // Send to Polar checkout, remembering where to come back to so the user
     // lands right here (paid) afterward instead of the dashboard.
+    // Do NOT call onFinish here — onboarding is only "complete" after payment.
     try {
       localStorage.setItem('pending_plan', plan);
       localStorage.setItem('mailient_checkout_return', '/onboarding?step=15&paid=1');
