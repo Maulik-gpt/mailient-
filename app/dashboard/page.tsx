@@ -98,8 +98,6 @@ export default async function DashboardPage() {
         redirect('/onboarding');
       }
     }
-  }
-
   // If authenticated and onboarded, redirect to the main home feed
   // which is the unified interface for the application
   redirect('/home-feed');
