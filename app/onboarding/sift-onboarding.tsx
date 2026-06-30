@@ -1495,7 +1495,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
         {selected === 'monthly' && (
           <div className="inline-flex items-center gap-1.5 mb-6 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
             <Sparkles className="w-3 h-3 text-emerald-600" strokeWidth={2.5} />
-            <span className="text-[12px] font-semibold text-emerald-700">13 days free, then $29/mo — cancel anytime</span>
+            <span className="text-[12px] font-semibold text-emerald-700">3 days free, then $29/mo — cancel anytime</span>
           </div>
         )}
         {selected !== 'monthly' && <div className="mb-4" />}
@@ -1679,7 +1679,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         {paid
           ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent is deployed and runs on its schedule. Everything waits for your approval before it sends.`
           : plan === 'monthly'
-            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 13-day free trial — no charge today, cancel anytime. Your agent deploys the moment you're in.`
+            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 3-day free trial — no charge today, cancel anytime. Your agent deploys the moment you're in.`
             : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys automatically — it starts running on its schedule right away. Everything waits for your approval before it sends.`}
       </Body>
 
@@ -1706,7 +1706,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
           : (paid || !plan)
             ? <>Go to Mailient <ArrowRight className="w-4 h-4" /></>
             : plan === 'monthly'
-              ? <>Start 13-day free trial <ArrowRight className="w-4 h-4" /></>
+              ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
               : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
       </PrimaryButton>
     </div>

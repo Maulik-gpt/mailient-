@@ -194,7 +194,7 @@ function SignUpContent() {
   return (
     <SignInLayout
       title="Create your account"
-      description="Start your 13-day free trial and let Mailient run your inbox — autonomous triage, voice-matched drafts, and scheduling on autopilot."
+      description="Start your 3-day free trial and let Mailient run your inbox — autonomous triage, voice-matched drafts, and scheduling on autopilot."
       heroImageSrc="https://images.unsplash.com/photo-1642615835477-d303d7dc9ee9?w=2160&q=80"
       testimonials={testimonials}
     >
