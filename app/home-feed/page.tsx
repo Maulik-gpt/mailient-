@@ -483,8 +483,12 @@ function HomeFeedContent() {
 export default function HomeFeed() {
   return (
     <Suspense fallback={
-      <div className="w-full h-screen bg-black flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
+      // Themed fallback — bg-arcus-bg adapts to light/dark and matches the app
+      // ground, so the loading moment never flashes a hardcoded black screen
+      // before the feed paints. (Was bg-black: jarring on the light theme and
+      // even on dark it flashed pure #000 over the app's #0D0D0D + white cards.)
+      <div className="w-full bg-arcus-bg flex items-center justify-center" style={{ height: '100dvh' }}>
+        <div className="h-7 w-7 rounded-full border-2 border-neutral-500/25 border-t-neutral-500 animate-spin" />
       </div>
     }>
       <HomeFeedContent />
