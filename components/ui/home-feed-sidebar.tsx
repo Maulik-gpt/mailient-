@@ -12,12 +12,13 @@ import {
     LogOut,
     Gift,
     HelpCircle,
-    PanelLeft,
     MessageCircle,
     X
 } from 'lucide-react';
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/ui/tooltip';
 import { motion, AnimatePresence } from 'framer-motion';
+import { HugeiconsIcon } from '@hugeicons/react';
+import { Menu01Icon } from '@hugeicons/core-free-icons';
 import { FeedbackDialog } from './feedback-dialog';
 
 interface HomeFeedSidebarProps {
@@ -168,21 +169,40 @@ export function HomeFeedSidebar({
 
                     {/* Logo & App Name */}
                     <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-500 relative`}>
-                        <motion.div 
+                        <motion.div
                             layout
-                            className="flex items-center gap-3 cursor-pointer group" 
-                            onClick={() => router.push('/home-feed')}
+                            role="button"
+                            aria-label={isCollapsed ? 'Open menu' : 'Go to home'}
+                            className="flex items-center gap-3 cursor-pointer group"
+                            onClick={() => {
+                                // Collapsed: the logo IS the menu toggle — click expands the
+                                // sidebar. Expanded: it's the brand mark — click goes home.
+                                if (isCollapsed) setIsCollapsed(false);
+                                else router.push('/home-feed');
+                            }}
                         >
-                            <motion.div 
+                            <motion.div
                                 layout
                                 className="w-11 h-11 relative flex items-center justify-center rounded-[14px] overflow-hidden bg-black shadow-lg group-hover:scale-105 transition-transform"
                             >
-                                <img src="/mailient-logo-v3.png" alt="Mailient" className="w-full h-full object-cover" />
+                                {/* Brand logo. When collapsed it fades + zooms out on hover to
+                                    reveal the three-bars menu beneath — a smooth morph from
+                                    logo → hamburger. When expanded it stays put. */}
+                                <img
+                                    src="/mailient-logo-v3.png"
+                                    alt="Mailient"
+                                    className={`w-full h-full object-cover transition-all duration-300 ${isCollapsed ? 'group-hover:opacity-0 group-hover:scale-110' : ''}`}
+                                />
+                                {isCollapsed && (
+                                    <span className="absolute inset-0 flex items-center justify-center text-white opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out">
+                                        <HugeiconsIcon icon={Menu01Icon} size={22} strokeWidth={2} />
+                                    </span>
+                                )}
                             </motion.div>
-                            
+
                             <AnimatePresence mode="popLayout">
                                 {!isCollapsed && (
-                                    <motion.span 
+                                    <motion.span
                                         initial={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
                                         animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
                                         exit={{ opacity: 0, x: -10, filter: 'blur(4px)' }}
@@ -195,28 +215,20 @@ export function HomeFeedSidebar({
                             </AnimatePresence>
                         </motion.div>
 
+                        {/* Collapse toggle — only when expanded. Three bars via HugeIcons,
+                            replacing the old lucide PanelLeft. The floating edge button that
+                            used to expand the collapsed rail is gone; the logo handles that. */}
                         {!isCollapsed && (
-                            <motion.button 
+                            <motion.button
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 transition={{ delay: 0.1 }}
-                                onClick={() => setIsCollapsed(!isCollapsed)}
+                                onClick={() => setIsCollapsed(true)}
+                                aria-label="Collapse sidebar"
                                 className="p-1.5 hover:bg-black/5 dark:hover:bg-arcus-surface rounded-lg transition-colors text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white border border-transparent hover:border-[#EBE9E2] dark:hover:border-arcus-divider"
                             >
-                                <PanelLeft className={`w-5 h-5 transition-transform duration-500 ${isCollapsed ? 'rotate-180' : ''}`} />
+                                <HugeiconsIcon icon={Menu01Icon} size={20} strokeWidth={2} />
                             </motion.button>
-                        )}
-
-                        {isCollapsed && (
-                             <motion.button
-                                initial={{ opacity: 0, scale: 0.5 }}
-                                animate={{ opacity: 1, scale: 1 }}
-                                whileHover={{ scale: 1.1, x: 2 }}
-                                onClick={() => setIsCollapsed(!isCollapsed)}
-                                className="absolute -right-3 top-1/2 -translate-y-1/2 w-6 h-6 bg-[#F4F5F8] dark:bg-black border border-[#EBE9E2] dark:border-white/[0.1] rounded-full flex items-center justify-center text-neutral-600 dark:text-arcus-fg-tertiary hover:text-neutral-900 dark:hover:text-white shadow-sm z-50 transition-all"
-                             >
-                                <PanelLeft className="w-3.5 h-3.5 rotate-180" />
-                             </motion.button>
                         )}
                     </div>
 
