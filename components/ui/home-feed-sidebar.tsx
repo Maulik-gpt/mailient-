@@ -125,25 +125,15 @@ export function HomeFeedSidebar({
 
     return (
         <TooltipProvider>
-                <motion.div
-                    initial={false}
-                    animate={{
-                        width: isCollapsed ? 72 : 260,
-                        x: typeof window !== 'undefined' && window.innerWidth < 768 
-                            ? (isOpen ? 0 : -260) 
-                            : 0,
-                    }}
-                    transition={isMounted ? {
-                        // Crisp 300ms tween on Material's standard easing. This is the
-                        // SAME curve + duration as the main content's `transition-[margin]
-                        // duration-300` (Tailwind's default timing function is exactly
-                        // cubic-bezier(0.4,0,0.2,1)), so the panel and the feed now move in
-                        // lockstep. The old spring used restDelta 0.001, giving it a long
-                        // precise settling tail that made open/close feel slow and laggy.
-                        duration: 0.3,
-                        ease: [0.4, 0, 0.2, 1] as const
-                    } : { duration: 0 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F4F5F8] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                {/* Plain CSS transition — width (desktop collapse) + transform (mobile
+                    drawer slide). duration-300 with Tailwind's default easing matches the
+                    main content's `transition-[margin] duration-300` exactly, so panel and
+                    feed move together. No Framer animate/spring/layout anywhere. The
+                    transition is gated on isMounted so the initial collapsed state (read
+                    from localStorage) paints without animating on load. */}
+                <div
+                    style={{ width: isCollapsed ? 72 : 260 }}
+                    className={`fixed left-0 top-0 h-screen bg-[#F4F5F8] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${isMounted ? 'transition-all duration-300' : ''} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>
@@ -167,16 +157,16 @@ export function HomeFeedSidebar({
                     <div className="pt-6" />
 
                     {/* Logo & App Name */}
-                    <div className={`px-6 mb-8 flex items-center ${isCollapsed ? 'justify-center' : 'justify-between'} transition-all duration-500 relative`}>
-                        <motion.div
-                            layout
-                            transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+                    <div className="px-3.5 mb-8 flex items-center justify-between relative">
+                        <div
                             role="button"
                             aria-label={isCollapsed ? 'Open menu' : 'Go to home'}
                             className="flex items-center gap-3 cursor-pointer group"
                             onClick={() => {
                                 // Collapsed: the logo IS the menu toggle — click expands the
                                 // sidebar. Expanded: it's the brand mark — click goes home.
+                                // px-3.5 left-aligns the logo so it sits dead-center on the
+                                // 72px collapsed rail — no reposition between states.
                                 if (isCollapsed) setIsCollapsed(false);
                                 else router.push('/home-feed');
                             }}
@@ -210,7 +200,7 @@ export function HomeFeedSidebar({
                                     </motion.span>
                                 )}
                             </AnimatePresence>
-                        </motion.div>
+                        </div>
 
                         {/* Collapse toggle — only when expanded. Three bars via HugeIcons,
                             replacing the old lucide PanelLeft. The floating edge button that
@@ -421,7 +411,7 @@ export function HomeFeedSidebar({
                         </AnimatePresence>
                     </div>
                     <FeedbackDialog open={isFeedbackOpen} onOpenChange={setIsFeedbackOpen} />
-                </motion.div>
+                </div>
 
             {/* Mobile Backdrop */}
             <AnimatePresence>
