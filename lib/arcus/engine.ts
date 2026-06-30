@@ -471,40 +471,57 @@ export async function callLLM(
     await sleep(200);
   }
 
-  // Pass 3: emergency — strip tool schemas, try top models for a text answer.
-  log('warn', 'Engine', 'Pass 2 failed — emergency text-only round');
-  await sleep(500);
   const noToolsBody: Record<string, any> = { ...baseBody };
   delete noToolsBody.tools;
   delete noToolsBody.tool_choice;
+
+  const paidEnabled = PAID_MODELS.length && process.env.DISABLE_PAID_FALLBACK !== 'true' && Date.now() >= paidDisabledUntil;
+
+  // Paid-with-tools fallback. Fires once every free model is rate-limited. For a
+  // tool-driven request (e.g. a background agent), this MUST run before the
+  // tool-stripping emergency below — stripping tools makes a tool-needing agent
+  // return useless text with zero tool calls (the "no tools were called" empty
+  // report). Paid models can actually call the tools, so try them with tools first.
+  const tryPaidWithTools = async (): Promise<LLMResponse | undefined> => {
+    if (!paidEnabled) return undefined;
+    log('warn', 'Engine', 'Free models exhausted — paid fallback (with tools)', { models: PAID_MODELS });
+    await sleep(300);
+    for (const model of PAID_MODELS) {
+      const r = await tryModel(model, baseBody, effectiveTimeout());
+      if (r) { log('info', 'Engine', 'Paid fallback succeeded', { model }); return r; }
+      await sleep(150);
+    }
+    return undefined;
+  };
+
+  // When the request needs tools, reach paid models (which can execute them)
+  // BEFORE degrading to a tool-less text answer.
+  if (hasTools) {
+    const paid = await tryPaidWithTools();
+    if (paid) return paid;
+  }
+
+  // Pass 3: emergency — strip tool schemas, try top free models for a text answer.
+  log('warn', 'Engine', 'Pass 2 failed — emergency text-only round');
+  await sleep(500);
   for (const model of TOOL_CAPABLE_MODELS.slice(0, 4)) {
     const r = await tryModel(model, noToolsBody, effectiveTimeout());
     if (r) return r;
     await sleep(200);
   }
 
-  // Pass 4: paid-model fallback. Fires automatically once every free model has
-  // been rate-limited/exhausted — this is the ONLY time we touch paid models, so
-  // the user gets a real answer instead of an error, with no premium-first spend.
-  // On by default; set DISABLE_PAID_FALLBACK=true only if you truly want free-only.
-  if (PAID_MODELS.length && process.env.DISABLE_PAID_FALLBACK !== 'true' && Date.now() >= paidDisabledUntil) {
-    log('warn', 'Engine', 'Free models exhausted — falling back to paid models', { models: PAID_MODELS });
-    await sleep(300);
-    for (const model of PAID_MODELS) {
-      const r = await tryModel(model, baseBody, effectiveTimeout());
-      if (r) {
-        log('info', 'Engine', 'Paid fallback succeeded', { model });
-        return r;
-      }
-      await sleep(150);
-    }
-    // Final emergency: paid + no tools (some paid models may refuse tools)
+  // For a no-tools request, the paid fallback comes here (after the free text
+  // round) — same spend behaviour as before for plain chat.
+  if (!hasTools) {
+    const paid = await tryPaidWithTools();
+    if (paid) return paid;
+  }
+
+  // Final emergency: paid + no tools (some paid models may refuse tools).
+  if (paidEnabled) {
     for (const model of PAID_MODELS.slice(0, 2)) {
       const r = await tryModel(model, noToolsBody, effectiveTimeout());
-      if (r) {
-        log('info', 'Engine', 'Paid no-tools fallback succeeded', { model });
-        return r;
-      }
+      if (r) { log('info', 'Engine', 'Paid no-tools fallback succeeded', { model }); return r; }
     }
   }
 

@@ -429,6 +429,32 @@ export async function GET(request: NextRequest) {
         let report = taskResult.report;
         const { toolCalls, artifactLinks: structuredLinks } = taskResult;
 
+        // EMPTY_RUN sentinel — the agent called zero tools and produced nothing,
+        // which means the AI was temporarily unavailable (every tool-capable model
+        // rate-limited). Do NOT email/Slack a misleading "no tools were called /
+        // check your config" report — that blames the user for a transient model
+        // outage. Mark the run skipped and bail; the next scheduled run retries.
+        if (report === 'EMPTY_RUN') {
+          console.warn(`[Cron] ${agent.name}: empty run (AI unavailable) — skipping delivery, will retry next run.`);
+          results.push(`Skipped (AI unavailable): ${agent.name}`);
+          if (runRecordId) {
+            try {
+              await supabase.from('arcus_agent_runs').update({
+                completed_at: new Date().toISOString(),
+                duration_ms: Date.now() - runStartedAt.getTime(),
+                // 'failed' is a known-valid status; the summary explains it was a
+                // transient AI outage, not a real agent failure.
+                status: 'failed',
+                tool_calls: 0,
+                report_summary: 'AI temporarily unavailable (models rate-limited) — no work done; retries next run.',
+                email_delivery: 'failed',
+                slack_delivery: 'failed',
+              }).eq('id', runRecordId);
+            } catch (e: any) { console.warn('[Cron] empty-run record update threw:', e?.message); }
+          }
+          return;
+        }
+
         // Stage 4 hardening — deterministic follow-through safety net. Regardless
         // of what the agent's narrative said, surface any OVERDUE commitment it
         // didn't already account for, so a dropped ball is never silent.

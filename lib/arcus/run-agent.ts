@@ -537,7 +537,11 @@ export async function runAgentTask(
         `Status: partial · Run completed: ${new Date().toUTCString()}`,
       ].filter(Boolean).join('\n');
     } else {
-      report = 'Agent completed but no tools were called and no report was produced. Check the agent\'s task description and connected integrations.';
+      // Zero tool calls + no text almost always means the AI was temporarily
+      // unavailable (every tool-capable model rate-limited, so the engine fell
+      // back to a tool-less text round that produced nothing) — NOT a misconfigured
+      // agent. Don't blame the user's setup; say what's true and that it retries.
+      report = 'EMPTY_RUN';
     }
     toolCalls = legacyToolCalls;
   }
