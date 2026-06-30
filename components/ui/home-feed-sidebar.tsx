@@ -133,12 +133,15 @@ export function HomeFeedSidebar({
                             ? (isOpen ? 0 : -260) 
                             : 0,
                     }}
-                    transition={isMounted ? { 
-                        type: "spring", 
-                        stiffness: 400, 
-                        damping: 38,
-                        mass: 1,
-                        restDelta: 0.001
+                    transition={isMounted ? {
+                        // Crisp 300ms tween on Material's standard easing. This is the
+                        // SAME curve + duration as the main content's `transition-[margin]
+                        // duration-300` (Tailwind's default timing function is exactly
+                        // cubic-bezier(0.4,0,0.2,1)), so the panel and the feed now move in
+                        // lockstep. The old spring used restDelta 0.001, giving it a long
+                        // precise settling tail that made open/close feel slow and laggy.
+                        duration: 0.3,
+                        ease: [0.4, 0, 0.2, 1] as const
                     } : { duration: 0 }}
                     className={`fixed left-0 top-0 h-screen bg-[#F4F5F8] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
