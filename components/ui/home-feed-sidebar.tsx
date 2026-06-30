@@ -185,16 +185,16 @@ export function HomeFeedSidebar({
                                 layout
                                 className="w-11 h-11 relative flex items-center justify-center rounded-[14px] overflow-hidden bg-black shadow-lg group-hover:scale-105 transition-transform"
                             >
-                                {/* Brand logo. When collapsed it fades + zooms out on hover to
-                                    reveal the three-bars menu beneath — a smooth morph from
-                                    logo → hamburger. When expanded it stays put. */}
+                                {/* Brand logo. When collapsed it simply fades out on hover to
+                                    reveal the three-bars menu beneath — a clean crossfade,
+                                    no scaling. When expanded it stays put. */}
                                 <img
                                     src="/mailient-logo-v3.png"
                                     alt="Mailient"
-                                    className={`w-full h-full object-cover transition-all duration-300 ${isCollapsed ? 'group-hover:opacity-0 group-hover:scale-110' : ''}`}
+                                    className={`w-full h-full object-cover transition-opacity duration-200 ${isCollapsed ? 'group-hover:opacity-0' : ''}`}
                                 />
                                 {isCollapsed && (
-                                    <span className="absolute inset-0 flex items-center justify-center text-white opacity-0 scale-75 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out">
+                                    <span className="absolute inset-0 flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                                         <HugeiconsIcon icon={Menu01Icon} size={22} strokeWidth={2} />
                                     </span>
                                 )}
