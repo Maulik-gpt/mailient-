@@ -20,7 +20,10 @@ import { CalendarService } from '@/lib/calendar';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 30;
+// Raised from 30 → 60 (the same 60s function cap the background agents use): the
+// AI triage runs a bounded tool loop inside the cached snapshot build. The build
+// is cache-backed + cron-prewarmed, so this only applies to a cold recompute.
+export const maxDuration = 60;
 
 const MAX_PER_BUCKET = 3;
 const ACTION_ITEM_HORIZON_HOURS = 48;
@@ -33,6 +36,9 @@ interface DecideItem {
   reason: string;
   receivedAt: string;
   gmailUrl: string;
+  // Preview text, kept only server-side so the AI triage can read what the email
+  // says. Stripped from the payload the agent path returns.
+  snippet?: string;
 }
 
 interface ShowUpItem {
@@ -44,6 +50,8 @@ interface ShowUpItem {
   meetLink: string | null;
   hangoutLink: string | null;
   isExternal: boolean;
+  // AI-written reason (agent path); the client falls back to a default string.
+  reason?: string;
 }
 
 interface ChaseItem {
@@ -54,6 +62,8 @@ interface ChaseItem {
   daysSilent: number;
   sentAt: string;
   gmailUrl: string;
+  // AI-written reason (agent path); the client falls back to a default string.
+  reason?: string;
 }
 
 interface ActionItem {
@@ -89,6 +99,8 @@ interface TodayResponse {
   gmailConnected: boolean;
   calendarConnected: boolean;
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
+  // One-line AI briefing of what needs the user today (agent path only).
+  briefing?: string;
 }
 
 function isTokenExpiredErr(err: any): boolean {
@@ -188,57 +200,39 @@ function classifyDecideReason(subject: string, snippet: string, from: string): s
 }
 
 // Replace generic regex reasons with real per-email reasoning via one batched
-// LLM call. Mutates items in place. Silent + non-blocking on any failure — the
-// heuristic reason stays. Uses the verified free models directly (no heavy
-// engine import in the hot path).
-async function enrichDecideReasons(items: DecideItem[]): Promise<void> {
+// LLM call, routed through the robust OpenRouterAIService (key rotation +
+// free→paid model fallback) so a single rate-limited key/model can't silently
+// drop the surface back to generic labels — the reason the Today feed used to
+// feel "random, not AI". Fed the email PREVIEW (not just From+Subject) so the
+// reason is grounded in what the email actually says. Mutates items in place;
+// the heuristic label stays for any email the model skips or on total failure.
+async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string, string>): Promise<void> {
   if (!items.length) return;
-  const keys = [process.env.OPENROUTER_API_KEY, process.env.OPENROUTER_API_KEY2, process.env.OPENROUTER_API_KEY3].filter(Boolean) as string[];
-  if (!keys.length) return;
-
-  const numbered = items.map((it, i) => `${i + 1}. From: ${it.sender.name || it.sender.email} | Subject: ${it.subject}`).join('\n');
-  const body = {
-    model: 'nvidia/nemotron-3-ultra-550b-a55b:free',
-    max_tokens: 400,
-    temperature: 0.2,
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You triage a founder\'s inbox. For each numbered email, write ONE short, specific reason (max 12 words) it needs their attention — name the concrete ask or signal, not a generic label. ' +
-          'Good: "Approve the Q3 budget — they need it by Friday." Bad: "Needs your attention." ' +
-          'Output ONLY lines in the form "<number>. <reason>", one per email, nothing else.',
-      },
-      { role: 'user', content: numbered },
-    ],
-  };
-
   try {
-    const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${keys[0]}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz' },
-      body: JSON.stringify(body),
-      signal: AbortSignal.timeout(9000),
-    });
-    if (!res.ok) return;
-    const json = await res.json();
-    let text: string = json.choices?.[0]?.message?.content || '';
-    text = text.replace(/<\/?(?:thinking|thought|reasoning)[^>]*>/gi, '');
-    for (const line of text.split('\n')) {
-      const m = line.match(/^\s*(\d+)[.)]\s*(.+)$/);
-      if (!m) continue;
-      const idx = parseInt(m[1], 10) - 1;
-      const reason = m[2].replace(/^["'`]+|["'`]+$/g, '').trim();
-      if (idx >= 0 && idx < items.length && reason.length >= 6 && reason.length <= 120) {
-        items[idx].reason = reason;
-      }
-    }
-  } catch {
-    // keep heuristic reasons
+    // @ts-ignore — JS module
+    const { OpenRouterAIService } = await import('@/lib/openrouter-ai.js');
+    const svc = new OpenRouterAIService();
+    if (!svc.isAvailable()) return;
+
+    const input = items.map((it) => ({
+      from: it.sender.name || it.sender.email,
+      subject: it.subject,
+      snippet: snippetById.get(it.id) || '',
+    }));
+    const reasons: string[] | null = await svc.enrichTodayReasons(input);
+    if (!reasons) return;
+    reasons.forEach((r, i) => { if (r && items[i]) items[i].reason = r; });
+  } catch (err) {
+    // keep heuristic reasons — never break the feed
+    console.warn('[home-feed/today] reason enrichment failed:', (err as any)?.message);
   }
 }
 
-async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
+// Gather Decide CANDIDATES (regex pre-filter + snippet), ranked by the heuristic
+// signal order. This is only a candidate net now — the AI triage does the real
+// selection/prioritization. Returns up to `limit` items WITH their preview
+// snippet attached (used by the agent to read what each email says).
+async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise<DecideItem[]> {
   try {
     const res = await (gmail as any).getEmails(30, 'is:unread newer_than:3d -category:promotions -category:social');
     const ids: string[] = (res?.messages || []).map((m: any) => m.id).slice(0, 30);
@@ -267,6 +261,7 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
         reason,
         receivedAt: d.date || new Date(Number(d.internalDate) || Date.now()).toISOString(),
         gmailUrl: `https://mail.google.com/mail/u/0/#inbox/${d.threadId}`,
+        snippet: d.snippet || '',
       });
     }
     // Priority: revenue > urgent > question > meeting > active thread
@@ -278,21 +273,14 @@ async function fetchDecide(gmail: GmailService): Promise<DecideItem[]> {
       return 4;
     };
     items.sort((a, b) => rank(a.reason) - rank(b.reason));
-
-    // AI enrichment: the regex above only SELECTS candidates + gives a generic
-    // bucket label. Replace those labels with a real, specific one-line reason
-    // per email ("Priya is asking you to approve the Q3 budget by Friday") via
-    // one batched LLM call. Heuristic labels stay as the fallback if the call
-    // fails — so the feed never slows below the regex baseline.
-    await enrichDecideReasons(items.slice(0, MAX_PER_BUCKET));
-    return items.slice(0, MAX_PER_BUCKET);
+    return items.slice(0, limit);
   } catch (err) {
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
     return [];
   }
 }
 
-async function fetchShowUp(cal: CalendarService, userEmail: string): Promise<ShowUpItem[]> {
+async function fetchShowUp(cal: CalendarService, userEmail: string, limit = MAX_PER_BUCKET): Promise<ShowUpItem[]> {
   try {
     const now = new Date();
     const endOfWindow = new Date(now);
@@ -324,14 +312,14 @@ async function fetchShowUp(cal: CalendarService, userEmail: string): Promise<Sho
         isExternal: externalAttendees.length > 0,
       });
     }
-    return items.slice(0, MAX_PER_BUCKET);
+    return items.slice(0, limit);
   } catch (err) {
     console.warn('[home-feed/today] showUp fetch failed:', (err as any)?.message);
     return [];
   }
 }
 
-async function fetchChase(gmail: GmailService, userEmail: string): Promise<ChaseItem[]> {
+async function fetchChase(gmail: GmailService, userEmail: string, limit = MAX_PER_BUCKET): Promise<ChaseItem[]> {
   try {
     const res = await (gmail as any).getEmails(40, 'in:sent newer_than:14d older_than:3d');
     const messages: any[] = res?.messages || [];
@@ -374,7 +362,7 @@ async function fetchChase(gmail: GmailService, userEmail: string): Promise<Chase
     );
     const items = candidates.filter((c): c is ChaseItem => c !== null);
     items.sort((a, b) => b.daysSilent - a.daysSilent);
-    return items.slice(0, MAX_PER_BUCKET);
+    return items.slice(0, limit);
   } catch (err) {
     console.warn('[home-feed/today] chase fetch failed:', (err as any)?.message);
     return [];
@@ -547,19 +535,70 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     }
   };
 
+  // Gather WIDER candidate pools (not just top-3) — these are the raw material
+  // the AI triage selects + ranks from. Selection/prioritization is the agent's
+  // job now; these fetchers are just the candidate net + the heuristic backstop.
+  const CANDIDATE_LIMIT = 10;
   const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
-    wrap(() => fetchDecide(gmail), 'gmail'),
-    wrap(() => fetchShowUp(cal, userEmail), 'calendar'),
-    wrap(() => fetchChase(gmail, userEmail), 'gmail'),
+    wrap(() => fetchDecide(gmail, CANDIDATE_LIMIT), 'gmail'),
+    wrap(() => fetchShowUp(cal, userEmail, CANDIDATE_LIMIT), 'calendar'),
+    wrap(() => fetchChase(gmail, userEmail, CANDIDATE_LIMIT), 'gmail'),
     fetchActionItems(userEmail),
     fetchAgentRuns(userEmail),
   ]);
 
   const gmailExpired = decideR.expired || chaseR.expired;
   const calendarExpired = showUpR.expired;
-  const decide = decideR.value || [];
-  const showUp = showUpR.value || [];
-  const chase = chaseR.value || [];
+  const decidePool = decideR.value || [];
+  const showUpPool = showUpR.value || [];
+  const chasePool = chaseR.value || [];
+
+  // Drop the server-only preview text before an item goes into the response.
+  const stripSnippet = (d: DecideItem): DecideItem => { const { snippet, ...rest } = d; return rest; };
+
+  let decide: DecideItem[] = [];
+  let showUp: ShowUpItem[] = [];
+  let chase: ChaseItem[] = [];
+  let briefing: string | undefined;
+
+  // ── AI TRIAGE (primary) — a real, tool-driven agent selects + ranks + reasons
+  // over the candidate pools. On ANY failure we fall through to the heuristic
+  // top-3 below, so Today never loads worse than the regex baseline.
+  let agentOk = false;
+  if (decidePool.length || showUpPool.length || chasePool.length) {
+    try {
+      const { buildTodayViaAgent } = await import('@/lib/arcus/today-agent');
+      const agent = await buildTodayViaAgent(
+        userEmail,
+        {
+          decide: decidePool.map((d) => ({ ...d, snippet: d.snippet || '' })),
+          chase: chasePool,
+          showUp: showUpPool,
+        },
+        { deadlineMs: 24_000, maxToolCalls: 12 },
+      );
+      if (agent) {
+        decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];
+        showUp = agent.showUp;
+        chase = agent.chase;
+        briefing = agent.briefing || undefined;
+        agentOk = true;
+      }
+    } catch (e: any) {
+      console.warn('[home-feed/today] AI triage failed, using heuristics:', e?.message);
+    }
+  }
+
+  // ── HEURISTIC SAFETY NET — the pre-AI behavior: top-3 by signal order, with the
+  // robust OpenRouterAIService reason enrichment on the Decide bucket.
+  if (!agentOk) {
+    decide = decidePool.slice(0, MAX_PER_BUCKET);
+    const snippetById = new Map<string, string>(decide.map((d) => [d.id, d.snippet || '']));
+    await enrichDecideReasons(decide, snippetById);
+    decide = decide.map(stripSnippet);
+    showUp = showUpPool.slice(0, MAX_PER_BUCKET);
+    chase = chasePool.slice(0, MAX_PER_BUCKET);
+  }
 
   const needsReconnect = (gmailExpired || calendarExpired)
     ? { gmail: gmailExpired, calendar: calendarExpired }
@@ -576,6 +615,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     gmailConnected: !gmailExpired,
     calendarConnected: !calendarExpired,
     needsReconnect,
+    briefing,
   };
 }
 

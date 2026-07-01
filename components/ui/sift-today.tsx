@@ -28,6 +28,7 @@ interface ShowUpItem {
   meetLink: string | null;
   hangoutLink: string | null;
   isExternal: boolean;
+  reason?: string;
 }
 interface ChaseItem {
   id: string;
@@ -37,6 +38,7 @@ interface ChaseItem {
   daysSilent: number;
   sentAt: string;
   gmailUrl: string;
+  reason?: string;
 }
 interface ActionItem {
   id: string;
@@ -67,6 +69,7 @@ interface TodayPayload {
   gmailConnected: boolean;
   calendarConnected: boolean;
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
+  briefing?: string;
 }
 
 function formatDueLabel(dueAt: string | null, isOverdue: boolean): string {
@@ -1280,7 +1283,7 @@ export default function SiftToday() {
               {greeting}
             </h1>
             <p className="text-[15px] mt-1.5 text-black/55 dark:text-white/55 tracking-tight">
-              here&apos;s what deserves you today.
+              {data?.briefing?.trim() || "here's what deserves you today."}
             </p>
           </div>
           <button
@@ -1504,7 +1507,7 @@ export default function SiftToday() {
                         topLeft={formatStartTime(item.start)}
                         topRight={`${item.attendeeCount} attendee${item.attendeeCount === 1 ? '' : 's'}`}
                         title={item.title}
-                        reason={item.isExternal ? 'External meeting — prep it.' : 'Internal meeting.'}
+                        reason={item.reason || (item.isExternal ? 'External meeting — prep it.' : 'Internal meeting.')}
                         onDismiss={() => dismissItem(item.id, 'showUp')}
                         primaryAction={{
                           label: 'Prep me',
@@ -1539,7 +1542,7 @@ export default function SiftToday() {
                         topLeft={item.recipient.name || item.recipient.email}
                         topRight={`${item.daysSilent}d silent`}
                         title={item.subject}
-                        reason="You sent this. They haven't replied."
+                        reason={item.reason || "You sent this. They haven't replied."}
                         onDismiss={() => dismissItem(item.id, 'chase', item.threadId)}
                         primaryAction={{
                           label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
