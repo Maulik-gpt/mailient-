@@ -74,18 +74,23 @@ function parseRateLimit(body: any): { daily: boolean; resetMs?: number; retryAft
  * these accounts have zero credits and auto only routes to paid models.
  */
 const TOOL_CAPABLE_MODELS = [
-  // PRIMARY — NVIDIA Nemotron 3 Ultra (550B-A55B). Free on OpenRouter, 1M
-  // context, native tool/function-calling (verified via /api/v1/models:
-  // supported_parameters includes tools + tool_choice). This is the strongest
-  // free model available and is now Arcus's default brain.
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
-  // Capable free fallbacks, in descending order of quality.
-  'nvidia/nemotron-3-super-120b-a12b:free',
+  // ORDER POLICY (revalidated 2026-07 against the live OpenRouter API): lead with
+  // the free models that actually return valid tool/JSON output FAST. Direct
+  // testing demoted the two NVIDIA leaders that were breaking every run:
+  //   • nemotron-3-super-120b → HTTP 200 with EMPTY content (degraded upstream)
+  //   • nemotron-3-ultra-550b → routinely TIMES OUT (550B is too slow for the
+  //     deadline budget, so it burned the whole time window before any model answered)
+  // All five leaders below returned real tool/JSON content on a live key.
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
   'qwen/qwen3-next-80b-a3b-instruct:free',
-  'qwen/qwen3-coder:free',
   'meta-llama/llama-3.3-70b-instruct:free',
+  'qwen/qwen3-coder:free',
+  // Demoted — broken/slow as of 2026-07, kept last only in case they recover.
+  // parseOpenAIResponse discards super's empty output (≤1 wasted attempt) and the
+  // deadline-aware timeout bounds ultra so it can't eat the budget from here.
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
   // Removed (verified 404 / dead on OpenRouter 2026-06): openai/gpt-oss-120b,
   // openai/gpt-oss-20b (retired per product decision), z-ai/glm-4.5-air,
   // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking.
@@ -107,7 +112,8 @@ const ALL_FREE_MODELS = [
 // as possible per turn.
 const PAID_MODELS = [
   'google/gemini-2.5-flash-lite', // primary — cheapest capable, fast, tool-capable, huge context
-  'anthropic/claude-haiku-5',     // reliability fallback (best instruction-following in the cheap tier)
+  'anthropic/claude-haiku-4.5',   // reliability fallback. (Was claude-haiku-5 — a DEAD id
+                                  // returning HTTP 400 "not a valid model ID"; 4.5 is the real one.)
   'google/gemini-2.5-flash',      // fallback
 ];
 

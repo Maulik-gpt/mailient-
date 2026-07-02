@@ -27,10 +27,12 @@ import { getBriefingPrefs, type BriefingPrefs } from '@/lib/arcus/briefing-prefs
 export const dynamic = 'force-dynamic';
 export const maxDuration = 25;
 
-// nemotron-3-super (NOT ultra) — this needs response_format json_object, which
-// ultra's API doesn't support but super does. Falls back across keys.
-const REC_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
-const FALLBACK_MODEL = 'google/gemma-4-31b-it:free';
+// Gemma-4 (instruct) — confirmed healthy 2026-07 on the live API: honors
+// response_format json_object and returns real content fast. Replaces
+// nemotron-3-super-120b, which was returning HTTP 200 with EMPTY content
+// (degraded upstream) and silently producing zero recommendations.
+const REC_MODEL = 'google/gemma-4-31b-it:free';
+const FALLBACK_MODEL = 'google/gemma-4-26b-a4b-it:free';
 
 type Category = 'connect' | 'productivity';
 
@@ -190,15 +192,18 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
     ? []
     : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean).length
         ? (process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean)
-        : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-5', 'google/gemini-2.5-flash']);
-  // Extra free models so the chain doesn't dead-end when super/gemma are both
+        // claude-haiku-4.5 (NOT haiku-5 — that id is dead, HTTP 400). All three verified live.
+        : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-4.5', 'google/gemini-2.5-flash']);
+  // Extra free models so the chain doesn't dead-end when both gemmas are
   // rate-limited upstream. All IDs verified against the live OpenRouter free
   // catalog; non-reasoning instruct models that honor json_object well.
-  // extractJsonObject() also tolerates any that leak prose.
+  // extractJsonObject() also tolerates any that leak prose. super-120b is LAST
+  // (it's been returning empty 200s) purely as a recover-if-fixed backstop.
   const EXTRA_FREE = [
-    'google/gemma-4-26b-a4b-it:free',
-    'meta-llama/llama-3.3-70b-instruct:free',
     'qwen/qwen3-next-80b-a3b-instruct:free',
+    'meta-llama/llama-3.3-70b-instruct:free',
+    'nvidia/nemotron-3-nano-30b-a3b:free',
+    'nvidia/nemotron-3-super-120b-a12b:free',
   ];
   const modelChain = [REC_MODEL, FALLBACK_MODEL, ...EXTRA_FREE, ...paidModels];
 
