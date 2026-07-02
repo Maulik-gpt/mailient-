@@ -89,13 +89,13 @@ export default function DraftsProductPage() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
             <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
-              Elite context. <br />Approve in one click.
+              Replies that sound like you. <br />Approve in one click.
             </h1>
           </BlurFade>
 
           <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
             <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
-              Draft Reply learns your personal tone, technical lexicon, and corporate policies to draft high-fidelity responses in your Gmail drafts folder automatically.
+              It learns how you write — your tone, your phrasing, your sign-offs — and leaves ready-to-send replies waiting in your Gmail drafts. You review, tweak if you want, and send.
             </p>
           </BlurFade>
 

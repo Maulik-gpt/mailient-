@@ -4,8 +4,8 @@ import Providers from "./providers";
 import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
-  title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
-  description: "Stop dreading your inbox. AI surfaces the deals and urgent replies hiding in the noise. Draft faster in your voice. Know exactly what needs your attention without the Sunday night panic of what did I miss.",
+  title: "Mailient — Runs your inbox while you build your company",
+  description: "Mailient reads your email, prioritizes what matters, drafts replies in your voice, books meetings, and follows up automatically. You wake up to one morning briefing instead of an inbox.",
   metadataBase: new URL('https://mailient.xyz'),
   icons: {
     icon: [
@@ -15,8 +15,8 @@ export const metadata = {
     apple: "/apple-touch-icon.png?v=10",
   },
   openGraph: {
-    title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
-    description: "Auto-organize, surface opportunities, and reply 10x faster. Smart Prioritization, Automate AI agents, 10x Faster Replies.",
+    title: "Mailient — Runs your inbox while you build your company",
+    description: "Reads your email. Prioritizes what matters. Drafts replies in your voice. Books meetings. Follows up automatically. You wake up to one morning briefing instead of an inbox.",
     url: "https://mailient.xyz",
     siteName: "Mailient",
     images: [
@@ -24,7 +24,7 @@ export const metadata = {
         url: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: "Mailient — AI that thinks like you. Inbox that works for you.",
+        alt: "Mailient — runs your inbox while you build your company.",
       },
     ],
     locale: "en_US",
@@ -32,8 +32,8 @@ export const metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Mailient — The future isn't faster communication. The future is communication that no longer requires you.",
-    description: "Auto-organize, surface opportunities, and reply 10x faster.",
+    title: "Mailient — Runs your inbox while you build your company",
+    description: "You wake up to one morning briefing instead of an inbox.",
     images: ["/og-image.png"],
   },
 };

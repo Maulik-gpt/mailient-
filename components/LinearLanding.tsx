@@ -92,7 +92,7 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
 const landingFaqs = [
   {
     q: "Is there a free plan?",
-    a: "No — Mailient is a single plan with full access to everything. You can choose monthly at $29, annual at $199 (two months free), or grab a Lifetime Founding Member seat for $499 while they last. Every plan includes Arcus, Sift AI, Voice Profile, background agents, and Zero-Knowledge encryption. No free tier, no feature gating, no surprises - just the full product from day one."
+    a: "No — Mailient is a single plan with full access to everything. You can choose monthly at $29, annual at $199 (two months free), or grab a Lifetime Founding Member seat for $499 while they last. Every plan includes the full product: the AI that runs your inbox, replies in your voice, automations that work while you sleep, and end-to-end encryption. No free tier, no feature gating, no surprises."
   },
   {
     q: "Does Mailient replace Gmail?",
@@ -100,7 +100,7 @@ const landingFaqs = [
   },
   {
     q: "How does Mailient learn my writing style?",
-    a: "When you connect Gmail, Mailient reads your last 90 days of sent emails and builds a Neural Voice Profile — your tone, your greeting style, your typical sign-off, how formal you are with different types of people. Every draft Arcus writes uses this profile. It improves the more you use it."
+    a: "When you connect Gmail, Mailient reads your last 90 days of sent emails and learns how you write — your tone, your greeting style, your typical sign-off, how formal you are with different types of people. Every draft it writes sounds like you. It improves the more you use it."
   },
   {
     q: "Is my email data private?",
@@ -132,9 +132,9 @@ export function LinearLanding() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const DESCRIPTIONS = [
+    "It reads, prioritizes, drafts in your voice, books meetings, and follows up — automatically.",
+    "You wake up to one morning briefing instead of an inbox.",
     "By 7am: 240 triaged, 18 replies drafted, 3 meetings booked.",
-    "Wake up to the 3 messages that need you. It handled the other 200.",
-    "It reads, replies, schedules, and follows up — so you don't.",
   ];
 
   const [descIndex, setDescIndex] = useState(0);
@@ -194,12 +194,12 @@ export function LinearLanding() {
   };
 
   const getSubtitles = (time: number) => {
-    if (time >= 0 && time < 5) return "Up until now, handling email was a manual chore.";
-    if (time >= 5 && time < 10) return "Mailient shifts your inbox operations to autopilot.";
-    if (time >= 10 && time < 15) return "Arcus engine reads threads and writes custom drafts in your voice.";
-    if (time >= 15 && time < 20) return "All resolved silently overnight, waiting for your approval.";
-    if (time >= 20 && time < 25) return "Zero-Knowledge client-side encryption keeps everything secure.";
-    if (time >= 25 && time < 35) return "Connect Gmail and experience the future of productivity today.";
+    if (time >= 0 && time < 5) return "Up until now, email was a job you did by hand.";
+    if (time >= 5 && time < 10) return "Mailient runs your inbox for you.";
+    if (time >= 10 && time < 15) return "It reads your threads and writes replies in your voice.";
+    if (time >= 15 && time < 20) return "All handled overnight, waiting for your approval.";
+    if (time >= 20 && time < 25) return "Your emails are encrypted in your browser before they leave it.";
+    if (time >= 25 && time < 35) return "Connect Gmail. Two minutes later, it's working.";
     return "";
   };
 
@@ -226,7 +226,7 @@ export function LinearLanding() {
   }, [activeStep]);
 
   useEffect(() => {
-    document.title = "Mailient — The future isn't faster communication. The future is communication that no longer requires you.";
+    document.title = "Mailient — Runs your inbox while you build your company";
   }, []);
 
   const currentText = DESCRIPTIONS[descIndex];
@@ -298,7 +298,9 @@ export function LinearLanding() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
             <h1 className="text-4xl md:text-[60px] font-medium tracking-[-0.035em] leading-[1.08] max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent pb-2">
-              Your inbox, handled before you open it.
+              Run your company.
+              <br />
+              Mailient runs your inbox.
             </h1>
           </BlurFade>
 
@@ -321,7 +323,7 @@ export function LinearLanding() {
                 href="#sample-brief"
                 className="bg-transparent border border-white/10 hover:bg-white/5"
               >
-                See a sample brief
+                Watch Mailient handle a real inbox
               </CircleExpandButton>
             </div>
           </BlurFade>
@@ -441,6 +443,98 @@ export function LinearLanding() {
       </div>
     </section>
 
+      {/* 1.5 THE PROBLEM — WHY MAILIENT MANIFESTO (moved up: problem right after hero, per positioning spec) */}
+      <section className="py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <div className="w-full space-y-12">
+          
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-4 py-1.5 text-xs font-mono tracking-wider text-emerald-400 uppercase backdrop-blur-sm">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+              </span>
+              Why Mailient?
+            </div>
+            <h2 className="text-4xl md:text-6xl font-medium tracking-tight leading-tight font-sans">
+              <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+                Email was supposed to be a tool.
+              </span>
+              <br />
+              <span className="text-neutral-500">For most founders, it became the job.</span>
+            </h2>
+          </div>
+
+          <div className="space-y-8 text-neutral-400 font-sans font-light leading-relaxed text-base md:text-lg">
+            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug">
+              You already know the problem. You have felt it.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 01</span>
+                <p className="text-sm text-neutral-200">The email that sat in your inbox for three days while you meant to reply.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 02</span>
+                <p className="text-sm text-neutral-200">The client who went cold because you got buried in other threads.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 03</span>
+                <p className="text-sm text-neutral-200">The meeting that never got booked because the scheduling back-and-forth took a week.</p>
+              </div>
+              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+                <span className="text-xs font-mono text-neutral-500">PAIN POINT 04</span>
+                <p className="text-sm text-neutral-200">The Sunday night dread of opening Gmail and seeing 200 unread messages staring back.</p>
+              </div>
+            </div>
+
+            <p>
+              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And unlike every other part of your business, the inbox does not scale. The more successful you get, the worse it becomes. More clients. More threads. More opportunities buried under newsletters you never asked for.
+            </p>
+
+            <p>
+              Every other solution asks you to work harder at email. Keyboard shortcuts to move faster. AI that suggests a reply you still have to write. Filters you have to set up and maintain. Tools that make you more efficient at a job you should not be doing in the first place.
+            </p>
+
+            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
+              Mailient does not make you faster at email. It removes email from your to-do list entirely.
+            </p>
+
+            <p>
+              When a client emails you at midnight, Mailient reads it. When you wake up, a draft is already waiting in your voice. When someone asks to meet, your calendar has already been checked and a slot has been held. When your inbox fills up overnight, an agent has already swept it, handled the routine, and left you a clean briefing of the three things that actually need your eyes.
+            </p>
+
+            <p>
+              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting Arcus learn your voice, and then you stop thinking about your inbox.
+            </p>
+
+            <div className="border-l-2 border-white/20 pl-6 my-8 py-2 italic text-neutral-300 text-lg">
+              "That is the product. That is why it exists."
+            </div>
+
+            <p>
+              There are smarter email tools. There are faster email tools. There is no other tool that simply takes the inbox off your hands — that wakes up before you do, does the work, and gets out of your way.
+            </p>
+
+            <p className="text-white font-medium">
+              Mailient is not a feature. It is a hire.
+            </p>
+            
+            <p>
+              The most reliable employee you will ever bring on board. One who never sleeps, never misses a message, never forgets a follow-up, and costs less per month than a single client lunch.
+            </p>
+
+            <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
+              Your inbox has been running you long enough.
+            </div>
+
+          </div>
+
+        </div>
+        </BlurFade>
+      </section>
+
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
       <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
@@ -457,7 +551,7 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 0 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                01 // Your home feed
+                01 // Only what needs you
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -465,7 +559,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Decide it all from one feed.
+                Only the emails that deserve your attention.
               </h3>
               {activeStep === 0 && (
                 <motion.div
@@ -475,13 +569,13 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Your home feed is the command center. The urgent calls rise to the top — a meeting to confirm, a VIP waiting on you, a reply that can't slip — each with the decision ready to make in a tap. The noise never reaches it.
+                    Every morning: the handful of emails that actually need you — a meeting to confirm, a VIP waiting, a reply that can't slip — each with the decision ready to make in a tap. The rest is already handled.
                   </p>
                   <CircleExpandButton
                     href="/product/sift"
                     className="text-xs md:text-sm"
                   >
-                    Explore the Home Feed
+                    See what mornings look like
                   </CircleExpandButton>
                 </motion.div>
               )}
@@ -504,7 +598,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Drafts in your voice.
+                Replies that sound like you.
               </h3>
               {activeStep === 1 && (
                 <motion.div
@@ -514,13 +608,13 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    It clones your voice from your sent mail — your greetings, your rhythm, your sign-offs — and drafts replies so natural the recipient can't tell. Ask for 15 at once; it writes all 15. You just review and send.
+                    It learns how you write from your sent mail — your greetings, your rhythm, your sign-offs — and drafts replies so natural the recipient can't tell. Ask for 15 at once; it writes all 15. You just review and send.
                   </p>
-                  <CircleExpandButton 
+                  <CircleExpandButton
                     href="/product/drafts"
                     className="text-xs md:text-sm"
                   >
-                    Explore Drafts Engine
+                    See a draft in your voice
                   </CircleExpandButton>
                 </motion.div>
               )}
@@ -535,7 +629,7 @@ export function LinearLanding() {
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
               )}>
-                03 // Build your own agents
+                03 // While you sleep
               </span>
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
@@ -543,7 +637,7 @@ export function LinearLanding() {
                   ? "text-4xl md:text-[48px] text-white"
                   : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
               )}>
-                Create an agent in plain English.
+                Repetitive work happens while you sleep.
               </h3>
               {activeStep === 2 && (
                 <motion.div
@@ -553,13 +647,13 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Describe the job in plain words, pick when it runs, and deploy. A 7am inbox sweep, a Friday revenue digest, meeting prep before every call — your agent checks the calendar, books the slots, logs to Notion, and leaves a briefing in your inbox. Set it once; it runs on its own.
+                    Describe the job in plain words and pick when it runs. A 7am inbox sweep, a Friday revenue digest, meeting prep before every call — Mailient checks the calendar, books the slots, logs to Notion, and leaves a briefing in your inbox. Set it once; it runs on its own.
                   </p>
                   <CircleExpandButton
                     href="#pricing"
                     className="text-xs md:text-sm"
                   >
-                    Build a background agent
+                    Put work on autopilot
                   </CircleExpandButton>
                 </motion.div>
               )}
@@ -707,9 +801,9 @@ export function LinearLanding() {
 
             <div className="flex-1 space-y-6 text-left relative z-10">
               <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-                PLATFORM FLAGSHIP AGENT
+                THE AI RUNNING YOUR INBOX
               </span>
-              
+
               <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
                 Meet Arcus.
               </h2>
@@ -719,11 +813,11 @@ export function LinearLanding() {
               </p>
 
               <div className="pt-6">
-                <Link 
+                <Link
                   href="/product/arcus"
                   className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
                 >
-                  Review Arcus Flagship
+                  See Arcus at work
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -1033,7 +1127,7 @@ export function LinearLanding() {
             </h2>
             <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
               <WordBlurStream
-                text="Most mornings you wake up already behind. Arcus clears it overnight — so you start on top of it, not buried."
+                text="Most mornings you wake up already behind. Mailient clears it overnight — so you start on top of it, not buried."
                 msPerWord={80}
                 startupMs={300}
                 holdMs={5000}
@@ -1115,7 +1209,7 @@ export function LinearLanding() {
               </div>
 
               <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
-                <span>STATUS // GREEN ZONE OPERATIONAL LEVERAGE</span>
+                <span>STATUS // CLEAR. BRIEFING DELIVERED</span>
                 <span className="text-emerald-400 font-semibold">NO ACTION REQUIRED</span>
               </div>
             </div>
@@ -1166,15 +1260,15 @@ export function LinearLanding() {
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                The promise is simple: open Mailient in the morning and the inbox is already handled. Replies drafted in your voice, meetings booked, the two things that need you flagged at the top.
+                You open Mailient in the morning and there are only two emails left to think about. The other two hundred? Read, sorted, answered, or archived — with a note explaining what happened to each.
               </p>
-              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; What you wake up to</span>
+              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; What mornings become</span>
             </div>
 
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                It learns who you are — your VIPs, your voice, what's strategic versus routine — and gets sharper every single run. Less a tool you operate, more an employee you trust.
+                It learns who you are — your VIPs, your voice, what's strategic versus routine — and gets sharper every single run. You're not operating software. You hired someone.
               </p>
               <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Why it's different</span>
             </div>
@@ -1185,7 +1279,7 @@ export function LinearLanding() {
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-emerald-400" />
               <span className="text-[11px] text-neutral-400 font-sans">
-                Vault-grade local PII sanitization with AES-256 local cache protection.
+                Your emails are encrypted in your browser before they leave it. Personal data is stripped before any AI sees it.
               </span>
             </div>
             <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">
@@ -1247,98 +1341,6 @@ export function LinearLanding() {
                 </AnimatePresence>
               </div>
             ))}
-          </div>
-
-        </div>
-        </BlurFade>
-      </section>
-
-      {/* WHY MAILIENT MANIFESTO SECTION */}
-      <section className="py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
-        <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="w-full space-y-12">
-          
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-4 py-1.5 text-xs font-mono tracking-wider text-emerald-400 uppercase backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-              </span>
-              Why Mailient?
-            </div>
-            <h2 className="text-4xl md:text-6xl font-medium tracking-tight leading-tight font-sans">
-              <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Email was supposed to be a tool.
-              </span>
-              <br />
-              <span className="text-neutral-500">For most founders, it became the job.</span>
-            </h2>
-          </div>
-
-          <div className="space-y-8 text-neutral-400 font-sans font-light leading-relaxed text-base md:text-lg">
-            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug">
-              You already know the problem. You have felt it.
-            </p>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
-                <span className="text-xs font-mono text-neutral-500">PAIN POINT 01</span>
-                <p className="text-sm text-neutral-200">The email that sat in your inbox for three days while you meant to reply.</p>
-              </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
-                <span className="text-xs font-mono text-neutral-500">PAIN POINT 02</span>
-                <p className="text-sm text-neutral-200">The client who went cold because you got buried in other threads.</p>
-              </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
-                <span className="text-xs font-mono text-neutral-500">PAIN POINT 03</span>
-                <p className="text-sm text-neutral-200">The meeting that never got booked because the scheduling back-and-forth took a week.</p>
-              </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
-                <span className="text-xs font-mono text-neutral-500">PAIN POINT 04</span>
-                <p className="text-sm text-neutral-200">The Sunday night dread of opening Gmail and seeing 200 unread messages staring back.</p>
-              </div>
-            </div>
-
-            <p>
-              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And unlike every other part of your business, the inbox does not scale. The more successful you get, the worse it becomes. More clients. More threads. More opportunities buried under newsletters you never asked for.
-            </p>
-
-            <p>
-              Every other solution asks you to work harder at email. Keyboard shortcuts to move faster. AI that suggests a reply you still have to write. Filters you have to set up and maintain. Tools that make you more efficient at a job you should not be doing in the first place.
-            </p>
-
-            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
-              Mailient does not make you faster at email. It removes email from your to-do list entirely.
-            </p>
-
-            <p>
-              When a client emails you at midnight, Mailient reads it. When you wake up, a draft is already waiting in your voice. When someone asks to meet, your calendar has already been checked and a slot has been held. When your inbox fills up overnight, an agent has already swept it, handled the routine, and left you a clean briefing of the three things that actually need your eyes.
-            </p>
-
-            <p>
-              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting Arcus learn your voice, and then you stop thinking about your inbox.
-            </p>
-
-            <div className="border-l-2 border-white/20 pl-6 my-8 py-2 italic text-neutral-300 text-lg">
-              "That is the product. That is why it exists."
-            </div>
-
-            <p>
-              There are smarter email tools. There are faster email tools. There is no other tool that simply takes the inbox off your hands — that wakes up before you do, does the work, and gets out of your way.
-            </p>
-
-            <p className="text-white font-medium">
-              Mailient is not a feature. It is a hire.
-            </p>
-            
-            <p>
-              The most reliable employee you will ever bring on board. One who never sleeps, never misses a message, never forgets a follow-up, and costs less per month than a single client lunch.
-            </p>
-
-            <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
-              Your inbox has been running you long enough.
-            </div>
-
           </div>
 
         </div>

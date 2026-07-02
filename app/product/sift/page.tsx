@@ -91,13 +91,13 @@ export default function SiftProductPage() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
             <h1 className="text-4xl md:text-[68px] font-medium tracking-[-0.03em] text-white leading-[1.08] max-w-4xl">
-              Autonomous Triage. <br />Quiet control.
+              Only the emails that <br />deserve your attention.
             </h1>
           </BlurFade>
 
           <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
             <p className="text-base md:text-[18px] text-[#8a8f98] leading-relaxed max-w-2xl mt-6 font-light font-sans">
-              Sift maps the semantics of your inbound messages to separate high-ticket deals, support bottlenecks, and calendar requests from newsletters automatically.
+              Mailient separates the deals, decisions, and real requests from the newsletters and noise — automatically. You see a handful of emails a day. It handles the rest.
             </p>
           </BlurFade>
 
@@ -144,21 +144,21 @@ export default function SiftProductPage() {
             </h2>
 
             <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-              Every message is parsed and categorized using secure, low-latency neural classifiers. Instead of basic subject keywords, Sift reads with human-like comprehension, mapping corporate structure, opportunity scale, and relational urgency.
+              It doesn't match keywords — it reads every message the way you would, and understands who's asking, what they want, and whether it can wait.
             </p>
 
             <ul className="space-y-4 pt-2">
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Opportunity Extraction:</strong> Instantly detects VC queries, prospective leads, and high-value partnerships.</span>
+                <span><strong>Opportunities surface:</strong> investor emails, warm leads, and partnership asks rise straight to the top.</span>
               </li>
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Zero-Noise Ingestion:</strong> Automated newsletter and spam filters archive promotional junk silently.</span>
+                <span><strong>Noise disappears:</strong> newsletters and promotions get archived silently — you never see them.</span>
               </li>
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Urgency Triage:</strong> Signals critical action-items based on project timelines and direct customer requests.</span>
+                <span><strong>Urgent means urgent:</strong> real deadlines and direct customer asks get flagged, with the reason why.</span>
               </li>
             </ul>
           </div>
