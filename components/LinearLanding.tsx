@@ -133,8 +133,8 @@ export function LinearLanding() {
 
   const DESCRIPTIONS = [
     "Mailient removes email from your to-do list entirely.",
+    "The most expensive email in your inbox is the one you never opened.",
     "Wake up. Read one briefing. Never dread Gmail again.",
-    "By 7am: 240 triaged, 18 replies drafted, 3 meetings booked.",
   ];
 
   const [descIndex, setDescIndex] = useState(0);
@@ -508,7 +508,7 @@ export function LinearLanding() {
 
           <div className="space-y-8 text-neutral-400 font-sans font-light leading-relaxed text-base md:text-lg">
             <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug">
-              You already know the problem. You have felt it.
+              Every founder has lost money to an email they saw too late. You have too — you just can't name which one.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
@@ -535,7 +535,7 @@ export function LinearLanding() {
             </p>
 
             <p>
-              Every other solution asks you to work harder at email. Keyboard shortcuts to move faster. AI that suggests a reply you still have to write. Filters you have to set up and maintain. Tools that make you more efficient at a job you should not be doing in the first place.
+              Gmail sorts the mail you read. Superhuman makes you faster at the mail you read. ChatGPT drafts a reply when you remember to ask. Filters file things away quietly — including, sometimes, the deal. Every one of these tools works on the email you are looking at. <span className="text-white">None of them watch the email you never opened. That is where the money leaks.</span>
             </p>
 
             <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
@@ -1259,7 +1259,7 @@ export function LinearLanding() {
 
               <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
                 <span>STATUS // CLEAR. BRIEFING DELIVERED</span>
-                <span className="text-emerald-400 font-semibold">NO ACTION REQUIRED</span>
+                <span className="text-emerald-400 font-semibold">GO BUILD.</span>
               </div>
             </div>
 

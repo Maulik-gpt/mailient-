@@ -72,6 +72,10 @@ Autonomous, overnight, done-for-you. This is the one outcome no competitor claim
 
 Not *"email is slow."* The real wound: **"you *are* the inbox."** Deals go cold, follow-ups slip, mornings start buried, ~13 hrs/week gone. The manifesto's four pain points are strong — reuse them. **Lead with the wound, not the feature.**
 
+**The enemy (added 2026-07): the email you never opened.** Mailient sells **loss prevention, not convenience.** The uncomfortable sentence: *"The most expensive email in your inbox is the one you never opened."* This is the switch argument that beats every incumbent objection — Gmail, Superhuman, ChatGPT, filters all work on the email you're *looking at*; none of them watch the email you *didn't*. That's where the money leaks, and only an autonomous reader-of-everything can stop it.
+
+**The buy-back litany (recurring language):** *"Go ship. Go sell. Go hire. Go build. We'll handle the inbox."* The product buys back **founder time**, not "time." Appears in: Receipt footer ("Go build."), clarity panel status, final CTA headline, footer.
+
 ---
 
 ## 6. Category & competitive frame
