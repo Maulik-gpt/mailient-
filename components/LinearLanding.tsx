@@ -113,7 +113,7 @@ const landingFaqs = [
 
   {
     q: "How long does setup take?",
-    a: "Two minutes. Connect your Google account, grant Gmail and Calendar access, and Mailient starts working immediately. There is nothing to configure. Arcus begins learning your voice in the background from the moment you connect."
+    a: "Two minutes. Connect your Google account, grant Gmail and Calendar access, and Mailient starts working immediately. There is nothing to configure. It begins learning your voice in the background from the moment you connect."
   },
   {
     q: "Does Mailient work for teams?",
@@ -328,6 +328,47 @@ export function LinearLanding() {
             </div>
           </BlurFade>
 
+          {/* THE RECEIPT — the product's actual artifact as proof. Not an
+              illustration of the product: the morning brief IS an email, so we
+              render the email. Illustrative numbers; swap in a real anonymized
+              brief once live users generate one. */}
+          <BlurFade delay={0.35} duration={0.9} inView>
+            <div className="mt-16 w-full max-w-md mx-auto text-left">
+              <div className="bg-[#050505] border border-white/[0.08] rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative overflow-hidden">
+                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.02),transparent_60%)] pointer-events-none" />
+
+                {/* Email header */}
+                <div className="flex items-center justify-between border-b border-white/[0.05] pb-3 mb-4 relative z-10">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-6 h-6 rounded-md overflow-hidden bg-black border border-white/10 shrink-0">
+                      <img src="/mailient-logo-v3.png" alt="" className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-[11px] text-neutral-400 font-mono">From: Mailient</span>
+                  </div>
+                  <span className="text-[11px] text-neutral-500 font-mono">7:00 AM</span>
+                </div>
+
+                <p className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase mb-4 relative z-10">Morning Brief — Tuesday</p>
+
+                <div className="space-y-2.5 font-mono text-[12.5px] relative z-10">
+                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>213 emails processed</p>
+                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>12 drafts ready, in your voice</p>
+                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>3 meetings booked</p>
+                  <p className="text-amber-300"><span className="mr-2">→</span>1 investor email needs you</p>
+                </div>
+
+                <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center justify-between relative z-10">
+                  <span className="text-[11px] text-neutral-500 font-mono">Time returned: <span className="text-white font-semibold">2h 14m</span></span>
+                  <span className="text-[11px] text-white font-mono font-semibold">Go build.</span>
+                </div>
+              </div>
+
+              <p className="text-center text-[11px] text-neutral-500 font-light mt-4 font-sans">
+                This is the actual email. Every morning. This is the product.
+              </p>
+            </div>
+          </BlurFade>
+
           {/* 16:9 Floating Obsidian Demo Video Window */}
           <BlurFade delay={0.4} duration={1.0} inView>
             <div 
@@ -506,7 +547,7 @@ export function LinearLanding() {
             </p>
 
             <p>
-              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting Arcus learn your voice, and then you stop thinking about your inbox.
+              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting it learn your voice, and then you stop thinking about your inbox.
             </p>
 
             <div className="border-l-2 border-white/20 pl-6 my-8 py-2 italic text-neutral-300 text-lg">
@@ -705,7 +746,7 @@ export function LinearLanding() {
                         <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> MEETING REQUEST · SARAH CHEN</span>
                         <span className="text-amber-400">DECIDE</span>
                       </div>
-                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">&ldquo;Can we sync Thursday or Friday afternoon?&rdquo; — Arcus is holding 2:00 PM Thu, conflict-free.</p>
+                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">&ldquo;Can we sync Thursday or Friday afternoon?&rdquo; — Mailient is holding 2:00 PM Thu, conflict-free.</p>
                       <div className="flex items-center gap-2">
                         <span className="flex-1 text-center text-[10px] font-bold text-black bg-white rounded-lg py-1.5">Confirm 2:00 PM</span>
                         <span className="flex-1 text-center text-[10px] font-medium text-neutral-300 bg-white/[0.05] border border-white/10 rounded-lg py-1.5">Propose another</span>
@@ -809,11 +850,15 @@ export function LinearLanding() {
               </span>
 
               <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Meet Arcus.
+                Meet your new employee.
               </h2>
 
               <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
                 Tell it "clear my inbox and prep tomorrow." It triages the flood, drafts replies in your voice, books the calls, and chases follow-ups across Gmail, Calendar, Notion, and Slack — then shows you the few things that still need you.
+              </p>
+
+              <p className="text-sm text-neutral-500 leading-relaxed font-light font-sans max-w-xl">
+                We named it Arcus. You'll just say: <span className="text-white">handled</span>.
               </p>
 
               <div className="pt-6">
@@ -821,7 +866,7 @@ export function LinearLanding() {
                   href="/product/arcus"
                   className="px-8 py-3 linear-cta text-white text-xs tracking-tight flex items-center gap-2 w-fit cursor-pointer"
                 >
-                  See Arcus at work
+                  See it at work
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -832,7 +877,7 @@ export function LinearLanding() {
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
               <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
-                <span>ARCUS · MORNING INBOX SWEEP</span>
+                <span>MAILIENT · MORNING INBOX SWEEP</span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               </div>
 
