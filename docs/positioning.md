@@ -49,13 +49,19 @@ Autonomous, overnight, done-for-you. This is the one outcome no competitor claim
 
 ## 3. Positioning statement
 
-> For the **solo founder, freelancer, or consultant** who runs their business out of **one Gmail and is drowning in it**, **Mailient** is an **autonomous inbox employee** that **clears the routine overnight and hands back only the few things that truly need them**. Unlike Superhuman, Shortwave, Fyxer, or Gmail's own AI — which make you *faster* at email — **Mailient takes email off your plate entirely.**
+> For the **solo founder** who runs their company out of **one Gmail and is drowning in it**, **Mailient** is an **autonomous inbox employee** that **clears the routine overnight and hands back only the few things that truly need them**. Unlike Superhuman, Shortwave, Fyxer, or Gmail's own AI — which make you *faster* at email — **Mailient removes email from your to-do list entirely.**
+
+**The tagline (canonical, repeated on every surface):** *"Mailient removes email from your to-do list entirely."* — hero, pricing, FAQ, demo, footer, meta description, signup, X bio, launch posts. Nothing competes with this sentence.
+
+**The price anchor (manifesto):** *"Your first employee shouldn't cost $80,000 a year. This one costs $29 a month."*
+
+**The emotion to sell:** relief, not AI. The customer doesn't want AI — they want to wake up and not dread Gmail.
 
 ---
 
 ## 4. ICP (who it's for)
 
-- **Who:** solo founders / freelancers / consultants; one Gmail; no EA; high volume; deals + relationships run through email.
+- **Who:** **solo founders. One ICP, not three** — freelancer/consultant messaging dropped (2026-07). One Gmail; no EA; high volume; deals + relationships run through email. Every surface says "founder."
 - **Not (yet):** teams / multi-seat — on the roadmap. Resist team messaging until it ships.
 - **Psychographic:** feels the Sunday-night dread; would hire an assistant but can't justify or manage one.
 - **Buyer:** the founder (self-serve, $29/mo).
