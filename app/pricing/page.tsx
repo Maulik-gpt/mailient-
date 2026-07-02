@@ -41,10 +41,6 @@ const PRICING_FAQS = [
   {
     q: "Are there any hidden API fees?",
     a: "No. All AI models, tokens, and storage costs are completely covered in your subscription rate. You will never see variable overage fees."
-  },
-  {
-    q: "What is your refund policy?",
-    a: "We offer a 14-day no-questions-asked refund policy for monthly and annual tiers if you are unsatisfied with your setup. Contact support@mailient.xyz."
   }
 ];
 

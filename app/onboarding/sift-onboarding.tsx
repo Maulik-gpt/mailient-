@@ -1517,10 +1517,6 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
           Continue with {p.label} <ArrowRight className="w-4 h-4" />
         </PrimaryButton>
       </GlassCard>
-
-      <p className="text-center text-[12.5px] text-[#0A0A0A]/45 mt-6 max-w-sm mx-auto leading-relaxed">
-        30 days, money back, from me directly. — Maulik
-      </p>
     </div>
   );
 }
