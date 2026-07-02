@@ -5,7 +5,7 @@ import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Mailient — Runs your inbox while you build your company",
-  description: "Mailient reads your email, prioritizes what matters, drafts replies in your voice, books meetings, and follows up automatically. You wake up to one morning briefing instead of an inbox.",
+  description: "Mailient removes email from a solo founder's to-do list entirely. It reads, prioritizes, drafts replies in your voice, books meetings, and follows up — you wake up to one morning briefing instead of an inbox.",
   metadataBase: new URL('https://mailient.xyz'),
   icons: {
     icon: [

@@ -37,13 +37,13 @@ export function CTASection() {
             
             {/* Premium Linear Gradient Headline */}
             <h2 className="text-4xl md:text-6xl lg:text-[76px] font-medium tracking-[-0.035em] mb-6 leading-[1.08] max-w-3xl font-sans select-none bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-              Built for the future. <br />
-              Available today.
+              Tomorrow morning, <br />
+              open one briefing. Not Gmail.
             </h2>
-            
+
             {/* Description */}
             <p className="text-[#8a8f98] text-sm md:text-base max-w-xl mb-10 leading-relaxed font-sans font-light select-none">
-              Connect your Gmail account today and see why people trust Mailient for their email automation.
+              Mailient removes email from your to-do list entirely. Connect your Gmail tonight — feel the difference at 7am.
             </p>
 
             {/* Buttons row matching the screenshot */}

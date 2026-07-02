@@ -117,7 +117,7 @@ const landingFaqs = [
   },
   {
     q: "Does Mailient work for teams?",
-    a: "Currently Mailient is built for individual founders, freelancers, and consultants — one Gmail account per workspace. Team and multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at maulik@mailient.xyz."
+    a: "Mailient is built for solo founders — one founder, one Gmail, no team seats. Multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at maulik@mailient.xyz."
   },
 
   {
@@ -132,8 +132,8 @@ export function LinearLanding() {
   const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
 
   const DESCRIPTIONS = [
-    "It reads, prioritizes, drafts in your voice, books meetings, and follows up — automatically.",
-    "You wake up to one morning briefing instead of an inbox.",
+    "Mailient removes email from your to-do list entirely.",
+    "Wake up. Read one briefing. Never dread Gmail again.",
     "By 7am: 240 triaged, 18 replies drafted, 3 meetings booked.",
   ];
 
@@ -195,7 +195,7 @@ export function LinearLanding() {
 
   const getSubtitles = (time: number) => {
     if (time >= 0 && time < 5) return "Up until now, email was a job you did by hand.";
-    if (time >= 5 && time < 10) return "Mailient runs your inbox for you.";
+    if (time >= 5 && time < 10) return "Mailient removes email from your to-do list entirely.";
     if (time >= 10 && time < 15) return "It reads your threads and writes replies in your voice.";
     if (time >= 15 && time < 20) return "All handled overnight, waiting for your approval.";
     if (time >= 20 && time < 25) return "Your emails are encrypted in your browser before they leave it.";
@@ -520,9 +520,13 @@ export function LinearLanding() {
             <p className="text-white font-medium">
               Mailient is not a feature. It is a hire.
             </p>
-            
+
+            <p className="text-white font-normal text-2xl md:text-3xl tracking-tight leading-snug pt-2">
+              Your first employee shouldn't cost $80,000 a year.
+            </p>
+
             <p>
-              The most reliable employee you will ever bring on board. One who never sleeps, never misses a message, never forgets a follow-up, and costs less per month than a single client lunch.
+              This one costs $29 a month. Never sleeps, never misses a message, never forgets a follow-up. The most reliable employee you will ever bring on board.
             </p>
 
             <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
@@ -1305,7 +1309,7 @@ export function LinearLanding() {
               Frequently asked questions.
             </h2>
             <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-              Can't find what you are looking for? Read our documentation page or contact support.
+              The short version: Mailient removes email from your to-do list entirely. Everything else is below — or ask us directly.
             </p>
           </div>
 

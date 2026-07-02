@@ -162,9 +162,9 @@ export default function PricingSection3({
         <div className="text-left max-w-2xl">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[9px] font-bold tracking-widest uppercase text-neutral-300 mb-4 shadow-xl">
             <Sparkles className="w-3 h-3 text-neutral-300" />
-            Pricing Packages
+            The Hiring Decision
           </div>
-          
+
           <h2 className="text-3xl md:text-5xl font-light tracking-[-0.03em] leading-tight text-white mb-4">
             <VerticalCutReveal
               splitBy="words"
@@ -173,7 +173,7 @@ export default function PricingSection3({
               reverse={true}
               containerClassName="justify-start"
             >
-              Choose your autonomous model.
+              Your next hire costs $29 a month.
             </VerticalCutReveal>
           </h2>
 
@@ -184,7 +184,7 @@ export default function PricingSection3({
             customVariants={revealVariants}
             className="text-neutral-400 text-sm leading-relaxed"
           >
-            Predictable flat options designed for scaling institutions and high-volume operators. Secure complete peace of mind.
+            Mailient removes email from your to-do list entirely. One plan, everything included — you just pick how you pay.
           </TimelineContent>
         </div>
 

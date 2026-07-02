@@ -129,7 +129,7 @@ export function Footer() {
             <span className="font-extrabold text-[15px] tracking-tight text-white font-satoshi">Mailient</span>
           </div>
           <p className="text-[13px] leading-relaxed text-neutral-500 font-light">
-            Handle less. Rest more. Autonomous email intelligence that works overnight so you don&apos;t have to.
+            Mailient removes email from your to-do list entirely. It works overnight, so you wake up to one briefing — not an inbox.
           </p>
           {/* Socials */}
           <div className="flex items-center gap-4 mt-1">
