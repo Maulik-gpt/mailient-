@@ -74,23 +74,24 @@ function parseRateLimit(body: any): { daily: boolean; resetMs?: number; retryAft
  * these accounts have zero credits and auto only routes to paid models.
  */
 const TOOL_CAPABLE_MODELS = [
-  // ORDER POLICY (revalidated 2026-07 against the live OpenRouter API): lead with
-  // the free models that actually return valid tool/JSON output FAST. Direct
-  // testing demoted the two NVIDIA leaders that were breaking every run:
-  //   • nemotron-3-super-120b → HTTP 200 with EMPTY content (degraded upstream)
-  //   • nemotron-3-ultra-550b → routinely TIMES OUT (550B is too slow for the
-  //     deadline budget, so it burned the whole time window before any model answered)
-  // All five leaders below returned real tool/JSON content on a live key.
+  // PRIMARY — nvidia/nemotron-3-ultra-550b-a55b:free (per product decision). The
+  // strongest free model available: 1M context, native tool/function-calling.
+  // LIVE-TEST CAVEAT (2026-07): ultra is intermittently unhealthy on the free
+  // tier — it returns HTTP 400 "Provider returned error" (fails fast, ~0.7s) or
+  // times out, and 429s once the daily quota is spent. So the confirmed-healthy
+  // models below sit IMMEDIATELY after it as fast fallback and carry runs whenever
+  // ultra is erroring; ultra becomes the real server once it recovers / the
+  // account has credit. Leading with it is cheap because its errors return fast.
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+  // Confirmed-healthy fallbacks — returned valid tool/JSON content on a live key.
   'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
   'qwen/qwen3-next-80b-a3b-instruct:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'qwen/qwen3-coder:free',
-  // Demoted — broken/slow as of 2026-07, kept last only in case they recover.
-  // parseOpenAIResponse discards super's empty output (≤1 wasted attempt) and the
-  // deadline-aware timeout bounds ultra so it can't eat the budget from here.
+  // Last-ditch — super-120b has been returning empty 200s (parseOpenAIResponse
+  // discards those, so it costs ≤1 skipped attempt if reached).
   'nvidia/nemotron-3-super-120b-a12b:free',
-  'nvidia/nemotron-3-ultra-550b-a55b:free',
   // Removed (verified 404 / dead on OpenRouter 2026-06): openai/gpt-oss-120b,
   // openai/gpt-oss-20b (retired per product decision), z-ai/glm-4.5-air,
   // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking.
