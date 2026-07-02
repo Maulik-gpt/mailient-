@@ -2,13 +2,16 @@
  * Home-feed Today surface — the daily decision queue.
  *
  * Returns at most 3 items per bucket:
- *   • decide   — unread mail in the last 24h that has urgency or revenue signal
+ *   • decide   — unread mail that may need a reply/decision
  *   • showUp   — calendar events for the rest of today
  *   • chase    — threads the user sent 3-14 days ago with no reply received
  *
- * No LLM calls in the hot path. Pure heuristics so the home feed loads fast.
- * The old /api/home-feed/insights deep-analysis surface stays available for
- * power users; this route is the surface the home page actually mounts.
+ * SELECTION IS THE AI'S JOB. The fetchers below gather only a WIDE, mostly-
+ * unfiltered candidate net — regex is used to ORDER the fallback, NOT to gate
+ * what the AI sees. The real select/rank/reason + briefing is done by the
+ * tool-driven triage agent (lib/arcus/today-agent.ts), which investigates the
+ * candidates with read-only tools before deciding. Heuristics run only when the
+ * AI is unavailable, so Today never loads worse than the regex baseline.
  */
 import { NextResponse } from 'next/server';
 // @ts-ignore
@@ -179,24 +182,41 @@ function isNoiseSender(fromHeader: string, subject: string): boolean {
   return false;
 }
 
-function classifyDecideReason(subject: string, snippet: string, from: string): string | null {
-  if (isNoiseSender(from, subject)) return null;
+// Only pure machine noise is dropped BEFORE the AI sees it — bounces and
+// calendar/system auto-mail — because they're never a human decision and would
+// just waste tokens. Everything else (incl. borderline newsletters/marketing)
+// is fed to the triage agent, which is now the thing that judges importance and
+// drops noise. This is the "give the AI more control of selection" policy.
+const HARD_NOISE_FROM = [
+  /mailer-daemon@/i,
+  /postmaster@/i,
+  /no[-_.]?reply@(?:.*\.)?(?:google|accounts\.google)\.com/i,
+  /calendar-notification@google\.com/i,
+];
+function isHardNoise(fromHeader: string): boolean {
+  return HARD_NOISE_FROM.some((re) => re.test(fromHeader));
+}
+
+// Heuristic signal → { reason, rank }. Used ONLY for (a) the fallback ordering
+// when the AI is unavailable and (b) trimming an overflowing pool sensibly. It no
+// longer EXCLUDES anything (hard noise is dropped by the caller); soft noise just
+// sorts last so the fallback top-3 stays clean while the item still reaches the AI.
+// Lower rank = higher priority.
+function decideSignal(subject: string, snippet: string, from: string): { reason: string; rank: number } {
   const text = `${subject} ${snippet}`;
-  for (const re of URGENCY_SIGNALS) if (re.test(text)) return 'Flagged urgent';
-  for (const re of REVENUE_SIGNALS) if (re.test(text)) return 'Money on the line';
-  for (const re of MEETING_REQUEST_SIGNALS) if (re.test(text)) return 'Wants time on your calendar';
-  // Direct question in the subject — but only if it's a real subject, not a
-  // marketing teaser ("Did you know?" / "Tired of X?")
+  if (isNoiseSender(from, subject)) return { reason: 'Likely newsletter/automated', rank: 9 };
+  for (const re of REVENUE_SIGNALS) if (re.test(text)) return { reason: 'Money on the line', rank: 0 };
+  for (const re of URGENCY_SIGNALS) if (re.test(text)) return { reason: 'Flagged urgent', rank: 1 };
+  // Direct question in the subject — but not a marketing teaser ("Did you know?").
   if (/\?/.test(subject) && subject.length < 90 && !/^(did you|tired of|want to|ready to|why )/i.test(subject.trim())) {
-    return 'Direct question';
+    return { reason: 'Direct question', rank: 2 };
   }
-  // Re: threads — they continue an active conversation so the user is
-  // expected to weigh in. Skip if subject looks like a marketing reply chain.
+  for (const re of MEETING_REQUEST_SIGNALS) if (re.test(text)) return { reason: 'Wants time on your calendar', rank: 3 };
+  // Re: threads continue an active conversation the user is expected to weigh in on.
   if (/^Re:/i.test(subject) && !/\b(unsubscribe|newsletter|digest)\b/i.test(text)) {
-    return 'Active thread waiting on you';
+    return { reason: 'Active thread waiting on you', rank: 4 };
   }
-  // Fallback for human emails to ensure the AI always has something to show
-  return 'Needs your attention';
+  return { reason: 'Needs your attention', rank: 5 };
 }
 
 // Replace generic regex reasons with real per-email reasoning via one batched
@@ -234,8 +254,11 @@ async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string,
 // snippet attached (used by the agent to read what each email says).
 async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise<DecideItem[]> {
   try {
-    const res = await (gmail as any).getEmails(30, 'is:unread newer_than:3d -category:promotions -category:social');
-    const ids: string[] = (res?.messages || []).map((m: any) => m.id).slice(0, 30);
+    // WIDER raw net (was 30) — the AI decides importance now, so give it more to
+    // choose from. Gmail's own promotions/social categories are still excluded
+    // (cheap, genuinely marketing); our regex no longer gates the rest.
+    const res = await (gmail as any).getEmails(50, 'is:unread newer_than:3d -category:promotions -category:social');
+    const ids: string[] = (res?.messages || []).map((m: any) => m.id).slice(0, 50);
     if (!ids.length) return [];
     const details = await Promise.all(
       ids.map(async (id) => {
@@ -247,33 +270,30 @@ async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise
         }
       }),
     );
-    const items: DecideItem[] = [];
+    const ranked: Array<{ item: DecideItem; rank: number }> = [];
     for (const d of details) {
       if (!d) continue;
-      const reason = classifyDecideReason(d.subject || '', d.snippet || '', d.from || '');
-      if (!reason) continue;
+      if (isHardNoise(d.from || '')) continue; // only pure machine noise is dropped pre-AI
+      const { reason, rank } = decideSignal(d.subject || '', d.snippet || '', d.from || '');
       const sender = parseFromHeader(d.from || '');
-      items.push({
-        id: d.id,
-        threadId: d.threadId,
-        sender,
-        subject: d.subject || '(no subject)',
-        reason,
-        receivedAt: d.date || new Date(Number(d.internalDate) || Date.now()).toISOString(),
-        gmailUrl: `https://mail.google.com/mail/u/0/#inbox/${d.threadId}`,
-        snippet: d.snippet || '',
+      ranked.push({
+        rank,
+        item: {
+          id: d.id,
+          threadId: d.threadId,
+          sender,
+          subject: d.subject || '(no subject)',
+          reason,
+          receivedAt: d.date || new Date(Number(d.internalDate) || Date.now()).toISOString(),
+          gmailUrl: `https://mail.google.com/mail/u/0/#inbox/${d.threadId}`,
+          snippet: d.snippet || '',
+        },
       });
     }
-    // Priority: revenue > urgent > question > meeting > active thread
-    const rank = (r: string) => {
-      if (r === 'Money on the line') return 0;
-      if (r === 'Flagged urgent') return 1;
-      if (r === 'Direct question') return 2;
-      if (r === 'Wants time on your calendar') return 3;
-      return 4;
-    };
-    items.sort((a, b) => rank(a.reason) - rank(b.reason));
-    return items.slice(0, limit);
+    // Order for the FALLBACK / overflow-trim only. The AI re-ranks from scratch,
+    // so this just keeps the pool sensible (and the fallback top-3 clean).
+    ranked.sort((a, b) => a.rank - b.rank);
+    return ranked.slice(0, limit).map((r) => r.item);
   } catch (err) {
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
     return [];
@@ -535,14 +555,17 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     }
   };
 
-  // Gather WIDER candidate pools (not just top-3) — these are the raw material
-  // the AI triage selects + ranks from. Selection/prioritization is the agent's
-  // job now; these fetchers are just the candidate net + the heuristic backstop.
-  const CANDIDATE_LIMIT = 10;
+  // Gather WIDE candidate pools — the raw material the AI triage selects + ranks
+  // from. Decide gets the widest net (judging email importance is the hardest,
+  // most valuable call); chase a bit wider too. The fetchers are just the net +
+  // the heuristic backstop; the agent does the real selection.
+  const DECIDE_CANDIDATES = 18;
+  const CHASE_CANDIDATES = 14;
+  const SHOWUP_CANDIDATES = 10;
   const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
-    wrap(() => fetchDecide(gmail, CANDIDATE_LIMIT), 'gmail'),
-    wrap(() => fetchShowUp(cal, userEmail, CANDIDATE_LIMIT), 'calendar'),
-    wrap(() => fetchChase(gmail, userEmail, CANDIDATE_LIMIT), 'gmail'),
+    wrap(() => fetchDecide(gmail, DECIDE_CANDIDATES), 'gmail'),
+    wrap(() => fetchShowUp(cal, userEmail, SHOWUP_CANDIDATES), 'calendar'),
+    wrap(() => fetchChase(gmail, userEmail, CHASE_CANDIDATES), 'gmail'),
     fetchActionItems(userEmail),
     fetchAgentRuns(userEmail),
   ]);
@@ -575,7 +598,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
           chase: chasePool,
           showUp: showUpPool,
         },
-        { deadlineMs: 24_000, maxToolCalls: 12 },
+        { deadlineMs: 28_000, maxToolCalls: 14 },
       );
       if (agent) {
         decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];
