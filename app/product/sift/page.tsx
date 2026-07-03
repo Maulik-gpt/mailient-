@@ -83,7 +83,7 @@ export default function SiftProductPage() {
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
               </span>
               <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-                Product // Sift Intake Triage
+                Product // Sift
               </span>
             </div>
           </BlurFade>
@@ -205,8 +205,8 @@ export default function SiftProductPage() {
             </div>
 
             <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-              <span>Vault-grade local PII shield</span>
-              <span>100% SECURE</span>
+              <span>Encrypted in your browser</span>
+              <span>ONLY WHAT NEEDS YOU</span>
             </div>
           </div>
 
@@ -219,7 +219,7 @@ export default function SiftProductPage() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-[11px] text-neutral-400 font-sans">
-              Vault-grade local PII sanitization with AES-256 local cache protection.
+              Your emails are encrypted in your browser before they leave it. Personal data is stripped before any AI sees it.
             </span>
           </div>
           <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">

@@ -19,10 +19,13 @@ const POLAR_CHECKOUT_URLS = {
   lifetime: "https://buy.polar.sh/polar_cl_T848DqQDK82361tmecJpNmtFgfPubJSb4Eyza2l8yrV"
 };
 
+// One plan, everything included — the tiers differ only in how you pay (plus
+// badge + support level). The table must never invent capability differences;
+// that contradicts the "full product from day one" story told everywhere else.
 const COMPARISON_FEATURES = [
-  { category: "Core Capabilities", name: "Relational Sift", monthly: "Standard", annual: "Advanced", lifetime: "Priority Graph" },
-  { category: "Core Capabilities", name: "AI Draft Replies", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
-  { category: "Core Capabilities", name: "Arcus AI Queries", monthly: "Unlimited", annual: "Priority Access", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "Emails read, triaged & prioritized", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "Replies drafted in your voice", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "AI chat & overnight agents", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
   { category: "Integration", name: "Google Calendar Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
   { category: "Integration", name: "Notion & Cal.com Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
   { category: "Security & Badges", name: "Founding Badge", monthly: "✓ Gold Badge", annual: "✓ Gold Badge", lifetime: "✓ Diamond Badge" },
@@ -36,7 +39,7 @@ const PRICING_FAQS = [
   },
   {
     q: "How does the Lifetime founding tier work?",
-    a: "The Lifetime tier is a one-time purchase of $499. You secure full access to all Mailient core features forever. The 500 AI queries/month cap is refilled automatically on the 1st of every month."
+    a: "The Lifetime tier is a one-time purchase of $499. You secure full access to everything Mailient does, forever — same unlimited product as every other plan. You just never pay again."
   },
   {
     q: "Are there any hidden API fees?",

@@ -35,7 +35,7 @@ const arcusFaqs = [
   },
   {
     q: "How does Arcus learn to write like me?",
-    a: "Arcus reads your last 90 days of sent emails to understand how you write — your greeting, your sign-off, your tone with clients versus partners, your sentence length, your vocabulary. It builds a Neural Voice Profile that every draft is filtered through. Your clients should not be able to tell the difference."
+    a: "Arcus reads your last 90 days of sent emails to understand how you write — your greeting, your sign-off, your tone with clients versus partners, your sentence length, your vocabulary. Every draft it writes goes through that voice profile. Your clients should not be able to tell the difference."
   },
   {
     q: "What are Scheduling Agents?",
@@ -521,7 +521,7 @@ export default function ArcusProductPage() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-4 h-4 text-indigo-400" />
             <span className="text-[11px] text-neutral-400 font-sans">
-              Vault-grade local PII sanitization with AES-256 local cache protection.
+              Your emails are encrypted in your browser before they leave it. Personal data is stripped before any AI sees it.
             </span>
           </div>
           <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">

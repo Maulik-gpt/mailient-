@@ -81,7 +81,7 @@ export default function DraftsProductPage() {
                 <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-neutral-300"></span>
               </span>
               <span className="text-[10px] font-medium tracking-[0.15em] text-[#8a8f98] uppercase font-mono">
-                Product // Draft Tone Writer
+                Product // Drafts
               </span>
             </div>
           </BlurFade>
@@ -148,15 +148,15 @@ export default function DraftsProductPage() {
             <ul className="space-y-4 pt-2">
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Voice Mimicking:</strong> Analyses your past outbound threads to match your greeting styles, paragraph structures, and sign-offs.</span>
+                <span><strong>It writes like you:</strong> your greetings, your paragraph rhythm, your sign-offs — learned from the emails you've already sent.</span>
               </li>
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Relational Context:</strong> Matches timelines and scheduling queries with Google Calendar availability dynamically.</span>
+                <span><strong>It knows your calendar:</strong> when someone asks to meet, the draft already proposes times you're actually free.</span>
               </li>
               <li className="flex items-start gap-3 text-xs text-neutral-300 font-light">
                 <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                <span><strong>Full Consent Check:</strong> Mailient is built as a collaborative drafts co-pilot. Sending is entirely manual.</span>
+                <span><strong>Nothing sends without you:</strong> every draft waits for your click. Always.</span>
               </li>
             </ul>
           </div>
@@ -189,8 +189,8 @@ export default function DraftsProductPage() {
             </div>
 
             <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-              <span>Vault-grade local PII shield</span>
-              <span>100% SECURE</span>
+              <span>Encrypted in your browser</span>
+              <span>NOTHING SENDS WITHOUT YOU</span>
             </div>
           </div>
 
@@ -203,7 +203,7 @@ export default function DraftsProductPage() {
           <div className="flex items-center gap-3">
             <ShieldCheck className="w-4 h-4 text-emerald-400" />
             <span className="text-[11px] text-neutral-400 font-sans">
-              Vault-grade local PII sanitization with AES-256 local cache protection.
+              Your emails are encrypted in your browser before they leave it. Personal data is stripped before any AI sees it.
             </span>
           </div>
           <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">
