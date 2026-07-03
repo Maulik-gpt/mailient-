@@ -10,6 +10,10 @@ const BLOG_POSTS: Array<{ slug: string; published: string }> = [
   { slug: 'ai-learns-your-writing-style', published: '2026-05-22' },
   { slug: 'founders-lose-deals-inbox', published: '2026-05-24' },
   { slug: 'zero-knowledge-encryption-email-privacy', published: '2026-05-23' },
+  { slug: 'what-is-an-ai-email-employee', published: '2026-07-02' },
+  { slug: 'mailient-vs-superhuman', published: '2026-07-02' },
+  { slug: 'mailient-vs-fyxer', published: '2026-07-02' },
+  { slug: 'best-ai-email-assistant-solo-founders', published: '2026-07-02' },
 ];
 
 export default function sitemap(): MetadataRoute.Sitemap {

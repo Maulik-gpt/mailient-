@@ -14,6 +14,42 @@ import { cn } from "@/lib/utils";
 
 const BLOG_POSTS = [
   {
+    slug: "best-ai-email-assistant-solo-founders",
+    title: "Best AI Email Tools for Solo Founders in 2026 — An Honest Comparison",
+    excerpt: "Superhuman, Fyxer, Shortwave, Notion Mail, Gmail's Gemini, and Mailient — what each is best at, who should skip us, and how to choose by the job you're hiring for.",
+    category: "Comparisons",
+    date: "July 2, 2026",
+    readTime: "9 min read",
+    featured: false,
+  },
+  {
+    slug: "what-is-an-ai-email-employee",
+    title: "What Is an AI Email Employee? (And Why It's Not an Assistant)",
+    excerpt: "It reads, triages, drafts, books, and follows up autonomously — you approve, it works. The definition of the category, and how it differs from copilots and clients.",
+    category: "Industry",
+    date: "July 2, 2026",
+    readTime: "8 min read",
+    featured: false,
+  },
+  {
+    slug: "mailient-vs-superhuman",
+    title: "Mailient vs Superhuman: Speed vs Autonomy (Honest 2026 Comparison)",
+    excerpt: "Superhuman makes you faster at email. Mailient does the email for you. Two opposite philosophies, honestly compared — including who should pick Superhuman.",
+    category: "Comparisons",
+    date: "July 2, 2026",
+    readTime: "8 min read",
+    featured: false,
+  },
+  {
+    slug: "mailient-vs-fyxer",
+    title: "Mailient vs Fyxer: Great Drafts vs a Whole Inbox Employee",
+    excerpt: "Fyxer drafts your replies and organizes your inbox. Mailient runs the whole job — triage, booking, follow-ups, and a morning briefing. The honest head-to-head.",
+    category: "Comparisons",
+    date: "July 2, 2026",
+    readTime: "7 min read",
+    featured: false,
+  },
+  {
     slug: "founders-lose-deals-inbox",
     title: "Why Founders Lose Deals in Their Inbox (And How to Fix It)",
     excerpt: "The hidden cost of inbox overload isn't just wasted time — it's missed revenue. Here's how high-stakes emails slip through the cracks, and what to do about it.",
@@ -60,7 +96,7 @@ const BLOG_POSTS = [
   },
 ];
 
-const CATEGORIES = ["All", "Productivity", "Security", "Engineering", "Industry"];
+const CATEGORIES = ["All", "Productivity", "Security", "Engineering", "Industry", "Comparisons"];
 
 export default function BlogsPage() {
   const { theme, resolvedTheme } = useTheme();
