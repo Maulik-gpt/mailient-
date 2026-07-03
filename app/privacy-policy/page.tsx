@@ -14,7 +14,7 @@ interface Section {
 }
 
 export default function PrivacyPolicy() {
-  const lastUpdated = "April 12, 2026";
+  const lastUpdated = "July 2, 2026";
 
   const sections: Section[] = [
     {
@@ -84,7 +84,7 @@ export default function PrivacyPolicy() {
             </div>
             <div>
               <p className="font-bold text-black dark:text-white">Personalization</p>
-              <p>Calibrating your neural voice style and relationship tracking to match your unique communication style.</p>
+              <p>Building your voice profile and relationship context so drafts and prioritization match how you actually write and who matters to you.</p>
             </div>
             <div>
               <p className="font-bold text-black dark:text-white">Product improvement</p>
@@ -117,11 +117,11 @@ export default function PrivacyPolicy() {
           </div>
           <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p>We do not use your data to train public AI models — your email content is never used to improve foundational or publicly shared machine learning models.</p>
+            <p>We do not use your data to train AI models — your email content is never used to train or improve any AI model: not ours, not our AI providers', not anyone's.</p>
           </div>
           <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>
-            <p>We do not send emails automatically on your behalf — all email sending actions require you to review and approve each message before it is sent.</p>
+            <p>We do not send emails on your behalf by default — every message requires your review and approval before it is sent. The only exception is a background agent that you have explicitly switched into autonomous mode; that is a per-agent choice you make deliberately, never a default.</p>
           </div>
           <div className="flex gap-4 items-start pl-6">
             <div className="text-red-500 font-bold">✕</div>

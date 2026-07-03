@@ -177,7 +177,7 @@ export default function DraftsProductPage() {
               </div>
               <p className="text-[11px] leading-relaxed text-neutral-300 font-sans font-light">
                 Hi Sarah, <br /><br />
-                Thanks for reaching out! Yes, we have our SOC2 audit complete and fully encrypted via AES-256. I've attached our audit details below. <br /><br />
+                Thanks for reaching out! Yes — everything is encrypted end to end (AES-256), and customer data never trains any AI model. I've attached our security overview below. <br /><br />
                 Best,<br />
                 Marcus
               </p>

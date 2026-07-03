@@ -14,7 +14,7 @@ interface Section {
 }
 
 export default function TermsOfService() {
-  const currentDate = "4 April 2026"; // User requested to copy same text
+  const currentDate = "2 July 2026";
 
   const sections: Section[] = [
     {
@@ -22,7 +22,7 @@ export default function TermsOfService() {
       title: "1. Binding Agreement",
       content: (
         <div className="space-y-4">
-          <p>These Terms of Conditions ("Terms") constitute a legally binding agreement between you ("User," "you") and Mailient ("Mailient," "we," "us," "our"). By accessing, registering for, or using our Services, you agree to be bound by these Terms.</p>
+          <p>These Terms of Use ("Terms") constitute a legally binding agreement between you ("User," "you") and Mailient ("Mailient," "we," "us," "our"). By accessing, registering for, or using our Services, you agree to be bound by these Terms.</p>
           <p>If you do not agree, you must immediately discontinue use.</p>
           <p>We reserve the right to refuse service to anyone at our sole discretion.</p>
         </div>
@@ -104,7 +104,7 @@ export default function TermsOfService() {
           <p>By connecting your email or third-party accounts, you grant Mailient limited permission to access and process data strictly for:</p>
           <ul className="list-disc pl-5 space-y-2">
             <li>Providing core functionality;</li>
-            <li>Improving Services;</li>
+            <li>Improving Services (never to train AI models on your content);</li>
             <li>Security and abuse prevention.</li>
           </ul>
           <p>We do NOT claim ownership of your data.</p>
@@ -123,13 +123,13 @@ export default function TermsOfService() {
       content: (
         <div className="space-y-4">
           <p>You retain ownership of all content you provide ("User Content").</p>
-          <p>You grant Mailient a worldwide, non-exclusive, royalty-free, perpetual, and sublicensable license to:</p>
+          <p>You grant Mailient a worldwide, non-exclusive, royalty-free license to:</p>
           <ul className="list-disc pl-5 space-y-2">
             <li>Process, store, and display content;</li>
-            <li>Modify content for functionality;</li>
-            <li>Create anonymized and aggregated insights.</li>
+            <li>Modify content for functionality (for example, drafting replies in your voice);</li>
+            <li>Create anonymized and aggregated insights that cannot identify you.</li>
           </ul>
-          <p>This license is strictly limited to operating and improving the Services.</p>
+          <p>This license exists strictly to operate and improve the Services for you. It is never used to train AI models on your content, and it ends when you delete the content or close your account (except for insights already anonymized).</p>
         </div>
       )
     },
@@ -185,6 +185,7 @@ export default function TermsOfService() {
             <li>Non-refundable (unless required by law);</li>
             <li>Subject to pricing changes with notice.</li>
           </ul>
+          <p>Free trials convert into paid subscriptions at the end of the trial period unless cancelled before the trial ends.</p>
           <p>We may suspend Services for non-payment.</p>
         </div>
       )

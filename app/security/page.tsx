@@ -41,21 +41,21 @@ export default function SecurityPage() {
           <div className="inline-flex items-center gap-2.5 px-4.5 py-1.5 rounded-full bg-white/[0.02] border border-white/[0.06] shadow-2xl mb-4 group cursor-pointer hover:border-white/[0.12] transition-colors">
             <ShieldCheck className="w-3.5 h-3.5 text-neutral-300" />
             <span className="text-[10px] font-medium tracking-[0.2em] text-neutral-300 uppercase">
-              Enterprise Security
+              Security
             </span>
           </div>
         </BlurFade>
 
         <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
           <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-white leading-tight">
-            Zero-trust protocols. <br />
-            <span className="font-medium italic text-neutral-350">Bank-grade isolation.</span>
+            We can't read your email. <br />
+            <span className="font-medium italic text-neutral-350">Architecture, not a promise.</span>
           </h1>
         </BlurFade>
 
         <BlurFade delay={0.28} duration={0.8} yOffset={12} inView>
           <p className="text-neutral-400 text-sm md:text-base max-w-xl mx-auto font-light leading-relaxed tracking-tight">
-            Mailient is engineered to protect your private corporate data. We maintain SOC2 Type II compliance standards and enforce absolute data segregation at every stage of ingestion.
+            Your emails are encrypted in your browser before they reach our servers. Personal data is stripped before any AI sees it. And nothing sends without your approval.
           </p>
         </BlurFade>
       </section>
@@ -73,7 +73,7 @@ export default function SecurityPage() {
                 </div>
                 <h3 className="text-lg font-semibold text-white mb-4">AES-256 Encryption</h3>
                 <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                  All records, indexing details, and cached tokens are encrypted utilizing military-grade AES-256 standard protocols at rest and in transit. Your email content is processed strictly in-memory during real-time classification.
+                  Everything stored — records, tokens, cache — is encrypted with bank-grade AES-256, at rest and in transit. Your decryption keys live in your browser and never reach our servers. Email content is processed in memory, not warehoused.
                 </p>
               </div>
               <div className="mt-8 pt-4 border-t border-white/[0.04] flex items-center gap-1.5 text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
@@ -90,14 +90,14 @@ export default function SecurityPage() {
                 <div className="w-10 h-10 rounded-xl bg-white/[0.02] border border-white/[0.06] flex items-center justify-center text-white mb-6 shadow-2xl">
                   <Server className="w-5 h-5 text-neutral-350" />
                 </div>
-                <h3 className="text-lg font-semibold text-white mb-4">Zero LLM Retention</h3>
+                <h3 className="text-lg font-semibold text-white mb-4">Never Used for Training</h3>
                 <p className="text-xs text-neutral-400 font-light leading-relaxed font-sans">
-                  We strictly enforce a zero-data-retention policy for large language model (LLM) training. Under no circumstances is your outbound tone, corporate vocabulary, or inbound relational emails utilized to train public models.
+                  Your email content is never used to train AI models — not ours, not our AI providers', not anyone's. What the AI reads to complete a task stays in that task. Your data serves you; it never improves a product you didn't consent to.
                 </p>
               </div>
               <div className="mt-8 pt-4 border-t border-white/[0.04] flex items-center gap-1.5 text-[9px] uppercase font-bold text-neutral-500 tracking-wider">
                 <Check className="w-4 h-4 text-emerald-450" />
-                <span>segregated training</span>
+                <span>No training. Ever.</span>
               </div>
             </div>
           </BlurFade>
@@ -127,7 +127,7 @@ export default function SecurityPage() {
         <BlurFade delay={0.65} duration={0.8} yOffset={15} inView>
           <div className="mt-16 rounded-3xl border border-white/[0.04] bg-white/[0.01] p-8 text-center space-y-4 shadow-2xl">
             <p className="text-xs text-neutral-400 font-light leading-relaxed max-w-xl mx-auto font-sans">
-              Our SOC2 audit was completed by certified independent evaluators, validating our administrative, technical, and physical security parameters. For direct security inquiries, email us at <span className="font-semibold text-white">security@mailient.xyz</span>.
+              Every claim on this page is verifiable in how the product behaves: encryption happens in your browser, drafts wait for your approval, and revoking access takes one click in your Google account. Security questions? Email <span className="font-semibold text-white">security@mailient.xyz</span> — you'll get an answer from the person who wrote the code.
             </p>
           </div>
         </BlurFade>
