@@ -28,7 +28,7 @@ export default function DraftsProductPage() {
   };
 
   useEffect(() => {
-    document.title = "Draft Reply / Mailient";
+    document.title = "Drafts — replies that sound like you | Mailient";
   }, []);
 
   return (
@@ -134,7 +134,7 @@ export default function DraftsProductPage() {
 
           <div className="flex-1 space-y-6 text-left relative z-10">
             <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-              AUTOMATIC TONE SIGNATURES
+              IN YOUR VOICE
             </span>
             
             <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] text-white leading-tight font-sans">

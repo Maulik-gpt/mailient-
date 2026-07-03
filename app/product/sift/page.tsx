@@ -30,7 +30,7 @@ export default function SiftProductPage() {
   };
 
   useEffect(() => {
-    document.title = "Sift Intake / Mailient";
+    document.title = "Sift — only what needs you | Mailient";
   }, []);
 
   return (
@@ -136,11 +136,11 @@ export default function SiftProductPage() {
 
           <div className="flex-1 space-y-6 text-left relative z-10">
             <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-              TRIAGE INGESTION ENGINE
+              HOW IT DECIDES
             </span>
-            
+
             <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.03em] text-white leading-tight font-sans">
-              A smarter way to index.
+              It reads everything. You read almost nothing.
             </h2>
 
             <p className="text-xs text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
@@ -168,7 +168,7 @@ export default function SiftProductPage() {
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.03] text-[10px] text-neutral-500">
-              <span>Sift Ingestion Engine</span>
+              <span>Sift — reading your inbox</span>
               <span className="text-emerald-500 font-bold uppercase tracking-widest animate-pulse">Running</span>
             </div>
 

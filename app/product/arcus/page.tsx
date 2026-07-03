@@ -83,7 +83,7 @@ export default function ArcusProductPage() {
   };
 
   useEffect(() => {
-    document.title = "Arcus Flagship / Mailient";
+    document.title = "Arcus — the AI running your inbox | Mailient";
     // Loop steps to show active execution simulation in the middle console
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % 4);
@@ -151,7 +151,7 @@ export default function ArcusProductPage() {
           <BlurFade delay={0.25} duration={0.8} yOffset={12} inView>
             <div className="text-base md:text-[20px] text-[#8a8f98] leading-relaxed max-w-2xl mt-4 font-light font-sans tracking-tight">
               <WordBlurStream
-                text="An autonomous inbox engine that sweeps your incoming threads, generates smart drafts matching your style, and manages your scheduling completely on autopilot."
+                text="It reads every thread, drafts replies in your voice, books your meetings, and runs on schedule while you sleep. Nothing sends without your approval."
                 msPerWord={80}
                 startupMs={400}
                 loop={false}
@@ -175,10 +175,10 @@ export default function ArcusProductPage() {
       <section className="py-24 px-6 w-full max-w-7xl mx-auto z-10 relative">
         <div className="text-center mb-16">
           <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
-            ARCUS FLAGSPACE // CONTROL PANEL
+            EVERY DECISION IN THE OPEN
           </span>
           <h2 className="text-3xl md:text-[42px] font-medium tracking-[-0.025em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-            A real-time command center for your outbox.
+            Watch it work. Approve what goes out.
           </h2>
         </div>
 
@@ -354,10 +354,10 @@ export default function ArcusProductPage() {
                   </div>
 
                   <div className="text-neutral-500 pt-3">
-                    Learn style: 90-day outbound semantic analysis
+                    Voice: learned from your last 90 days of sent mail
                   </div>
                   <div className="text-neutral-500">
-                    Voice Signature: Formal leadership profile
+                    Sounds like: you
                   </div>
 
                 </div>
@@ -377,10 +377,10 @@ export default function ArcusProductPage() {
         
         <div className="mb-24">
           <span className="font-mono text-[9px] tracking-[0.2em] text-indigo-400 uppercase font-bold block mb-4">
-            THE BEST WAY TO MANAGE WITH AGENTS
+            WHAT YOUR NEW EMPLOYEE DOES
           </span>
           <h2 className="text-4xl md:text-[54px] font-medium tracking-[-0.035em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-            Built to drive real leverage.
+            It does the work. You approve it.
           </h2>
         </div>
 
@@ -390,14 +390,14 @@ export default function ArcusProductPage() {
           <div className="flex flex-col lg:flex-row items-center gap-16 text-left">
             <div className="flex-1 space-y-6">
               <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
-                Built to drive real engineering work.
+                From one reply to a full inbox sweep.
               </h3>
               <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
-                From simple scheduling to complex multi-step updates, Arcus reliably completes outbox sweeps, calendar invites, and draft creation in your exact voice signatures.
+                Ask for a single draft or hand it the whole morning. It finds the open slot, books the call, and writes the reply the way you would have written it.
               </p>
               <div className="pt-2">
                 <Link href="/product/sift" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
-                  Explore triage integration
+                  See how it picks what matters
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -411,14 +411,14 @@ export default function ArcusProductPage() {
               {/* Floating elegant terminal mockup card */}
               <div className="w-[340px] bg-[#08090c] border border-white/[0.08] rounded-xl p-4 shadow-2xl space-y-3 font-mono text-[10px] text-neutral-300 relative z-10 transition-transform group-hover:scale-[1.02] duration-300">
                 <div className="flex items-center justify-between border-b border-white/[0.04] pb-2 text-neutral-500">
-                  <span>Voice Profiler V1</span>
-                  <span className="text-emerald-400 font-bold">ANALYZED</span>
+                  <span>Voice profile</span>
+                  <span className="text-emerald-400 font-bold">LEARNED</span>
                 </div>
                 <div className="space-y-1.5 font-sans">
-                  <div className="font-semibold text-white font-mono">&gt; Semantic analysis parameters:</div>
+                  <div className="font-semibold text-white font-mono">&gt; What it learned from your sent mail:</div>
                   <div className="pl-3.5 text-neutral-400 text-[9.5px] leading-relaxed">
                     • Average length: 34 words per message<br />
-                    • Formality bias: 84% collaboration tone<br />
+                    • Warm but direct with clients<br />
                     • Favorite sign-off: "Looking forward to it"
                   </div>
                 </div>
@@ -430,14 +430,14 @@ export default function ArcusProductPage() {
           <div className="flex flex-col lg:flex-row-reverse items-center gap-16 text-left">
             <div className="flex-1 space-y-6">
               <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
-                Designed for multi-agent loops.
+                It works while the tab is closed.
               </h3>
               <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
-                Arcus doesn't run in a single tab. It runs in secure background loops, sweeping your outbox on schedule, monitoring reminders, and coordinating calendars.
+                No tab open, no prompt, no reminder. It runs on schedule in the background — sweeping your inbox, chasing follow-ups, watching your calendar — and reports back every morning.
               </p>
               <div className="pt-2">
                 <Link href="/product/drafts" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
-                  Learn about Tone Writing
+                  See drafts in your voice
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -471,14 +471,14 @@ export default function ArcusProductPage() {
           <div className="flex flex-col lg:flex-row items-center gap-16 text-left">
             <div className="flex-1 space-y-6">
               <h3 className="text-2xl md:text-[28px] font-medium tracking-tight text-white leading-snug">
-                Adapts to how your team builds.
+                Plugged into what you already use.
               </h3>
               <p className="text-sm text-neutral-400 leading-relaxed font-light font-sans">
-                Plugs natively into Google Workspace, Cal.com, and Notion, translating unstructured emails into clean calendar links, reminders, and synced database sheets.
+                Gmail, Google Calendar, Cal.com, Notion. It turns messy email threads into booked meetings, reminders, and clean notes — filed where you already keep them.
               </p>
               <div className="pt-2">
                 <Link href="/pricing" className="inline-flex items-center gap-1 text-xs font-semibold text-white hover:underline">
-                  View plans and limits
+                  See pricing — everything included
                   <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
@@ -536,12 +536,12 @@ export default function ArcusProductPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
           
           <div className="lg:col-span-4 space-y-4 text-left">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">ARCUS AGENT FAQ</span>
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>
             <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Frequently asked questions.
             </h2>
             <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-              Explore the technical details and capabilities of the Arcus Flagship agent loop.
+              The short version: it runs your inbox, and nothing sends without you. Details below.
             </p>
           </div>
 

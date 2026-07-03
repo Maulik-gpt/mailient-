@@ -177,17 +177,19 @@ function SignUpContent() {
       handle: "@joms0993",
       text: "I checked out your tool and it looks great. I think people would find a lot of value in it. The pricing is also very competitive compared to similar tools, which could make an easy choice for users."
     },
+    // Honest pre-launch cards: product promises framed as artifacts, not
+    // invented people. Swap in real founder quotes as they come in.
     {
-      avatarSrc: "https://randomuser.me/api/portraits/men/64.jpg",
-      name: "Marcus Johnson",
-      handle: "@marcustech",
-      text: "The founder-grade response engine is exactly what I needed for my agency."
+      avatarSrc: "/mailient-logo-v3.png",
+      name: "The Morning Brief",
+      handle: "every day · 7:00 AM",
+      text: "213 emails processed. 12 drafts in your voice. 3 meetings booked. 1 investor email needs you. Time returned: 2h 14m."
     },
     {
-      avatarSrc: "https://randomuser.me/api/portraits/men/32.jpg",
-      name: "David Martinez",
-      handle: "@davidcreates",
-      text: "Enterprise-level automation for everyday founders. Truly game-changing."
+      avatarSrc: "/mailient-logo-v3.png",
+      name: "What you're hiring",
+      handle: "$29/mo — not $80k/yr",
+      text: "An employee that reads every thread overnight, never misses a follow-up, and waits for your approval before anything sends."
     },
   ];
 
