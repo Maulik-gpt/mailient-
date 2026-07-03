@@ -39,10 +39,52 @@ export const metadata = {
 };
 
 
+// Site-wide structured data. Only verifiable facts — no fabricated ratings
+// or review counts. Prices must stay in sync with lib/subscription-service.js
+// PLANS and the pricing page.
+const organizationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "Mailient",
+  url: "https://mailient.xyz",
+  logo: "https://mailient.xyz/mailient-logo-v3.png",
+  founder: { "@type": "Person", name: "Maulik", url: "https://x.com/maulik_5" },
+  contactPoint: {
+    "@type": "ContactPoint",
+    email: "mailient.xyz@gmail.com",
+    contactType: "customer support",
+  },
+  sameAs: ["https://x.com/maulik_5", "https://github.com/Maulik-gpt"],
+};
+
+const softwareJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Mailient",
+  url: "https://mailient.xyz",
+  applicationCategory: "BusinessApplication",
+  operatingSystem: "Web",
+  description:
+    "Mailient removes email from your to-do list entirely. An autonomous AI inbox employee for solo founders: it reads, prioritizes, drafts replies in your voice, books meetings, and follows up while you sleep — you wake up to one morning briefing instead of an inbox.",
+  offers: [
+    { "@type": "Offer", name: "Monthly", price: "29", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Annual", price: "199", priceCurrency: "USD" },
+    { "@type": "Offer", name: "Lifetime Founder", price: "499", priceCurrency: "USD" },
+  ],
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareJsonLd) }}
+        />
         <script dangerouslySetInnerHTML={{ __html: `
           (function() {
             try {

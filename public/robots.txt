@@ -1,6 +1,46 @@
+# Mailient — robots.txt
+# Marketing pages are open to everyone, including AI/answer-engine crawlers.
+# Private app surfaces (behind auth) are excluded from crawl.
+
 User-agent: *
 Allow: /
-Allow: /privacy-policy
-Allow: /terms-of-service
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /home-feed
+Disallow: /onboarding
+Disallow: /payment-success
+Disallow: /workspace-setup
+Disallow: /aether/
+Disallow: /invite/
+Disallow: /share/
+Disallow: /i/
+
+# AI / answer-engine crawlers — explicitly welcome on public pages.
+User-agent: GPTBot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /home-feed
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /home-feed
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /home-feed
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
 
 Sitemap: https://mailient.xyz/sitemap.xml
+
+# Canonical product summary for LLMs:
+# https://mailient.xyz/llms.txt
