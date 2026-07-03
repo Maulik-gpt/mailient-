@@ -1275,7 +1275,7 @@ Pricing Plans (No free tier exists):
 • Lifetime Founder Plan: $499 one-time payment. Pay once, own forever. Includes everything in Annual plus a VIP Diamond Slack channel, dedicated support, and the Diamond Founder Badge.
 
 Founder & Team:
-• Built by Maulik (a 14-year-old high-agency founder). You can contact him at maulik@mailient.xyz or @mailientz on X. Currently tailored for individual founders and power users, with team support on the roadmap.`;
+• Built by Maulik (a 14-year-old high-agency founder). You can contact him at mailient.xyz@gmail.com or @maulik_5 on X. Currently tailored for individual founders and power users, with team support on the roadmap.`;
   }
 
   try {

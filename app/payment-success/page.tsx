@@ -285,8 +285,8 @@ function PaymentSuccessContent() {
 
                                 <p className="text-white/40 text-xs pt-2">
                                     Need help? Contact us at{' '}
-                                    <a href="mailto:support@mailient.xyz" className="text-purple-400 hover:underline">
-                                        support@mailient.xyz
+                                    <a href="mailto:mailient.xyz@gmail.com" className="text-purple-400 hover:underline">
+                                        mailient.xyz@gmail.com
                                     </a>
                                 </p>
                             </div>

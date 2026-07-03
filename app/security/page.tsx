@@ -127,7 +127,7 @@ export default function SecurityPage() {
         <BlurFade delay={0.65} duration={0.8} yOffset={15} inView>
           <div className="mt-16 rounded-3xl border border-white/[0.04] bg-white/[0.01] p-8 text-center space-y-4 shadow-2xl">
             <p className="text-xs text-neutral-400 font-light leading-relaxed max-w-xl mx-auto font-sans">
-              Every claim on this page is verifiable in how the product behaves: encryption happens in your browser, drafts wait for your approval, and revoking access takes one click in your Google account. Security questions? Email <span className="font-semibold text-white">security@mailient.xyz</span> — you'll get an answer from the person who wrote the code.
+              Every claim on this page is verifiable in how the product behaves: encryption happens in your browser, drafts wait for your approval, and revoking access takes one click in your Google account. Security questions? Email <span className="font-semibold text-white">mailient.xyz@gmail.com</span> — you'll get an answer from the person who wrote the code.
             </p>
           </div>
         </BlurFade>

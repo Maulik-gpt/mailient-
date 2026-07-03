@@ -117,12 +117,12 @@ const landingFaqs = [
   },
   {
     q: "Does Mailient work for teams?",
-    a: "Mailient is built for solo founders — one founder, one Gmail, no team seats. Multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at maulik@mailient.xyz."
+    a: "Mailient is built for solo founders — one founder, one Gmail, no team seats. Multi-seat support is on the roadmap. If you need it sooner, email Maulik directly at mailient.xyz@gmail.com."
   },
 
   {
     q: "Who built Mailient?",
-    a: "Maulik — a 14-year-old founder who built Mailient because he watched smart people lose deals, miss opportunities, and burn hours on email every single day. The product exists because the problem is real. You can talk to him directly at @mailientz on X or maulikbuilder@gmail.com."
+    a: "Maulik — a 14-year-old founder who built Mailient because he watched smart people lose deals, miss opportunities, and burn hours on email every single day. The product exists because the problem is real. You can talk to him directly at @maulik_5 on X or mailient.xyz@gmail.com."
   }
 ];
 
