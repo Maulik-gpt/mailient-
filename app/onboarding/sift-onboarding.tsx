@@ -601,7 +601,7 @@ function S1Welcome({ onBegin }: { onBegin: () => void }) {
       </Display>
 
       <Body className="text-[16px] max-w-md mx-auto mb-10">
-        Mailient handles your communication while you sleep. Let’s set it up — it takes about 3 minutes.
+        Mailient removes email from your to-do list entirely — it works while you sleep. Setup takes about 3 minutes.
       </Body>
 
       <PrimaryButton onClick={onBegin} className="px-8 py-3.5 text-[15px]">
@@ -619,7 +619,7 @@ function S2Gmail({ isConnected, onConnect, onContinue }: { isConnected: boolean;
       <IconBadge><GmailMark size={24} /></IconBadge>
       <Display className="text-[28px] sm:text-[34px] mb-3">Connect your inbox</Display>
       <Body className="text-[15px] max-w-sm mx-auto mb-7">
-        Mailient reads and drafts from your inbox. This is the one connection it can’t work without.
+        Mailient reads everything — including the emails you&apos;d never have gotten to — and drafts in your voice. This is the one connection it can&apos;t work without.
       </Body>
 
       <GlassCard className="text-left max-w-sm mx-auto mb-6">
@@ -1002,8 +1002,8 @@ function S8MeetArcus({ onContinue }: { onContinue: () => void }) {
       <IconBadge><Cpu className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} /></IconBadge>
       <Display className="text-[34px] sm:text-[44px] mb-5">Meet Arcus.</Display>
       <Body className="text-[16px] max-w-md mx-auto mb-9">
-        Arcus is the operator that runs your inbox. It reads, decides, drafts, schedules, and reports —
-        and shows you its reasoning every time, before anything is sent.
+        Arcus is your new employee — the one who runs your inbox. It reads, decides, drafts, schedules,
+        and reports — and shows you its reasoning every time, before anything is sent.
       </Body>
       <PrimaryButton onClick={onContinue}>See Arcus work <ArrowRight className="w-4 h-4" /></PrimaryButton>
     </div>
@@ -1472,7 +1472,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
     <div>
       <div className="text-center mb-8">
         <Display className="text-[28px] sm:text-[36px] mb-3">{firstName ? `Activate Arcus, ${firstName}.` : 'Activate Arcus.'}</Display>
-        <Body className="text-[15px] max-w-sm mx-auto">Subscribe and your agent deploys automatically — it starts running on its schedule the moment you’re in.</Body>
+        <Body className="text-[15px] max-w-md mx-auto">Your first employee shouldn&apos;t cost $80,000 a year. This one costs $29 a month — and it starts tonight, running on its schedule the moment you&apos;re in.</Body>
       </div>
 
       <div className="flex justify-center mb-7">
@@ -1683,10 +1683,10 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       <Display className="text-[32px] sm:text-[42px] mb-4">{paid ? 'Arcus is on duty.' : 'One step to go live.'}</Display>
       <Body className="text-[15.5px] max-w-md mx-auto mb-8">
         {paid
-          ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent is deployed and runs on its schedule. Everything waits for your approval before it sends.`
+          ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent runs on its schedule and everything waits for your approval before it sends. Go build — we'll handle the inbox.`
           : plan === 'monthly'
-            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 3-day free trial — no charge today, cancel anytime. Your agent deploys the moment you're in.`
-            : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys automatically — it starts running on its schedule right away. Everything waits for your approval before it sends.`}
+            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 3-day free trial — no charge today, cancel anytime. Tomorrow morning: one briefing, not an inbox.`
+            : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys tonight. Tomorrow morning: one briefing, not an inbox. Everything waits for your approval.`}
       </Body>
 
       <GlassCard className="max-w-sm mx-auto text-left space-y-4 mb-9">
