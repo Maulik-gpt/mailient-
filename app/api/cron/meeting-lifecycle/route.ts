@@ -367,6 +367,7 @@ async function sendArcusEmail(toEmail: string, subject: string, markdown: string
     const html = wrapHtml(subject, markdownToHtml(markdown), headerPill);
     const { error } = await resend.emails.send({
       from: RESEND_FROM,
+      replyTo: "mailient.xyz@gmail.com",
       to: toEmail,
       subject,
       html,

@@ -244,9 +244,9 @@ export default function PrivacyPolicy() {
           <p>Mailient uses minimal cookies and similar technologies to operate the service:</p>
           <ul className="list-disc pl-5 space-y-3">
             <li><strong>Essential cookies:</strong> Required to maintain your login session and ensure the application functions correctly. These cannot be disabled without breaking the service.</li>
-            <li><strong>Analytics cookies:</strong> We may use anonymized, aggregated analytics (e.g., page views, feature usage) to understand how users interact with Mailient. No email content is included in these analytics.</li>
+            <li><strong>Cookieless analytics:</strong> We use anonymized, aggregated analytics (e.g., page views, feature usage) to understand how Mailient is used — configured to run without setting tracking cookies or storing tracking identifiers in your browser. No email content is included in these analytics.</li>
           </ul>
-          <p>We do not use advertising cookies, cross-site tracking cookies, or third-party behavioral tracking technologies.</p>
+          <p>We do not set advertising cookies, cross-site tracking cookies, or analytics tracking cookies, and we do not use third-party behavioral tracking technologies.</p>
           <p>You can manage or delete cookies via your browser settings. Disabling essential cookies will prevent you from using the application.</p>
         </div>
       )

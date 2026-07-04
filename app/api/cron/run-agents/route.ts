@@ -832,6 +832,7 @@ async function sendEmailReport(toEmail: string, agentName: string, report: strin
     try {
       const { error } = await resend.emails.send({
         from: RESEND_FROM,
+        replyTo: 'mailient.xyz@gmail.com',
         to: toEmail,
         subject,
         html,

@@ -6,6 +6,11 @@ if (typeof window !== 'undefined' && process.env.NEXT_PUBLIC_POSTHOG_KEY) {
     ui_host: "https://us.posthog.com",
     // Include the defaults option as required by PostHog
     defaults: '2026-01-30',
+    // COOKIELESS: keep all analytics state in memory — no ph_* cookie, no
+    // localStorage — so no tracking identifier is stored without opt-in.
+    // Tradeoff: anonymous visitors reset per page load; logged-in users are
+    // still tied together via posthog.identify(email) at login/onboarding.
+    persistence: "memory",
     // Enables capturing unhandled exceptions via Error Tracking
     capture_exceptions: true,
     // Turn on debug in development mode

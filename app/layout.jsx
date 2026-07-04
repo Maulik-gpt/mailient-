@@ -132,6 +132,16 @@ export default function RootLayout({ children }) {
           {`
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
+            // Consent Mode v2 — default DENIED before config, so GA4 never sets
+            // tracking cookies without opt-in. It still sends cookieless,
+            // aggregated pings. If a consent banner is added later, call
+            // gtag('consent','update',{...granted}) on accept.
+            gtag('consent', 'default', {
+              ad_storage: 'denied',
+              ad_user_data: 'denied',
+              ad_personalization: 'denied',
+              analytics_storage: 'denied'
+            });
             gtag('js', new Date());
 
             gtag('config', '${process.env.NEXT_PUBLIC_GA_ID || 'G-M03D6M49N8'}');

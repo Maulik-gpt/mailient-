@@ -7180,6 +7180,7 @@ async function emailNewsletterDigest(userId: string, markdown: string, count: nu
     const resend = new Resend(apiKey);
     const { error } = await resend.emails.send({
       from: process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>',
+      replyTo: 'mailient.xyz@gmail.com',
       to: userId,
       subject: `📰 Your newsletter digest — ${count} caught up`,
       html: digestMarkdownToHtml(markdown),
