@@ -42,6 +42,26 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
   const [readProgress, setReadProgress] = useState(0);
   const [activeSection, setActiveSection] = useState("");
 
+  // Article structured data — built from the same meta object every post
+  // already passes, so all posts (and future ones) get schema for free.
+  // Client components are still server-rendered, so this is in the initial HTML.
+  const articleJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: meta.title,
+    description: meta.description,
+    datePublished: new Date(meta.date).toISOString(),
+    url: `https://mailient.xyz/blogs/${meta.slug}`,
+    mainEntityOfPage: `https://mailient.xyz/blogs/${meta.slug}`,
+    author: { "@type": "Person", name: meta.author || "Maulik", url: "https://x.com/maulik_5" },
+    publisher: {
+      "@type": "Organization",
+      name: "Mailient",
+      url: "https://mailient.xyz",
+      logo: { "@type": "ImageObject", url: "https://mailient.xyz/mailient-logo-v3.png" },
+    },
+  };
+
   useEffect(() => {
     setMounted(true);
     document.title = `${meta.title} // Mailient Blog`;
@@ -81,6 +101,10 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#0a0a0a] text-[#1a1a1a] dark:text-[#fafafa] flex flex-col items-center justify-start overflow-x-hidden font-satoshi strichpunkt-theme relative selection:bg-neutral-200 dark:selection:bg-neutral-800 transition-colors duration-500">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
       <Navbar theme={currentTheme === "dark" ? "dark" : "light"} />
       <div className="fixed top-8 right-8 z-50">
         <AnimatedThemeToggler className="bg-white/80 dark:bg-black/80 backdrop-blur-md shadow-sm border border-neutral-200 dark:border-neutral-800" />

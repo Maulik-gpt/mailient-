@@ -23,13 +23,14 @@ function HomeFeedContent() {
   const searchParams = useSearchParams();
   const { data: session, status } = useSession();
   const [showPricing, setShowPricing] = useState(false);
-  // STRICT paywall — always start DENIED. The server-side layout gate
-  // (home-feed/layout.tsx) already blocked unauthenticated and unpaid users
-  // before this client component mounted. This client-side check is a second
-  // layer that re-confirms the subscription on every mount so a user whose
-  // plan lapses mid-session still gets redirected on the next navigation.
-  // Never optimistically grant access from localStorage — that was the bypass.
-  const [accessGranted, setAccessGranted] = useState(false);
+  // PAYWALL: the AUTHORITATIVE gate is server-side (home-feed/layout.tsx,
+  // force-dynamic requirePaidSubscription) — an unpaid user gets an HTTP
+  // redirect and never receives this component. So the client renders
+  // immediately (no blank backdrop / double-check delay) and the subscription
+  // re-check below runs as a BACKGROUND revalidation only: if a plan lapsed
+  // mid-session it flips this to false and redirects. Do NOT reintroduce a
+  // client-side localStorage grant — the server gate is the source of truth.
+  const [accessGranted, setAccessGranted] = useState(true);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
   const verifyRanRef = useRef(false);
   const [paymentVerified, setPaymentVerified] = useState(false);
@@ -350,7 +351,9 @@ function HomeFeedContent() {
         onOpenHelp={() => setShowHelp(true)}
         onOpenRewards={() => setShowRewards(true)}
       />
-      <div className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ${isSidebarCollapsed ? 'md:ml-20' : 'md:ml-64'}`}>
+      {/* Margins must equal the sidebar's real widths (72px collapsed / 260px
+          expanded) — ml-20/ml-64 (80/256) left an 8px gap / 4px overlap. */}
+      <div className={`flex-1 flex flex-col min-w-0 transition-[margin] duration-300 ${isSidebarCollapsed ? 'md:ml-[72px]' : 'md:ml-[260px]'}`}>
         {/* Tab bar — Today (Sift decision queue) | Inbox (traditional view).
           PART 69: sliding pill highlight via Framer layoutId so the
           selected-tab background animates between buttons instead of

@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import posthog from 'posthog-js';
 
 /* ─────────────────────────────────────────────────────────────────────────
    Types & constants
@@ -373,7 +374,7 @@ export default function SiftOnboardingPage() {
               {step === 10 && <S10Notion connected={isConnected('notion')} onConnect={() => connectViaPopup('notion')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 11 && <S11Slack connected={isConnected('slack')} onConnect={() => connectViaPopup('slack')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 12 && <S12Agent spec={agentSpec} setSpec={setAgentSpec} created={createdAgent} setCreated={setCreatedAgent} onContinue={(c) => next(c ? { agent: c, agentSpec } : undefined)} onSkip={() => next()} />}
-              {step === 13 && <S13Plan firstName={firstName} plan={planChoice} onChoose={(p) => { setPlanChoice(p); next({ plan: p }); }} />}
+              {step === 13 && <S13Plan firstName={firstName} plan={planChoice} onChoose={(p) => { try { posthog.capture('paywall_plan_chosen', { plan: p }); } catch { /* analytics never blocks */ } setPlanChoice(p); next({ plan: p }); }} />}
               {step === 14 && <S14Notifications time={briefTime} setTime={setBriefTime} channel={briefChannel} setChannel={setBriefChannel} hasSlack={isConnected('slack')} agent={createdAgent} onUpdate={setCreatedAgent} onContinue={() => next({ briefTime, briefChannel })} />}
               {step === 15 && <S15Done firstName={firstName} agent={createdAgent} scan={scan} briefTime={briefTime} briefChannel={briefChannel} plan={planChoice} onFinish={completeOnboarding} />}
             </motion.div>
@@ -1461,6 +1462,12 @@ const PLAN_PRICING: Record<PlanChoice, { label: string; price: string; unit: str
 function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanChoice | null; onChoose: (p: PlanChoice) => void }) {
   const [selected, setSelected] = useState<PlanChoice>(plan || 'monthly');
   const p = PLAN_PRICING[selected];
+  // PAYWALL-INTENT FUNNEL: step 13 is where money lives or dies. This event
+  // + paywall_plan_chosen + checkout_started + checkout_paid_verified (S15)
+  // give the funnel: viewed -> picked plan -> reached Polar -> actually paid.
+  useEffect(() => {
+    try { posthog.capture('paywall_viewed', { step: 13 }); } catch { /* analytics never blocks */ }
+  }, []);
   return (
     <div>
       <div className="text-center mb-8">
@@ -1634,6 +1641,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         const pt = d?.subscription?.planType;
         const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !d?.subscription?.isExpired;
         if (isPaid) {
+          try { posthog.capture('checkout_paid_verified', { plan: pt }); } catch { /* */ }
           // Payment verified — NOW mark onboarding complete. Doing this before
           // verification was the root cause of unpaid users being flagged as
           // "completed" and slipping through the redirect API.
@@ -1642,6 +1650,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
           return;
         }
       } catch { /* fall through to paywall */ }
+      try { posthog.capture('checkout_return_unpaid'); } catch { /* */ }
       setBusy(false);
       router.replace('/onboarding?step=13');
       return;
@@ -1659,6 +1668,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       localStorage.setItem('pending_plan', plan);
       localStorage.setItem('mailient_checkout_return', '/onboarding?step=15&paid=1');
     } catch { /* */ }
+    try { posthog.capture('checkout_started', { plan }); } catch { /* */ }
     window.location.href = POLAR_CHECKOUT_URLS[plan];
   };
 

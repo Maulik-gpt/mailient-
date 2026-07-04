@@ -795,6 +795,42 @@ export function LinearLanding() {
       </div>
     </section>
 
+      {/* 3.5 HOW MAILIENT WORKS — three steps, no jargon */}
+      <section className="py-24 px-6 w-full max-w-5xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <div className="text-center mb-16">
+            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">HOW IT WORKS</span>
+            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+              Three steps. Then it&apos;s handled.
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-left">
+            <div className="space-y-3">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 1</span>
+              <h3 className="text-lg font-semibold text-white">Connect Gmail.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+                Two minutes, secure Google sign-in. Your email stays in Gmail — nothing moves, nothing to configure.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 2</span>
+              <h3 className="text-lg font-semibold text-white">It learns how you write.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+                From your last 90 days of sent mail: your greetings, your rhythm, your sign-offs. Drafts start sounding like you, not like AI.
+              </p>
+            </div>
+            <div className="space-y-3">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 3</span>
+              <h3 className="text-lg font-semibold text-white">Mornings arrive organized.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+                Overnight it reads everything, drafts the replies, books the meetings, chases the silence — and leaves you one briefing. Nothing sends without your approval.
+              </p>
+            </div>
+          </div>
+        </BlurFade>
+      </section>
+
       {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
       <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.9} inView>
@@ -1150,6 +1186,15 @@ export function LinearLanding() {
             </p>
           </div>
 
+          {/* 246 → 3: the transformation in one stark moment, before the detail panels. */}
+          <div className="flex flex-col items-center text-center mb-20 select-none">
+            <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-neutral-600 mb-2">Yesterday</span>
+            <span className="text-4xl md:text-6xl font-medium tracking-tight text-neutral-600 line-through decoration-red-500/60 decoration-2">246 unread</span>
+            <span className="text-neutral-700 text-2xl my-4 font-light">↓</span>
+            <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-neutral-500 mb-2">Today</span>
+            <span className="text-5xl md:text-7xl font-medium tracking-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent">3 decisions.</span>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
             {/* Left panel: Chaos */}
             <div className="p-8 rounded-[28px] border border-red-950/20 bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] hover:shadow-[0_25px_60px_rgba(239,68,68,0.06)] transition-all duration-300 relative overflow-hidden text-left h-[460px] flex flex-col justify-between group">
@@ -1238,35 +1283,37 @@ export function LinearLanding() {
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="max-w-5xl mx-auto">
           
-          {/* Capability row — what one run can do (honest capability, not usage claims) */}
+          {/* Founder-time row — what the founder gets BACK, not what the machine
+              does. "2h 14m" mirrors the illustrative Receipt in the hero; swap
+              both for real usage medians once live briefs exist. */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24 text-left">
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Per run</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every morning</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={200} />+
+                2h 14m
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Threads read in one sweep</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Returned to you. Go build</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">In one message</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every week</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={15} />+
+                <ActiveCounter target={13} />h
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Replies drafted in your voice</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Of email work off your plate</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Connected apps</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">By 7am</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={4} />
+                <ActiveCounter target={3} />
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Gmail · Calendar · Notion · Slack</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Decisions left. It handled the rest</span>
             </div>
             <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">You're in control</span>
+              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">You owe</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={100} />%
+                <ActiveCounter target={0} />
               </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Of actions logged & reviewable</span>
+              <span className="text-[10px] text-neutral-500 font-light font-sans">Emails. Follow-ups chased for you</span>
             </div>
           </div>
 

@@ -1805,8 +1805,9 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                 {/* Main Content Wrapper */}
                 <motion.div
                     animate={{
-                        marginLeft: isMobile || forceTraditionalView ? 0 : (sidebarCollapsed ? 80 : 256),
-                        width: isMobile || forceTraditionalView ? '100%' : `calc(100% - ${sidebarCollapsed ? 80 : 256}px)`
+                        // Must equal HomeFeedSidebar's real widths (72 collapsed / 260 expanded).
+                        marginLeft: isMobile || forceTraditionalView ? 0 : (sidebarCollapsed ? 72 : 260),
+                        width: isMobile || forceTraditionalView ? '100%' : `calc(100% - ${sidebarCollapsed ? 72 : 260}px)`
                     }}
                     initial={false}
                     transition={{ type: "spring", stiffness: 260, damping: 32, mass: 0.8 }}
