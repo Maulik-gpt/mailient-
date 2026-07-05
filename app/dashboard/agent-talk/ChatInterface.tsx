@@ -2776,6 +2776,18 @@ export default function ChatInterface({
               }));
               break;
 
+            case 'conversational':
+              // FAST PATH: this is casual chat, not a task. Drop the seed
+              // "Understanding…" step entirely so the reply lands with NO
+              // processing card — just a warm answer, like a person texting back.
+              currentAgentSteps = [];
+              setAgentSteps([]);
+              setMessages(msgs => msgs.map(m => {
+                if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                return { ...m, meta: { ...(m.meta || {}), agentSteps: [], liveThinking: '' } };
+              }));
+              break;
+
             case 'task_list': {
               if (Array.isArray(data.tasks) && data.tasks.length > 0) {
                 currentTaskList = { tasks: data.tasks, completedCount: 0 };

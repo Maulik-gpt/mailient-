@@ -709,6 +709,43 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         log('info', 'run_start', { runId, isPlanMode, tools: availableTools.map(t => t.name), msgLen: userMessage.length });
         emit('run_start', { runId, message: userMessage });
 
+        // ── FAST CONVERSATIONAL PATH ────────────────────────────────────────
+        // Smalltalk / identity / capability need no tools and no "processing".
+        // Skip the ENTIRE agent loop: one quick, warm reply on a FAST model,
+        // zero thinking cards, zero multi-pass. This is the <2s continuing-
+        // conversation UX — an employee chatting back, not software grinding
+        // on "hi" for 20 seconds. Any failure/empty falls through to the loop.
+        if (suppressToolsForIntent && !isPlanMode && !isBackgroundAgent) {
+          try {
+            // Tell the client to drop the "Understanding…" step — this is chat,
+            // not a task, so it should render with zero processing UI.
+            emit('conversational', {});
+            const convSystem =
+              `You are Arcus — the user's AI chief of staff. You run their inbox across Gmail, Calendar, Notion and Slack so email stops being their job. ` +
+              `Right now this is casual conversation, NOT a task. Talk like a brilliant, warm colleague texting back — real energy, genuinely glad to be working with them, and keep it moving. Keep it to 1-3 sentences. ` +
+              `Never call tools. Never describe "processing" or steps. Never open with "I'd be happy to" / "Certainly" / "How can I assist you today". Just be a person.\n\n` +
+              intentSystemHint(detectedIntent);
+            const convo = await callLLM(
+              [
+                { role: 'system', content: convSystem },
+                ...history.slice(-6),
+                { role: 'user', content: userMessage },
+              ] as LLMMessage[],
+              [],
+              { maxTokens: 300, temperature: 0.7, fastFirst: true, deadlineAt: startedAt + 15_000 },
+            );
+            const text = sanitizeModelText(getRawText(convo.content)).trim();
+            if (text) {
+              emit('message', { content: text });
+              closeStream(0);
+              return;
+            }
+            // Empty (rare) → fall through to the normal loop below.
+          } catch {
+            // Never break chat — fall through to the normal loop.
+          }
+        }
+
         // ── Pre-plan clarification pass ─────────────────────────────────────
         // Ask clarifying questions ONLY when truly needed. Skip entirely if:
         // - The user already provided answers (Q:/A: pattern in history), OR

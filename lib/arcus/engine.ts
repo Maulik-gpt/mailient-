@@ -106,6 +106,18 @@ const ALL_FREE_MODELS = [
   ...FALLBACK_MODELS,
 ];
 
+// FAST models — small, non-reasoning, fast-first-token. Used for the fast
+// conversational path (options.fastFirst): smalltalk/identity/capability
+// replies must land in ~2s, so we lead with the smallest healthy models and
+// NEVER the 550B reasoning model (which thinks for 20s). gemma-4-26b first —
+// it's the quickest to first token.
+const FAST_MODELS = [
+  'google/gemma-4-26b-a4b-it:free',
+  'google/gemma-4-31b-it:free',
+  'meta-llama/llama-3.3-70b-instruct:free',
+  'qwen/qwen3-next-80b-a3b-instruct:free',
+];
+
 // F2.3 — Paid escape hatch. Activated only when ALL_FREE_MODELS exhaust AND
 // ALLOW_PAID_MODELS=true in env. These are cheap, fast, reliable paid models
 // the user pays for via their $29/mo plan when every free key is rate-limited.
@@ -308,7 +320,7 @@ function parseOpenAIResponse(data: any): LLMResponse | null {
 export async function callLLM(
   messages: LLMMessage[],
   tools: ToolSchema[],
-  options: { maxTokens?: number; temperature?: number; forceToolCall?: boolean; deadlineAt?: number } = {}
+  options: { maxTokens?: number; temperature?: number; forceToolCall?: boolean; deadlineAt?: number; fastFirst?: boolean } = {}
 ): Promise<LLMResponse> {
   const keys = getKeys();
   if (!keys.length) {
@@ -461,8 +473,12 @@ export async function callLLM(
   // prompts and longer for tool calls — an 11s cap was killing the ONE model
   // that still works once the daily free quota is exhausted. Quota-dead models
   // 429 in ~0.5s regardless, so a longer cap only helps the working model.
-  const list = hasTools ? TOOL_CAPABLE_MODELS : ALL_FREE_MODELS;
-  log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools });
+  // fastFirst (conversational path) leads with small fast models so a "hi"
+  // never waits on the 550B reasoner. Only applies without tools.
+  const list = hasTools
+    ? TOOL_CAPABLE_MODELS
+    : (options.fastFirst ? FAST_MODELS : ALL_FREE_MODELS);
+  log('info', 'Engine', 'Pass 1 — free models', { count: list.length, keys: keys.length, hasTools, fastFirst: !!options.fastFirst });
   for (let i = 0; i < list.length; i++) {
     if (i > 0) await sleep(100);
     const result = await tryModel(list[i], baseBody, effectiveTimeout());
