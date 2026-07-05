@@ -54,9 +54,9 @@ export interface ShowUpCandidate {
 }
 
 export interface AgentTodayResult {
-  decide: Array<Omit<DecideCandidate, 'snippet'> & { reason: string }>;
-  chase: Array<ChaseCandidate & { reason: string }>;
-  showUp: Array<ShowUpCandidate & { reason: string }>;
+  decide: Array<Omit<DecideCandidate, 'snippet'> & { reason: string; signals?: string[] }>;
+  chase: Array<ChaseCandidate & { reason: string; signals?: string[] }>;
+  showUp: Array<ShowUpCandidate & { reason: string; signals?: string[] }>;
   briefing: string;
 }
 
@@ -135,10 +135,11 @@ HOW YOU WORK:
 
 When you have finished investigating, output ONE JSON object and NOTHING else (no prose, no markdown fence):
 {"briefing":"<=140 chars: the day in one line — what needs them, or 'all quiet' if nothing does",
- "decide":[{"ref":"D0","reason":"...","priority":0-100}],
- "chase":[{"ref":"C0","reason":"...","priority":0-100}],
- "showUp":[{"ref":"S0","reason":"...","priority":0-100}]}
-Use ONLY the D#/C#/S# tags listed above. reason: max 16 words, specific. Omit a bucket's array (or leave it empty) if nothing in it matters today.`;
+ "decide":[{"ref":"D0","reason":"...","priority":0-100,"evidence":["...","..."]}],
+ "chase":[{"ref":"C0","reason":"...","priority":0-100,"evidence":["..."]}],
+ "showUp":[{"ref":"S0","reason":"...","priority":0-100,"evidence":["..."]}]}
+Use ONLY the D#/C#/S# tags listed above. reason: max 16 words, specific.
+evidence: 1-3 short phrases (max 5 words each) of CONCRETE grounding you actually observed — sender history ("4th email from her"), dates ("deadline is Friday"), amounts ("$12k invoice attached"), silence ("6 days, no reply"). These are the receipts that prove the pick isn't random. NEVER invent one; omit the field when you have nothing concrete. Omit a bucket's array (or leave it empty) if nothing in it matters today.`;
 
   const messages: LLMMessage[] = [
     { role: 'system', content: systemPrompt },
@@ -208,7 +209,22 @@ Use ONLY the D#/C#/S# tags listed above. reason: max 16 words, specific. Omit a 
 
 // ── JSON → typed buckets ───────────────────────────────────────────────────────
 
-interface RefRow { ref?: string; reason?: string; priority?: number }
+interface RefRow { ref?: string; reason?: string; priority?: number; evidence?: unknown }
+
+// Evidence chips are free text from the model, so they get the same distrust as
+// everything else: strings only, max 3, short, trimmed. They can't reference
+// anything structural (no ids/links), so the worst a bad one can be is wrong
+// prose — same trust level as `reason`.
+function cleanEvidence(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw
+    .filter((s): s is string => typeof s === 'string')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 3)
+    .map((s) => (s.length > 48 ? `${s.slice(0, 47)}…` : s));
+  return out.length ? out : undefined;
+}
 
 function mapToBuckets(
   parsed: any,
@@ -217,7 +233,7 @@ function mapToBuckets(
   const briefing = typeof parsed?.briefing === 'string' ? parsed.briefing.trim().slice(0, 200) : '';
 
   const resolve = <T>(pool: T[], rows: any, prefix: string, fallbackReason: (item: T) => string) => {
-    const chosen: Array<{ item: T; reason: string; p: number }> = [];
+    const chosen: Array<{ item: T; reason: string; signals?: string[]; p: number }> = [];
     const used = new Set<number>();
     if (Array.isArray(rows)) {
       for (const row of rows as RefRow[]) {
@@ -228,19 +244,19 @@ function mapToBuckets(
         used.add(idx);
         const reason = typeof row.reason === 'string' ? row.reason.trim().slice(0, 140) : '';
         const p = Number(row.priority);
-        chosen.push({ item: pool[idx], reason: reason || fallbackReason(pool[idx]), p: Number.isFinite(p) ? p : 0 });
+        chosen.push({ item: pool[idx], reason: reason || fallbackReason(pool[idx]), signals: cleanEvidence(row.evidence), p: Number.isFinite(p) ? p : 0 });
       }
     }
     chosen.sort((a, b) => b.p - a.p);
     return chosen.slice(0, MAX_PER_BUCKET);
   };
 
-  const decide = resolve(candidates.decide, parsed?.decide, 'D', () => 'Needs your reply.').map(({ item, reason }) => {
+  const decide = resolve(candidates.decide, parsed?.decide, 'D', () => 'Needs your reply.').map(({ item, reason, signals }) => {
     const { snippet, ...rest } = item;
-    return { ...rest, reason };
+    return { ...rest, reason, signals };
   });
-  const chase = resolve(candidates.chase, parsed?.chase, 'C', () => "You sent this. They haven't replied.").map(({ item, reason }) => ({ ...item, reason }));
-  const showUp = resolve(candidates.showUp, parsed?.showUp, 'S', (m) => (m.isExternal ? 'External meeting — prep it.' : 'Internal meeting.')).map(({ item, reason }) => ({ ...item, reason }));
+  const chase = resolve(candidates.chase, parsed?.chase, 'C', () => "You sent this. They haven't replied.").map(({ item, reason, signals }) => ({ ...item, reason, signals }));
+  const showUp = resolve(candidates.showUp, parsed?.showUp, 'S', (m) => (m.isExternal ? 'External meeting — prep it.' : 'Internal meeting.')).map(({ item, reason, signals }) => ({ ...item, reason, signals }));
 
   return { decide, chase, showUp, briefing };
 }

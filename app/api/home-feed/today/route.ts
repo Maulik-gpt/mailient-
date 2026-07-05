@@ -39,6 +39,9 @@ interface DecideItem {
   reason: string;
   receivedAt: string;
   gmailUrl: string;
+  // AI-observed grounding for the pick ("4th email from her", "deadline is
+  // Friday") — the confidence receipts rendered as chips under the reason.
+  signals?: string[];
   // Preview text, kept only server-side so the AI triage can read what the email
   // says. Stripped from the payload the agent path returns.
   snippet?: string;
@@ -55,6 +58,7 @@ interface ShowUpItem {
   isExternal: boolean;
   // AI-written reason (agent path); the client falls back to a default string.
   reason?: string;
+  signals?: string[];
 }
 
 interface ChaseItem {
@@ -67,6 +71,7 @@ interface ChaseItem {
   gmailUrl: string;
   // AI-written reason (agent path); the client falls back to a default string.
   reason?: string;
+  signals?: string[];
 }
 
 interface ActionItem {
@@ -104,6 +109,9 @@ interface TodayResponse {
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   // One-line AI briefing of what needs the user today (agent path only).
   briefing?: string;
+  // Confidence scale: how many emails were actually examined vs how few were
+  // surfaced. "Read 47, 3 need you" is the strongest it's-not-guessing signal.
+  triage?: { scanned: number; surfaced: number };
 }
 
 function isTokenExpiredErr(err: any): boolean {
@@ -252,14 +260,14 @@ async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string,
 // signal order. This is only a candidate net now — the AI triage does the real
 // selection/prioritization. Returns up to `limit` items WITH their preview
 // snippet attached (used by the agent to read what each email says).
-async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise<DecideItem[]> {
+async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise<{ items: DecideItem[]; scanned: number }> {
   try {
     // WIDER raw net (was 30) — the AI decides importance now, so give it more to
     // choose from. Gmail's own promotions/social categories are still excluded
     // (cheap, genuinely marketing); our regex no longer gates the rest.
     const res = await (gmail as any).getEmails(50, 'is:unread newer_than:3d -category:promotions -category:social');
     const ids: string[] = (res?.messages || []).map((m: any) => m.id).slice(0, 50);
-    if (!ids.length) return [];
+    if (!ids.length) return { items: [], scanned: 0 };
     const details = await Promise.all(
       ids.map(async (id) => {
         try {
@@ -293,10 +301,12 @@ async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise
     // Order for the FALLBACK / overflow-trim only. The AI re-ranks from scratch,
     // so this just keeps the pool sensible (and the fallback top-3 clean).
     ranked.sort((a, b) => a.rank - b.rank);
-    return ranked.slice(0, limit).map((r) => r.item);
+    // scanned = emails actually examined (the confidence-scale numerator).
+    const scanned = details.filter(Boolean).length;
+    return { items: ranked.slice(0, limit).map((r) => r.item), scanned };
   } catch (err) {
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
-    return [];
+    return { items: [], scanned: 0 };
   }
 }
 
@@ -572,7 +582,8 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
 
   const gmailExpired = decideR.expired || chaseR.expired;
   const calendarExpired = showUpR.expired;
-  const decidePool = decideR.value || [];
+  const decidePool = decideR.value?.items || [];
+  const decideScanned = decideR.value?.scanned || 0;
   const showUpPool = showUpR.value || [];
   const chasePool = chaseR.value || [];
 
@@ -639,6 +650,8 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     calendarConnected: !calendarExpired,
     needsReconnect,
     briefing,
+    // Confidence scale — only meaningful when we actually examined mail.
+    triage: decideScanned > 0 ? { scanned: decideScanned, surfaced: decide.length } : undefined,
   };
 }
 

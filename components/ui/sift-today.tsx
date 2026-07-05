@@ -18,6 +18,9 @@ interface DecideItem {
   reason: string;
   receivedAt: string;
   gmailUrl: string;
+  // AI-observed grounding ("4th email from her", "deadline is Friday") —
+  // rendered as quiet chips under the reason. The confidence receipts.
+  signals?: string[];
 }
 interface ShowUpItem {
   id: string;
@@ -29,6 +32,7 @@ interface ShowUpItem {
   hangoutLink: string | null;
   isExternal: boolean;
   reason?: string;
+  signals?: string[];
 }
 interface ChaseItem {
   id: string;
@@ -39,6 +43,7 @@ interface ChaseItem {
   sentAt: string;
   gmailUrl: string;
   reason?: string;
+  signals?: string[];
 }
 interface ActionItem {
   id: string;
@@ -70,6 +75,7 @@ interface TodayPayload {
   calendarConnected: boolean;
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   briefing?: string;
+  triage?: { scanned: number; surfaced: number };
 }
 
 function formatDueLabel(dueAt: string | null, isOverdue: boolean): string {
@@ -203,6 +209,9 @@ interface ItemCardProps {
   topRight?: string;
   title: string;
   reason: string;
+  // AI-observed grounding chips ("4th email from her") — quiet receipts that
+  // show the pick isn't random. Rendered only when the AI supplied them.
+  signals?: string[];
   primaryAction: { label: string; onClick: () => void };
   secondaryAction?: { label: string; href: string };
   onDismiss?: () => void;
@@ -210,7 +219,7 @@ interface ItemCardProps {
 
 // Inner card content (kept separate so the dismiss variant can wrap it with a
 // reveal-behind affordance while AnimatePresence still animates the row in/out).
-function ItemCardBody({ topLeft, topRight, title, reason, primaryAction, secondaryAction, onDismiss, dragProps }: ItemCardProps & { dragProps?: any }) {
+function ItemCardBody({ topLeft, topRight, title, reason, signals, primaryAction, secondaryAction, onDismiss, dragProps }: ItemCardProps & { dragProps?: any }) {
   return (
     <motion.div
       {...(dragProps || {})}
@@ -247,6 +256,18 @@ function ItemCardBody({ topLeft, topRight, title, reason, primaryAction, seconda
       </div>
       <h3 className="text-[14.5px] font-medium text-black dark:text-white truncate mb-1 tracking-tight leading-snug">{title}</h3>
       <p className="text-[12.5px] text-black/50 dark:text-white/45 mb-3 line-clamp-1 leading-relaxed">{reason}</p>
+      {signals && signals.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 -mt-1.5 mb-3">
+          {signals.map((s, i) => (
+            <span
+              key={i}
+              className="inline-flex items-center px-2 py-[3px] rounded-full border border-black/[0.07] dark:border-white/[0.08] bg-black/[0.02] dark:bg-white/[0.03] text-[10.5px] text-black/45 dark:text-white/40 leading-snug"
+            >
+              {s}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-1.5">
         <button
           type="button"
@@ -760,7 +781,7 @@ function readCachedApps(generatedAt: string): string[] {
 }
 
 function RecommendationsSection({
-  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, servingCached, onAct, onRefresh, onCustomize,
+  decide, chase, actionItems, showUp, agentRuns, checkedAgo, generatedAt, servingCached, triage, onAct, onRefresh, onCustomize,
 }: {
   decide: DecideItem[];
   chase: ChaseItem[];
@@ -770,6 +791,7 @@ function RecommendationsSection({
   checkedAgo: string | null;
   generatedAt: string;
   servingCached?: boolean;
+  triage?: { scanned: number; surfaced: number };
   onAct: (prompt: string) => void;
   onRefresh: () => void;
   onCustomize: () => void;
@@ -842,7 +864,12 @@ function RecommendationsSection({
   const steps: { id: string; label: React.ReactNode; done: boolean }[] = [
     {
       id: 'scan',
-      label: <>Scanned your inbox — <span className={bold}>{decide.length}</span> {decide.length === 1 ? 'thread needs' : 'threads need'} a reply</>,
+      // The confidence-scale line: "read N, only K need you" proves it isn't
+      // guessing from a sample. Falls back to the old phrasing when the API
+      // didn't report a scanned count (cached/legacy snapshots).
+      label: triage && triage.scanned > 0
+        ? <>Read <span className={bold}>{triage.scanned}</span> {triage.scanned === 1 ? 'email' : 'emails'} — <span className={bold}>{decide.length}</span> {decide.length === 1 ? 'needs' : 'need'} a reply. The rest handled</>
+        : <>Scanned your inbox — <span className={bold}>{decide.length}</span> {decide.length === 1 ? 'thread needs' : 'threads need'} a reply</>,
       done: true,
     },
     {
@@ -1416,6 +1443,7 @@ export default function SiftToday() {
               checkedAgo={lastUpdated}
               generatedAt={data.generatedAt}
               servingCached={servingCached}
+              triage={data.triage}
               onAct={openArcus}
               onRefresh={() => load({ force: true })}
               onCustomize={() => setCustomizeOpen(true)}
@@ -1476,6 +1504,7 @@ export default function SiftToday() {
                         topRight={formatRelative(item.receivedAt)}
                         title={item.subject}
                         reason={item.reason}
+                        signals={item.signals}
                         onDismiss={() => dismissItem(item.id, 'decide', item.threadId)}
                         primaryAction={{
                           label: isDraftingDecideId === item.id ? 'Drafting...' : 'Draft reply',
@@ -1508,6 +1537,7 @@ export default function SiftToday() {
                         topRight={`${item.attendeeCount} attendee${item.attendeeCount === 1 ? '' : 's'}`}
                         title={item.title}
                         reason={item.reason || (item.isExternal ? 'External meeting — prep it.' : 'Internal meeting.')}
+                        signals={item.signals}
                         onDismiss={() => dismissItem(item.id, 'showUp')}
                         primaryAction={{
                           label: 'Prep me',
@@ -1543,6 +1573,7 @@ export default function SiftToday() {
                         topRight={`${item.daysSilent}d silent`}
                         title={item.subject}
                         reason={item.reason || "You sent this. They haven't replied."}
+                        signals={item.signals}
                         onDismiss={() => dismissItem(item.id, 'chase', item.threadId)}
                         primaryAction={{
                           label: isDraftingNudgeId === item.id ? 'Drafting...' : 'Draft nudge',
