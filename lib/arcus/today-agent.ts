@@ -58,6 +58,10 @@ export interface AgentTodayResult {
   chase: Array<ChaseCandidate & { reason: string; signals?: string[] }>;
   showUp: Array<ShowUpCandidate & { reason: string; signals?: string[] }>;
   briefing: string;
+  // Transparent reasoning: how the day was prioritized — the tradeoff logic
+  // ("ranked by who's waiting + what costs money to miss"), surfaced on demand
+  // as "Why this order?" so the founder understands the triage, not just accepts it.
+  reasoning?: string;
 }
 
 // Tools the triage may call — READ-ONLY. It must never send, archive, label,
@@ -135,6 +139,7 @@ HOW YOU WORK:
 
 When you have finished investigating, output ONE JSON object and NOTHING else (no prose, no markdown fence):
 {"briefing":"<=140 chars: the day in one line — what needs them, or 'all quiet' if nothing does",
+ "reasoning":"<=220 chars: HOW you prioritized today, at a founder's altitude — the tradeoff, not the mechanics. Name what you ranked highest and why, and what you DEPRIORITIZED and why. E.g. 'Ranked by who's waiting + what costs money to miss: Priya's proposal and the Acme renewal lead; the two meetings are prep-only; I left the Stripe digest out — automated, nothing to decide.' Grounded only in the real items.",
  "decide":[{"ref":"D0","reason":"...","priority":0-100,"evidence":["...","..."]}],
  "chase":[{"ref":"C0","reason":"...","priority":0-100,"evidence":["..."]}],
  "showUp":[{"ref":"S0","reason":"...","priority":0-100,"evidence":["..."]}]}
@@ -231,6 +236,7 @@ function mapToBuckets(
   candidates: { decide: DecideCandidate[]; chase: ChaseCandidate[]; showUp: ShowUpCandidate[] },
 ): AgentTodayResult {
   const briefing = typeof parsed?.briefing === 'string' ? parsed.briefing.trim().slice(0, 200) : '';
+  const reasoning = typeof parsed?.reasoning === 'string' ? parsed.reasoning.trim().slice(0, 280) : '';
 
   const resolve = <T>(pool: T[], rows: any, prefix: string, fallbackReason: (item: T) => string) => {
     const chosen: Array<{ item: T; reason: string; signals?: string[]; p: number }> = [];
@@ -258,7 +264,7 @@ function mapToBuckets(
   const chase = resolve(candidates.chase, parsed?.chase, 'C', () => "You sent this. They haven't replied.").map(({ item, reason, signals }) => ({ ...item, reason, signals }));
   const showUp = resolve(candidates.showUp, parsed?.showUp, 'S', (m) => (m.isExternal ? 'External meeting — prep it.' : 'Internal meeting.')).map(({ item, reason, signals }) => ({ ...item, reason, signals }));
 
-  return { decide, chase, showUp, briefing };
+  return { decide, chase, showUp, briefing, reasoning: reasoning || undefined };
 }
 
 /**

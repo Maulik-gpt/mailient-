@@ -75,6 +75,9 @@ interface TodayPayload {
   calendarConnected: boolean;
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   briefing?: string;
+  // Transparent Reasoning (P6): how the day was prioritized — revealed on demand
+  // under "Why this order?" so the founder understands the triage, not just accepts it.
+  reasoning?: string;
   triage?: { scanned: number; surfaced: number };
   pendingApprovals?: number;
 }
@@ -1049,6 +1052,10 @@ export default function SiftToday() {
   // (offline / token expired) — surfaced as a quiet "cached · updated Xm ago" note.
   const [servingCached, setServingCached] = useState(false);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  // Transparent Reasoning (P6): the day's prioritization logic stays collapsed by
+  // default (protection, not overwhelm) and expands when the founder wants to
+  // understand — or challenge — how Mailient ranked their day.
+  const [showReasoning, setShowReasoning] = useState(false);
   // Dismissals are persisted server-side (durable + cross-device); the Today API
   // already excludes them on load, so this in-memory set only handles instant
   // removal for items dismissed in THIS session before the next fetch.
@@ -1384,6 +1391,42 @@ export default function SiftToday() {
             <p className="text-[15px] mt-1.5 text-black/55 dark:text-white/55 tracking-tight">
               {progress || data?.briefing?.trim() || "here's what deserves you today."}
             </p>
+            {/* Transparent Reasoning (P6) — "Why this order?" reveals HOW Mailient
+                ranked the day. Collapsed by default so the norm stays calm; one tap
+                exposes the tradeoff logic so the founder understands (and can
+                challenge) the triage instead of taking it on faith. Only shown when
+                there's an actual order to explain (2+ surfaced items) and the agent
+                produced grounded reasoning. */}
+            {data?.reasoning?.trim() && (decideItems.length + chaseItems.length + showUpItems.length) >= 2 && (
+              <div className="mt-2.5">
+                <button
+                  type="button"
+                  onClick={() => setShowReasoning((v) => !v)}
+                  aria-expanded={showReasoning}
+                  className="group inline-flex items-center gap-1.5 text-[12.5px] font-medium text-black/45 dark:text-white/45 hover:text-black/70 dark:hover:text-white/70 transition-colors"
+                >
+                  <Sparkles className="w-3 h-3 text-black/35 dark:text-white/35 group-hover:text-black/55 dark:group-hover:text-white/55 transition-colors" strokeWidth={2} />
+                  Why this order?
+                  <ChevronDown className={cn('w-3.5 h-3.5 transition-transform duration-200', showReasoning && 'rotate-180')} strokeWidth={2} />
+                </button>
+                <AnimatePresence initial={false}>
+                  {showReasoning && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22, ease: [0.4, 0, 0.2, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <div className="mt-2.5 max-w-xl rounded-xl border border-black/[0.07] dark:border-white/[0.08] border-l-2 border-l-black/25 dark:border-l-white/25 bg-black/[0.02] dark:bg-white/[0.03] pl-3.5 pr-4 py-3">
+                        <p className="text-[10.5px] uppercase tracking-[0.14em] text-black/35 dark:text-white/35 mb-1.5 font-semibold">How Mailient ranked today</p>
+                        <p className="text-[13.5px] leading-relaxed text-black/70 dark:text-white/70">{data.reasoning.trim()}</p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
           </div>
           <button
             type="button"

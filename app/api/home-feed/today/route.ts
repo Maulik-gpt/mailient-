@@ -109,6 +109,11 @@ interface TodayResponse {
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   // One-line AI briefing of what needs the user today (agent path only).
   briefing?: string;
+  // Transparent Reasoning (P6): HOW the day was prioritized — the tradeoff logic
+  // behind the order ("ranked by who's waiting + what costs money to miss; left
+  // the Stripe digest out — automated"). Surfaced on demand as "Why this order?"
+  // so the founder understands the triage instead of just accepting it.
+  reasoning?: string;
   // Confidence scale: how many emails were actually examined vs how few were
   // surfaced. "Read 47, 3 need you" is the strongest it's-not-guessing signal.
   triage?: { scanned: number; surfaced: number };
@@ -618,6 +623,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   let showUp: ShowUpItem[] = [];
   let chase: ChaseItem[] = [];
   let briefing: string | undefined;
+  let reasoning: string | undefined;
 
   // ── AI TRIAGE (primary) — a real, tool-driven agent selects + ranks + reasons
   // over the candidate pools. On ANY failure we fall through to the heuristic
@@ -640,6 +646,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
         showUp = agent.showUp;
         chase = agent.chase;
         briefing = agent.briefing || undefined;
+        reasoning = agent.reasoning || undefined;
         agentOk = true;
       }
     } catch (e: any) {
@@ -674,6 +681,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     calendarConnected: !calendarExpired,
     needsReconnect,
     briefing,
+    reasoning,
     // Confidence scale — only meaningful when we actually examined mail.
     triage: decideScanned > 0 ? { scanned: decideScanned, surfaced: decide.length } : undefined,
     pendingApprovals: pendingApprovals > 0 ? pendingApprovals : undefined,

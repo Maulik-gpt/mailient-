@@ -376,7 +376,7 @@ function curatedToUITemplate(t: CuratedAgentTemplate): UITemplate {
 
 const TEMPLATES: UITemplate[] = CURATED_AGENT_TEMPLATES.map(curatedToUITemplate);
 
-function getTemplateIcon(id: string) {
+function getTemplateIcon(id?: string) {
   const iconProps = { className: "w-4 h-4 text-arcus-fg-secondary" };
   switch (id) {
     case 'morning_inbox_sweep':
