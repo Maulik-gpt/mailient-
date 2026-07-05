@@ -634,6 +634,8 @@ interface Recommendation {
   cta: { label: string; prompt: string };
   // How many REAL feed items this pick references (server-validated refIds).
   groundedIn?: number;
+  // A hidden loss caught before it slips — shown with a protective tag.
+  atRisk?: boolean;
 }
 
 
@@ -693,9 +695,16 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <span className={cn('text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md', TONE_CHIP[rec.tone])}>
-              {TONE_LABEL[rec.tone]}
-            </span>
+            {rec.atRisk ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md text-amber-700 dark:text-amber-300 bg-amber-500/[0.1] dark:bg-amber-400/[0.1]">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 dark:bg-amber-400" />
+                Before it slips
+              </span>
+            ) : (
+              <span className={cn('text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md', TONE_CHIP[rec.tone])}>
+                {TONE_LABEL[rec.tone]}
+              </span>
+            )}
             <span className="text-[11px] tabular-nums text-black/40 dark:text-white/40 font-medium">
               {rec.stat.value} <span className="text-black/30 dark:text-white/30">{rec.stat.label}</span>
             </span>
@@ -763,6 +772,8 @@ interface AiRecDTO {
   arcusPrompt: string;
   ctaLabel: string;
   stat: { value: number; label: string };
+  // Opportunity Detection: a hidden loss caught before it slips.
+  atRisk?: boolean;
   // Server-validated refs to the REAL items this pick is built from (the
   // anti-hallucination gate) — the count doubles as the grounding receipt.
   refIds?: string[];
@@ -780,6 +791,7 @@ function aiToRec(dto: AiRecDTO): Recommendation {
     stat: dto.stat,
     cta: { label: dto.ctaLabel, prompt: dto.arcusPrompt },
     groundedIn: Array.isArray(dto.refIds) ? dto.refIds.length : undefined,
+    atRisk: dto.atRisk === true,
   };
 }
 
@@ -881,7 +893,11 @@ function RecommendationsSection({
 
   // ONLY real AI recommendations — no deterministic mock fallback. If the AI
   // produced nothing usable, the recommendations section simply doesn't render.
-  const recs = aiRecs && aiRecs.length ? aiRecs : [];
+  // At-risk opportunities float to the top — the buried thing that costs money
+  // to miss should be the first thing the founder sees. Stable within groups.
+  const recs = aiRecs && aiRecs.length
+    ? [...aiRecs].sort((a, b) => (b.atRisk ? 1 : 0) - (a.atRisk ? 1 : 0))
+    : [];
   // "reviewing" = the AI is still composing the picks; drives the live header,
   // the in-progress checklist row, and the recommendation skeletons.
   const reviewing = aiLoading && !aiRecs;

@@ -59,6 +59,10 @@ interface OutRec {
   arcusPrompt: string;
   ctaLabel: string;
   stat: { value: number; label: string };
+  // Opportunity Detection: true when this is a hidden loss caught before it
+  // slips (revenue/relationship/deadline at risk) — rendered with a protective
+  // "before it slips" tag so the founder can't miss it.
+  atRisk?: boolean;
   refIds: string[];
 }
 
@@ -171,6 +175,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
     'You are the chief-of-staff brain behind a founder\'s daily briefing. You are given a numbered list of REAL items pulled from ACROSS their connected apps — Gmail (incl. bounced sends), Google Calendar/Meet, Cal.com bookings, Notion pages, and Slack DMs. Each item is tagged with its source kind.\n' +
     `Produce up to ${max} high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Group related items into one recommendation rather than repeating yourself.\n` +
     memoryLine + focusLine + toneLine + customLine +
+    'PROTECT AGAINST INVISIBLE LOSSES FIRST. A founder loses deals by never SEEING them, not by deciding badly. Before anything else, hunt what is QUIETLY AT RISK — a proposal/quote/contract thread gone silent, a VIP or warm contact you haven\'t answered, a bounced send to a real person, a deadline/renewal closing while it sits unread. Rank by what it COSTS to miss, not by how loud it is: a quiet deal at risk outranks routine task-clearing. For any recommendation that is such a caught-before-it-slips item, set "atRisk": true and make the summary say why NOW ("the Acme renewal lapses Friday; the thread\'s been quiet 8 days"). Be selective — the feeling is "I\'m covered", not "here\'s more to worry about". Only mark atRisk when there is genuine time-boxed or revenue/relationship risk in the referenced items.\n' +
     'PRIORITIZE recommendations that CONNECT TWO OR MORE APPS when the items plausibly relate — e.g. an email gone quiet whose Notion deal page is stale, a Cal.com booking with no prep doc, a bounced send to fix from a Notion contact, a Slack ask that mirrors an unanswered email. A cross-app move is the most valuable thing you can surface. Only join items when they clearly concern the same person/company/topic — never invent a connection.\n\n' +
     'HARD RULES — accuracy is everything:\n' +
     '- For each recommendation, list the bracket numbers of the item(s) it is about in refIds, e.g. "refIds": [1, 3]. Use ONLY numbers that appear in the list. NEVER invent a person, number, company, or deadline that is not in the items.\n' +
@@ -179,7 +184,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
     '- summary: ONE sentence, specific, naming the real person/subject and why it matters now.\n' +
     '- arcusPrompt: one self-contained instruction the user hands to their AI assistant (Arcus) to DO this with zero further typing (e.g. "Draft a warm, low-pressure follow-up to Sarah Chen about the Q3 proposal she hasn\'t replied to."). Grounded entirely in the referenced items.\n' +
     '- ctaLabel: 2-3 words for the button (e.g. "Draft nudge", "Prep me", "Clear it").\n' +
-    'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","refIds":[numbers]}]}';
+    'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","atRisk":true|false,"refIds":[numbers]}]}';
 
   const basePayload = {
     max_tokens: 900,
@@ -302,6 +307,7 @@ function validate(raw: any[], items: InItem[], maxRecs: number): OutRec[] {
       arcusPrompt,
       ctaLabel,
       stat: statFor(refs),
+      atRisk: r.atRisk === true,
       refIds: refs.map(r2 => String(r2.ref)),
     });
   }
