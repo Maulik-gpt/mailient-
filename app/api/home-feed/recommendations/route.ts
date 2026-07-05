@@ -139,7 +139,7 @@ function statFor(refs: InItem[]): { value: number; label: string } {
   return { value: refs.length, label: 'items' };
 }
 
-async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[] | null> {
+async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''): Promise<OutRec[] | null> {
   const ks = keys();
   if (!ks.length || !items.length) return null;
 
@@ -159,10 +159,18 @@ async function generate(items: InItem[], prefs: BriefingPrefs): Promise<OutRec[]
     ? `The user has a STANDING PREFERENCE for their briefing: "${prefs.customInstructions.replace(/"/g, "'")}". Honor it where it applies, but NEVER invent items to satisfy it.\n`
     : '';
 
+  // FOUNDER MEMORY (visible recall on the feed): if we know the founder's VIPs /
+  // style / priorities, let the picks reason from that — a rec grounded in "Priya
+  // is a VIP you flagged" reads like Mailient already knows them. Never invent:
+  // the model may only LEAN on this, never manufacture a person/fact from it.
+  const memoryLine = founderModel.trim()
+    ? `WHAT YOU ALREADY KNOW ABOUT THIS FOUNDER (reason from it; rank a known VIP's silence above a stranger's; when a pick is shaped by something here, say so briefly in the summary — "Priya, a VIP you flagged, has gone quiet". NEVER invent a person or fact not present in the numbered items):\n${founderModel.trim().slice(0, 900)}\n\n`
+    : '';
+
   const system =
     'You are the chief-of-staff brain behind a founder\'s daily briefing. You are given a numbered list of REAL items pulled from ACROSS their connected apps — Gmail (incl. bounced sends), Google Calendar/Meet, Cal.com bookings, Notion pages, and Slack DMs. Each item is tagged with its source kind.\n' +
     `Produce up to ${max} high-leverage next-step RECOMMENDATIONS that either STRENGTHEN A RELATIONSHIP (category "connect") or BOOST PRODUCTIVITY (category "productivity"). Group related items into one recommendation rather than repeating yourself.\n` +
-    focusLine + toneLine + customLine +
+    memoryLine + focusLine + toneLine + customLine +
     'PRIORITIZE recommendations that CONNECT TWO OR MORE APPS when the items plausibly relate — e.g. an email gone quiet whose Notion deal page is stale, a Cal.com booking with no prep doc, a bounced send to fix from a Notion contact, a Slack ask that mirrors an unanswered email. A cross-app move is the most valuable thing you can surface. Only join items when they clearly concern the same person/company/topic — never invent a connection.\n\n' +
     'HARD RULES — accuracy is everything:\n' +
     '- For each recommendation, list the bracket numbers of the item(s) it is about in refIds, e.g. "refIds": [1, 3]. Use ONLY numbers that appear in the list. NEVER invent a person, number, company, or deadline that is not in the items.\n' +
@@ -529,7 +537,12 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => ({}));
 
     // The user's Customize-Briefing prefs shape what we gather and how we rank.
-    const prefs = await getBriefingPrefs(userEmail);
+    // The founder model (VIPs/style/priorities) lets picks reason from what
+    // Mailient already knows — fetched in parallel, fail-soft to ''.
+    const [prefs, founderModel] = await Promise.all([
+      getBriefingPrefs(userEmail),
+      (async () => { try { const { getUserModelSummary } = await import('@/lib/arcus/user-model'); return await getUserModelSummary(userEmail); } catch { return ''; } })(),
+    ]);
 
     // Client buckets (Gmail/Calendar/ledger, already computed + freshest) + the
     // cross-app signals we gather server-side from every ENABLED app, in one
@@ -543,7 +556,7 @@ export async function POST(req: Request) {
     }
 
     const apps = Array.from(new Set(items.map(i => APP_OF[i.kind])));
-    const recs = await generate(items, prefs);
+    const recs = await generate(items, prefs, founderModel);
     if (!recs || !recs.length) {
       // Signal the client to keep its instant deterministic recommendations.
       return NextResponse.json({ success: true, recommendations: [], source: 'fallback', apps });

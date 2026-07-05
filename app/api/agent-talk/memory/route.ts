@@ -75,7 +75,16 @@ export async function GET() {
       updatedAt: r.updated_at,
     }));
 
-    return NextResponse.json({ memories, memoryEnabled });
+    // The human portrait — "What Mailient knows about you" (VIPs, your style,
+    // what you delegate). The rich, felt understanding vs the raw memory log.
+    // Fail-soft to '' so the memory list still renders if the model read fails.
+    let founderModel = '';
+    try {
+      const { getUserModelSummary } = await import('../../../../lib/arcus/user-model');
+      founderModel = await getUserModelSummary(userId);
+    } catch { /* portrait is best-effort */ }
+
+    return NextResponse.json({ memories, memoryEnabled, founderModel });
   } catch (err: any) {
     console.error('[Memory API] GET error:', err.message);
     return NextResponse.json({ memories: [], memoryEnabled: true });

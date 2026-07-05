@@ -185,6 +185,7 @@ export function ArcusSettingsModal({
 
   // Memory
   const [memories, setMemories] = useState<MemoryItem[]>([]);
+  const [founderModel, setFounderModel] = useState('');
   const [isLoadingMemories, setIsLoadingMemories] = useState(false);
   const [deletingMemoryId, setDeletingMemoryId] = useState<string | null>(null);
   const [isClearingAll, setIsClearingAll] = useState(false);
@@ -212,6 +213,7 @@ export function ArcusSettingsModal({
       if (!res.ok) throw new Error('Failed to load memories');
       const data = await res.json();
       setMemories(data.memories || []);
+      setFounderModel(typeof data.founderModel === 'string' ? data.founderModel : '');
     } catch (err: any) {
       setMemoryError(err.message || 'Failed to load memories');
       setMemories([]);
@@ -480,6 +482,42 @@ export function ArcusSettingsModal({
                   label="Enable Memory"
                   description="When enabled, Arcus remembers context from your conversations to provide more personalized assistance."
                 />
+
+                {/* WHAT MAILIENT KNOWS ABOUT YOU — the human portrait (VIPs,
+                    your style, what you delegate) built from the user model, not
+                    the raw memory log. This is the "it already knows" surface:
+                    the founder witnesses the understanding instead of configuring
+                    it. Honest empty state when Mailient hasn't learned enough yet. */}
+                {memoryEnabled && !isLoadingMemories && (
+                  <div className="rounded-2xl border border-black/[0.07] dark:border-white/[0.08] bg-black/[0.015] dark:bg-white/[0.02] p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <Brain className="w-3.5 h-3.5 text-black/45 dark:text-white/45" strokeWidth={2} />
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-black/45 dark:text-white/45">What Mailient knows about you</span>
+                    </div>
+                    {founderModel.trim() ? (
+                      <div className="space-y-1.5">
+                        {founderModel.split('\n').map((l) => l.replace(/^[-•]\s*/, '').trim()).filter(Boolean).slice(0, 12).map((line, i) => {
+                          const idx = line.indexOf(':');
+                          const label = idx > 0 ? line.slice(0, idx).trim() : '';
+                          const val = idx > 0 ? line.slice(idx + 1).trim() : line;
+                          return (
+                            <div key={i} className="flex items-start gap-2 text-[12.5px] leading-relaxed">
+                              {label && <span className="text-black/40 dark:text-white/35 font-medium min-w-[110px] flex-shrink-0">{label}</span>}
+                              <span className="text-black/75 dark:text-white/75">{val}</span>
+                            </div>
+                          );
+                        })}
+                        <p className="text-[11px] text-black/35 dark:text-white/30 pt-2 leading-relaxed">
+                          Learned as you work — never configured. It gets sharper every conversation.
+                        </p>
+                      </div>
+                    ) : (
+                      <p className="text-[12.5px] text-black/50 dark:text-white/45 leading-relaxed">
+                        Mailient is still getting to know you. As you work together — who you reply to, how you write, what you delegate — it builds a picture here. Nothing to fill in.
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 {/* Memory List */}
                 <div className={cn('transition-opacity', !memoryEnabled && 'opacity-40 pointer-events-none')}>
