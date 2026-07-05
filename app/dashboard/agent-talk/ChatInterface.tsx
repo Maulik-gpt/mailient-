@@ -10,6 +10,7 @@ import { ChatHistoryModal } from './components/ChatHistoryModal';
 import { SuggestionChips } from './components/SuggestionChips';
 // PART 46 — slash-command registry (for /help generation + handler typing).
 import { SLASH_COMMANDS } from '@/lib/arcus/skills';
+import { humanizeToolName } from '@/lib/arcus/tool-labels';
 import { ThinkingLayer, ResultCard, type ThinkingStep, type ThinkingBlock, type SearchSession } from './components/ThinkingLayer';
 import { ConnectorRequiredPanel, type ConnectorRequiredEntry } from './components/ThinkingLayerV2';
 import { AskUserCard, type AskQuestion } from './components/AskUserCard';
@@ -528,6 +529,26 @@ function nextMessageId(): number {
  * Intentionally conservative — if extraction fails we return a one-line
  * fallback rather than spamming garbled tokens.
  */
+// Past-tense human labels ("Searched inbox") → active voice ("Searching inbox")
+// for the live step pills. First-word verb map; unknown verbs pass through
+// unchanged (a past-tense label while active is still far better than a raw
+// tool id).
+const ACTIVE_VERB: Record<string, string> = {
+  Searched: 'Searching', Read: 'Reading', Drafted: 'Drafting', Sent: 'Sending',
+  Checked: 'Checking', Booked: 'Booking', Logged: 'Logging', Created: 'Creating',
+  Applied: 'Applying', Labeled: 'Labeling', Archived: 'Archiving', Digested: 'Digesting',
+  Reviewed: 'Reviewing', Scanned: 'Scanning', Cancelled: 'Cancelling', Prepped: 'Prepping',
+  Resolved: 'Resolving', Updated: 'Updating', Wrote: 'Writing', Posted: 'Posting',
+  Recalled: 'Recalling', Saved: 'Saving', Found: 'Finding', Pulled: 'Pulling',
+  Analyzed: 'Analyzing', Prepared: 'Preparing', Generated: 'Generating', Built: 'Building',
+  Opened: 'Opening', Researched: 'Researching', Summarized: 'Summarizing', Used: 'Using',
+};
+function toActiveVoice(label: string): string {
+  const [first, ...rest] = label.split(' ');
+  const active = ACTIVE_VERB[first];
+  return active ? [active, ...rest].join(' ') : label;
+}
+
 function extractSourcesFromToolResult(toolName: string, summary: string, params?: Record<string, any>): SourceItem[] {
   if (!toolName) return [];
   const s = (summary || '').toString();
@@ -2612,7 +2633,13 @@ export default function ChatInterface({
       case 'open_canvas': return isActive ? `Opening canvas${params?.title ? ` "${params.title}"` : '...'}` : `Opened canvas${params?.title ? ` "${params.title}"` : ''}`;
       case 'web_search': return isActive ? `Searching web${params?.query ? ` for "${params.query}"` : '...'}` : `Searched web${params?.query ? ` for "${params.query}"` : ''}`;
       case 'send_slack_message': return isActive ? `Sending Slack message${params?.channel ? ` to ${params.channel}` : '...'}` : `Sent Slack message${params?.channel ? ` to ${params.channel}` : ''}`;
-      default: return isActive ? `Running ${tool.replace(/_/g, ' ')}...` : `Completed ${tool.replace(/_/g, ' ')}`;
+      // Fallback: every other tool goes through the shared human-label map
+      // (lib/arcus/tool-labels), so the activity feed always reads like an
+      // employee narrating work — never `Running gmail_bulk_read_threads...`.
+      default: {
+        const label = humanizeToolName(tool);
+        return isActive ? `${toActiveVoice(label)}…` : label;
+      }
     }
   };
 

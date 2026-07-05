@@ -615,6 +615,8 @@ interface Recommendation {
   summary: string;
   stat: RecStat;
   cta: { label: string; prompt: string };
+  // How many REAL feed items this pick references (server-validated refIds).
+  groundedIn?: number;
 }
 
 
@@ -691,6 +693,14 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
             {rec.cta.label}
             <ArrowUpRight className="w-3 h-3 group-hover:translate-x-[1px] group-hover:-translate-y-[1px] transition-transform duration-200" strokeWidth={2.25} />
           </button>
+          {typeof rec.groundedIn === 'number' && rec.groundedIn > 0 && (
+            <span
+              className="ml-auto text-[10.5px] text-black/30 dark:text-white/25 flex-shrink-0"
+              title="Every recommendation references verified items from your real feed — never invented."
+            >
+              from {rec.groundedIn} real {rec.groundedIn === 1 ? 'item' : 'items'}
+            </span>
+          )}
         </div>
       </div>
     </motion.div>
@@ -736,6 +746,9 @@ interface AiRecDTO {
   arcusPrompt: string;
   ctaLabel: string;
   stat: { value: number; label: string };
+  // Server-validated refs to the REAL items this pick is built from (the
+  // anti-hallucination gate) — the count doubles as the grounding receipt.
+  refIds?: string[];
 }
 
 function aiToRec(dto: AiRecDTO): Recommendation {
@@ -749,6 +762,7 @@ function aiToRec(dto: AiRecDTO): Recommendation {
     summary: dto.summary,
     stat: dto.stat,
     cta: { label: dto.ctaLabel, prompt: dto.arcusPrompt },
+    groundedIn: Array.isArray(dto.refIds) ? dto.refIds.length : undefined,
   };
 }
 
