@@ -1328,6 +1328,31 @@ export default function SiftToday() {
   const showUpItems = useMemo(() => (data?.showUp ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
   const actionItemsVisible = useMemo(() => (data?.actionItems ?? []).filter((i) => !dismissed.has(i.id)), [data, dismissed]);
 
+  // CONTINUOUS INBOX — the opening line reframes the visit from "catching up"
+  // (a backlog to process) to "reviewing progress" (work already done). Built
+  // ONLY from real numbers already in the payload: what Mailient did while away
+  // (emails read + artifacts its agents produced), then the small remainder.
+  // Null when nothing actually moved in the gap → the normal subline shows.
+  const progress = useMemo(() => {
+    if (!data) return null;
+    const left = decideItems.length + chaseItems.length + showUpItems.length + actionItemsVisible.length;
+    const scanned = data.triage?.scanned ?? 0;
+    const runs = data.agentRuns ?? [];
+    const artifacts = runs.reduce((n, r) => n
+      + (r.artifactCounts?.gmail || 0) + (r.artifactCounts?.calendar || 0)
+      + (r.artifactCounts?.notion || 0) + (r.artifactCounts?.slack || 0), 0);
+    if (runs.length === 0 && scanned === 0) return null; // nothing happened while away
+    const did: string[] = [];
+    if (scanned > 0) did.push(`read ${scanned} ${scanned === 1 ? 'email' : 'emails'}`);
+    if (artifacts > 0) did.push(`handled ${artifacts}`);
+    else if (runs.length > 0) did.push(`ran ${runs.length} ${runs.length === 1 ? 'sweep' : 'sweeps'}`);
+    const didClause = did.length ? did.join(' · ') : 'kept things moving';
+    const leftClause = left === 0
+      ? "nothing needs you — you're clear."
+      : `${left} ${left === 1 ? 'thing needs' : 'things need'} you. The rest is handled.`;
+    return `While you were away, Mailient ${didClause}. ${leftClause}`;
+  }, [data, decideItems, chaseItems, showUpItems, actionItemsVisible]);
+
   return (
     <div className="w-full min-h-screen bg-transparent">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 pt-14 sm:pt-20 pb-32">
@@ -1341,7 +1366,7 @@ export default function SiftToday() {
               {greeting}
             </h1>
             <p className="text-[15px] mt-1.5 text-black/55 dark:text-white/55 tracking-tight">
-              {data?.briefing?.trim() || "here's what deserves you today."}
+              {progress || data?.briefing?.trim() || "here's what deserves you today."}
             </p>
           </div>
           <button
