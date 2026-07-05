@@ -112,6 +112,10 @@ interface TodayResponse {
   // Confidence scale: how many emails were actually examined vs how few were
   // surfaced. "Read 47, 3 need you" is the strongest it's-not-guessing signal.
   triage?: { scanned: number; surfaced: number };
+  // Approval Mode: write actions background agents queued for the user's OK
+  // (arcus_agent_pending_actions, status='pending'). Surfaced so the founder
+  // learns work is waiting on their signature without opening Arcus.
+  pendingApprovals?: number;
 }
 
 function isTokenExpiredErr(err: any): boolean {
@@ -512,6 +516,23 @@ async function fetchAgentRuns(userEmail: string): Promise<AgentRunItem[]> {
   }
 }
 
+// Approval Mode — count the write actions background agents queued for the
+// user's sign-off. Pure DB read, fail-soft (0 on any error / missing table).
+async function fetchPendingApprovalsCount(userEmail: string): Promise<number> {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { count, error } = await supabase
+      .from('arcus_agent_pending_actions')
+      .select('id', { count: 'exact', head: true })
+      .ilike('user_id', userEmail)
+      .eq('status', 'pending');
+    if (error) return 0;
+    return count || 0;
+  } catch {
+    return 0;
+  }
+}
+
 // How long a cached snapshot is served before we recompute. The expensive
 // Gmail/Calendar build happens on a miss (or via the cron prewarm); within the TTL
 // every load is a fast DB read.
@@ -533,12 +554,14 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   }
 
   if (!accessToken) {
-    const [actionItems, agentRuns] = await Promise.all([
+    const [actionItems, agentRuns, pendingApprovals] = await Promise.all([
       fetchActionItems(userEmail),
       fetchAgentRuns(userEmail),
+      fetchPendingApprovalsCount(userEmail),
     ]);
     return {
       decide: [], showUp: [], chase: [], actionItems, agentRuns,
+      pendingApprovals: pendingApprovals > 0 ? pendingApprovals : undefined,
       emptyAll: actionItems.length === 0 && agentRuns.length === 0,
       generatedAt: new Date().toISOString(),
       gmailConnected: false, calendarConnected: false,
@@ -572,12 +595,13 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   const DECIDE_CANDIDATES = 18;
   const CHASE_CANDIDATES = 14;
   const SHOWUP_CANDIDATES = 10;
-  const [decideR, showUpR, chaseR, actionItems, agentRuns] = await Promise.all([
+  const [decideR, showUpR, chaseR, actionItems, agentRuns, pendingApprovals] = await Promise.all([
     wrap(() => fetchDecide(gmail, DECIDE_CANDIDATES), 'gmail'),
     wrap(() => fetchShowUp(cal, userEmail, SHOWUP_CANDIDATES), 'calendar'),
     wrap(() => fetchChase(gmail, userEmail, CHASE_CANDIDATES), 'gmail'),
     fetchActionItems(userEmail),
     fetchAgentRuns(userEmail),
+    fetchPendingApprovalsCount(userEmail),
   ]);
 
   const gmailExpired = decideR.expired || chaseR.expired;
@@ -652,6 +676,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     briefing,
     // Confidence scale — only meaningful when we actually examined mail.
     triage: decideScanned > 0 ? { scanned: decideScanned, surfaced: decide.length } : undefined,
+    pendingApprovals: pendingApprovals > 0 ? pendingApprovals : undefined,
   };
 }
 

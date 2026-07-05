@@ -2081,6 +2081,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       properties: {
         action: { type: 'string', description: 'Short label for the action, e.g. "Send email", "Create calendar event", "Post to Slack"' },
         description: { type: 'string', description: 'One sentence describing exactly what will happen.' },
+        why: { type: 'string', description: 'One short line of observed receipts for why this is the right call — so approving is a confirmation, not an inspection. E.g. "She asked for Thursday; your 2pm is free." Ground it ONLY in what you actually read this turn.' },
         details: {
           type: 'object',
           description: 'Key field/value pairs shown to the user (e.g. { "To": "john@example.com", "Subject": "Project update", "Channel": "#general" })',
@@ -6209,6 +6210,8 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
       pageMeta: {
         action: input.action || 'Action',
         description: input.description || '',
+        // The receipt line that turns approval into confirmation.
+        why: typeof input.why === 'string' ? input.why.trim().slice(0, 180) : '',
         details,
         // Picked up by ConfirmationCard.onAction — POSTed to /api/arcus/approval/confirm
         // when the user clicks Confirm so the executor-level gate can match.

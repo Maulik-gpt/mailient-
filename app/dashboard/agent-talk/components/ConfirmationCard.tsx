@@ -9,6 +9,13 @@ import { useTheme } from 'next-themes';
 export interface ConfirmationData {
   action: string;
   description: string;
+  /**
+   * One line of observed receipts ("She asked for Thursday; your 2pm is
+   * free.") — the reason this is the right call, so the user can approve at
+   * a glance instead of re-deriving the judgment themselves. Approval Mode:
+   * confirmation, not inspection.
+   */
+  why?: string;
   details?: Record<string, string>;
   /**
    * Server-issued approval id from request_confirmation. When the user clicks
@@ -129,6 +136,15 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
           <p className={cn('text-[13px] leading-relaxed', isDark ? 'text-white/55' : 'text-neutral-600')}>
             {data.description}
           </p>
+          {data.why && (
+            <p className={cn(
+              'mt-1.5 text-[12px] leading-relaxed flex items-start gap-1.5',
+              isDark ? 'text-white/40' : 'text-neutral-500',
+            )}>
+              <Check className={cn('w-3 h-3 mt-[3px] flex-shrink-0', isDark ? 'text-emerald-400/70' : 'text-emerald-600/80')} strokeWidth={2.5} />
+              <span>{data.why}</span>
+            </p>
+          )}
         </div>
 
         {data.details && Object.keys(data.details).length > 0 && (
@@ -185,6 +201,13 @@ export function ConfirmationCard({ data, status, onAction }: ConfirmationCardPro
         >
           Cancel
         </button>
+        {/* The keyboard path, made visible — approving should cost one keystroke. */}
+        <span className={cn(
+          'hidden sm:block ml-1 text-[10.5px] tabular-nums select-none flex-shrink-0',
+          isDark ? 'text-white/25' : 'text-neutral-400/80',
+        )}>
+          ↵ confirm · esc cancel
+        </span>
       </div>
     </motion.div>
   );

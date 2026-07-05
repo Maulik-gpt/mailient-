@@ -76,6 +76,7 @@ interface TodayPayload {
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   briefing?: string;
   triage?: { scanned: number; surfaced: number };
+  pendingApprovals?: number;
 }
 
 function formatDueLabel(dueAt: string | null, isOverdue: boolean): string {
@@ -552,7 +553,7 @@ function AgentRunCard({ run }: { run: AgentRunItem }) {
   );
 }
 
-function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
+function AgentRunsSection({ runs, pendingApprovals }: { runs: AgentRunItem[]; pendingApprovals?: number }) {
   return (
     <section className="mb-10">
       <div className="flex items-center gap-2.5 mb-3">
@@ -561,6 +562,22 @@ function AgentRunsSection({ runs }: { runs: AgentRunItem[] }) {
         </div>
         <h2 className="text-[13px] font-semibold tracking-tight text-black dark:text-white">While you were away</h2>
       </div>
+      {/* APPROVAL MODE — the work is done; these are the signatures it's waiting
+          on. Framed as confirmation ("waiting for your OK"), never as a task. */}
+      {typeof pendingApprovals === 'number' && pendingApprovals > 0 && (
+        <a
+          href="/dashboard/agent-talk"
+          className="group flex items-center justify-between gap-3 mb-2.5 px-4 py-3 rounded-2xl border border-amber-500/25 dark:border-amber-400/20 bg-amber-500/[0.04] dark:bg-amber-400/[0.05] hover:border-amber-500/45 dark:hover:border-amber-400/40 transition-colors"
+        >
+          <span className="text-[12.5px] text-black/70 dark:text-white/70 leading-snug">
+            <span className="font-semibold text-black dark:text-white">{pendingApprovals} {pendingApprovals === 1 ? 'action' : 'actions'}</span>
+            {' '}ready — waiting for your OK
+          </span>
+          <span className="text-[12px] font-medium text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors flex items-center gap-1 flex-shrink-0">
+            Review <ArrowUpRight className="w-3 h-3" strokeWidth={2.25} />
+          </span>
+        </a>
+      )}
       <div className="space-y-2.5">
         {runs.map((run) => <AgentRunCard key={run.id} run={run} />)}
       </div>
@@ -1346,8 +1363,8 @@ export default function SiftToday() {
         {/* Command center: what the user's agents did while they were away.
             Renders first, independent of inbox buckets — this is the spec's
             "open HomeFeed, understand everything in 10 seconds" promise. */}
-        {data && data.agentRuns && data.agentRuns.length > 0 && (
-          <AgentRunsSection runs={data.agentRuns} />
+        {data && ((data.agentRuns && data.agentRuns.length > 0) || (data.pendingApprovals ?? 0) > 0) && (
+          <AgentRunsSection runs={data.agentRuns ?? []} pendingApprovals={data.pendingApprovals} />
         )}
 
         {loading && !data && (

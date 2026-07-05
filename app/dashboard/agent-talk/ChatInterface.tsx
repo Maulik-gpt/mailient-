@@ -2908,6 +2908,7 @@ export default function ChatInterface({
                 const confirmationData: ConfirmationData = {
                   action: pm.action || cv.title || 'Action',
                   description: pm.description || '',
+                  why: pm.why || undefined,
                   details: pm.details || {},
                   // Threaded through so the card's Confirm click can POST to
                   // /api/arcus/approval/confirm — without it the executor gate
