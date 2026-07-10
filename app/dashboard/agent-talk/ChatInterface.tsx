@@ -1194,11 +1194,14 @@ function CollapsibleSteps({
   const totalCount = steps.length;
 
   return (
-    <div className="mb-3">
+    <div className={cn('mb-3 arcus-glass rounded-2xl px-3.5 transition-all', collapsed ? 'py-2' : 'py-2.5')}>
       {/* Toggle row */}
       <button
         onClick={() => setCollapsed(c => !c)}
-        className="flex items-center gap-1.5 text-black/40 dark:text-white/30 hover:text-black/60 dark:hover:text-white/55 transition-colors mb-2"
+        className={cn(
+          'flex items-center gap-1.5 text-black/45 dark:text-white/35 hover:text-black/70 dark:hover:text-white/60 transition-colors w-full',
+          collapsed ? 'mb-0' : 'mb-1.5',
+        )}
       >
         <ChevronDown
           className={cn(
@@ -5432,7 +5435,7 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'px-5 py-3 rounded-[24px] bg-black/[0.03] dark:bg-white/[0.07] backdrop-blur-xl border border-black/[0.05] dark:border-white/[0.1] text-black dark:text-white shadow-none dark:shadow-[0_4px_24px_rgba(0,0,0,0.35),inset_0_1px_0_rgba(255,255,255,0.08)]' : 'text-black dark:text-white px-0 py-1'}`}>
+                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'arcus-glass-pill px-5 py-3 rounded-[22px] text-black dark:text-white' : 'text-black dark:text-white px-0 py-1'}`}>
                                     {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
                                       <motion.div 
                                         className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"

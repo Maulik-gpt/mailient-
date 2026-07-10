@@ -318,7 +318,7 @@ export function LiveStepTracker({ steps, narratives = [], isActive }: {
   const lastActiveIteration = blocks.reduce<number | null>((acc, b) => b.isActive ? b.iteration : acc, null);
 
   return (
-    <div className="mt-1 mb-3">
+    <div className="mt-0.5 mb-0">
       <AnimatePresence initial={false}>
         {blocks.map((block) => (
           <IterationGroup

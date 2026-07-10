@@ -267,19 +267,20 @@ interface ResultCardProps {
     rawContent?: string;
 }
 
+const iconCls = "w-5 h-5 text-black/55 dark:text-white/60";
 const resultIcons: Record<string, any> = {
-    email_draft: <Mail className="w-5 h-5 text-white/60" />,
-    summary: <FileText className="w-5 h-5 text-white/60" />,
-    research: <Search className="w-5 h-5 text-white/60" />,
-    action_plan: <Zap className="w-5 h-5 text-white/60" />,
-    reply: <Mail className="w-5 h-5 text-white/60" />,
-    notes: <FileText className="w-5 h-5 text-white/60" />,
-    meeting_schedule: <Calendar className="w-5 h-5 text-white/60" />,
-    analytics: <BarChart3 className="w-5 h-5 text-white/60" />,
-    notion: <Database className="w-5 h-5 text-white/60" />,
-    tasks: <ListTodo className="w-5 h-5 text-white/60" />,
-    report: <FileText className="w-5 h-5 text-white/60" />,
-    analysis: <FileText className="w-5 h-5 text-white/60" />,
+    email_draft: <Mail className={iconCls} />,
+    summary: <FileText className={iconCls} />,
+    research: <Search className={iconCls} />,
+    action_plan: <Zap className={iconCls} />,
+    reply: <Mail className={iconCls} />,
+    notes: <FileText className={iconCls} />,
+    meeting_schedule: <Calendar className={iconCls} />,
+    analytics: <BarChart3 className={iconCls} />,
+    notion: <Database className={iconCls} />,
+    tasks: <ListTodo className={iconCls} />,
+    report: <FileText className={iconCls} />,
+    analysis: <FileText className={iconCls} />,
 };
 
 const resultLabels: Record<string, string> = {
@@ -319,15 +320,14 @@ export function ResultCard({ type, title, onView, rawContent }: ResultCardProps)
 
     return (
         <motion.div
-            whileHover={{ y: -1 }}
             whileTap={{ scale: 0.99 }}
             onClick={onView}
-            className="group relative flex items-center gap-4 p-4 mt-3 mb-3 w-full max-w-[620px] bg-black/[0.15] dark:bg-[#222222] border border-neutral-200 dark:border-white/[0.08] rounded-2xl transition-all hover:bg-neutral-100 dark:hover:bg-[#2A2A2A] hover:border-neutral-300 dark:hover:border-white/[0.12] cursor-pointer shadow-lg"
+            className="group relative flex items-center gap-4 p-4 mt-3 mb-3 w-full max-w-[620px] rounded-2xl cursor-pointer arcus-glass-card arcus-glass-hover"
         >
-            {/* Tilted Graphic card container */}
-            <div className="relative w-11 h-12 rounded-lg bg-gradient-to-br from-white/[0.06] to-white/[0.01] border border-white/[0.08] flex items-center justify-center shrink-0 shadow-lg transform -rotate-3 overflow-hidden transition-transform group-hover:rotate-0">
-                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/5 to-transparent pointer-events-none" />
-                {resultIcons[type] || <FileText className="w-5 h-5 text-white/50 group-hover:text-white/70 transition-colors" />}
+            {/* Graphic card container — soft neutral tile, straightens on hover */}
+            <div className="relative w-11 h-12 rounded-xl bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] flex items-center justify-center shrink-0 transform -rotate-3 overflow-hidden transition-transform duration-300 group-hover:rotate-0">
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 dark:via-white/5 to-transparent pointer-events-none" />
+                {resultIcons[type] || <FileText className="w-5 h-5 text-black/45 dark:text-white/55 transition-colors" />}
             </div>
 
             <div className="flex flex-col items-start gap-0.5 flex-1 min-w-0">
