@@ -163,18 +163,14 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
       >
         <div
           className={cn(
-            'relative rounded-2xl border overflow-hidden transition-all',
-            isDone
-              ? 'border-arcus-border bg-arcus-surface opacity-75'
-              : isCancelled
-              ? 'border-arcus-border bg-arcus-surface opacity-40'
-              : 'border-arcus-divider bg-arcus-surface',
+            'relative rounded-2xl overflow-hidden transition-all arcus-glass-card',
+            isDone ? 'opacity-75' : isCancelled ? 'opacity-40' : '',
           )}
         >
           {/* Top accent stripe */}
           <div className={cn(
             'absolute top-0 left-0 right-0 h-px',
-            isDone ? 'bg-green-500/25' : isCancelled ? 'bg-white/5' : 'bg-white/[0.18]',
+            isDone ? 'bg-green-500/25' : isCancelled ? 'bg-black/5 dark:bg-white/5' : 'bg-black/10 dark:bg-white/[0.18]',
           )} />
 
           {/* ── Document header row ── */}

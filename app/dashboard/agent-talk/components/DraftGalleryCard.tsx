@@ -88,23 +88,23 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22 }}
-      className="mt-3 mb-1 bg-[#1A1A1A] border border-white/[0.08] rounded-2xl overflow-hidden shadow-xl"
+      className="mt-3 mb-1 rounded-2xl overflow-hidden arcus-glass-card"
     >
       {/* Header */}
-      <div className="px-5 py-3.5 border-b border-white/[0.06] bg-white/[0.02] flex items-center justify-between gap-3">
+      <div className="px-5 py-3.5 border-b border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <Mail className="w-4 h-4 text-white/55 flex-shrink-0" />
-          <h3 className="text-[14px] font-bold text-white/90 truncate">
+          <Mail className="w-4 h-4 text-black/50 dark:text-white/55 flex-shrink-0" />
+          <h3 className="text-[14px] font-bold text-black/90 dark:text-white/90 truncate">
             {drafts.length} draft{drafts.length === 1 ? '' : 's'} ready to review
           </h3>
         </div>
-        <span className="text-[11px] uppercase tracking-wider font-bold text-white/40 tabular-nums flex-shrink-0">
+        <span className="text-[11px] uppercase tracking-wider font-bold text-black/40 dark:text-white/40 tabular-nums flex-shrink-0">
           {sentCount} / {drafts.length} sent
         </span>
       </div>
 
       {/* Accordion of editable draft boxes */}
-      <div className="divide-y divide-white/[0.05] max-h-[560px] overflow-y-auto">
+      <div className="divide-y divide-black/[0.05] dark:divide-white/[0.05] max-h-[560px] overflow-y-auto">
         {drafts.map((d) => {
           const isOpen = expanded.has(d.id);
           const status = statuses[d.id] || 'idle';
@@ -116,33 +116,33 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
               <button
                 type="button"
                 onClick={() => toggle(d.id)}
-                className="w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-white/[0.02] transition-colors"
+                className="w-full flex items-start gap-3 px-5 py-3.5 text-left hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors"
               >
                 <div className="pt-0.5 flex-shrink-0">
                   {status === 'sending' ? (
-                    <Loader2 className="w-4 h-4 text-white/60 animate-spin" />
+                    <Loader2 className="w-4 h-4 text-black/50 dark:text-white/60 animate-spin" />
                   ) : status === 'sent' ? (
-                    <span className="w-4 h-4 rounded-md bg-zinc-300 flex items-center justify-center"><Check className="w-3 h-3 text-black" strokeWidth={3} /></span>
+                    <span className="w-4 h-4 rounded-md bg-emerald-500 flex items-center justify-center"><Check className="w-3 h-3 text-white" strokeWidth={3} /></span>
                   ) : status === 'error' ? (
                     <span className="w-4 h-4 rounded-md bg-rose-500/80 flex items-center justify-center"><AlertCircle className="w-3 h-3 text-white" /></span>
                   ) : (
-                    <ChevronDown className={cn('w-4 h-4 text-white/40 transition-transform', isOpen && 'rotate-180')} />
+                    <ChevronDown className={cn('w-4 h-4 text-black/40 dark:text-white/40 transition-transform', isOpen && 'rotate-180')} />
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-baseline gap-2 min-w-0">
-                    <span className="text-[13.5px] font-bold text-white/90 truncate">{d.recipientName || d.recipientEmail}</span>
+                    <span className="text-[13.5px] font-bold text-black/90 dark:text-white/90 truncate">{d.recipientName || d.recipientEmail}</span>
                     {d.recipientEmail && d.recipientName && (
-                      <span className="text-[11px] text-white/35 font-mono truncate">&lt;{d.recipientEmail}&gt;</span>
+                      <span className="text-[11px] text-black/35 dark:text-white/35 font-mono truncate">&lt;{d.recipientEmail}&gt;</span>
                     )}
                     {typeof d.voiceScore === 'number' && (
-                      <span className="ml-auto flex-shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums tracking-wide bg-white/[0.07] text-white/55">
+                      <span className="ml-auto flex-shrink-0 px-1.5 py-0.5 rounded-md text-[10px] font-bold tabular-nums tracking-wide bg-black/[0.05] dark:bg-white/[0.07] text-black/55 dark:text-white/55">
                         voice {d.voiceScore}
                       </span>
                     )}
                   </div>
-                  <p className="text-[12.5px] text-white/60 truncate mt-0.5 font-medium">{e.subject || '(no subject)'}</p>
-                  {!isOpen && <p className="text-[11.5px] text-white/30 truncate mt-0.5">{snippet}</p>}
+                  <p className="text-[12.5px] text-black/60 dark:text-white/60 truncate mt-0.5 font-medium">{e.subject || '(no subject)'}</p>
+                  {!isOpen && <p className="text-[11.5px] text-black/30 dark:text-white/30 truncate mt-0.5">{snippet}</p>}
                 </div>
               </button>
 
@@ -156,15 +156,15 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
                     transition={{ duration: 0.22, ease: [0.32, 0.72, 0, 1] }}
                     className="overflow-hidden"
                   >
-                    <div className="px-5 pb-4 pt-1 bg-[#202020]/60">
+                    <div className="px-5 pb-4 pt-1 bg-black/[0.015] dark:bg-white/[0.02]">
                       {/* Subject */}
-                      <div className="flex items-center gap-3 py-2 border-b border-white/[0.06]">
-                        <span className="text-[11px] uppercase tracking-wider font-bold text-white/35 shrink-0">Subject</span>
+                      <div className="flex items-center gap-3 py-2 border-b border-black/[0.06] dark:border-white/[0.06]">
+                        <span className="text-[11px] uppercase tracking-wider font-bold text-black/35 dark:text-white/35 shrink-0">Subject</span>
                         <input
                           value={e.subject}
                           onChange={(ev) => setEdit(d.id, { subject: ev.target.value })}
                           disabled={status === 'sending' || status === 'sent'}
-                          className="flex-1 bg-transparent border-none focus:outline-none text-[13.5px] text-white/85 disabled:opacity-60"
+                          className="flex-1 bg-transparent border-none focus:outline-none text-[13.5px] text-black/85 dark:text-white/85 disabled:opacity-60"
                           placeholder="Email subject"
                         />
                       </div>
@@ -174,7 +174,7 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
                         onChange={(ev) => setEdit(d.id, { body: ev.target.value })}
                         disabled={status === 'sending' || status === 'sent'}
                         rows={Math.min(16, Math.max(6, e.body.split('\n').length + 1))}
-                        className="w-full mt-3 bg-[#1A1A1A] border border-white/[0.08] rounded-xl px-4 py-3 text-[13.5px] leading-relaxed text-white/85 focus:outline-none focus:border-white/20 resize-y disabled:opacity-60 draft-editor-scrollbar"
+                        className="w-full mt-3 bg-white/70 dark:bg-white/[0.04] border border-black/[0.08] dark:border-white/[0.08] rounded-xl px-4 py-3 text-[13.5px] leading-relaxed text-black/85 dark:text-white/85 focus:outline-none focus:border-black/20 dark:focus:border-white/20 resize-y disabled:opacity-60 draft-editor-scrollbar"
                         placeholder="Write your reply…"
                       />
                       {/* Actions */}
@@ -189,8 +189,8 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
                           className={cn(
                             'inline-flex items-center gap-2 px-4 py-2 rounded-xl font-bold text-[12px] tracking-wide uppercase transition-all active:scale-95',
                             status === 'sending' || status === 'sent'
-                              ? 'bg-white/10 text-white/40 cursor-not-allowed'
-                              : 'bg-white text-black hover:bg-white/90',
+                              ? 'bg-black/10 dark:bg-white/10 text-black/40 dark:text-white/40 cursor-not-allowed'
+                              : 'bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90',
                           )}
                         >
                           {status === 'sending'
@@ -210,13 +210,13 @@ export function DraftGalleryCard({ drafts, onSendOne, onDismiss }: DraftGalleryC
       </div>
 
       {/* Footer */}
-      <div className="px-5 py-3 border-t border-white/[0.06] bg-white/[0.02] flex items-center justify-between gap-3">
-        <span className="text-[10.5px] uppercase tracking-widest font-bold text-white/30">
+      <div className="px-5 py-3 border-t border-black/[0.06] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.02] flex items-center justify-between gap-3">
+        <span className="text-[10.5px] uppercase tracking-widest font-bold text-black/30 dark:text-white/30">
           Edit any draft, then send it directly
         </span>
         <button
           onClick={onDismiss}
-          className="px-4 py-2 rounded-xl text-[12px] font-bold tracking-wide uppercase text-white/55 hover:text-white/90 hover:bg-white/5 transition-colors inline-flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl text-[12px] font-bold tracking-wide uppercase text-black/55 dark:text-white/55 hover:text-black/90 dark:hover:text-white/90 hover:bg-black/5 dark:hover:bg-white/5 transition-colors inline-flex items-center gap-1.5"
         >
           <X className="w-3.5 h-3.5" />
           {allSent ? 'Close' : 'Done — keep rest in Drafts'}

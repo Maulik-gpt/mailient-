@@ -66,12 +66,7 @@ export function PlanPreviewCard({ plan, onExecute, onCancel }: PlanPreviewCardPr
       initial={{ opacity: 0, y: 12, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-      className={cn(
-        'mt-3 w-full rounded-[20px] border overflow-hidden',
-        isDark
-          ? 'bg-white/[0.04] border-white/[0.09] shadow-[0_4px_24px_rgba(0,0,0,0.3)]'
-          : 'bg-white border-black/[0.09] shadow-sm',
-      )}
+      className="mt-3 w-full rounded-[20px] overflow-hidden arcus-glass-card"
     >
       {/* Header */}
       <div className={cn(
