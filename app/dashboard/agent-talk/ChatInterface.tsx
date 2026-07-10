@@ -3101,7 +3101,10 @@ export default function ChatInterface({
                 type: 'tool_call',
                 tool: data.tool,
                 label: activeLabel,
-                context: data.params?.query || data.params?.message || data.params?.summary || data.params?.subject || '',
+                // Narrated Execution Protocol: the model's own first-person line
+                // for THIS call ("Scanning your inbox for unanswered investor
+                // threads") — falls back to the raw param fragment for old runs.
+                context: data.narration || data.params?.query || data.params?.message || data.params?.summary || data.params?.subject || '',
                 status: 'active',
                 startedAt: Date.now(),
                 iteration: data.iteration,
@@ -3109,7 +3112,7 @@ export default function ChatInterface({
               });
               currentAgentSteps = nextToolCallSteps;
               setAgentSteps(nextToolCallSteps);
-              setLiveActivityLine(activeLabel);
+              setLiveActivityLine(data.narration || activeLabel);
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 // PART 10 Fix 6: update orchestration plan stepStatuses — mark matching step as 'running'

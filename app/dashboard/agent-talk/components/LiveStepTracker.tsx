@@ -75,12 +75,33 @@ function cleanSummaryPreview(summary?: string): string | null {
   return clean.slice(0, 180) || null;
 }
 
-function deriveHeadline(narrative: string | undefined, fallbackIteration: number): string {
-  if (!narrative) return `Step ${fallbackIteration}`;
-  // First sentence, max 90 chars — keeps the collapsed view tight.
-  const first = narrative.split(/(?<=[.!?])\s+/)[0] || narrative;
-  const trimmed = first.replace(/\s+/g, ' ').trim();
-  return trimmed.length > 90 ? trimmed.slice(0, 87) + '…' : trimmed;
+function deriveHeadline(narrative: string | undefined, steps: AgentStep[], fallbackIteration: number): string {
+  if (narrative) {
+    // First sentence, max 90 chars — keeps the collapsed view tight.
+    const first = narrative.split(/(?<=[.!?])\s+/)[0] || narrative;
+    const trimmed = first.replace(/\s+/g, ' ').trim();
+    return trimmed.length > 90 ? trimmed.slice(0, 87) + '…' : trimmed;
+  }
+  // No narrative from the model — derive a REAL headline from what actually ran
+  // ("Searched Gmail · Read email ×3") instead of the generic "Step N". Purely
+  // deterministic from the executed tools, so it can never claim work that
+  // didn't happen.
+  const counts = new Map<string, number>();
+  for (const s of steps) {
+    if (s.type === 'thinking') continue;
+    const verb = getToolMeta(s.tool).verb;
+    counts.set(verb, (counts.get(verb) || 0) + 1);
+  }
+  const parts = Array.from(counts.entries()).slice(0, 3).map(([v, n]) => (n > 1 ? `${v} ×${n}` : v));
+  return parts.length ? parts.join(' · ') : `Step ${fallbackIteration}`;
+}
+
+// Provenance chip for web tools — the real hostname the call touched
+// (reddit.com, zapier.com…), parsed from the actual params. Deterministic.
+function domainOf(params: any): string | null {
+  const url = params?.url || params?.link;
+  if (typeof url !== 'string' || !url) return null;
+  try { return new URL(url).hostname.replace(/^www\./, ''); } catch { return null; }
 }
 
 // ─── Atomic rows: reasoning, tool, loader ─────────────────────────────────────
@@ -111,6 +132,19 @@ function ToolRow({ step }: { step: AgentStep }) {
   const meta = getToolMeta(step.tool);
   const summaryPreview = !isActive && !isError ? cleanSummaryPreview(step.summary) : null;
   const hasResult = !!summaryPreview;
+
+  // Narrated Execution Protocol: the primary text of a step is the model's own
+  // first-person line when present ("Scanning your inbox for unanswered
+  // investor threads"); a short param fragment renders as `Verb — "fragment"`;
+  // only a step with no context at all falls back to the bare verb. This is
+  // where the specificity the loop already computes finally reaches the pixels.
+  const ctx = (step.context || '').trim();
+  const line = ctx.length >= 28
+    ? ctx
+    : ctx
+      ? `${meta.verb} — “${ctx.length > 60 ? ctx.slice(0, 57) + '…' : ctx}”`
+      : meta.verb;
+  const domain = domainOf(step.params);
 
   return (
     <motion.div
@@ -156,10 +190,15 @@ function ToolRow({ step }: { step: AgentStep }) {
               animate={{ opacity: [0.6, 1, 0.6] }}
               transition={{ repeat: Infinity, duration: 1.8, ease: 'easeInOut' }}
             >
-              {meta.verb}
+              {line}
             </motion.span>
-          ) : meta.verb}
+          ) : line}
         </span>
+        {domain && (
+          <span className="flex-shrink-0 text-[11px] text-black/35 dark:text-white/30 font-medium">
+            {domain}
+          </span>
+        )}
         {hasResult && (
           open
             ? <ChevronDown className="w-3 h-3 flex-shrink-0 text-black/30 dark:text-white/30" />
@@ -215,8 +254,8 @@ function IterationGroup({ block, isLastActive }: { block: IterationBlock; isLast
   // (let user expand any of them with a click).
   const [open, setOpen] = useState(block.isActive);
   const headline = useMemo(
-    () => deriveHeadline(block.narrative, block.iteration),
-    [block.narrative, block.iteration],
+    () => deriveHeadline(block.narrative, block.steps, block.iteration),
+    [block.narrative, block.steps, block.iteration],
   );
 
   const showCheckIcon = !block.isActive;

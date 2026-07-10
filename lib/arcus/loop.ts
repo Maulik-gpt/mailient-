@@ -384,6 +384,23 @@ function parseStructuredAgentParams(msg: string): Record<string, any> | null {
   }
 }
 
+// ── Narrated Execution Protocol ──────────────────────────────────────────────
+// The schema key injected into every tool (see narratedTools below): a live,
+// first-person "what I'm doing right now" line the model writes AS PART of the
+// tool call. Extracted + stripped here before executors ever see the input, and
+// re-emitted with the tool_call SSE event so the step tracker shows a specific
+// human sentence per step instead of a bare verb.
+const NARRATION_FIELD = '_narration';
+function extractNarrations(toolCalls: any[]): void {
+  for (const tc of toolCalls) {
+    if (tc?.input && typeof tc.input === 'object' && NARRATION_FIELD in tc.input) {
+      const n = tc.input[NARRATION_FIELD];
+      (tc as any).narration = typeof n === 'string' ? n.trim().slice(0, 220) : '';
+      delete tc.input[NARRATION_FIELD];
+    }
+  }
+}
+
 function sseEvent(type: string, data: unknown): string {
   return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
 }
@@ -621,6 +638,29 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   const availableTools = (isPlanMode || suppressToolsForIntent)
     ? []
     : getAvailableTools(connectedIntegrations, isBackgroundAgent, vaFilter);
+
+  // ── NARRATED EXECUTION PROTOCOL ─────────────────────────────────────────────
+  // Manus-grade transparency, enforced at the PROTOCOL level instead of hoped
+  // for in the prompt: every tool schema gains a leading `_narration` field the
+  // model fills as part of the call itself. Models fill schema fields far more
+  // reliably than they volunteer prose between tool calls — so every step in
+  // the UI gets a specific, first-person "what I'm doing right now" line even
+  // from terse models. The field is stripped before execution (executors never
+  // see it) and emitted with the tool_call event for the step tracker.
+  const narratedTools = availableTools.map((t: any) => ({
+    ...t,
+    input_schema: {
+      ...t.input_schema,
+      properties: {
+        [NARRATION_FIELD]: {
+          type: 'string',
+          description:
+            'ALWAYS fill this FIRST. One short first-person line shown live to the user, present tense, specific to THIS exact call — what you are doing and what it serves (e.g. "Scanning your inbox for unanswered investor threads from this week"). Plain human language: no tool names, no jargon.',
+        },
+        ...((t.input_schema && t.input_schema.properties) || {}),
+      },
+    },
+  }));
 
   if (vaFilter) {
     log('info', 'tool surface VA-filtered', {
@@ -1447,11 +1487,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             }
           }
 
-          const response = await callLLM(messages, availableTools, { forceToolCall: forceNextToolCall, deadlineAt });
+          const response = await callLLM(messages, narratedTools, { forceToolCall: forceNextToolCall, deadlineAt });
           forceNextToolCall = false;
           messages.push({ role: 'assistant', content: response.content });
 
           const toolCalls = getToolCalls(response.content);
+          // Narrated Execution Protocol: pull the model-written per-call
+          // narration off each input before anything downstream reads it.
+          extractNarrations(toolCalls);
           const rawText = getRawText(response.content);
           const textContent = sanitizeModelText(rawText);
 
@@ -1580,7 +1623,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               const parallelOutcomes = await Promise.all(
                 batch.map(async (tc): Promise<ParallelOutcome> => {
                   log('info', `tool_call`, { tool: tc.name, iteration, input: JSON.stringify(tc.input).slice(0, 200) });
-                  emit('tool_call', { tool: tc.name, params: tc.input, iteration });
+                  emit('tool_call', { tool: tc.name, params: tc.input, iteration, narration: (tc as any).narration || undefined });
                   const toolStart = Date.now();
                   try {
                     // ── PART 9: Prerequisite gate ─────────────────────────────
@@ -2042,9 +2085,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 `Available tools: ${availableTools.map(t => t.name).join(', ')}. ` +
                 'You MUST respond with a tool_call, not text.',
             });
-            const lastResort = await callLLM(messages, availableTools, { forceToolCall: true, deadlineAt: reportDeadlineAt });
+            const lastResort = await callLLM(messages, narratedTools, { forceToolCall: true, deadlineAt: reportDeadlineAt });
             messages.push({ role: 'assistant', content: lastResort.content });
             const lastToolCalls = getToolCalls(lastResort.content);
+            extractNarrations(lastToolCalls);
 
             if (lastToolCalls.length > 0) {
               // Success! Process the tool calls and continue the loop
@@ -2058,7 +2102,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 if (totalToolCalls >= toolCallLimit) break;
                 totalToolCalls++;
                 log('info', `tool_call #${totalToolCalls} (last-resort)`, { tool: tc.name, iteration });
-                emit('tool_call', { tool: tc.name, params: tc.input, iteration });
+                emit('tool_call', { tool: tc.name, params: tc.input, iteration, narration: (tc as any).narration || undefined });
                 try {
                   let result = await executeTool(tc.name, tc.input, userId, buildToolContext());
                   if (result.success === false) {
