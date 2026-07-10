@@ -5,6 +5,7 @@ import { auth as getSession } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 // @ts-ignore - JS module
 import { CalComService } from '@/lib/calcom';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     apiKey = (body?.apiKey || '').trim();
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid request body.' }, { status: 400 });
   }
   if (!apiKey) {
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
     const cal = new CalComService(apiKey);
     await cal.getEventTypes();
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json(
       { error: 'That key didn’t work. Get one from cal.com → Settings → Developer → API keys, then paste it here.' },
       { status: 400 },
@@ -62,6 +65,7 @@ export async function POST(request: Request) {
     );
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err?.message || 'Could not save the key.' }, { status: 500 });
   }
 }

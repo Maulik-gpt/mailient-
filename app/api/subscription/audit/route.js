@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { PLANS } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * ADMIN TOOL: Audit and fix subscription plan types
@@ -73,6 +74,7 @@ export async function GET(request) {
             ] : ['All subscriptions look correct']
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Audit error:', error);
         return NextResponse.json({
             error: error.message,
@@ -151,6 +153,7 @@ export async function POST(request) {
             details: fixes
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Fix error:', error);
         return NextResponse.json({
             error: error.message

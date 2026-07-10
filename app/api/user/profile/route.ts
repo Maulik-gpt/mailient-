@@ -1,6 +1,7 @@
 // @ts-ignore
 import { auth as nextAuth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 // @ts-ignore
 const auth: any = nextAuth;
@@ -47,6 +48,7 @@ export async function GET() {
             free_pro_until: prefs.free_pro_until || null,
         });
     } catch (e) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.error('Unexpected profile fetch error:', e);
         return Response.json({ error: 'Internal Server Error' }, { status: 500 });
     }

@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
 // @ts-ignore
 import { sendPlanEmail } from "@/lib/email-service";
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: Request) {
   try {
@@ -128,6 +129,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error completing onboarding:", error);
     return NextResponse.json(
       { error: "Internal server error" },

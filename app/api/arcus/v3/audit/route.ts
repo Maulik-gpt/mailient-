@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request: NextRequest) {
   try {
@@ -43,6 +44,7 @@ export async function GET(request: NextRequest) {
       nextCursor: data.length === limit ? data[data.length - 1].created_at : null
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Audit log API error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

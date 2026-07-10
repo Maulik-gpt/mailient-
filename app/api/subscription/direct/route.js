@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * DIRECT DATABASE QUERY - Bypass all service layer issues
@@ -96,6 +97,7 @@ export async function GET(request) {
             rawData: subscription // Include raw data for debugging
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Direct endpoint error:', error);
         return NextResponse.json({ error: 'Direct query failed' }, { status: 500 });
     }

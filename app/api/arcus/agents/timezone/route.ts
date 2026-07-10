@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     timezone = body.timezone?.trim() || '';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -21,6 +23,7 @@ export async function POST(request: NextRequest) {
 
   // Validate it's a real IANA timezone
   try { Intl.DateTimeFormat(undefined, { timeZone: timezone }); } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid timezone' }, { status: 400 });
   }
 
@@ -43,6 +46,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

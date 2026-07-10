@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
 import { ArcusAgentLoop } from '@/lib/arcus-agent-loop.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 60; // 60s for agentic loop
 
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
@@ -116,6 +118,7 @@ export async function POST(request: Request) {
     });
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Arcus Chat API Error:', error.message);
     return NextResponse.json({ 
       error: 'Failed to process agent request', 

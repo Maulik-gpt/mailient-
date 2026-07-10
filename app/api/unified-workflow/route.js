@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Unified Workflow API - Handles complex email workflows with AI
@@ -59,6 +60,7 @@ export async function POST(request) {
     }
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Unified workflow error:', error);
     return NextResponse.json(
       { 
@@ -105,6 +107,7 @@ async function analyzeEmailThread(data, userEmail, session) {
         const parsed = gmailService.parseEmailData(details);
         emailDetails.push(parsed);
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log(`Error fetching email ${emailId}:`, error.message);
       }
     }
@@ -122,6 +125,7 @@ async function analyzeEmailThread(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Email thread analysis error:', error);
     throw error;
   }
@@ -152,6 +156,7 @@ async function createLeadWorkflow(data, userEmail, session) {
         const details = await gmailService.getEmailDetails(emailId);
         originalEmail = gmailService.parseEmailData(details);
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Error fetching original email:', error.message);
       }
     }
@@ -179,6 +184,7 @@ async function createLeadWorkflow(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Lead workflow creation error:', error);
     throw error;
   }
@@ -222,6 +228,7 @@ async function scheduleFollowUp(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Follow-up scheduling error:', error);
     throw error;
   }
@@ -252,6 +259,7 @@ async function generateAIResponse(data, userEmail, session) {
         const details = await gmailService.getEmailDetails(emailId);
         emailContext = gmailService.parseEmailData(details);
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Error fetching email for response generation:', error.message);
       }
     }
@@ -271,6 +279,7 @@ async function generateAIResponse(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('AI response generation error:', error);
     throw error;
   }
@@ -321,6 +330,7 @@ async function updateCRMContact(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('CRM contact update error:', error);
     throw error;
   }
@@ -369,6 +379,7 @@ async function unifiedEmailAction(data, userEmail, session) {
             results.push({ type: action.type, success: false, error: 'Unknown action type' });
         }
       } catch (actionError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(actionError) });
         console.error(`Error in action ${action.type}:`, actionError);
         results.push({ 
           type: action.type, 
@@ -386,6 +397,7 @@ async function unifiedEmailAction(data, userEmail, session) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Unified email action error:', error);
     throw error;
   }
@@ -409,6 +421,7 @@ async function getGmailAccessToken(session, userEmail) {
       return decrypt(userTokens.encrypted_access_token);
     }
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.log('Error getting tokens from database:', error.message);
   }
 
@@ -618,6 +631,7 @@ async function generateSmartResponse(emailContext, responseType, customPrompt, u
       return data.message;
     }
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.log('Error generating AI response:', error);
   }
 

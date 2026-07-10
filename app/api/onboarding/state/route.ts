@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 // @ts-ignore
 import { DatabaseService } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Onboarding state — per-step persistence so the flow resumes exactly where the
@@ -35,6 +36,7 @@ export async function GET() {
       state: prefs.onboarding || {},
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error reading onboarding state:', error);
     return NextResponse.json({ step: 0, state: {} }, { status: 200 });
   }
@@ -77,6 +79,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error in onboarding state API:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

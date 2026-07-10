@@ -13,6 +13,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth as nextAuth } from '../../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 // @ts-ignore
 const auth: any = nextAuth;
@@ -55,6 +56,7 @@ async function testGmail(userId: string): Promise<TestResult> {
     const body = await res.json();
     return { ok: true, latency: Date.now() - t0, detail: { email: body.emailAddress } };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { ok: false, reason: err?.message || 'Network error' };
   }
 }
@@ -88,6 +90,7 @@ async function testGcal(userId: string): Promise<TestResult> {
     const body = await res.json();
     return { ok: true, latency: Date.now() - t0, detail: { id: body.id, timeZone: body.timeZone } };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { ok: false, reason: err?.message || 'Network error' };
   }
 }
@@ -119,6 +122,7 @@ async function testNotion(userId: string): Promise<TestResult> {
     const body = await res.json();
     return { ok: true, latency: Date.now() - t0, detail: { name: body.name, type: body.type } };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { ok: false, reason: err?.message || 'Network error' };
   }
 }
@@ -149,6 +153,7 @@ async function testSlack(userId: string): Promise<TestResult> {
     if (!body.ok) return { ok: false, reason: `Slack: ${body.error || 'auth.test failed'}` };
     return { ok: true, latency: Date.now() - t0, detail: { team: body.team, user: body.user } };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { ok: false, reason: err?.message || 'Network error' };
   }
 }
@@ -179,6 +184,7 @@ export async function GET(request: NextRequest) {
     const result = await tester(userId);
     return NextResponse.json(result);
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ ok: false, reason: err?.message || 'Unknown error' }, { status: 500 });
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 // @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: Request) {
     try {
@@ -42,6 +43,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error("Error in onboarding step API:", error);
         return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }

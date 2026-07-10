@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
 import { DatabaseService } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * GET - Get current user's subscription status
@@ -74,6 +75,7 @@ export async function GET(request) {
             }
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error getting subscription status:', error);
         return NextResponse.json({ error: 'Failed to get subscription status' }, { status: 500 });
     }

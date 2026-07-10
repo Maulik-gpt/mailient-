@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { ConnectorService } from '@/lib/arcus-connector-service';
+import { logEvent } from "@/lib/logsso";
 
 // Lazy initialization - only create client when needed
 function getSupabaseClient() {
@@ -77,6 +78,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[OAuth Callback] Error:', error);
     return NextResponse.redirect(
       `${process.env.NEXT_PUBLIC_APP_URL}/connectors/error?error=server_error&description=${encodeURIComponent(error.message || '')}`
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[OAuth Callback POST] Error:', error);
     return NextResponse.json(
       { error: error.message || 'Unknown error' },

@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { voiceProfileService } from '@/lib/voice-profile-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -33,6 +34,7 @@ export async function POST(request) {
                 privacyMode = true;
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('Privacy check error:', e);
         }
 
@@ -47,6 +49,7 @@ export async function POST(request) {
                     console.log('✅ Tokens retrieved from database');
                 }
             } catch (e) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
                 console.error('Failed to fetch tokens from database:', e);
             }
         }
@@ -109,6 +112,7 @@ export async function POST(request) {
                 console.log('📝 No voice profile - using standard repair reply generation');
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('Voice profile fetch failed:', e.message);
         }
 
@@ -130,6 +134,7 @@ export async function POST(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error generating repair reply:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

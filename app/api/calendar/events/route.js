@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { DatabaseService } from '../../../../lib/supabase.js';
 import { auth } from '../../../../lib/auth.js';
 import { decrypt } from '../../../../lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -80,6 +81,7 @@ export async function POST(request) {
     return Response.json({ event: res.data });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error creating calendar event:', error);
     return Response.json({ error: 'Failed to create event' }, { status: 500 });
   }
@@ -130,6 +132,7 @@ export async function GET(request) {
     return Response.json({ events });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching calendar events:', error);
     return Response.json({ error: 'Failed to fetch events' }, { status: 500 });
   }

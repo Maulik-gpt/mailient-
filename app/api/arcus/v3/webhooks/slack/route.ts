@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
 import { enqueueEvent } from '../../../../../../lib/arcus-v3/queue';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: NextRequest) {
   try {
@@ -111,6 +112,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ status: 'unhandled' });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Slack webhook error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

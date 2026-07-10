@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth as nextAuth } from '../../../../../lib/auth.js';
 import { approvePending, declinePending } from '../../../../../lib/arcus/session-state';
+import { logEvent } from "@/lib/logsso";
 
 const auth: any = nextAuth;
 
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 

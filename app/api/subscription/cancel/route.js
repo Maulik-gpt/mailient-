@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/lib/subscription-service';
 import { Resend } from 'resend';
+import { logEvent } from "@/lib/logsso";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -65,6 +66,7 @@ export async function POST(request) {
                 providerCancellationResult = await response.json();
                 console.log('✅ Polar subscription set to cancel at period end:', subscriptionId);
             } catch (polarError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(polarError) });
                 console.error('❌ Error cancelling Polar subscription:', polarError);
                 cancellationError = polarError.message || 'Failed to cancel with Polar';
             }
@@ -104,6 +106,7 @@ export async function POST(request) {
             });
             console.log('📧 Feedback email sent to mailient.xyz@gmail.com');
         } catch (emailError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(emailError) });
             console.error('❌ Failed to send feedback email:', emailError);
         }
 
@@ -117,6 +120,7 @@ export async function POST(request) {
             }
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error cancelling subscription:', error);
         return NextResponse.json({
             error: 'Failed to cancel subscription',

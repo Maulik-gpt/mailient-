@@ -25,6 +25,7 @@ import { ARCUS_TOOLS } from '../../../../../lib/arcus-v3/tools/definitions';
 import { executeTool } from '../../../../../lib/arcus-v3/tools/executor';
 import { storeMessage, getConversationHistory } from '../../../../../lib/arcus-v3/memory';
 import crypto from 'crypto';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 60;
 
@@ -77,6 +78,7 @@ async function callLLM(
       const data = await res.json();
       return data.choices?.[0]?.message || null;
     } catch (err) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
       console.error('[Arcus] LLM call error:', (err as Error).message);
       continue;
     }
@@ -103,6 +105,7 @@ async function getVoiceProfileBlock(userId: string): Promise<string> {
     const prompt = voiceProfileService.generateVoicePrompt(profile);
     return typeof prompt === 'string' ? prompt.trim() : '';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return '';
   }
 }
@@ -119,6 +122,7 @@ async function getUserIntegrations(userId: string): Promise<string> {
       ? `Connected integrations: ${connected.join(', ')}.`
       : 'No integrations connected yet.';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return '';
   }
 }
@@ -144,6 +148,7 @@ async function getRecentEmailSummary(userId: string): Promise<string> {
     const count = listData.resultSizeEstimate || 0;
     return `You have approximately ${count} unread emails in your inbox.`;
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return '';
   }
 }
@@ -161,6 +166,7 @@ async function getPersonalityInstructions(userId: string): Promise<string> {
     if (prefs.arcus_instructions_enabled === false) return '';
     return typeof prefs.arcus_personality === 'string' ? prefs.arcus_personality.trim() : '';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return '';
   }
 }
@@ -413,7 +419,8 @@ export async function POST(request: NextRequest) {
   } = {};
   try {
     body = await request.json();
-  } catch { /* empty body */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* empty body */ }
 
   const { message, history = [], conversationId } = body;
   if (!message?.trim()) {
@@ -550,6 +557,7 @@ export async function POST(request: NextRequest) {
                 content: result.output,
               });
             } catch (err) {
+              logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
               const errMsg = (err as Error).message;
               emit('tool_result', {
                 tool: toolName,
@@ -599,6 +607,7 @@ export async function POST(request: NextRequest) {
           totalSteps,
         });
       } catch (err) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
         console.error('[Arcus V3 Chat] Error:', (err as Error).message);
         emit('error', { message: (err as Error).message });
       } finally {

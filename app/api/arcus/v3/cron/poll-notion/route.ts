@@ -14,6 +14,7 @@ import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
 import { decrypt } from '../../../../../../lib/crypto.js';
 import { Client } from '@notionhq/client';
 import { enqueueEvent } from '../../../../../../lib/arcus-v3/queue';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,12 +84,14 @@ export async function GET(request: NextRequest) {
 
         processed++;
       } catch (err: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
         console.error(`[Arcus V3] Notion poll error for ${integration.user_id}:`, err.message);
       }
     }
 
     return NextResponse.json({ status: 'ok', processed, eventsEnqueued });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Notion poll cron error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

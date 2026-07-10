@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth.js";
 import { DatabaseService } from "@/lib/supabase.js";
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -79,6 +80,7 @@ export async function GET(request) {
 
     return NextResponse.json(fullProfile);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error fetching user profile:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
@@ -106,6 +108,7 @@ export async function PUT(request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error updating user profile:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

@@ -4,6 +4,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail.ts';
 import { AIConfig } from '@/lib/ai-config.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Debug endpoint to test Gmail + AI workflow
@@ -40,6 +41,7 @@ export async function GET(request) {
           console.log('❌ No tokens found in database');
         }
       } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
         console.log('❌ Database error:', dbError.message);
       }
     } else {
@@ -70,6 +72,7 @@ export async function GET(request) {
       };
       console.log('✅ Gmail service working:', profile.emailAddress);
     } catch (gmailError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(gmailError) });
       console.log('❌ Gmail service error:', gmailError.message);
       gmailTestResult = {
         success: false,
@@ -115,6 +118,7 @@ export async function GET(request) {
           const parsed = gmailService.parseEmailData(details);
           emailDetails.push(parsed);
         } catch (error) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
           console.log('Error processing email:', error.message);
         }
       }
@@ -136,6 +140,7 @@ export async function GET(request) {
       console.log(`✅ Processed ${emailDetails.length} emails successfully`);
 
     } catch (fetchError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(fetchError) });
       console.log('❌ Email fetch error:', fetchError.message);
       emailFetchResult = {
         success: false,
@@ -239,6 +244,7 @@ export async function GET(request) {
       console.log('✅ AI analysis completed successfully');
 
     } catch (aiError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(aiError) });
       console.log('❌ AI analysis error:', aiError.message);
       aiAnalysisResult = {
         success: false,
@@ -279,6 +285,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Debug endpoint error:', error);
     return NextResponse.json(
       {

@@ -1,6 +1,7 @@
 // app/api/database/setup/route.js
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -57,6 +58,7 @@ export async function POST(req) {
           results.push({ table: tableName, status: 'exists' });
         }
       } catch (tableError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(tableError) });
         console.error(`Error testing ${tableName}:`, tableError);
         results.push({ table: tableName, status: 'error', error: tableError.message });
       }
@@ -90,6 +92,7 @@ export async function POST(req) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Database setup error:", error);
     return NextResponse.json({
       error: "Database setup failed",
@@ -130,6 +133,7 @@ export async function GET(req) {
           results.push({ table: tableName, status: 'exists' });
         }
       } catch (tableError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(tableError) });
         results.push({ table: tableName, status: 'error', error: tableError.message });
       }
     }
@@ -144,6 +148,7 @@ export async function GET(req) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({
       error: "Database status check failed",
       details: error.message
@@ -259,6 +264,7 @@ async function createTable(tableName) {
     }
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error(`Failed to create ${tableName} table:`, error);
     throw error;
   }
@@ -376,6 +382,7 @@ async function createEnhancedTables() {
           console.error('Error executing SQL:', error);
         }
       } catch (sqlError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(sqlError) });
         console.error('SQL execution error:', sqlError);
       }
     }
@@ -383,6 +390,7 @@ async function createEnhancedTables() {
     console.log('✅ Enhanced tables creation completed');
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Failed to create enhanced tables:', error);
   }
 }

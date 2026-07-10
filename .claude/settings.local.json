@@ -28,7 +28,11 @@
       "Bash(grep -rhoand \"text-arcus-[a-z-]*\\\\|text-blue-[0-9]*\\\\|text-emerald-[0-9]*\" app/dashboard/agent-talk/components/ChatPlanCard.tsx)",
       "Bash(git commit -q -m ' *)",
       "Bash(grep -nA 8 \"MODEL_INTERNAL_TAGS =\" app/dashboard/agent-talk/ChatInterface.tsx)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(xargs grep -l \"skeleton\\\\|Skeleton\\\\|loading\\\\|Loading\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(node \"C:/Users/hp/AppData/Local/Temp/claude/c--Users-hp-Mailent/01c64136-055c-466f-a83f-7a2d0c378974/scratchpad/audit_subs.mjs\")",
+      "Bash(node ./_delete_test_subs.mjs)"
     ]
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth';
 import { AIConfig } from '@/lib/ai-config';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST /api/onboarding/generate-agent
@@ -264,12 +265,14 @@ User's description: ${prompt}`;
         }
       }
     } catch (aiError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(aiError) });
       console.warn('⚠️ [Onboarding] AI agent generation failed, using synthetic fallback:', aiError);
     }
 
     // ── Deterministic fallback — always returns a valid, mappable spec ────────
     return NextResponse.json({ success: true, agent: synthesizeSpec(prompt, goalList) });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('❌ [Onboarding] Error generating agent:', error);
     return NextResponse.json({ error: 'Failed to generate agent plan' }, { status: 500 });
   }

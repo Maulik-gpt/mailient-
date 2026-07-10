@@ -5,6 +5,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail.js';
 import { AIConfig } from '@/lib/ai-config.js';
 import { EnhancedSiftAIService } from '@/lib/enhanced-sift-ai.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Enhanced Home Feed Insights API - Sophisticated founder-focused email intelligence
@@ -62,6 +63,7 @@ export async function GET(request) {
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
         }
       } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
         console.log('⚠️ Unable to derive Gmail token from database:', dbError.message);
       }
     }
@@ -102,6 +104,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Enhanced Sift AI insights error:', error);
     return NextResponse.json(
       {
@@ -147,6 +150,7 @@ async function generateEnhancedFounderIntelligence(gmailService, userEmail) {
         const parsed = gmailService.parseEmailData(details);
         emailDetails.push(parsed);
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Enhanced Sift AI: Error processing email:', error.message);
       }
     }
@@ -185,6 +189,7 @@ async function generateEnhancedFounderIntelligence(gmailService, userEmail) {
     return intelligence;
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Enhanced Sift AI: Error in enhanced analysis:', error);
     return generateRuleBasedFounderIntelligence([], userEmail);
   }

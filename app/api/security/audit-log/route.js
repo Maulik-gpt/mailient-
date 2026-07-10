@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { auditLogger } from '@/lib/audit-logger';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -31,6 +32,7 @@ export async function GET(request) {
       pagination: { limit, offset, hasMore: (offset + limit) < result.total }
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('📋 [AuditLog API] Error:', error.message);
     return NextResponse.json({ error: 'Failed to retrieve audit logs' }, { status: 500 });
   }

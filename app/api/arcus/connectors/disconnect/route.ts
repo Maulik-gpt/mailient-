@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth as nextAuth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 // @ts-ignore
 const auth: any = nextAuth;
@@ -63,7 +64,8 @@ export async function POST(request: NextRequest) {
 
   let body: any;
   try { body = await request.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const provider = (body?.provider || '').trim();
   if (!provider) {
@@ -87,7 +89,8 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
     if (profile?.user_id) userKeys.add(profile.user_id);
     if (profile?.supabase_user_id) userKeys.add(profile.supabase_user_id);
-  } catch { /* user_profiles may not exist or have those columns — non-fatal */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* user_profiles may not exist or have those columns — non-fatal */ }
   const userKeyList = Array.from(userKeys);
 
   const deletions = {
@@ -109,6 +112,7 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[Disconnect] arcus_integrations delete failed:', err.message);
   }
 
@@ -131,6 +135,7 @@ export async function POST(request: NextRequest) {
       }
     }
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[Disconnect] integration_credentials delete failed:', err.message);
   }
 
@@ -156,6 +161,7 @@ export async function POST(request: NextRequest) {
         if (count) deletions.user_tokens += count;
       }
     } catch (err: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
       console.warn('[Disconnect] user_tokens conditional delete failed:', err.message);
     }
   }
@@ -165,7 +171,8 @@ export async function POST(request: NextRequest) {
     try {
       const { invalidateGmailScope } = await import('../../../../../lib/arcus/gmail-scope');
       await invalidateGmailScope(userId);
-    } catch { /* non-fatal */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* non-fatal */ }
   }
 
   return NextResponse.json({

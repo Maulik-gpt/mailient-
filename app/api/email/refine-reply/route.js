@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { OpenRouterAIService } from '@/lib/openrouter-ai';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -78,6 +79,7 @@ REWRITTEN VERSION (Remember to put thoughts in <think> tags, and final output in
         return NextResponse.json({ refinedText });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error in refine-reply:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -21,6 +22,7 @@ export async function GET() {
 
     return NextResponse.json({ agents: data || [] });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -138,6 +140,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json(data);
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Create Agent Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
@@ -166,6 +169,7 @@ export async function PATCH(request: Request) {
 
     return NextResponse.json(data);
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
@@ -192,6 +196,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

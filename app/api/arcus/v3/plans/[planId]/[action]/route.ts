@@ -10,6 +10,7 @@ import { auth } from '../../../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
 import { executePlan } from '../../../../../../../lib/arcus-v3/executor';
 import { auditLogger } from '../../../../../../../lib/audit-logger.js';
+import { logEvent } from "@/lib/logsso";
 
 // ─── APPROVE ────────────────────────────────────────────────────────────────────
 
@@ -134,6 +135,7 @@ export async function POST(
     }
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Plan action error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

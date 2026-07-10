@@ -2,6 +2,8 @@ import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
+
 export const maxDuration = 60; // Increase to 60s for large attachments
 
 export async function POST(request) {
@@ -30,6 +32,7 @@ export async function POST(request) {
           }
         }
       } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
         console.error('[send] DB token fallback error:', dbError);
       }
     }
@@ -55,6 +58,7 @@ export async function POST(request) {
           accessToken = decrypt(integData.access_token);
         }
       } catch (integError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(integError) });
         console.error('[send] arcus_integrations fallback error:', integError);
       }
     }
@@ -81,12 +85,14 @@ export async function POST(request) {
         const cleanBody = isHtml ? body.replace(/<[^>]*>?/gm, '').trim() : body;
         voiceProfileService.addToProfile(userEmail, cleanBody);
       } catch (profileError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(profileError) });
         console.warn('⚠️ Failed to incrementally update voice profile:', profileError.message);
       }
     }
 
     return Response.json(result);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error sending email:', error);
     return Response.json(
       { error: 'Failed to send email', details: error.message },

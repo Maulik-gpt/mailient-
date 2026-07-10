@@ -14,6 +14,7 @@ import {
   getAllConnectors,
   hasConnectedAccounts 
 } from '@/lib/arcus-connector-registry';
+import { logEvent } from "@/lib/logsso";
 
 // Lazy initialization - only create client when needed
 function getSupabaseClient() {
@@ -83,6 +84,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Connectors API] GET error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
@@ -138,6 +140,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Connectors API] OAuth initiation error:', error);
     return NextResponse.json(
       { error: (error as Error).message || 'Failed to initiate OAuth' },
@@ -192,6 +195,7 @@ export async function DELETE(request: NextRequest) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Connectors API] Disconnect error:', error);
     return NextResponse.json(
       { error: (error as Error).message || 'Failed to disconnect account' },

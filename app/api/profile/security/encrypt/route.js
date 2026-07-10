@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { encrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(req) {
     try {
@@ -72,6 +73,7 @@ export async function POST(req) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('🔐 Migration Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

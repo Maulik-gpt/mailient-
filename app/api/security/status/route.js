@@ -6,6 +6,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { VAULT_CONFIG } from '@/lib/vault-crypto';
 import { AUDIT_EVENTS } from '@/lib/audit-logger';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -95,6 +96,7 @@ export async function GET(request) {
 
     return NextResponse.json({ success: true, security: securityStatus });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('🔐 [Security Status API] Error:', error.message);
     return NextResponse.json({ error: 'Failed to get security status' }, { status: 500 });
   }

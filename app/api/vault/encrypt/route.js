@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { auditLogger, AUDIT_EVENTS } from '@/lib/audit-logger';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -60,6 +61,7 @@ export async function POST(request) {
 
     return NextResponse.json({ success: true, blobId });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('🔐 [Vault Encrypt API] Error:', error.message);
     return NextResponse.json({ error: 'Vault storage failed' }, { status: 500 });
   }

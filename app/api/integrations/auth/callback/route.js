@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { supabase } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 // Database wrapper
 const db = {
@@ -100,6 +101,7 @@ export async function GET(request) {
       `/dashboard/agent-talk?success=connected&provider=${provider}`
     );
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[OAuth Callback] Error:', error);
     return NextResponse.redirect(
       `/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(error.message)}`

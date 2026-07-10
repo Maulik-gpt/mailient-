@@ -19,6 +19,7 @@ const { auth } = require('../../../../../lib/auth.js');
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 import { buildAgentLoopArgs } from '../../../../../lib/arcus/run-agent';
 import { runAgentLoop } from '../../../../../lib/arcus/loop';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
@@ -55,6 +56,7 @@ export async function POST(request: NextRequest) {
     // report before Vercel kills the function mid-stream.
     args = await buildAgentLoopArgs(agent, { maxToolCalls: 14, deadlineMs: 50_000 });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: `Agent setup failed: ${err.message}` }, { status: 500 });
   }
 
@@ -62,6 +64,7 @@ export async function POST(request: NextRequest) {
   try {
     stream = runAgentLoop(args);
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: `Agent run failed: ${err.message}` }, { status: 500 });
   }
 

@@ -1,5 +1,6 @@
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -33,6 +34,7 @@ export async function POST(request) {
 
     return Response.json(result);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error creating Gmail draft:', error);
     return Response.json(
       { error: 'Failed to create draft', details: error.message },

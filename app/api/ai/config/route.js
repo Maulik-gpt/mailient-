@@ -4,6 +4,7 @@
  */
 
 import { AIConfig } from '@/lib/ai-config.js';
+import { logEvent } from "@/lib/logsso";
 
 let aiConfig = new AIConfig();
 
@@ -24,6 +25,7 @@ export async function GET() {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error getting AI configuration:', error);
     return Response.json(
       { error: 'Failed to get AI configuration' },
@@ -94,6 +96,7 @@ export async function POST(request) {
     );
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error configuring AI:', error);
     return Response.json(
       { error: 'Failed to configure AI service' },

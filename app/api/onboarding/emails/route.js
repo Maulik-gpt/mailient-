@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Special onboarding endpoint that fetches user's emails WITHOUT subscription check
@@ -38,6 +39,7 @@ export async function GET(request) {
                     }
                 }
             } catch (dbError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
                 console.error('Database error getting tokens:', dbError);
             }
         }
@@ -90,6 +92,7 @@ export async function GET(request) {
                         const details = await gmailService.getEmailDetails(id);
                         return gmailService.parseEmailData(details);
                     } catch (error) {
+                    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
                         console.error(`Error fetching detail for ${id}:`, error);
                         detailErrors++;
                         const msg = error?.message || '';
@@ -235,6 +238,7 @@ export async function GET(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('=== ERROR IN ONBOARDING EMAIL FETCH ===');
         console.error('Error:', error);
 

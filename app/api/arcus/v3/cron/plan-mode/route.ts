@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
 import { enqueueEvent } from '../../../../../../lib/arcus-v3/queue';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -92,6 +93,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ status: 'ok', processed: userIds.length, enqueued });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Plan Mode cron error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
@@ -109,6 +111,7 @@ function getHourInTimezone(date: Date, timezone: string): number {
     });
     return parseInt(formatter.format(date), 10);
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return date.getUTCHours(); // fallback to UTC
   }
 }

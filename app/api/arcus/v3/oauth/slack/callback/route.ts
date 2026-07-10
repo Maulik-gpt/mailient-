@@ -11,6 +11,7 @@ import { auth } from '../../../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../../../lib/crypto.js';
 import { auditLogger } from '../../../../../../../lib/audit-logger.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * GET — Slack OAuth callback. Exchange code for bot token.
@@ -124,6 +125,7 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Slack callback error:', (error as Error).message);
     return NextResponse.redirect(new URL('/dashboard/agent-talk?error=callback', request.url));
   }

@@ -4,6 +4,7 @@ import { GmailService } from '@/lib/gmail';
 import { AIConfig } from '@/lib/ai-config';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Special onboarding AI action endpoint - NO subscription check
@@ -46,6 +47,7 @@ export async function POST(request) {
                     refreshToken = refreshToken || (userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '');
                 }
             } catch (e) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
                 console.error('Failed to fetch tokens from database:', e);
             }
         }
@@ -63,6 +65,7 @@ export async function POST(request) {
             const emailDetails = await gmailService.getEmailDetails(emailId);
             parsedEmail = gmailService.parseEmailData(emailDetails);
         } catch (fetchError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(fetchError) });
             console.warn('⚠️ [Onboarding] Failed to fetch full email details, using provided context if available');
             // If it fails, try to construct at least something from partial data
             parsedEmail = {
@@ -113,6 +116,7 @@ export async function POST(request) {
                         const { voiceProfileService } = await import('@/lib/voice-profile-service');
                         onboardingVoiceProfile = await voiceProfileService.getVoiceProfile(session.user.email);
                     } catch {
+                    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
                         // Silent fail — voice profile is optional for onboarding
                     }
                     
@@ -138,6 +142,7 @@ export async function POST(request) {
                     break;
             }
         } catch (aiError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(aiError) });
             console.error('❌ [Onboarding] AI Call failed, using Synthetic Intelligence fallback');
             // SYNTHETIC LOCAL INTELLIGENCE - NEVER FAILS
             if (actionType === 'summary') {
@@ -156,6 +161,7 @@ export async function POST(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Critical Error in onboarding AI action:', error);
         // ABSOLUTE FINAL FALLBACK - Ensure NO 500s during onboarding
         return NextResponse.json({

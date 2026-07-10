@@ -1,5 +1,6 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -20,6 +21,7 @@ export async function POST(request) {
     return Response.json({ success: true });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error updating integration status:', error);
     return Response.json({ error: 'Failed to update status' }, { status: 500 });
   }
@@ -57,7 +59,8 @@ export async function GET(request) {
       const hasToken = !!(tokens?.access_token || tokens?.encrypted_access_token);
       if (hasToken && /gmail/i.test(scopes)) connected.add('gmail');
       if (hasToken && /calendar/i.test(scopes)) connected.add('google_calendar');
-    } catch { /* token table optional — fall back to the integration rows */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* token table optional — fall back to the integration rows */ }
 
     // Derived connections
     if (connected.has('notion')) connected.add('notion_calendar');
@@ -72,6 +75,7 @@ export async function GET(request) {
     return Response.json({ integrations });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error getting integration status:', error);
     return Response.json({ error: 'Failed to get status' }, { status: 500 });
   }

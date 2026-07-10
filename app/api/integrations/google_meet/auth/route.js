@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { supabase } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 const db = {
   async storeIntegrationCredentials(userEmail, provider, credentials) {
@@ -34,6 +35,7 @@ export async function GET(request) {
     console.log('[Google Meet Auth] Generated Auth URL:', authUrl);
     return NextResponse.json({ url: authUrl });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

@@ -23,6 +23,7 @@ import { getSupabaseAdmin } from '@/lib/supabase.js';
 // @ts-ignore — JS module
 import { CalComService } from '@/lib/calcom.js';
 import { getBriefingPrefs, type BriefingPrefs } from '@/lib/arcus/briefing-prefs';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 25;
@@ -248,6 +249,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
         }
         console.warn(`[recs] ${model} parsed but ${raw.length} raw -> 0 valid after refId check`);
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn(`[recs] ${model} key…${key.slice(-4)} threw: ${e?.message || e}`);
         continue;
       }
@@ -269,13 +271,15 @@ function extractJsonObject(raw: string): any | null {
   const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fence) t = fence[1].trim();
   // direct parse
-  try { return JSON.parse(t); } catch { /* fall through */ }
+  try { return JSON.parse(t); } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* fall through */ }
   // last resort: grab the outermost {...} span (handles "Here is the JSON: {…}")
   const first = t.indexOf('{');
   const last = t.lastIndexOf('}');
   if (first !== -1 && last > first) {
     const span = t.slice(first, last + 1);
-    try { return JSON.parse(span); } catch { /* give up */ }
+    try { return JSON.parse(span); } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* give up */ }
   }
   return null;
 }
@@ -351,7 +355,8 @@ async function gatherGmailBounces(userEmail: string): Promise<RawSignal[]> {
       const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject`, { headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
       if (!r.ok) return null;
       return await r.json();
-    } catch { return null; }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return null; }
   }));
   const out: RawSignal[] = [];
   const seen = new Set<string>();
@@ -397,7 +402,8 @@ async function getCalClientLocal(userEmail: string): Promise<any | null> {
     const { data } = await supabase.from('integration_credentials').select('access_token').eq('user_email', userEmail.toLowerCase()).eq('provider', 'cal_com').maybeSingle();
     const k = (data?.access_token || '').trim();
     if (k) return new CalComService(k);
-  } catch { /* fall through */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* fall through */ }
   const shared = (process.env.CAL_API_KEY || '').trim();
   return (shared && process.env.CAL_ALLOW_SHARED_KEY === 'true') ? new CalComService(shared) : null;
 }
@@ -405,7 +411,8 @@ async function gatherCalcom(userEmail: string): Promise<RawSignal[]> {
   const cal = await getCalClientLocal(userEmail);
   if (!cal) return [];
   let bookings: any[] = [];
-  try { bookings = await raceTimeout(cal.getBookings(), FETCH_TIMEOUT_MS); } catch { return []; }
+  try { bookings = await raceTimeout(cal.getBookings(), FETCH_TIMEOUT_MS); } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return []; }
   if (!Array.isArray(bookings)) return [];
   const now = Date.now();
   const horizon = now + 7 * 86_400_000;
@@ -464,11 +471,13 @@ async function gatherSlack(userEmail: string): Promise<RawSignal[]> {
     const a = await (await fetch('https://slack.com/api/auth.test', { method: 'POST', headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })).json();
     if (!a.ok) return [];
     myId = a.user_id;
-  } catch { return []; }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return []; }
   let ims: any;
   try {
     ims = await (await fetch('https://slack.com/api/conversations.list?types=im&limit=20', { headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })).json();
-  } catch { return []; }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return []; }
   if (!ims?.ok) return [];
   const channels = (ims.channels || []).slice(0, 6);
   const checked = await Promise.all(channels.map(async (ch: any) => {
@@ -478,7 +487,8 @@ async function gatherSlack(userEmail: string): Promise<RawSignal[]> {
       if (last && last.user && last.user !== myId && !last.bot_id) {
         return { user: ch.user || last.user, text: String(last.text || '').replace(/<[^>]+>/g, '').trim() };
       }
-    } catch { /* ignore */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* ignore */ }
     return null;
   }));
   const waiting = checked.filter(Boolean).slice(0, 3) as Array<{ user: string; text: string }>;
@@ -489,7 +499,8 @@ async function gatherSlack(userEmail: string): Promise<RawSignal[]> {
       const u = await (await fetch(`https://slack.com/api/users.info?user=${w.user}`, { headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })).json();
       const name = u?.user?.real_name || u?.user?.profile?.display_name || '';
       return { name: cleanName(name) || 'A teammate', text: w.text };
-    } catch { return { name: 'A teammate', text: w.text }; }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return { name: 'A teammate', text: w.text }; }
   }));
   return named.map((n) => ({ kind: 'slack', label: n.name, detail: `Slack DM from ${n.name} is waiting on your reply: "${n.text.slice(0, 90)}"` }));
 }
@@ -547,7 +558,8 @@ export async function POST(req: Request) {
     // Mailient already knows — fetched in parallel, fail-soft to ''.
     const [prefs, founderModel] = await Promise.all([
       getBriefingPrefs(userEmail),
-      (async () => { try { const { getUserModelSummary } = await import('@/lib/arcus/user-model'); return await getUserModelSummary(userEmail); } catch { return ''; } })(),
+      (async () => { try { const { getUserModelSummary } = await import('@/lib/arcus/user-model'); return await getUserModelSummary(userEmail); } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return ''; } })(),
     ]);
 
     // Client buckets (Gmail/Calendar/ledger, already computed + freshest) + the
@@ -569,6 +581,7 @@ export async function POST(req: Request) {
     }
     return NextResponse.json({ success: true, recommendations: recs, source: 'ai', apps });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ success: true, recommendations: [], source: 'error', error: String(err?.message || 'failed').slice(0, 200) }, { status: 200 });
   }
 }

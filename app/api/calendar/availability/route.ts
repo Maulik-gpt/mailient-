@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { logEvent } from "@/lib/logsso";
+
 // @ts-ignore
 const { auth } = require('../../../../lib/auth');
 // @ts-ignore
@@ -19,6 +21,7 @@ export async function POST(request: Request) {
         try {
             body = await request.json();
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
         }
 
@@ -50,6 +53,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, busySlots });
 
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ FreeBusy error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

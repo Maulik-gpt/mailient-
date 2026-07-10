@@ -7,6 +7,7 @@ import { DatabaseService } from '@/lib/supabase';
 import { GmailService } from '@/lib/gmail';
 // @ts-ignore
 import { decrypt } from '@/lib/crypto';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST /api/onboarding/scan
@@ -144,6 +145,7 @@ export async function POST() {
       },
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('❌ [Onboarding] Scan failed:', error);
     return NextResponse.json({ error: 'Inbox scan failed' }, { status: 500 });
   }

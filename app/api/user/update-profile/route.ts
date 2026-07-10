@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -25,6 +26,7 @@ export async function POST(req: Request) {
 
         return Response.json({ success: true });
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Update profile error:', error);
         return Response.json({ error: error.message }, { status: 500 });
     }

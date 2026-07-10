@@ -8,6 +8,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail';
 import { AIConfig } from '@/lib/ai-config.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Bulk Email Processing API - Process exactly 50 emails at once
@@ -64,6 +65,7 @@ export async function POST(request) {
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
         }
       } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
         console.log('⚠️ Unable to derive Gmail token from database:', dbError.message);
       }
     }
@@ -97,6 +99,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 BULK EMAIL PROCESS error:', error);
     return NextResponse.json(
       {
@@ -153,6 +156,7 @@ async function processBulkEmails(gmailService, userEmail, privacyMode = false) {
           const details = await gmailService.getEmailDetails(message.id);
           return gmailService.parseEmailData(details);
         } catch (error) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
           console.log('BULK PROCESS: Error processing email:', error.message);
           return null;
         }
@@ -182,6 +186,7 @@ async function processBulkEmails(gmailService, userEmail, privacyMode = false) {
     };
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('BULK PROCESS: Error in bulk processing:', error);
     throw error;
   }
@@ -258,6 +263,7 @@ async function analyzeEmailsWithAI(emailDetails, userEmail, privacyMode = false)
         console.log(`✅ BULK PROCESS: AI batch ${batchIndex + 1} completed`);
 
       } catch (batchError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(batchError) });
         console.log(`⚠️ BULK PROCESS: AI batch ${batchIndex + 1} failed, using fallback:`, batchError.message);
 
         // Use fallback analysis for this batch
@@ -272,6 +278,7 @@ async function analyzeEmailsWithAI(emailDetails, userEmail, privacyMode = false)
     return allCategories;
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('BULK PROCESS: AI analysis failed, using fallback:', error);
     return generateFallbackAnalysis(emailsForAI, emailDetails);
   }

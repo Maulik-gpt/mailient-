@@ -2,6 +2,8 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { decrypt, encrypt } from "@/lib/crypto.js";
+import { logEvent } from "@/lib/logsso";
+
 // import { auth } from "@/lib/auth.js"; // Removed top-level import to prevent build-time evaluation
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
@@ -29,6 +31,7 @@ async function ensureDatabaseTables() {
 
     console.log("Database tables check completed in sync");
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error checking database tables in sync:", error);
     throw error;
   }
@@ -51,6 +54,7 @@ async function getAuthenticatedUser(request) {
 
     return user;
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     throw new Error("Authentication required");
   }
 }
@@ -98,6 +102,7 @@ async function syncProfileFromGoogle(userEmail) {
   try {
     accessToken = decrypt(row.encrypted_access_token);
   } catch (e) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     // Try refresh
     accessToken = await refreshAccessToken(row);
   }
@@ -208,6 +213,7 @@ export async function GET(req) {
       synced_at: syncedProfile.last_synced_at,
     });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Profile sync error:", err);
     if (err.message === "Authentication required") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -238,6 +244,7 @@ export async function POST(req) {
       synced_at: syncedProfile.last_synced_at,
     });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Profile sync error:", err);
     if (err.message === "Authentication required") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });

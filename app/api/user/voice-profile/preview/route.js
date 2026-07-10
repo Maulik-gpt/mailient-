@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { voiceProfileService } from '@/lib/voice-profile-service';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 30;
 
@@ -24,6 +25,7 @@ export async function POST(request) {
 
         return Response.json({ preview });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error generating voice preview:', error);
         return Response.json({ 
             preview: 'Friday works for me. I will update the calendar invitation accordingly.' 

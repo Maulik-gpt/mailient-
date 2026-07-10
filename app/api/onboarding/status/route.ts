@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 // @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -51,6 +52,7 @@ export async function GET() {
         }
       }
     } catch (subError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(subError) });
       console.log('⚠️ Subscription check skipped:', subError);
     }
 
@@ -60,6 +62,7 @@ export async function GET() {
       lastStep: profile?.preferences?.last_onboarding_step ?? 0
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error checking onboarding status:", error);
     return NextResponse.json({ completed: false }, { status: 200 });
   }

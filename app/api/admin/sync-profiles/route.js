@@ -2,6 +2,7 @@
 // This endpoint can be called by a cron job to sync all profiles
 
 import { NextResponse } from "next/server";
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -19,6 +20,7 @@ export async function POST(req) {
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Admin sync error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

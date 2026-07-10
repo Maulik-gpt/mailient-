@@ -6,6 +6,7 @@ import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 60;
 
@@ -50,6 +51,7 @@ export async function POST(request) {
                 privacyMode = true;
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('Privacy check error:', e);
         }
 
@@ -64,6 +66,7 @@ export async function POST(request) {
                     console.log('✅ Tokens retrieved from database');
                 }
             } catch (e) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
                 console.error('Failed to fetch tokens from database:', e);
             }
         }
@@ -128,6 +131,7 @@ export async function POST(request) {
                 new Promise((_, reject) => setTimeout(() => reject(new Error('AI Request Timed Out')), 20000))
             ]);
         } catch (timeoutError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(timeoutError) });
             console.warn('⚠️ [Summary API] AI timeout or failure, using fallback summary:', timeoutError.message);
             const subject = parsedEmail.subject || 'an email';
             const from = parsedEmail.from?.split('<')[0]?.trim().replace(/"/g, '') || 'Someone';
@@ -149,6 +153,7 @@ export async function POST(request) {
         return NextResponse.json({ summary });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error generating summary:', error);
         const isAIError = error.message?.includes('AI summary failed') || error.message?.includes('OpenRouter');
         return NextResponse.json(

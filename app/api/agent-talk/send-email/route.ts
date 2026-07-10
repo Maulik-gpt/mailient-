@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 function encodeRfc822(to: string, subject: string, body: string, threadId?: string): string {
   const lines = [
@@ -153,6 +154,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, messageId: sent.id, threadId: sent.threadId });
 
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[send-email] Unexpected error:', err?.message);
     // Don't echo the raw exception to the UI — bind it to a stable shape.
     return NextResponse.json(

@@ -31,6 +31,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth as nextAuth } from '../../../../../lib/auth.js';
 import { saveMemory } from '../../../../../lib/arcus/memory';
+import { logEvent } from "@/lib/logsso";
 
 const auth: any = nextAuth;
 
@@ -91,7 +92,8 @@ export async function POST(req: NextRequest) {
 
   let body: any = {};
   try { body = await req.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
+  catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 }); }
 
   const recipientEmail = String(body.recipientEmail || '').trim().toLowerCase();
   const recipientName = String(body.recipientName || '').trim();
@@ -140,6 +142,7 @@ export async function POST(req: NextRequest) {
   try {
     await saveMemory(userId, content, tags, 'ai');
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     // Memory failures must never break the send flow on the client side.
     console.warn('[learn/draft-feedback] saveMemory failed:', err?.message);
     return NextResponse.json({ ok: false, error: 'memory_save_failed' }, { status: 500 });

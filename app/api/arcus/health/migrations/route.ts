@@ -14,6 +14,7 @@
 
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -71,6 +72,7 @@ async function probeTable(table: string): Promise<Probe> {
     }
     return { table, status: 'error', message: msg };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { table, status: 'error', message: err?.message || 'probe failed' };
   }
 }
@@ -88,6 +90,7 @@ async function probeColumn(table: string, column: string, feature: string): Prom
     }
     return { table, column, feature, status: 'error', message: msg };
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return { table, column, feature, status: 'error', message: err?.message || 'probe failed' };
   }
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 15;
@@ -78,6 +79,7 @@ async function tryGenerateTitle(message: string): Promise<string | null> {
           return capitalizeTitle(title);
         }
       } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
         // try next
       }
     }
@@ -113,6 +115,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     message = body.message?.trim() || '';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -122,6 +125,13 @@ export async function POST(request: NextRequest) {
 
   const aiTitle = await tryGenerateTitle(message);
   if (aiTitle) {
+    logEvent({
+      channel: 'signups',
+      event: '✅ AI Title Generated',
+      description: 'Successfully generated AI title.',
+      user_id: session.user.email,
+      tags: { titleLength: aiTitle.length }
+    });
     return NextResponse.json({ title: aiTitle });
   }
 

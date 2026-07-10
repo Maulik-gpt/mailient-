@@ -5,6 +5,7 @@ import { AIConfig } from '@/lib/ai-config';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -28,6 +29,7 @@ export async function POST(request) {
                 privacyMode = true;
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('Privacy check error:', e);
         }
 
@@ -100,6 +102,7 @@ export async function POST(request) {
         return NextResponse.json({ response });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error in Ask AI:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 // @ts-ignore
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -44,6 +45,7 @@ export async function GET() {
           isNotExpired
         );
       } catch (subError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(subError) });
         console.log('⚠️ Subscription check failed:', subError);
         return false;
       }
@@ -83,6 +85,7 @@ export async function GET() {
             }, { onConflict: 'user_id' });
         }
       } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.error('Error auto-completing onboarding from subscription:', e);
       }
       return NextResponse.json({ redirectTo: "/home-feed" });
@@ -91,6 +94,7 @@ export async function GET() {
     // No paid subscription, onboarding not complete — start/resume onboarding.
     return NextResponse.json({ redirectTo: "/onboarding" });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error checking onboarding redirect:", error);
     return NextResponse.json({ redirectTo: "/onboarding" });
   }

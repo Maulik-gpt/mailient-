@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { voiceProfileService } from '@/lib/voice-profile-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST — Manual source import. Instead of (or in addition to) scanning Gmail, the
@@ -61,6 +62,7 @@ export async function POST(request) {
         await voiceProfileService.saveVoiceProfile(userId, profile);
         return Response.json({ success: true, samplesUsed: emails.length, profile });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error importing voice samples:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }

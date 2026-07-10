@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(
   request: NextRequest,
@@ -58,6 +59,7 @@ export async function GET(
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Plan detail error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

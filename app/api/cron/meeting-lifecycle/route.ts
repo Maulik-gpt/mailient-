@@ -33,6 +33,7 @@ import { composeMeetingPrep } from '../../../../lib/arcus/meeting-prep';
 import { composeMeetingFollowUp } from '../../../../lib/arcus/meeting-followup';
 // @ts-ignore — JS module path
 import { saveMemory } from '../../../../lib/arcus/memory';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 // Vercel Pro allows up to 300s. Meeting prep + follow-up compose LLM drafts
@@ -81,7 +82,8 @@ export async function GET(request: NextRequest) {
       .select('user_id, preferences')
       .in('user_id', userIds);
     for (const p of (profiles || [])) profileMap.set(String(p.user_id).toLowerCase(), p.preferences || {});
-  } catch { /* missing preferences is fine — defaults apply */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* missing preferences is fine — defaults apply */ }
 
   const results: string[] = [];
   let prepped = 0;
@@ -109,6 +111,7 @@ export async function GET(request: NextRequest) {
       accessToken = row.encrypted_access_token ? decrypt(row.encrypted_access_token) : null;
       refreshToken = row.encrypted_refresh_token ? decrypt(row.encrypted_refresh_token) : null;
     } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn(`[MeetingLifecycle] decrypt failed for ${userId}: ${e?.message}`);
       errors++;
       continue;
@@ -127,7 +130,8 @@ export async function GET(request: NextRequest) {
         if (profile && typeof voiceProfileService.generateVoicePrompt === 'function') {
           voiceProfilePrompt = voiceProfileService.generateVoicePrompt(profile);
         }
-      } catch { /* voice profile unavailable — fall back to default tone */ }
+      } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* voice profile unavailable — fall back to default tone */ }
     }
 
     // ── PRE-MEETING stage ────────────────────────────────────────────────────
@@ -140,6 +144,7 @@ export async function GET(request: NextRequest) {
       const timeMax = new Date(now.getTime() + (leadMinutes + LOOKAHEAD_PAD_MINUTES) * 60_000).toISOString();
       events = await cal.listEvents({ timeMin, timeMax, maxResults: 25 });
     } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn(`[MeetingLifecycle] calendar fetch failed for ${userId}: ${e?.message}`);
       errors++;
       events = [];
@@ -160,6 +165,7 @@ export async function GET(request: NextRequest) {
           .maybeSingle();
         existing = data as any;
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         // Table might not exist — fail closed on this run, the user can apply the migration
         if (e?.code === '42P01') {
           return NextResponse.json({ error: 'arcus_meeting_events table missing — apply the migration.', code: '42P01' }, { status: 500 });
@@ -177,6 +183,7 @@ export async function GET(request: NextRequest) {
           refreshToken: refreshToken || '',
         });
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn(`[MeetingLifecycle] prep compose failed: ${e?.message}`);
         errors++;
         continue;
@@ -206,6 +213,7 @@ export async function GET(request: NextRequest) {
             });
         }
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn(`[MeetingLifecycle] table write failed: ${e?.message}`);
       }
 
@@ -219,7 +227,8 @@ export async function GET(request: NextRequest) {
           ['meeting', ...prep.attendeesExternal.map((a) => a.email)],
           'agent_run',
         );
-      } catch { /* memory write best-effort */ }
+      } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* memory write best-effort */ }
 
       prepped++;
       results.push(`prepped: ${userId} → "${event.summary}" (${prep.attendeesExternal.length} ext)`);
@@ -239,6 +248,7 @@ export async function GET(request: NextRequest) {
         const timeMax = now.toISOString();
         pastEvents = await cal.listEvents({ timeMin, timeMax, maxResults: 40 });
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn(`[MeetingLifecycle] post-calendar fetch failed for ${userId}: ${e?.message}`);
         errors++;
         pastEvents = [];
@@ -268,6 +278,7 @@ export async function GET(request: NextRequest) {
             .maybeSingle();
           existing = data as any;
         } catch (e: any) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
           if (e?.code === '42P01') {
             return NextResponse.json({ error: 'arcus_meeting_events table missing.', code: '42P01' }, { status: 500 });
           }
@@ -285,6 +296,7 @@ export async function GET(request: NextRequest) {
             voiceProfile: voiceProfilePrompt,
           });
         } catch (e: any) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
           console.warn(`[MeetingLifecycle] followup compose failed: ${e?.message}`);
           errors++;
           continue;
@@ -320,6 +332,7 @@ export async function GET(request: NextRequest) {
               });
           }
         } catch (e: any) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
           console.warn(`[MeetingLifecycle] post table write failed: ${e?.message}`);
         }
 
@@ -336,7 +349,8 @@ export async function GET(request: NextRequest) {
             ['meeting', 'recap', ...followup.attendeesExternal.map((a) => a.email)],
             'agent_run',
           );
-        } catch { /* best-effort */ }
+        } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* best-effort */ }
 
         followedUp++;
         results.push(`followed up: ${userId} → "${event.summary}" (${followup.actionItems.length} action items)`);
@@ -378,6 +392,7 @@ async function sendArcusEmail(toEmail: string, subject: string, markdown: string
     }
     return true;
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.error('[MeetingLifecycle] sendPrepEmail failed:', e?.message);
     return false;
   }

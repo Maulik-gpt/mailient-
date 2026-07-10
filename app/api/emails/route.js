@@ -1,5 +1,6 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -35,6 +36,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching emails from DB:', error);
     return Response.json({ error: 'Failed to fetch emails' }, { status: 500 });
   }

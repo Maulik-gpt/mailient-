@@ -10,6 +10,7 @@ import { auth } from '../../../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../../../lib/crypto.js';
 import { auditLogger } from '../../../../../../../lib/audit-logger.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request: NextRequest) {
   try {
@@ -96,6 +97,7 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[Arcus V3] Gmail callback error:', (err as Error).message);
     return NextResponse.redirect(new URL('/dashboard/agent-talk?error=callback', request.url));
   }

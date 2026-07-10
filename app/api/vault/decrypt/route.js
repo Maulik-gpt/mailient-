@@ -8,6 +8,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { auditLogger, AUDIT_EVENTS } from '@/lib/audit-logger';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -57,6 +58,7 @@ export async function GET(request) {
       updatedAt: data.updated_at
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('🔐 [Vault Decrypt API] Error:', error.message);
     return NextResponse.json({ error: 'Vault retrieval failed' }, { status: 500 });
   }

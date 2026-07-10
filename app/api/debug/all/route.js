@@ -1,3 +1,5 @@
+import { logEvent } from "@/lib/logsso";
+
 /**
  * Catch-all debug route to log any requests
  */
@@ -40,6 +42,7 @@ export async function POST(request) {
     const body = await request.text();
     console.log('📋 Body:', body);
   } catch (e) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.log('📋 Body read error:', e.message);
   }
 

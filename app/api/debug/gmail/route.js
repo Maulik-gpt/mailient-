@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail.ts';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -55,6 +56,7 @@ export async function GET() {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Gmail debug error:', error);
     return Response.json({
       error: error.message,

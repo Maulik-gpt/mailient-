@@ -18,6 +18,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '../../../../../../lib/supabase.js';
 import { isGmailPushEnabled } from '../../../../../../lib/arcus-v3/gmail-watch';
+import { logEvent } from "@/lib/logsso";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
     try {
       decoded = JSON.parse(Buffer.from(msg.data, 'base64').toString('utf8'));
     } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
       return NextResponse.json({ status: 'bad_payload' });
     }
     const userId = (decoded.emailAddress || '').toLowerCase();
@@ -91,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: 'ok', nudged: fired });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.error('[gmail-webhook] error:', e?.message || e);
     return NextResponse.json({ status: 'error' }); // still 200 — avoid redelivery storms
   }

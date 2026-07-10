@@ -11,6 +11,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
 // @ts-ignore
 import { getModelChain } from '@/lib/ai-constants.js';
+import { logEvent } from "@/lib/logsso";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,7 @@ export async function GET(
                     if (userTokens.encrypted_refresh_token) refreshToken = decrypt(userTokens.encrypted_refresh_token);
                 }
             } catch (dbError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
                 console.error('Database error getting tokens:', dbError);
             }
         }
@@ -160,6 +162,7 @@ export async function GET(
 
                 sentimentScores.push({ date: emailDate.toISOString(), score: Math.min(100, Math.max(0, score)) });
             } catch (err) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                 console.error('Error processing contact message:', err);
             }
         }
@@ -238,6 +241,7 @@ export async function GET(
                             }
                         }
                     } catch (err) {
+                    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                         console.error(`❌ Profile suggestion error with ${model}:`, err);
                     }
                 }
@@ -247,12 +251,14 @@ export async function GET(
                 }
             }
         } catch (aiErr) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(aiErr) });
             console.error('AI error:', aiErr);
         }
 
         return NextResponse.json({ success: true, contact: contactDetail, timestamp: new Date().toISOString() });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Contact Profile API error:', error);
         return NextResponse.json({ error: 'Failed to fetch contact details' }, { status: 500 });
     }

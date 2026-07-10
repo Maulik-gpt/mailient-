@@ -1,5 +1,6 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -46,6 +47,7 @@ export async function GET(request) {
           tableStatus[table].columns = columns;
         }
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         tableStatus[table] = { exists: false, error: error.message };
         console.log(`${table} does not exist:`, error.message);
       }
@@ -63,6 +65,7 @@ export async function GET(request) {
           expiresAt: userTokens?.access_token_expires_at
         });
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Error getting user tokens:', error);
         userTokens = { error: error.message };
       }
@@ -75,6 +78,7 @@ export async function GET(request) {
       userTokens: userTokens
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('DB debug error:', error);
     return Response.json({
       connection: 'error',

@@ -4,6 +4,7 @@ import { GmailTokenService } from '@/lib/gmail-token-service';
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,7 @@ async function ensureUnsubscribedEmailsTable() {
             }
         }
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Error ensuring unsubscribed_emails table:', error);
         // We don't throw here to avoid failing the whole request if table already exists or RPC is limited
     }
@@ -197,6 +199,7 @@ export async function POST(request) {
                 if (gmailActionTaken === 'recorded') gmailActionTaken = 'trashed';
             }
         } catch (gmailError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(gmailError) });
             console.error('❌ Gmail unsubscribe action failed:', gmailError);
             // We still return success because it's recorded in our DB
         }
@@ -212,6 +215,7 @@ export async function POST(request) {
         );
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Unsubscribe API error:', error);
         return NextResponse.json(
             { error: 'Internal server error', details: error.message },

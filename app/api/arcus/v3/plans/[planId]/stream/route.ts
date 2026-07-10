@@ -8,6 +8,7 @@
 import { NextRequest } from 'next/server';
 import { auth } from '../../../../../../../lib/auth.js';
 import { registerSSEClient } from '../../../../../../../lib/arcus-v3/sse';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -34,6 +35,7 @@ export async function GET(
           try {
             controller.enqueue(encoder.encode(data));
           } catch {
+              logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
             // Stream closed
           }
         },
@@ -51,6 +53,7 @@ export async function GET(
         try {
           controller.close();
         } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
           // Already closed
         }
       });

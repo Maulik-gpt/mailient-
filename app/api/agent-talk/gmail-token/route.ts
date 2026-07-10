@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -35,6 +36,7 @@ export async function GET() {
       source: 'arcus_integrations',
     });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[agent-talk/gmail-token]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

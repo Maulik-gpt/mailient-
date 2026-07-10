@@ -7,6 +7,7 @@ import { GmailService } from '@/lib/gmail';
 import { AIConfig } from '@/lib/ai-config.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import crypto from 'crypto';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 60; // Increase to 60s for deep AI analysis
 
@@ -193,6 +194,7 @@ export async function GET(request: Request) {
         console.log('🛡️ AI Privacy Mode is ENABLED for this request.');
       }
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn('Error fetching profile for privacy check:', e);
     }
 
@@ -205,6 +207,7 @@ export async function GET(request: Request) {
           refreshToken = userTokens.encrypted_refresh_token ? decrypt(userTokens.encrypted_refresh_token) : '';
         }
       } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.error('Error fetching tokens from DB:', e);
       }
     }
@@ -239,6 +242,7 @@ export async function GET(request: Request) {
         try {
           return await generateSiftInsights(gmailService, userEmail, privacyMode, isLoadMore, pageToken, db);
         } catch (error: any) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
           return { error: error?.message || 'Pipeline failed', partial: true };
         }
       })(),
@@ -267,6 +271,7 @@ export async function GET(request: Request) {
     return pipelineResult;
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Sift AI Analysis Failed:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
     
     // Show actual error details to user
@@ -369,6 +374,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
           email.hash = createEmailHash(email);
           return email;
         } catch (e) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
           console.error(`Failed to fetch details for email ${id}:`, e);
           return null;
         }
@@ -766,6 +772,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     try {
       await subscriptionService.incrementFeatureUsage(userEmail, FEATURE_TYPES.SIFT_ANALYSIS);
     } catch (usageErr) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(usageErr) });
       console.warn('⚠️ Failed to increment usage, but insights are ready:', usageErr);
     }
 
@@ -782,6 +789,7 @@ async function generateSiftInsights(gmailService: any, userEmail: string, privac
     });
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Insights API Error:', error?.message || error, error?.stack?.split('\n').slice(0, 3).join('\n'));
     const errorMsg = error?.message || (typeof error === 'string' ? error : 'Failed to generate insights — please try again');
     return NextResponse.json({

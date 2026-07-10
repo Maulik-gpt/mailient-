@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { SchedulingAIService } from '@/lib/scheduling-ai';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -50,6 +51,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('❌ Meeting scheduling error:', error);
     return NextResponse.json(
       {

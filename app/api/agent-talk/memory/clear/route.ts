@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ export async function POST() {
       .eq('user_id', userId);
     supabaseCount = count || 0;
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[Memory Clear] Supabase error:', err.message);
   }
 
@@ -46,7 +48,8 @@ export async function POST() {
         body: JSON.stringify({ filters: { userId } }),
         signal: AbortSignal.timeout(10000),
       });
-    } catch { /* silent */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* silent */ }
   }
 
   return NextResponse.json({ success: true, cleared: supabaseCount });

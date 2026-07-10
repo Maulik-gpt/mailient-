@@ -37,6 +37,7 @@ import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/trig
 import { drainScheduledEmails } from '../../../../lib/arcus/scheduled-send';
 import { drainAutonomyActions } from '../../../../lib/arcus/autonomy-drain';
 import { reconcileLedger } from '../../../../lib/arcus/super/ledger';
+import { logEvent } from "@/lib/logsso";
 
 const CRON_SECRET = process.env.CRON_SECRET || 'arcus-cron-secret';
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.xyz>';
@@ -102,6 +103,7 @@ export async function GET(request: NextRequest) {
       .eq('status', 'running')
       .lt('last_run_at', reapCutoffIso);
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[Cron] stuck-run reaper failed:', e?.message);
   }
   // Same for autonomy actions a killed function left mid-flight. Mark them failed
@@ -113,7 +115,8 @@ export async function GET(request: NextRequest) {
       .update({ status: 'failed', error: 'Interrupted by the serverless time limit; not retried to avoid a double-send.', executed_at: new Date().toISOString() })
       .eq('status', 'executing')
       .lt('execute_at', reapCutoffIso);
-  } catch { /* table optional */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* table optional */ }
 
   const { data: agents, error } = await supabase
     .from('arcus_agents')
@@ -133,11 +136,13 @@ export async function GET(request: NextRequest) {
     try {
       const mail = await drainScheduledEmails(supabase);
       if (mail.claimed) drainResults.push(`Scheduled mail: ${mail.sent} sent, ${mail.retried} retry, ${mail.failed} failed`);
-    } catch (e: any) { console.warn('[Cron] scheduled-mail drain failed:', e?.message); }
+    } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) }); console.warn('[Cron] scheduled-mail drain failed:', e?.message); }
     try {
       const auto = await drainAutonomyActions(supabase);
       if (auto.claimed) drainResults.push(`Autonomy: ${auto.done} done, ${auto.failed} failed`);
-    } catch (e: any) { console.warn('[Cron] autonomy drain failed:', e?.message); }
+    } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) }); console.warn('[Cron] autonomy drain failed:', e?.message); }
     return NextResponse.json({ message: 'No active agents.', ran: 0, results: drainResults });
   }
 
@@ -170,6 +175,7 @@ export async function GET(request: NextRequest) {
         const prefs = (profile?.preferences as Record<string, unknown>) || {};
         tzMap[uid] = (prefs.timezone as string) || 'UTC';
       } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
         tzMap[uid] = 'UTC';
       }
     }),
@@ -187,6 +193,7 @@ export async function GET(request: NextRequest) {
         const plan = await subscriptionService.getUserPlanType(uid);
         paidMap[uid] = !!plan && plan !== 'free' && plan !== 'none';
       } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
         paidMap[uid] = false;
       }
     }),
@@ -245,7 +252,8 @@ export async function GET(request: NextRequest) {
       const lastPolled = agent.agent_state?.last_polled_at || agent.last_run_at;
       if (!forcePoll && lastPolled && (now.getTime() - new Date(lastPolled).getTime()) / 60000 < debMin) continue;
       let reactive;
-      try { reactive = await checkEventAgents(agent); } catch { reactive = null; }
+      try { reactive = await checkEventAgents(agent); } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); reactive = null; }
       if (!reactive?.shouldFire) {
         polledNotFired.push(agent); // stamp last_polled_at after the loop
         continue;
@@ -292,7 +300,8 @@ export async function GET(request: NextRequest) {
         try {
           const plan = await subscriptionService.getUserPlanType(child.user_id);
           paidMap[child.user_id] = !!plan && plan !== 'free' && plan !== 'none';
-        } catch { paidMap[child.user_id] = false; }
+        } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); paidMap[child.user_id] = false; }
       }
       if (!paidMap[child.user_id]) continue;
       if (readyToRun.some(a => a.id === child.id)) continue; // already queued this tick
@@ -305,6 +314,7 @@ export async function GET(request: NextRequest) {
       results.push(`Chained: ${child.name} (from pipeline)`);
     }
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[Cron] chain drain failed:', e?.message);
   }
 
@@ -315,6 +325,7 @@ export async function GET(request: NextRequest) {
     const mail = await drainScheduledEmails(supabase);
     if (mail.claimed) results.push(`Scheduled mail: ${mail.sent} sent, ${mail.retried} retry, ${mail.failed} failed`);
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[Cron] scheduled-mail drain failed:', e?.message);
   }
 
@@ -324,6 +335,7 @@ export async function GET(request: NextRequest) {
     const auto = await drainAutonomyActions(supabase);
     if (auto.claimed) results.push(`Autonomy: ${auto.done} done, ${auto.failed} failed`);
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[Cron] autonomy drain failed:', e?.message);
   }
 
@@ -401,6 +413,7 @@ export async function GET(request: NextRequest) {
           .single();
         runRecordId = runRecord?.id || null;
       } catch (e: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         // Table may not be migrated yet — non-fatal, run still proceeds.
         console.warn(`[Cron:Runs] Could not insert run record: ${e.message}`);
       }
@@ -415,6 +428,7 @@ export async function GET(request: NextRequest) {
             await supabase.from('arcus_agent_runs').update({ plan }).eq('id', runRecordId);
           }
         } catch (e: any) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
           console.warn(`[Cron:Runs] Plan generation/store failed: ${e?.message}`);
         }
       }
@@ -450,7 +464,8 @@ export async function GET(request: NextRequest) {
                 email_delivery: 'failed',
                 slack_delivery: 'failed',
               }).eq('id', runRecordId);
-            } catch (e: any) { console.warn('[Cron] empty-run record update threw:', e?.message); }
+            } catch (e: any) {
+              logEvent({ channel: "failures", event: "❌ API Error", description: String(e) }); console.warn('[Cron] empty-run record update threw:', e?.message); }
           }
           return;
         }
@@ -461,7 +476,8 @@ export async function GET(request: NextRequest) {
         try {
           const recon = await reconcileLedger(agent.user_id, agent.id, report);
           if (recon.addendum) report += recon.addendum;
-        } catch { /* fail soft — ledger may be unmigrated */ }
+        } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* fail soft — ledger may be unmigrated */ }
 
         const runHasPending = await hasPendingActions(agent.id);
 
@@ -574,6 +590,7 @@ export async function GET(request: NextRequest) {
               console.warn('[Cron] run-record core update failed:', coreErr.message);
             }
           } catch (e: any) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('[Cron] run-record core update threw:', e?.message);
           }
           try {
@@ -585,7 +602,8 @@ export async function GET(request: NextRequest) {
                 delivery_decision: `${decision.reason}${errBlob} · ${signal.reasons.slice(0, 3).join(' | ')}`.slice(0, 500),
               })
               .eq('id', runRecordId);
-          } catch { /* PART 60 columns may not be migrated — non-fatal */ }
+          } catch {
+            logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* PART 60 columns may not be migrated — non-fatal */ }
           // outcome_summary + report_full are super-agent columns (may not be
           // migrated yet). report_full persists the WHOLE executive briefing so
           // the dashboard run is fully inspectable, not just a 500-char teaser.
@@ -594,11 +612,13 @@ export async function GET(request: NextRequest) {
             if (outcomeSummary) superUpdate.outcome_summary = outcomeSummary;
             superUpdate.report_full = report.slice(0, 20000);
             await supabase.from('arcus_agent_runs').update(superUpdate).eq('id', runRecordId);
-          } catch { /* non-fatal */ }
+          } catch {
+            logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* non-fatal */ }
         }
 
         return agent.name;
       } catch (err: any) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
         console.error(`[Cron] Agent ${agent.name} failed:`, err.message);
 
         // F3.3 — Transient-failure retry. If the error is something like
@@ -652,13 +672,15 @@ export async function GET(request: NextRequest) {
                 error_message: String(err.message || 'unknown error').slice(0, 1000),
               })
               .eq('id', runRecordId);
-          } catch { /* non-fatal */ }
+          } catch {
+            logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* non-fatal */ }
         }
 
         // Only notify the user on hard failures — transient ones will
         // self-recover on the retry.
         if (!isTransient) {
-          try { await sendErrorNotification(agent, err.message); } catch { /* non-critical */ }
+          try { await sendErrorNotification(agent, err.message); } catch {
+            logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* non-critical */ }
         }
         throw err;
       }
@@ -698,7 +720,8 @@ function shouldAgentRunNow(cronSchedule: string, lastRunAt: string | null, timez
         if (idx !== -1) localDow = idx;
       }
     }
-  } catch { /* use UTC fallbacks */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* use UTC fallbacks */ }
 
   const cronParts = cronSchedule.trim().split(/\s+/);
   if (cronParts.length !== 5) return false;
@@ -854,6 +877,7 @@ async function sendEmailReport(toEmail: string, agentName: string, report: strin
       }
       return; // success
     } catch (fetchErr: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(fetchErr) });
       // Network-level error (DNS, timeout, etc.) — retryable.
       lastError = fetchErr instanceof Error ? fetchErr : new Error(String(fetchErr));
       if (attempt < MAX_ATTEMPTS) {

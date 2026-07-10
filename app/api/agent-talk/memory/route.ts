@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +35,8 @@ async function supermemoryWrite(userId: string, content: string, tags?: string[]
       }),
       signal: AbortSignal.timeout(5000),
     });
-  } catch { /* secondary store — never fail the primary write on this */ }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* secondary store — never fail the primary write on this */ }
 }
 
 // ── GET /api/agent-talk/memory — list memories from Supabase ────────────────
@@ -82,10 +84,12 @@ export async function GET() {
     try {
       const { getUserModelSummary } = await import('../../../../lib/arcus/user-model');
       founderModel = await getUserModelSummary(userId);
-    } catch { /* portrait is best-effort */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* portrait is best-effort */ }
 
     return NextResponse.json({ memories, memoryEnabled, founderModel });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[Memory API] GET error:', err.message);
     return NextResponse.json({ memories: [], memoryEnabled: true });
   }
@@ -106,7 +110,8 @@ export async function POST(request: NextRequest) {
 
   let body: any;
   try { body = await request.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const supabase = await getSupabase();
 
@@ -177,7 +182,8 @@ export async function PUT(request: NextRequest) {
 
   let body: any;
   try { body = await request.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const memoryId = body.memoryId;
   const content = typeof body.content === 'string' ? body.content.trim() : null;
@@ -229,7 +235,8 @@ export async function DELETE(request: NextRequest) {
 
   let body: any;
   try { body = await request.json(); }
-  catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
 
   const memoryId = body.memoryId;
   if (!memoryId) return NextResponse.json({ error: 'memoryId required' }, { status: 400 });

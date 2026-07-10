@@ -9,6 +9,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 // @ts-ignore
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -75,6 +76,7 @@ export async function GET(request: Request) {
                     }
                 }
             } catch (dbError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
                 console.error('Database error getting tokens:', dbError);
             }
         }
@@ -237,6 +239,7 @@ export async function GET(request: Request) {
                         }
                     }
                 } catch (err) {
+                logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                     console.error('Error processing message:', err);
                 }
             }));
@@ -268,6 +271,7 @@ export async function GET(request: Request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Email Profiles API error:', error);
         return NextResponse.json(
             { error: 'Failed to fetch email profiles', details: error instanceof Error ? error.message : 'Unknown error' },

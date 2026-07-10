@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request: Request) {
   try {
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
            type: e.summary?.toLowerCase().includes('sync') ? 'internal' : 'discovery'
          }));
        } catch (err) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
          console.error('Calendar fetch error', err);
        }
     }
@@ -84,6 +86,7 @@ export async function GET(request: Request) {
         }));
       }
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.error('Failed to fetch agents:', e);
     }
 
@@ -95,6 +98,7 @@ export async function GET(request: Request) {
       agents
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Dashboard Error:', error);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }

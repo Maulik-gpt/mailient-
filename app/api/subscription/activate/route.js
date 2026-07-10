@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST - Manually activate a subscription for the current user
@@ -73,6 +74,7 @@ export async function POST(request) {
             }
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error in manual subscription activation:', error);
         return NextResponse.json({
             error: 'Failed to activate subscription. Please contact support.',
@@ -104,6 +106,7 @@ export async function GET(request) {
             subscription
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error getting subscription:', error);
         return NextResponse.json({ error: 'Failed to get subscription' }, { status: 500 });
     }

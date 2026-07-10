@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { logEvent } from "@/lib/logsso";
+
 // Remove Gmail dependency to avoid triggering Gmail API limits
 
 // Simple in-memory cache for profile picture URLs
@@ -31,6 +33,7 @@ export async function GET(request) {
     return NextResponse.json({ profilePicture: gravatarUrl });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error in profile picture endpoint:', error);
     const email = new URL(request.url).searchParams.get('email') || 'default';
     const fallbackUrl = `https://api.dicebear.com/7.x/avataaars/svg?seed=${email.split('@')[0]}&backgroundColor=b6e3f4,c0aede,d1d4f9&backgroundType=gradientLinear`;

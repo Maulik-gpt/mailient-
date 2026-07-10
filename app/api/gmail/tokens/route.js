@@ -1,6 +1,7 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { encrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   try {
@@ -28,6 +29,7 @@ export async function POST(request) {
     return Response.json({ success: true });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error storing tokens:', error);
     return Response.json({ error: 'Failed to store tokens' }, { status: 500 });
   }
@@ -54,6 +56,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error getting tokens:', error);
     return Response.json({ error: 'Failed to get tokens' }, { status: 500 });
   }

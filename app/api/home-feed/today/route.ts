@@ -21,6 +21,7 @@ import { getSupabaseAdmin } from '@/lib/supabase.js';
 import { GmailService } from '@/lib/gmail';
 import { CalendarService } from '@/lib/calendar';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 // Raised from 30 → 60 (the same 60s function cap the background agents use): the
@@ -260,6 +261,7 @@ async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string,
     if (!reasons) return;
     reasons.forEach((r, i) => { if (r && items[i]) items[i].reason = r; });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     // keep heuristic reasons — never break the feed
     console.warn('[home-feed/today] reason enrichment failed:', (err as any)?.message);
   }
@@ -283,6 +285,7 @@ async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise
           const d = await (gmail as any).getEmailDetails(id, 'metadata');
           return (gmail as any).parseEmailData(d);
         } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
           return null;
         }
       }),
@@ -314,6 +317,7 @@ async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise
     const scanned = details.filter(Boolean).length;
     return { items: ranked.slice(0, limit).map((r) => r.item), scanned };
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
     return { items: [], scanned: 0 };
   }
@@ -353,6 +357,7 @@ async function fetchShowUp(cal: CalendarService, userEmail: string, limit = MAX_
     }
     return items.slice(0, limit);
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] showUp fetch failed:', (err as any)?.message);
     return [];
   }
@@ -395,6 +400,7 @@ async function fetchChase(gmail: GmailService, userEmail: string, limit = MAX_PE
             gmailUrl: `https://mail.google.com/mail/u/0/#sent/${tid}`,
           } as ChaseItem;
         } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
           return null;
         }
       }),
@@ -403,6 +409,7 @@ async function fetchChase(gmail: GmailService, userEmail: string, limit = MAX_PE
     items.sort((a, b) => b.daysSilent - a.daysSilent);
     return items.slice(0, limit);
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] chase fetch failed:', (err as any)?.message);
     return [];
   }
@@ -463,6 +470,7 @@ async function fetchActionItems(userEmail: string): Promise<ActionItem[]> {
 
     return items.slice(0, MAX_PER_BUCKET);
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] action items fetch failed:', err?.message);
     return [];
   }
@@ -516,6 +524,7 @@ async function fetchAgentRuns(userEmail: string): Promise<AgentRunItem[]> {
       },
     }));
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] agent runs fetch failed:', err?.message);
     return [];
   }
@@ -534,6 +543,7 @@ async function fetchPendingApprovalsCount(userEmail: string): Promise<number> {
     if (error) return 0;
     return count || 0;
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return 0;
   }
 }
@@ -555,6 +565,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     accessToken = (await getGmailToken(userEmail).catch(() => null))
                || (await getGcalToken(userEmail).catch(() => null));
   } catch (e) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.error('[home-feed/today] token fetch failed:', e);
   }
 
@@ -581,11 +592,13 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     try {
       return { value: await fn(), expired: false };
     } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       if (isTokenExpiredErr(e)) {
         try {
           const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
           await markIntegrationNeedsReauth(userEmail.toLowerCase(), tag === 'gmail' ? 'gmail' : 'gcal');
-        } catch {}
+        } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });}
         return { value: null, expired: true };
       }
       console.warn(`[home-feed/today] ${tag} fetch failed:`, e?.message);
@@ -650,6 +663,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
         agentOk = true;
       }
     } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn('[home-feed/today] AI triage failed, using heuristics:', e?.message);
     }
   }
@@ -696,6 +710,7 @@ export async function storeTodaySnapshot(userEmail: string, payload: TodayRespon
       .from('arcus_today_cache')
       .upsert({ user_id: userEmail.toLowerCase(), payload, generated_at: new Date().toISOString() }, { onConflict: 'user_id' });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[home-feed/today] cache write failed:', e?.message);
   }
 }
@@ -710,6 +725,7 @@ async function readTodaySnapshot(supabase: any, userEmail: string): Promise<{ pa
     if (!data?.payload) return null;
     return { payload: data.payload as TodayResponse, generatedAt: data.generated_at };
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return null;
   }
 }
@@ -722,6 +738,7 @@ async function getDismissedIds(supabase: any, userEmail: string): Promise<Set<st
       .eq('user_id', userEmail.toLowerCase());
     return new Set((data || []).map((r: any) => r.item_id));
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return new Set();
   }
 }
@@ -763,7 +780,8 @@ export async function GET(req: Request) {
     try {
       const { ensureMorningSweepAgent } = await import('@/lib/arcus/ensure-default-agent');
       await ensureMorningSweepAgent(userEmail);
-    } catch { /* never block the feed */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* never block the feed */ }
 
     const supabase = getSupabaseAdmin();
     const force = new URL(req.url).searchParams.get('refresh') === '1';
@@ -789,6 +807,7 @@ export async function GET(req: Request) {
     const served = applyDismissals(payload, dismissed);
     return NextResponse.json({ success: true, ...served, cached: isFresh });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[home-feed/today] failed:', err?.message);
     return NextResponse.json({ success: false, error: err?.message || 'Failed to build today surface' }, { status: 500 });
   }

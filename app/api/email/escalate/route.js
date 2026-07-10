@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { GmailService } from '@/lib/gmail';
 import { decrypt } from '@/lib/crypto';
 import { DatabaseService } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -80,6 +81,7 @@ Please review and take appropriate action immediately.`
                 });
             }
         } catch (emailError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(emailError) });
             console.error('Failed to send escalation notification email:', emailError);
             
             // Still return success since the escalation was processed, just notification failed
@@ -93,6 +95,7 @@ Please review and take appropriate action immediately.`
         }
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error escalating message:', error);
         return NextResponse.json({
             error: error.message,

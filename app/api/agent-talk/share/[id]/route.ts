@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 const { auth } = require('@/lib/auth.js');
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -36,6 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       createdAt: sharedConvo.created_at,
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching shared conversation:', error);
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }
@@ -81,6 +83,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       message: 'Share link revoked successfully',
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error revoking share link:', error);
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }

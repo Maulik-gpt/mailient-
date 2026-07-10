@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { Resend } from 'resend';
+import { logEvent } from "@/lib/logsso";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, data });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Contact API error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }

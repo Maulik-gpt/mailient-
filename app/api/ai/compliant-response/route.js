@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { AIPolicyCompliance } from '@/lib/ai-policy-compliance';
+import { logEvent } from "@/lib/logsso";
 
 const compliance = new AIPolicyCompliance();
 
@@ -25,6 +26,7 @@ export async function POST(request) {
         }, { status: 403 });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Compliance endpoint error:', error);
         return NextResponse.json({ 
             error: 'Failed to process request',

@@ -1,4 +1,5 @@
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -18,6 +19,7 @@ export async function GET(request) {
       }
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return Response.json({
       success: false,
       error: error.message,

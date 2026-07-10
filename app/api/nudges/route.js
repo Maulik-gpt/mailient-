@@ -5,6 +5,7 @@ import { decrypt } from '@/lib/crypto.js';
 import { GmailService } from '@/lib/gmail.ts';
 import { ArcusAIService } from '@/lib/arcus-ai.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -87,6 +88,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 [Nudges API] Error:', error);
     return NextResponse.json({ 
       nudges: [], 

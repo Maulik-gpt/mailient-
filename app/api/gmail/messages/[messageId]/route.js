@@ -3,6 +3,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt, encrypt } from '@/lib/crypto.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request, { params }) {
   try {
@@ -51,6 +52,7 @@ export async function GET(request, { params }) {
         userTokens.expires_at = userTokens.access_token_expires_at;
       }
     } catch (dbError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
       console.error('Database error getting tokens:', dbError);
       userTokens = null;
     }
@@ -94,6 +96,7 @@ export async function GET(request, { params }) {
         });
         userTokens.access_token = newAccessToken;
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Token refresh failed:', error.message);
         return Response.json({
           error: 'Token expired and refresh failed. Please sign in again.'
@@ -134,6 +137,7 @@ export async function GET(request, { params }) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('=== ERROR IN SINGLE MESSAGE API ===');
     console.error('Error details:', error);
     console.error('Error message:', error.message);

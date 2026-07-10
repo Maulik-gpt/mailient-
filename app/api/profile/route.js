@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth.js";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { decrypt, encrypt } from "@/lib/crypto.js";
 import { isValidUrlStrict } from "@/lib/url-utils.js";
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -59,12 +60,14 @@ async function ensureDatabaseTables() {
       try {
         await supabase.rpc('exec_sql', { sql: migrationSQL });
       } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.error("Migration SQL failed:", e);
       }
     }
 
     console.log("Database tables check completed");
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error checking database tables:", error);
   }
 }
@@ -194,6 +197,7 @@ async function updateStreak(userId) {
 
     return newStreak;
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error in updateStreak:", error);
     return 0;
   }
@@ -235,6 +239,7 @@ export async function GET(req) {
       email = url.searchParams.get("email");
       forceRefresh = url.searchParams.get("force_refresh") === "true";
     } catch (urlError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(urlError) });
       console.error("Error parsing URL:", urlError);
       // Continue without email param
     }
@@ -320,6 +325,7 @@ export async function GET(req) {
           console.log("Gmail sync failed, creating fallback profile");
         }
       } catch (syncError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(syncError) });
         console.warn("Gmail sync failed (non-critical):", syncError);
       }
 
@@ -337,6 +343,7 @@ export async function GET(req) {
           console.warn("Error fetching tokens (non-critical):", tokensError);
         }
       } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn("Exception fetching tokens (non-critical):", e);
       }
 
@@ -352,6 +359,7 @@ export async function GET(req) {
           console.warn("Error counting emails (non-critical):", countError);
         }
       } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn("Exception counting emails (non-critical):", e);
       }
 
@@ -398,6 +406,7 @@ export async function GET(req) {
         console.warn("Error fetching tokens (non-critical):", tokensError);
       }
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn("Exception fetching tokens (non-critical):", e);
     }
 
@@ -413,6 +422,7 @@ export async function GET(req) {
         console.warn("Error counting emails (non-critical):", countError);
       }
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn("Exception counting emails (non-critical):", e);
     }
 
@@ -431,6 +441,7 @@ export async function GET(req) {
         console.warn("Error fetching last email (non-critical):", lastEmailError);
       }
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn("Exception fetching last email (non-critical):", e);
     }
 
@@ -456,6 +467,7 @@ export async function GET(req) {
 
     return NextResponse.json(enhancedProfile);
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Profile GET error:", err);
     console.error("Error details:", {
       message: err.message,
@@ -502,6 +514,7 @@ export async function GET(req) {
         });
       }
     } catch (fallbackError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(fallbackError) });
       console.error("Error creating fallback profile:", fallbackError);
     }
 
@@ -677,6 +690,7 @@ export async function PUT(req) {
     console.log("PUT /api/profile - Returning result:", result);
     return NextResponse.json(result);
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Profile PUT error:", err);
     console.error("Error details:", {
       message: err.message,
@@ -888,6 +902,7 @@ export async function PATCH(req) {
     console.log("Profile updated successfully:", data);
     return NextResponse.json(data);
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Profile PATCH error:", err);
     console.error("Error details:", {
       message: err.message,
@@ -918,6 +933,7 @@ async function getGmailProfile(email) {
   try {
     if (row.encrypted_access_token) access = decrypt(row.encrypted_access_token);
   } catch (e) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     access = null;
   }
 
@@ -941,6 +957,7 @@ async function getGmailProfile(email) {
         if (retry.ok) return NextResponse.json(JSON.parse(retry.text));
         return NextResponse.json({ error: retry.text }, { status: retry.status });
       } catch (err) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
         return NextResponse.json({ error: String(err) }, { status: 401 });
       }
     }
@@ -954,6 +971,7 @@ async function getGmailProfile(email) {
     if (retry.ok) return NextResponse.json(JSON.parse(retry.text));
     return NextResponse.json({ error: retry.text }, { status: retry.status });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: String(err) }, { status: 401 });
   }
 }
@@ -1000,6 +1018,7 @@ export async function DELETE(req) {
           }
         }
       } catch (err) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
         console.warn(`⚠️ Warning: Exception deleting from ${table}:`, err.message);
       }
     }
@@ -1008,6 +1027,7 @@ export async function DELETE(req) {
     return NextResponse.json({ success: true, message: "Account and all associated data have been permanently deleted." });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("💥 ERROR DURING ACCOUNT DELETION:", error);
     return NextResponse.json({ error: "Failed to permanently delete account data." }, { status: 500 });
   }

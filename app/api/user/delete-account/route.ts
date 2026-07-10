@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function DELETE() {
     const session = await auth();
@@ -13,6 +14,7 @@ export async function DELETE() {
         
         return Response.json({ success: true });
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Delete account error:', error);
         return Response.json({ error: error.message }, { status: 500 });
     }

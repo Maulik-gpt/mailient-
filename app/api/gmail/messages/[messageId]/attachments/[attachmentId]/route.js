@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail.ts';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request, { params }) {
   try {
@@ -37,6 +38,7 @@ export async function GET(request, { params }) {
 
     return new Response(binary, { headers });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching attachment:', error);
     return new Response('Failed to fetch attachment', { status: 500 });
   }

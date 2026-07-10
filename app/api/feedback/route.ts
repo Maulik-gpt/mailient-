@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { auth as nextAuth } from '@/lib/auth.js';
 import { Resend } from 'resend';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
@@ -69,6 +70,7 @@ export async function POST(req: Request) {
                 company = getCompanyFromEmail(userEmail);
             }
         } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
             console.error('Error fetching user profile for feedback email:', dbError);
             company = getCompanyFromEmail(userEmail);
         }
@@ -237,6 +239,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json({ success: true, data });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Feedback API error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }

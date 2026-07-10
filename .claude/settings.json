@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git commit -q -m ' *)",
+      "Bash(git commit -m ' *)",
+      "Bash(node \"C:/Users/hp/AppData/Local/Temp/claude/c--Users-hp-Mailent/01c64136-055c-466f-a83f-7a2d0c378974/scratchpad/check-subs.mjs\")",
+      "Bash(node ./_expire_phantoms.mjs)",
+      "Bash(rm -f ./_expire_phantoms.mjs)",
+      "Bash(npx tsc *)",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\(JSON.stringify\\(p.scripts,null,1\\)\\)\")",
+      "Bash(npx next *)",
+      "Bash(git add *)",
+      "Bash(git push *)",
+      "Bash(node ./_diag2.mjs)",
+      "Bash(rm -f ./_diag2.mjs)",
+      "Bash(node ./_diag_e2e.mjs)",
+      "Bash(rm -f ./_diag_e2e.mjs)",
+      "Bash(node -e ' *)",
+      "Bash(node ./_launch_snapshot.mjs)",
+      "Bash(rm -f ./_launch_snapshot.mjs)",
+      "Bash(npm run *)",
+      "Bash(git reset *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code} %{content_type}\\\\n\" https://mailient.xyz/sitemap.xml)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://mailient.xyz/robots.txt)",
+      "Bash(curl -s https://mailient.xyz/robots.txt)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" https://mailient.xyz/llms.txt)",
+      "PowerShell(Write-Host \"=== SPF \\(TXT @ mailient.xyz\\) ===\"; try { \\(Resolve-DnsName -Name mailient.xyz -Type TXT -ErrorAction Stop\\) | ForEach-Object { $_.Strings -join '' } } catch { Write-Host \"no TXT / lookup failed\" }; Write-Host \"=== DMARC \\(_dmarc.mailient.xyz\\) ===\"; try { \\(Resolve-DnsName -Name _dmarc.mailient.xyz -Type TXT -ErrorAction Stop\\) | ForEach-Object { $_.Strings -join '' } } catch { Write-Host \"NO DMARC RECORD\" }; Write-Host \"=== DKIM \\(resend._domainkey\\) ===\"; try { \\(Resolve-DnsName -Name resend._domainkey.mailient.xyz -Type TXT -ErrorAction Stop\\) | ForEach-Object { \\($_.Strings -join ''\\).Substring\\(0, 60\\) + '...' } } catch { Write-Host \"no resend DKIM selector found\" })",
+      "PowerShell(Write-Host \"=== send.mailient.xyz TXT \\(Resend return-path SPF\\) ===\"; try { \\(Resolve-DnsName -Name send.mailient.xyz -Type TXT -ErrorAction Stop\\) | ForEach-Object { $_.Strings -join '' } } catch { Write-Host \"none\" }; Write-Host \"=== send.mailient.xyz MX ===\"; try { \\(Resolve-DnsName -Name send.mailient.xyz -Type MX -ErrorAction Stop\\) | ForEach-Object { $_.NameExchange } } catch { Write-Host \"none\" }; Write-Host \"=== root MX ===\"; try { \\(Resolve-DnsName -Name mailient.xyz -Type MX -ErrorAction Stop\\) | ForEach-Object { $_.NameExchange } } catch { Write-Host \"none\" })",
+      "Bash(grep -n \"^##\\\\|^  ##\\\\|SECTION\\\\|const.*=.*\\\\`\\\\|function build\" lib/arcus/system-prompt.ts)",
+      "Bash(awk 'NR>=6140 && NR<=6260 && \\(/pageMeta/ || /canvasData/ || /confirmation_required/ || /approvalId/ || /return/\\)' lib/arcus/tools.ts)",
+      "Bash(grep -n \"fetch\\('/api/\\\\|fetch\\(\\\\`/api/\\\\|EventSource\\\\|/api/arcus\" app/dashboard/agent-talk/ChatInterface.tsx)",
+      "Bash(grep -n \"return { decide, chase, showUp, briefing }\" lib/arcus/today-agent.ts)",
+      "Bash(git stash *)",
+      "Bash(grep -n \"ignoreBuildErrors\" next.config.*)",
+      "Bash(echo \"---EXIT:$?---\")"
+    ]
+  }
+}

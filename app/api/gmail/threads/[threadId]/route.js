@@ -3,6 +3,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request, { params }) {
   try {
@@ -49,6 +50,7 @@ export async function GET(request, { params }) {
       totalMessages: messages.length
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching thread details:', error);
     return Response.json({ error: 'Failed to fetch thread details' }, { status: 500 });
   }

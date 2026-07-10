@@ -3,6 +3,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt, encrypt } from '@/lib/crypto.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 // Global Gmail service instance for debugging
 let globalGmailService = null;
@@ -33,6 +34,7 @@ export async function POST(request) {
 
     return Response.json({ error: 'Invalid action' }, { status: 400 });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error in debug POST:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
   }
@@ -94,6 +96,7 @@ export async function GET(request) {
           userTokens.access_token = decrypt(userTokens.encrypted_access_token);
           console.log('Access token decrypted successfully');
         } catch (decryptError) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(decryptError) });
           console.error('Failed to decrypt access token:', decryptError.message);
           return Response.json({
             error: 'Failed to decrypt access token. Please sign in again.',
@@ -106,6 +109,7 @@ export async function GET(request) {
           userTokens.refresh_token = decrypt(userTokens.encrypted_refresh_token);
           console.log('Refresh token decrypted successfully');
         } catch (decryptError) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(decryptError) });
           console.error('Failed to decrypt refresh token:', decryptError.message);
           return Response.json({
             error: 'Failed to decrypt refresh token. Please sign in again.',
@@ -117,6 +121,7 @@ export async function GET(request) {
         userTokens.expires_at = userTokens.access_token_expires_at;
       }
     } catch (dbError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
       console.error('Database error getting tokens:', dbError);
       console.error('Database error details:', {
         message: dbError.message,
@@ -166,6 +171,7 @@ export async function GET(request) {
         });
         userTokens.access_token = newAccessToken;
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Token refresh failed:', error.message);
         return Response.json({
           error: 'Token expired and refresh failed. Please sign in again.'
@@ -196,6 +202,7 @@ export async function GET(request) {
       gmailService = globalGmailService;
       console.log('Gmail service created successfully');
     } catch (serviceError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(serviceError) });
       console.error('Failed to create Gmail service:', serviceError.message);
       return Response.json({
         error: 'Failed to initialize Gmail service',
@@ -249,6 +256,7 @@ export async function GET(request) {
             await new Promise(resolve => setTimeout(resolve, delay));
 
           } catch (error) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
             attempts++;
             console.error(`Error in batch ${attempts + 1}:`, error.message);
 
@@ -281,6 +289,7 @@ export async function GET(request) {
             console.log('Fetched page token:', fetchedPageToken);
             break; // Success, exit retry loop
           } catch (error) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
             attempts++;
             console.error(`Error fetching emails (attempt ${attempts}):`, error.message);
 
@@ -294,6 +303,7 @@ export async function GET(request) {
         }
       }
     } catch (error) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
       console.error('Error in email fetching process:', error);
 
       // If it's a rate limit error, return a user-friendly response
@@ -359,6 +369,7 @@ export async function GET(request) {
 
           return gmailService.parseEmailData(messageDetails);
         } catch (error) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
           console.error(`Error fetching details for message ${message.id}:`, error.message);
           return {
             id: message.id,
@@ -389,6 +400,7 @@ export async function GET(request) {
           }
         }
       } catch (batchError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(batchError) });
         console.error('Batch processing error:', batchError);
         // Continue with next batch even if current batch fails
         const errorDelay = isHeavyRateLimited ? 15000 : 8000; // Longer delay on error
@@ -404,6 +416,7 @@ export async function GET(request) {
         await db.storeEmails(session.user.email, emailsWithDetails);
       }
     } catch (error) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
       console.error('Error storing emails in database:', error);
       // Continue even if storage fails
     }
@@ -434,6 +447,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('=== ERROR IN EMAILS API ===');
     console.error('Error details:', error);
     console.error('Error message:', error.message);

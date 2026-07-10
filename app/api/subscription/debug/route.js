@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
 import { getSupabaseAdmin } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Debug endpoint for subscription system
@@ -42,6 +43,7 @@ export async function GET(request) {
             const connectionOk = await subscriptionService.testConnection();
             debugInfo.supabase.connectionStatus = connectionOk ? 'connected' : 'failed';
         } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
             debugInfo.supabase.connectionStatus = 'error';
             debugInfo.supabase.connectionError = error.message;
         }
@@ -69,6 +71,7 @@ export async function GET(request) {
                 };
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             debugInfo.tables.user_subscriptions = {
                 exists: false,
                 error: e.message
@@ -95,6 +98,7 @@ export async function GET(request) {
                 };
             }
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             debugInfo.tables.user_feature_usage = {
                 exists: false,
                 error: e.message
@@ -123,6 +127,7 @@ export async function GET(request) {
                 } : null
             };
         } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
             debugInfo.subscription = {
                 error: error.message
             };
@@ -146,6 +151,7 @@ export async function GET(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Debug endpoint error:', error);
         return NextResponse.json({
             success: false,

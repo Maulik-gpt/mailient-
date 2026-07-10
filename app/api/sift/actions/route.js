@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { SIFT_CONFIG } from '@/lib/sift-config.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Sift AI Actions API - Background AI for entrepreneurial productivity actions
@@ -21,6 +22,7 @@ export async function POST(request) {
         );
       }
     } catch (error) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
       console.log('⚠️ Auth not available:', error.message);
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -38,6 +40,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('💥 Sift AI action error:', error);
     return NextResponse.json(
       {

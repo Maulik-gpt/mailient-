@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 import { handlers } from '@/lib/auth';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Handle GET requests to the Google OAuth callback
@@ -25,6 +26,7 @@ export async function GET(request) {
     return response;
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('❌ OAuth callback error:', error.message);
     console.error('❌ Error stack:', error.stack);
 
@@ -48,6 +50,7 @@ export async function POST(request) {
     console.log('🔄 Google OAuth callback POST received');
     return await handlers.POST(request);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('❌ OAuth callback POST error:', error.message);
     return createErrorRedirect(request, 'oauth-failed');
   }

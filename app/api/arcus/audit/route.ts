@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth as nextAuth } from '../../../../lib/auth.js';
 const auth: any = nextAuth;
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 10;
 
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ entries: data ?? [] });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

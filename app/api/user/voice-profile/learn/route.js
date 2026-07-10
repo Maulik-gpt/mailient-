@@ -1,5 +1,6 @@
 import { auth } from '@/lib/auth';
 import { voiceProfileService } from '@/lib/voice-profile-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST — Process continuous learning from AI draft vs user's edited version
@@ -28,6 +29,7 @@ export async function POST(request) {
 
         return Response.json({ success: true });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Voice learning error:', error);
         // Non-fatal — always return 200 since this is fire-and-forget
         return Response.json({ success: false, error: error.message });

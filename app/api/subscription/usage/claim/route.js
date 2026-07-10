@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -77,6 +78,7 @@ export async function POST(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error claiming reward:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
@@ -162,6 +164,7 @@ export async function GET() {
         return NextResponse.json({ rewards: finalRewards });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error fetching rewards list:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }

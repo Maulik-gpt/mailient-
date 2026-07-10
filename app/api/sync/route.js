@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { DatabaseService } from "@/lib/supabase.js";
 import { decrypt, encrypt } from "@/lib/crypto.js";
+import { logEvent } from "@/lib/logsso";
 
 const db = new DatabaseService();
 const supabase = db.supabase;
@@ -8,7 +9,8 @@ const supabase = db.supabase;
 async function getValidAccess(row) {
   // if expired or missing, try refresh (reuse profile's refresh logic if you want)
   if (row.encrypted_access_token) {
-    try { return decrypt(row.encrypted_access_token); } catch { /* fallthrough */ }
+    try { return decrypt(row.encrypted_access_token); } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* fallthrough */ }
   }
   if (!row.encrypted_refresh_token) throw new Error("no_refresh_token");
   // refresh
@@ -51,7 +53,8 @@ export async function GET(req) {
     if (!row) return NextResponse.json({ error: "no_tokens" }, { status: 404 });
 
     let accessToken;
-    try { accessToken = await getValidAccess(row); } catch (e) { return NextResponse.json({ error: String(e) }, { status: 401 }); }
+    try { accessToken = await getValidAccess(row); } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) }); return NextResponse.json({ error: String(e) }, { status: 401 }); }
 
     let allMessages = [];
     let pageToken = null;
@@ -126,6 +129,7 @@ export async function GET(req) {
             labels: msgJson.labelIds || []
           };
         } catch (error) {
+          logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
           console.error(`Error processing message ${m.id}:`, error);
           return null;
         }
@@ -170,11 +174,13 @@ export async function GET(req) {
               console.log('⚠️ [Sync] Not enough sent emails for voice profile:', sentEmails.length);
             }
           } catch (vpError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(vpError) });
             console.warn('⚠️ [Sync] Voice profile auto-generation failed (non-blocking):', vpError.message);
           }
         })();
       }
     } catch (vpCheckError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(vpCheckError) });
       // Silent — voice profile is optional, never break sync
       console.warn('⚠️ [Sync] Voice profile check skipped:', vpCheckError.message);
     }
@@ -186,6 +192,7 @@ export async function GET(req) {
       fetchedAll: fetchAll
     });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("sync error:", err);
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }

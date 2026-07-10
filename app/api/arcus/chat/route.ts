@@ -24,6 +24,7 @@ import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
+import { logEvent } from "@/lib/logsso";
 
 // Vercel HOBBY (free) plan hard-caps serverless functions at 60s — 300 would be
 // rejected/ignored and the loop would think it had time it doesn't, getting
@@ -190,6 +191,7 @@ async function embedTextAttachments(
         : raw;
       blocks.push(`[ATTACHMENT — ${a.name}]\n\`\`\`\n${truncated}\n\`\`\``);
     } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
       // swallow — the loop's binaryHint covers unreachable files
     }
   }
@@ -246,6 +248,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     log('error', 'Failed to parse request body', { error: e.message });
     return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 });
   }
@@ -286,7 +289,8 @@ export async function POST(request: NextRequest) {
       fetchPersonality(userId),
       getVoiceContext(userId),
       fetchUserStylePrefs(userId),
-      (async () => { try { const { getUserModelSummary } = await import('../../../../lib/arcus/user-model'); return await getUserModelSummary(userId); } catch { return ''; } })(),
+      (async () => { try { const { getUserModelSummary } = await import('../../../../lib/arcus/user-model'); return await getUserModelSummary(userId); } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return ''; } })(),
     ]);
     // Combine, dedup by line content
     if (preferenceMemories && !memories.includes(preferenceMemories.slice(0, 100))) {
@@ -294,6 +298,7 @@ export async function POST(request: NextRequest) {
     }
     log('info', 'Context ready', { integrations: connectedIntegrations, memoryChars: memories.length, voiceProfileChars: voiceContext.length });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     log('error', 'Context build failed — continuing with empty context', { error: e.message, stack: e.stack?.slice(0, 300) });
   }
 
@@ -342,7 +347,8 @@ export async function POST(request: NextRequest) {
     try {
       const { getRecentViolationFocus } = await import('@/lib/arcus/rule-violations');
       ruleFocus = await getRecentViolationFocus(userId, 24);
-    } catch { /* telemetry table optional */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* telemetry table optional */ }
   }
 
   const systemPrompt = isPlanMode
@@ -400,6 +406,7 @@ export async function POST(request: NextRequest) {
         }
       }
     } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       log('warn', 'Auto-extract memory failed', { error: e.message });
     }
   })();
@@ -517,6 +524,7 @@ export async function POST(request: NextRequest) {
       maxToolCalls: 26,
     });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     log('error', 'runAgentLoop threw synchronously', { error: e.message, stack: e.stack?.slice(0, 300) });
     return new Response(JSON.stringify({ error: 'Internal server error' }), { status: 500 });
   }
@@ -541,6 +549,7 @@ async function saveMemoryAsync(userId: string, userMessage: string, _conversatio
   try {
     await extractAndSaveInsights(userId, userMessage, '');
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn(`[Arcus:Route] ${ts()} Memory save failed (non-fatal)`, { error: e.message });
   }
 }
@@ -562,6 +571,7 @@ async function fetchPersonality(userId: string): Promise<string> {
     if (prefs.arcus_instructions_enabled === false) return '';
     return (prefs.arcus_personality as string) || '';
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return '';
   }
 }
@@ -595,6 +605,7 @@ async function fetchUserStylePrefs(userId: string): Promise<{
       actionMode: action === 'ask' || action === 'auto' ? action : undefined,
     };
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return {};
   }
 }
@@ -624,6 +635,7 @@ async function getVoiceContext(userId: string): Promise<string> {
     const prompt = voiceProfileService.generateVoicePrompt(profile);
     return typeof prompt === 'string' ? prompt.trim() : '';
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     log('warn', 'Voice profile load failed (non-fatal)', { error: e.message });
     return '';
   }
@@ -681,6 +693,7 @@ async function bootstrapVoiceProfile(userId: string, voiceProfileService: any): 
     }
     return built;
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     log('warn', 'Voice profile bootstrap failed (non-fatal)', { error: e.message });
     return null;
   }

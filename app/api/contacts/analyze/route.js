@@ -4,6 +4,7 @@ import { GmailService } from '@/lib/gmail';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
 import { getModelChain } from '@/lib/ai-constants.js';
+import { logEvent } from "@/lib/logsso";
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -78,6 +79,7 @@ export async function POST(request) {
                     if (twitterMatch && !socialLinks.some(l => l.type === 'twitter')) socialLinks.push({ type: 'twitter', url: `https://${twitterMatch[0]}` });
                 }
             } catch (e) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
                 console.error('Email detail error:', e);
             }
         }
@@ -146,6 +148,7 @@ JSON ONLY.`;
                             console.warn(`⚠️ Contact analysis failed for ${model}:`, response.status);
                         }
                     } catch (err) {
+                    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                         console.error(`❌ Contact analysis error with ${model}:`, err.message);
                     }
                 }
@@ -158,6 +161,7 @@ JSON ONLY.`;
                     recentTopics = finalAnalysis.recentTopics || [];
                 }
             } catch (aiError) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(aiError) });
                 console.error('AI analysis error:', aiError);
             }
         }
@@ -178,6 +182,7 @@ JSON ONLY.`;
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Analyze route error:', error);
         return NextResponse.json({ error: 'Analysis failed' }, { status: 500 });
     }

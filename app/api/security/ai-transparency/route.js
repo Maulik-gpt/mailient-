@@ -5,6 +5,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { auditLogger, AUDIT_EVENTS } from '@/lib/audit-logger';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -51,6 +52,7 @@ export async function GET(request) {
       }
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('🔍 [AI Transparency API] Error:', error.message);
     return NextResponse.json({ error: 'Failed to retrieve AI transparency logs' }, { status: 500 });
   }

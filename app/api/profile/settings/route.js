@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { DEFAULT_AI_MODELS } from "@/lib/ai-constants.js";
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,7 @@ async function getAuthenticatedUser(request) {
 
     return user;
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     throw new Error("Authentication required");
   }
 }
@@ -85,6 +87,7 @@ export async function GET(req) {
     });
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Settings GET error:", err);
     if (err.message === "Authentication required") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -160,6 +163,7 @@ export async function PUT(req) {
     });
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Settings PUT error:", err);
     if (err.message === "Authentication required") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -216,6 +220,7 @@ export async function PATCH(req) {
     });
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Settings PATCH error:", err);
     if (err.message === "Authentication required") {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });

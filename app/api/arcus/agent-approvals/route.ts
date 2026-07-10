@@ -16,6 +16,7 @@ import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { executeTool } from '../../../../lib/arcus/tools';
 import { recordLearningEvent } from '../../../../lib/arcus/autonomy';
 import { recordDecision, toolToGrantAction, grantTargetKey } from '../../../../lib/arcus/autonomy-grants';
+import { logEvent } from "@/lib/logsso";
 
 // Count an approve/reject toward the graduated-autonomy ladder for this target.
 function countTowardAutonomy(userId: string, toolName: string, toolInput: any, decision: 'approved' | 'rejected') {
@@ -106,6 +107,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
@@ -193,6 +195,7 @@ export async function POST(request: NextRequest) {
       toolResult: result.output?.slice(0, 500),
     });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[AgentApprovals] execution error:', err.message);
     return NextResponse.json({
       success: false,

@@ -1,5 +1,6 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -17,6 +18,7 @@ export async function GET(request) {
       totalConnections: (connections || []).length
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching connections:', error);
     return Response.json({ 
       connections: [],

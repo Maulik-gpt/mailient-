@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Store DataFast visitor ID for payment attribution
@@ -29,6 +30,7 @@ export async function POST(request) {
 
         return NextResponse.json({ success: true });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error storing visitor ID:', error);
         return NextResponse.json({ error: 'Failed to store visitor ID' }, { status: 500 });
     }
@@ -61,6 +63,7 @@ export async function GET(request) {
 
         return NextResponse.json({ visitor_id: stored.visitorId });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error retrieving visitor ID:', error);
         return NextResponse.json({ error: 'Failed to retrieve visitor ID' }, { status: 500 });
     }

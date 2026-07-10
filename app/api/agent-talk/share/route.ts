@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 const { auth } = require('@/lib/auth.js');
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,6 +17,7 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
       return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
     }
 
@@ -48,6 +50,7 @@ export async function POST(request: Request) {
       title: sharedConvo.title,
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error generating share link:', error);
     return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
   }

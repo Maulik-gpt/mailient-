@@ -3,6 +3,7 @@ import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { getSupabaseAdmin } from '@/lib/supabase';
 import { encrypt } from '@/lib/crypto';
+import { logEvent } from "@/lib/logsso";
 
 const db = {
   async storeIntegrationCredentials(userEmail, provider, credentials) {
@@ -63,6 +64,7 @@ export async function GET(request) {
 
     return NextResponse.redirect(new URL(`/dashboard/agent-talk?success=connected&provider=${provider}`, baseUrl));
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.redirect(new URL(`/dashboard/agent-talk?error=exchange_failed&message=${encodeURIComponent(err.message)}`, baseUrl));
   }
 }

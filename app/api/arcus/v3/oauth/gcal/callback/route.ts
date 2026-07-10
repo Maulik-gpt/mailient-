@@ -12,6 +12,7 @@ import { getSupabaseAdmin } from '../../../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../../../lib/crypto.js';
 import { auditLogger } from '../../../../../../../lib/audit-logger.js';
 import crypto from 'crypto';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * GET — OAuth callback. Exchange code for tokens.
@@ -116,6 +117,7 @@ export async function GET(request: NextRequest) {
         // Continue — webhooks are optional, polling can be used as fallback
       }
     } catch (watchErr) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(watchErr) });
       console.warn('[Arcus V3] GCal Watch error:', (watchErr as Error).message);
     }
 
@@ -161,6 +163,7 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] GCal callback error:', (error as Error).message);
     return NextResponse.redirect(new URL('/dashboard/agent-talk?error=callback', request.url));
   }

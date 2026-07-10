@@ -12,6 +12,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 // @ts-ignore
 import { getSupabaseAdmin } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -33,6 +34,7 @@ async function modifyThreadInbox(userId: string, threadId: string, archive: bool
     }
     if (!res.ok) console.warn('[home-feed/dismiss] thread modify failed:', res.status);
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.warn('[home-feed/dismiss] archive error:', e?.message);
   }
 }
@@ -63,6 +65,7 @@ export async function POST(req: Request) {
     ]);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     // Non-fatal — the client still hides it optimistically this session.
     console.warn('[home-feed/dismiss] failed:', e?.message);
     return NextResponse.json({ ok: false, error: 'persist_failed' }, { status: 200 });
@@ -89,6 +92,7 @@ export async function DELETE(req: Request) {
     ]);
     return NextResponse.json({ ok: true });
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     return NextResponse.json({ ok: false, error: 'delete_failed' }, { status: 200 });
   }
 }

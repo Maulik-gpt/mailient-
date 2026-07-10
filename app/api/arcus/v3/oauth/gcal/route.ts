@@ -14,6 +14,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { auth } from '../../../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
@@ -63,6 +64,7 @@ export async function GET(request: NextRequest) {
 
     return response;
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] GCal OAuth init error:', (error as Error).message);
     return NextResponse.redirect(new URL('/dashboard/agent-talk?error=oauth_init', request.url));
   }

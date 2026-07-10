@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 const { auth } = require('@/lib/auth.js');
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,7 @@ export async function GET(_request: Request, context: Context) {
 
     return NextResponse.json(data);
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[GET /api/arcus/conversation/[id]]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
@@ -54,6 +56,7 @@ export async function DELETE(_request: Request, context: Context) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[DELETE /api/arcus/conversation/[id]]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
@@ -89,6 +92,7 @@ export async function PATCH(request: Request, context: Context) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[PATCH /api/arcus/conversation/[id]]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

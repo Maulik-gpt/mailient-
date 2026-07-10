@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 // Read-only email fetcher for Arcus dashboard actions
 export async function POST(request) {
@@ -15,6 +16,7 @@ export async function POST(request) {
     try {
       body = await request.json();
     } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
       // allow empty body with defaults
     }
 
@@ -66,6 +68,7 @@ export async function POST(request) {
           body: bodyContent,
         });
       } catch (error) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.log('Error processing email for read-only endpoint:', error.message);
       }
     }
@@ -77,6 +80,7 @@ export async function POST(request) {
       emails,
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Read-only endpoint error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch emails', details: error.message },

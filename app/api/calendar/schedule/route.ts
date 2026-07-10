@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+import { logEvent } from "@/lib/logsso";
+
 // @ts-ignore
 const { auth } = require('../../../../lib/auth');
 // @ts-ignore
@@ -21,6 +23,7 @@ export async function POST(request: Request) {
         try {
             body = await request.json();
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
         }
 
@@ -95,6 +98,7 @@ ${session.user.name || 'Mailient User'}
                     });
                 }
             } catch (notifyErr) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(notifyErr) });
                 console.warn('⚠️ Could not send notification email:', notifyErr);
                 // Don't fail the whole request just because email notification failed
             }
@@ -103,6 +107,7 @@ ${session.user.name || 'Mailient User'}
         return NextResponse.json({ success: true, event });
 
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Scheduling error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

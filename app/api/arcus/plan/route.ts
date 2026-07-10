@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { ArcusPlanner } from '@/lib/arcus-planner';
 import { assertPaidAccess } from '@/lib/subscription-protection';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -26,6 +27,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(plan);
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('[Arcus Plan API] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

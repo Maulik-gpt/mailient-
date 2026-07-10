@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: Request) {
   try {
@@ -24,6 +25,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ available: !existingProfile.data });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error checking username:", error);
     return NextResponse.json(
       { error: "Internal server error" },

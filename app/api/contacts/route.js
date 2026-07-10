@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Contacts API - CRM functionality for managing contacts
@@ -57,6 +58,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Contacts fetch error:', error);
     return NextResponse.json(
       {
@@ -144,6 +146,7 @@ export async function POST(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Contact creation error:', error);
     return NextResponse.json(
       {
@@ -214,6 +217,7 @@ export async function PUT(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Contact update error:', error);
     return NextResponse.json(
       {
@@ -280,6 +284,7 @@ export async function DELETE(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Contact deletion error:', error);
     return NextResponse.json(
       {
@@ -315,6 +320,7 @@ async function logContactActivity(userEmail, contactEmail, action, data) {
         created_at: new Date().toISOString()
       });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Failed to log contact activity:', error);
   }
 }

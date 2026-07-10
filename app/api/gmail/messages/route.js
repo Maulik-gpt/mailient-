@@ -3,6 +3,7 @@ import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt, encrypt } from '@/lib/crypto.js';
 import { subscriptionService } from '@/lib/subscription-service.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -44,6 +45,7 @@ export async function GET(request) {
       const { getGmailToken } = await import('@/lib/arcus/tools/http-tokens');
       accessToken = await getGmailToken(userEmail);
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.error('getGmailToken failed:', e?.message);
     }
 
@@ -57,6 +59,7 @@ export async function GET(request) {
         if (userTokens?.encrypted_access_token) accessToken = decrypt(userTokens.encrypted_access_token);
         if (userTokens?.encrypted_refresh_token) refreshToken = decrypt(userTokens.encrypted_refresh_token);
       } catch (dbError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(dbError) });
         console.error('Database error getting tokens:', dbError);
       }
     }
@@ -102,6 +105,7 @@ export async function GET(request) {
             const details = await gmailService.getEmailDetails(id);
             return gmailService.parseEmailData(details);
           } catch (error) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
             console.error(`Error fetching detail for ${id}:`, error);
             return null;
           }
@@ -122,6 +126,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('=== ERROR IN TRADITIONAL MESSAGES API ===');
     console.error('Error:', error);
     const msg = String(error?.message || '').toLowerCase();
@@ -147,7 +152,8 @@ export async function GET(request) {
           const { markIntegrationNeedsReauth } = await import('@/lib/arcus/tools/http-tokens');
           await markIntegrationNeedsReauth(uid, 'gmail');
         }
-      } catch {}
+      } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });}
       return Response.json(
         {
           error: 'gmail_token_expired',

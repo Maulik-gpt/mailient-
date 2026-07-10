@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -27,6 +28,7 @@ export async function POST(request) {
                 subscription
             });
         } catch (serviceError) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(serviceError) });
             console.error('SubscriptionService error during free activation:', serviceError);
             return NextResponse.json({ 
                 error: serviceError.message || 'Failed to activate free plan',
@@ -34,6 +36,7 @@ export async function POST(request) {
             }, { status: 500 });
         }
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Route error activating free plan:', error);
         return NextResponse.json({ error: error.message || 'Failed to activate free plan' }, { status: 500 });
     }

@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: 'updated' });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Preferences API error:', (error as Error).message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

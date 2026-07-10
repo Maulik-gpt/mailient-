@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { auth } from '@/lib/auth';
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,7 @@ async function ensureUnsubscribedEmailsTable() {
             console.log('✅ unsubscribed_emails table created successfully');
         }
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Error ensuring unsubscribed_emails table:', error);
     }
 }
@@ -94,6 +96,7 @@ export async function GET() {
         );
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ List unsubscribed emails API error:', error);
         return NextResponse.json(
             { success: false, error: 'Internal server error' },

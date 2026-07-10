@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST - Check if user can use a feature and optionally increment usage
@@ -76,6 +77,7 @@ export async function POST(request) {
             planType: usage.planType
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error checking feature usage:', error);
         return NextResponse.json({ error: 'Failed to check feature usage' }, { status: 500 });
     }
@@ -105,6 +107,7 @@ export async function GET(request) {
             invoices
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error getting all feature usage:', error);
         return NextResponse.json({ error: 'Failed to get feature usage' }, { status: 500 });
     }

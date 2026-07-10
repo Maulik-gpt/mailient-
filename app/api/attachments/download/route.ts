@@ -9,6 +9,7 @@ import { auth } from '@/lib/auth.js';
 import { GmailService } from '@/lib/gmail';
 import { decrypt } from '@/lib/crypto.js';
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request: Request) {
     try {
@@ -52,6 +53,7 @@ export async function GET(request: Request) {
                     }
                 }
             } catch (e) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
                 console.error('Error fetching tokens from DB:', e);
             }
         }
@@ -108,6 +110,7 @@ export async function GET(request: Request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Download attachment error:', error);
         return NextResponse.json(
             { error: 'Failed to download attachment', details: error instanceof Error ? error.message : 'Unknown error' },

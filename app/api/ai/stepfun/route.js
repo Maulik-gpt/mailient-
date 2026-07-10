@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { DEFAULT_AI_MODELS, getModelChain } from '@/lib/ai-constants.js';
+import { logEvent } from "@/lib/logsso";
 
 const STEPFUN_MODEL = DEFAULT_AI_MODELS[0];
 const OPENROUTER_BASE = 'https://openrouter.ai/api/v1';
@@ -93,6 +94,7 @@ export async function POST(request) {
                     lastError = new Error(`API error: ${response.status}`);
                 }
             } catch (err) {
+            logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                 console.error(`❌ StepFun error with ${model}:`, err.message);
                 lastError = err;
             }
@@ -112,6 +114,7 @@ export async function POST(request) {
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         if (error.name === 'AbortError') {
             console.error('⏱️ StepFun request timed out after 25s');
             return NextResponse.json({ error: 'Request timed out. Please try again.' }, { status: 504 });
@@ -152,6 +155,7 @@ export async function GET() {
             ]
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }

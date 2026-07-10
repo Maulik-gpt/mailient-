@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { ArcusExecutorEngine } from '@/lib/arcus-executor-engine';
 import { DatabaseService } from '@/lib/supabase';
 import { assertPaidAccess } from '@/lib/subscription-protection';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(req: Request) {
     const session = await auth();
@@ -35,6 +36,7 @@ export async function POST(req: Request) {
 
         return NextResponse.json(result);
     } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('[Arcus Execute API] Error:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

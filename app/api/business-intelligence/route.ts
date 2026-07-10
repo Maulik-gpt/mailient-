@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { businessContextEngine } from '@/lib/business-context-engine'
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request: NextRequest) {
   try {
@@ -46,6 +47,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Business context API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
@@ -62,6 +64,7 @@ export async function GET() {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Business context GET error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }

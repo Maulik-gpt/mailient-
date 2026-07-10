@@ -19,6 +19,7 @@ import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
 const auth: any = nextAuth;
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 55;
 
@@ -85,7 +86,8 @@ async function matchDelegationRules(
       if (keywordMatch && fromMatch) return rule.name;
     }
     return null;
-  } catch { return null; }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return null; }
 }
 
 // ── Main triage handler ───────────────────────────────────────────────────────
@@ -142,7 +144,8 @@ export async function POST(req: NextRequest) {
         const h = m.payload?.headers || [];
         const getH = (n: string) => (h.find((x: any) => x.name === n)?.value || '');
         return { id: m.id, threadId: m.threadId, from: getH('From'), subject: getH('Subject'), date: getH('Date'), snippet: (m.snippet || '').slice(0, 200) };
-      } catch { return null; }
+      } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return null; }
     }));
 
     const valid = details.filter(Boolean) as any[];
@@ -208,7 +211,8 @@ export async function POST(req: NextRequest) {
           if (!hasReply) {
             followups.push({ subject: getH('Subject'), to: getH('To'), daysWaiting, threadId });
           }
-        } catch { continue; }
+        } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); continue; }
       }
     }
 
@@ -225,6 +229,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ urgent, followups, delegationMatches, newEmails: valid, summary });
 
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[Triage] error:', err);
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -2,6 +2,7 @@ import { GmailService } from '@/lib/gmail.ts';
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request, { params }) {
   try {
@@ -29,6 +30,7 @@ export async function POST(request, { params }) {
 
     return Response.json({ success: true });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error archiving email:', error);
     return Response.json({ error: 'Failed to archive email' }, { status: 500 });
   }

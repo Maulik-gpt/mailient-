@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 const { auth } = require('@/lib/auth.js');
 import { DatabaseService } from '@/lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, saved: !!result });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[POST /api/arcus/conversation]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
@@ -47,6 +49,7 @@ export async function GET() {
     const sessions = await db.listArcusChatSessions(session.user.email);
     return NextResponse.json({ sessions });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[GET /api/arcus/conversation]', err.message);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

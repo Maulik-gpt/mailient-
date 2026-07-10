@@ -6,6 +6,7 @@ import { GmailSearchService, GmailSearchFilters } from '@/lib/gmail-search-servi
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { auth } from '@/lib/auth';
 import { subscriptionService } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
   console.log('=== GMAIL SEARCH API START ===');
@@ -105,6 +106,7 @@ export async function POST(request) {
     return NextResponse.json(response);
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Gmail search error:', error);
 
     // Handle specific error types
@@ -187,6 +189,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Gmail labels error:', error);
     return NextResponse.json({
       error: `Failed to fetch labels: ${error instanceof Error ? error.message : 'Unknown error'}`

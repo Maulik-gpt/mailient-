@@ -14,6 +14,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { supabase } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 // Database wrapper for integration manager
 const db = {
@@ -135,6 +136,7 @@ export async function GET(request) {
       integrations: integrationsWithActions
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Integrations API] Error:', error);
     return NextResponse.json(
       { 
@@ -190,6 +192,7 @@ export async function POST(request) {
 
     return NextResponse.json(result);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Integrations API] Execute error:', error);
     return NextResponse.json(
       { 
@@ -253,6 +256,7 @@ export async function DELETE(request) {
     }
     return NextResponse.json({ success: true, message: `Disconnected ${provider}`, ...body });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Integrations API] Disconnect error:', error);
     return NextResponse.json(
       { error: 'Failed to disconnect integration', details: error.message },

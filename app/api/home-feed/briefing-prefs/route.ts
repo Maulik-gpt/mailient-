@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth } from '@/lib/auth.js';
 import { coerceBriefingPrefs, getBriefingPrefs, saveBriefingPrefs, DEFAULT_BRIEFING_PREFS } from '@/lib/arcus/briefing-prefs';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
   const incoming = coerceBriefingPrefs(body?.prefs ?? body);
@@ -38,6 +40,7 @@ export async function POST(request: NextRequest) {
     await saveBriefingPrefs(session.user.email, incoming);
     return NextResponse.json({ success: true, prefs: incoming });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err?.message || 'save failed', prefs: DEFAULT_BRIEFING_PREFS }, { status: 500 });
   }
 }

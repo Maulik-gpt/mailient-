@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -47,6 +48,7 @@ export async function GET() {
       meetingFollowupEnabled: prefs.arcus_meeting_followup_enabled !== false,
     });
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({
       personality: '',
       instructionsEnabled: true,
@@ -101,6 +103,7 @@ export async function POST(request: NextRequest) {
       meetingFollowupEnabled = body.meetingFollowupEnabled;
     }
   } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
@@ -151,6 +154,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

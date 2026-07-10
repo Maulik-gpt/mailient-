@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth.js';
 import { DatabaseService, getSupabaseAdmin } from '@/lib/supabase.js';
 import { decrypt } from '@/lib/crypto.js';
+import { logEvent } from "@/lib/logsso";
 
 // Send email on behalf of the authenticated user for Arcus tasks
 export async function POST(request) {
@@ -76,6 +77,7 @@ export async function POST(request) {
           signal: AbortSignal.timeout(8000),
         });
       } catch {
+        logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
         // Non-fatal — email is already sent
       }
     }
@@ -86,6 +88,7 @@ export async function POST(request) {
       result,
     });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Send-email endpoint error:', error);
     return NextResponse.json(
       { error: 'Failed to send email', details: error.message },

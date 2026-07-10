@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * POST - Verify user's subscription directly via provider API (fallback)
@@ -101,6 +102,7 @@ export async function POST(request) {
         return await activateFromPolarData(userId, subscription, 'subscription');
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error in Polar verification:', error);
         return NextResponse.json({
             error: 'Failed to verify subscription. Please contact support.',
@@ -178,6 +180,7 @@ export async function GET(request) {
             canVerifyPolar: !!(process.env.POLAR_ACCESS_TOKEN || process.env.POLAR_API_KEY)
         });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error checking Polar status:', error);
         return NextResponse.json({ error: 'Failed to check status' }, { status: 500 });
     }

@@ -3,6 +3,7 @@ import { subscriptionService, PLANS } from '@/lib/subscription-service';
 import { sendPlanEmail, sendReceiptEmail } from '@/lib/email-service';
 import { getPolarInvoiceUrl, formatPolarAmount } from '@/lib/polar-invoice';
 import crypto from 'crypto';
+import { logEvent } from "@/lib/logsso";
 
 /**
  * Webhook Handler
@@ -64,6 +65,7 @@ function validatePolarWebhook(payload, headers, secret) {
         console.error('❌ Signature mismatch');
         return false;
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Webhook validation error:', error);
         return false;
     }
@@ -79,6 +81,7 @@ export async function POST(request) {
         try {
             body = rawBody ? JSON.parse(rawBody) : {};
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.error('❌ Failed to parse Polar webhook payload:', e);
             return NextResponse.json({ error: 'Invalid webhook payload' }, { status: 400 });
         }
@@ -222,6 +225,16 @@ export async function POST(request) {
                 );
 
                 console.log(`✅ Subscription activation result:`, !!activated);
+                
+                if (activated) {
+                    logEvent({
+                        channel: 'revenue',
+                        event: '✅ Subscription Started',
+                        description: `Activated ${planType} plan.`,
+                        user_id: userEmail,
+                        tags: { plan: planType, subscriptionId }
+                    });
+                }
 
                 // Send welcome email only on brand-new subscriptions (not monthly renewals)
                 const isRenewal = eventType === 'subscription.updated';
@@ -247,6 +260,14 @@ export async function POST(request) {
                     const orderId = data.id;
                     const customerName = data.customer?.name || data.user?.name || null;
                     const amountLabel = formatPolarAmount(chargedMinor, data.currency || 'USD');
+                    
+                    logEvent({
+                        channel: 'revenue',
+                        event: '💰 Payment Received',
+                        description: `Payment of ${amountLabel} received.`,
+                        user_id: userEmail,
+                        tags: { amount_minor: chargedMinor, orderId }
+                    });
                     const planLabel = (PLANS[planType] && PLANS[planType].name) || 'Mailient';
                     const dateLabel = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
                     // Generate + fetch the invoice PDF (best-effort), then email the
@@ -257,6 +278,7 @@ export async function POST(request) {
                         const r = await sendReceiptEmail({ toEmail: userEmail, toName: customerName, planLabel, amountLabel, dateLabel, invoiceUrl });
                         console.log(`🧾 Receipt email ${r.success ? 'sent' : 'failed'} for order ${orderId} → ${userEmail}${invoiceUrl ? ' (with invoice)' : ' (invoice pending)'}`);
                     } catch (err) {
+                    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
                         console.error('❌ Receipt/invoice send failed:', err?.message || err);
                     }
                 }
@@ -282,6 +304,7 @@ export async function POST(request) {
         return NextResponse.json({ success: true });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Polar webhook error:', error);
         return NextResponse.json({ error: 'Webhook processing failed', details: error.message }, { status: 500 });
     }
@@ -297,6 +320,7 @@ export async function GET() {
         const connectionOk = await subscriptionService.testConnection();
         supabaseStatus = connectionOk ? 'connected' : 'error';
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         supabaseStatus = 'error';
     }
 

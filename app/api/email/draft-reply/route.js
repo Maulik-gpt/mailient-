@@ -4,6 +4,7 @@ import { AIConfig } from '@/lib/ai-config';
 import { subscriptionService, FEATURE_TYPES } from '@/lib/subscription-service';
 import { voiceProfileService } from '@/lib/voice-profile-service';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function POST(request) {
     try {
@@ -93,6 +94,7 @@ Body: ${emailSnippet || ''}`;
             try {
                 return await voiceProfileService.getVoiceProfile(userId);
             } catch {
+            logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
                 return null;
             }
         })();
@@ -187,6 +189,7 @@ Body: ${emailSnippet || ''}`;
         });
 
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('❌ Error generating draft reply:', error);
         return new Response(JSON.stringify({ error: error.message }), { 
             status: 500,

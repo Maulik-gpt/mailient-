@@ -18,6 +18,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 import { AGENT_TEMPLATES, getTemplateById } from '../../../../../lib/arcus/agent-templates';
+import { logEvent } from "@/lib/logsso";
 
 const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -158,6 +159,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
   }
 }

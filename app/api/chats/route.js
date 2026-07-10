@@ -1,6 +1,7 @@
 import { DatabaseService } from '@/lib/supabase.js';
 import { auth } from '@/lib/auth.js';
 import { calculateContactStrength } from '@/lib/utils';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -70,6 +71,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Error fetching chats:', error);
     return Response.json({ error: 'Failed to fetch chats' }, { status: 500 });
   }

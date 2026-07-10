@@ -17,6 +17,7 @@ import { auth } from '@/lib/auth.js';
 // @ts-ignore
 import { getSupabaseAdmin } from '@/lib/supabase.js';
 import { summarizeToolUse, type ToolUseLine } from '@/lib/arcus/tool-labels';
+import { logEvent } from "@/lib/logsso";
 
 export const dynamic = 'force-dynamic';
 
@@ -70,7 +71,8 @@ export async function GET(req: Request) {
         .order('created_at', { ascending: true })
         .limit(200);
       tools = summarizeToolUse((audits || []) as any[]);
-    } catch { /* audit table may be unmigrated — degrade to no tools */ }
+    } catch {
+      logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* audit table may be unmigrated — degrade to no tools */ }
 
     const al = (run.artifact_links || {}) as any;
     const bucket = (k: string): RunDetailLink[] =>
@@ -89,6 +91,7 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ success: true, ...payload });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[home-feed/run-detail] failed:', err?.message);
     return NextResponse.json({ success: false, error: 'Failed to load run detail' }, { status: 500 });
   }

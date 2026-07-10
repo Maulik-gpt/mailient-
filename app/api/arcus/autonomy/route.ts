@@ -21,6 +21,7 @@ import {
   setGrant, dismissSuggestion, stopAutonomyAction,
   type GrantAction, type GrantLevel, type DelayMode,
 } from '../../../../lib/arcus/autonomy-grants';
+import { logEvent } from "@/lib/logsso";
 
 const auth: any = nextAuth;
 export const dynamic = 'force-dynamic';
@@ -52,7 +53,8 @@ export async function POST(request: Request) {
   if (!gate.ok) return NextResponse.json({ error: gate.error, upgradeUrl: gate.upgradeUrl }, { status: gate.status });
 
   let body: any;
-  try { body = await request.json(); } catch { return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
+  try { body = await request.json(); } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 }); }
   const op = body?.op;
 
   try {
@@ -97,6 +99,7 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'unknown op' }, { status: 400 });
     }
   } catch (e: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
     console.error('[autonomy API]', e?.message || e);
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }

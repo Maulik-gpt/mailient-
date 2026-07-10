@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth as getSession } from '@/lib/auth';
 import { ArcusIntegrationManager } from '@/lib/arcus-integration-manager';
 import { supabase } from '@/lib/supabase';
+import { logEvent } from "@/lib/logsso";
 
 // Database wrapper for integration manager (reuse logic from main integrations/route.js)
 const db = {
@@ -68,6 +69,7 @@ export async function GET(request) {
 
     return NextResponse.json({ url: authUrl });
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error('[Google Calendar Auth] Error:', err);
     return NextResponse.json({ error: 'Failed to generate auth URL' }, { status: 500 });
   }

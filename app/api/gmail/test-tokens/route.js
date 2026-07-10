@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { GmailTokenService } from '@/lib/gmail-token-service';
 import { auth } from '@/lib/auth';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   console.log('=== GMAIL TOKEN TEST API START ===');
@@ -55,6 +56,7 @@ export async function GET(request) {
     });
 
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('Gmail token test error:', error);
     return NextResponse.json({
       error: `Test failed: ${error.message || String(error)}`,

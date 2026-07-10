@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request: NextRequest) {
   try {
@@ -74,6 +75,7 @@ export async function GET(request: NextRequest) {
             .order('position', { ascending: true });
           return { ...plan, steps: steps || [] };
         } catch {
+          logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
           return { ...plan, steps: [] };
         }
       })
@@ -87,6 +89,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('[Arcus V3] Plans API unhandled error:', error.message, error.stack?.slice(0, 300));
     // Always return a valid shape — never 500 on a feed poll
     return NextResponse.json({ plans: [], nextCursor: null }, { status: 200 });

@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase.js";
 import { auth } from "@/lib/auth.js";
+import { logEvent } from "@/lib/logsso";
 
 // CRITICAL: Force dynamic rendering to prevent build-time evaluation
 export const dynamic = 'force-dynamic';
@@ -29,6 +30,7 @@ export async function POST(req) {
     try {
       formData = await req.formData();
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.error("[Avatar API] Failed to parse form data:", e);
       return NextResponse.json({ error: "Invalid form data" }, { status: 400 });
     }
@@ -87,6 +89,7 @@ export async function POST(req) {
       const arrayBuffer = await file.arrayBuffer();
       fileBuffer = Buffer.from(arrayBuffer);
     } catch (e) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.error("[Avatar API] Failed to convert file to buffer:", e);
       return NextResponse.json({ error: "Failed to process file" }, { status: 500 });
     }
@@ -122,6 +125,7 @@ export async function POST(req) {
         }
       }
     } catch (bucketError) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(bucketError) });
       console.warn("[Avatar API] Bucket check failed, continuing anyway:", bucketError);
     }
 
@@ -186,6 +190,7 @@ export async function POST(req) {
     });
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("[Avatar API] Unexpected error:", err);
     return NextResponse.json({
       error: err.message || "Internal server error"
@@ -271,6 +276,7 @@ export async function DELETE(req) {
     return NextResponse.json({ message: "Avatar deleted successfully" });
 
   } catch (err) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.error("Avatar delete error:", err);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }

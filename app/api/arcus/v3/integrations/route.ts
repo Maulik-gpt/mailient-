@@ -9,6 +9,7 @@ import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
 import { encrypt } from '../../../../../lib/crypto.js';
 import { auditLogger } from '../../../../../lib/audit-logger.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET() {
   try {
@@ -27,6 +28,7 @@ export async function GET() {
     // Never return tokens in the response
     return NextResponse.json({ integrations: data || [] });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
@@ -65,6 +67,7 @@ export async function POST(request: NextRequest) {
     await auditLogger.log(userId, 'arcus.integration_connected', { provider });
     return NextResponse.json({ status: 'connected', provider });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }
@@ -93,6 +96,7 @@ export async function DELETE(request: NextRequest) {
     await auditLogger.log(userId, 'arcus.integration_disconnected', { provider });
     return NextResponse.json({ status: 'disconnected', provider });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
 }

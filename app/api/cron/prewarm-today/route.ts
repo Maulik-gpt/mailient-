@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { computeTodaySnapshot, storeTodaySnapshot } from '../../home-feed/today/route';
+import { logEvent } from "@/lib/logsso";
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -59,6 +60,7 @@ export async function GET(request: NextRequest) {
       await storeTodaySnapshot(user, snapshot);
       prewarmed++;
     } catch (e: any) {
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
       console.warn('[prewarm-today] failed for', user, e?.message);
     }
   }

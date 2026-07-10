@@ -1,5 +1,6 @@
 import { GmailService } from '@/lib/gmail';
 import { auth } from '@/lib/auth.js';
+import { logEvent } from "@/lib/logsso";
 
 export async function GET(request) {
   try {
@@ -29,6 +30,7 @@ export async function GET(request) {
 
     return Response.json(labels);
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error('=== ERROR IN LABELS API ===');
     console.error('Error details:', error);
     console.error('Error message:', error.message);

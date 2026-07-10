@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { DatabaseService } from "@/lib/supabase";
+import { logEvent } from "@/lib/logsso";
 
 // GET - Fetch all bookmarked posts for the user
 export async function GET() {
@@ -35,6 +36,7 @@ export async function GET() {
 
     return NextResponse.json({ bookmarks: formattedBookmarks });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error in GET /api/bookmarks:", error);
     return NextResponse.json({ bookmarks: [] });
   }
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ success: true, bookmarked: true, bookmark: data });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error in POST /api/bookmarks:", error);
     return NextResponse.json(
       { error: "Internal server error" },
@@ -155,6 +158,7 @@ export async function DELETE(request: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     console.error("Error in DELETE /api/bookmarks:", error);
     return NextResponse.json(
       { error: "Internal server error" },

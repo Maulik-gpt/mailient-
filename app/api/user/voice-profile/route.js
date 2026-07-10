@@ -3,6 +3,7 @@ import { getSupabaseAdmin, DatabaseService } from '@/lib/supabase';
 import { voiceProfileService } from '@/lib/voice-profile-service';
 import { GmailService } from '@/lib/gmail';
 import { decrypt } from '@/lib/crypto';
+import { logEvent } from "@/lib/logsso";
 
 // Building the voice profile fetches sent mail + runs LLM analysis, which can
 // take a while on a busy mailbox. Give it room so it doesn't get killed at the
@@ -30,6 +31,7 @@ export async function GET() {
 
         return Response.json({ profile: profile || null });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
 }
@@ -89,6 +91,7 @@ export async function POST() {
             );
             if (sample && sample.trim()) profile.sample_reply = sample.trim();
         } catch (e) {
+        logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
             console.warn('⚠️ Voice sample generation failed (non-fatal):', e.message);
         }
 
@@ -104,6 +107,7 @@ export async function POST() {
 
         return Response.json({ success: true, profile });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error re-analyzing voice profile:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
@@ -160,6 +164,7 @@ export async function PUT(request) {
 
         return Response.json({ success: true, profile });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error saving manual voice profile:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
@@ -235,6 +240,7 @@ async function interpretVoiceInstruction(instruction) {
             attributes: Object.keys(attrs).length ? attrs : heuristicAttributes(raw),
         };
     } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });
         return fallback;
     }
 }
@@ -297,6 +303,7 @@ export async function PATCH(request) {
         await voiceProfileService.saveVoiceProfile(userId, existing);
         return Response.json({ success: true, directives: trimmed, added: rules, attributes, profile: existing });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error refining voice profile:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }
@@ -326,6 +333,7 @@ export async function DELETE(request) {
         await voiceProfileService.saveVoiceProfile(userId, existing);
         return Response.json({ success: true, directives: ms.directives });
     } catch (error) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
         console.error('Error deleting voice directive:', error);
         return Response.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
     }

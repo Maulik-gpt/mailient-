@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+import { logEvent } from "@/lib/logsso";
 
 const DOW_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -33,7 +34,8 @@ function getUtcOffsetMinutes(tz: string, date: Date): number {
     const get = (t: string) => parseInt(fmt.formatToParts(date).find((p: any) => p.type === t)?.value ?? '0');
     const localAsUtc = Date.UTC(get('year'), get('month') - 1, get('day'), get('hour') % 24, get('minute'), get('second'));
     return (localAsUtc - date.getTime()) / 60000;
-  } catch { return 0; }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return 0; }
 }
 
 function nextRunIso(cron: string, tz = 'UTC'): string | null {
@@ -79,7 +81,8 @@ async function getUserTimezone(supabase: any, userId: string): Promise<string> {
       .ilike('user_id', userId)
       .maybeSingle();
     return (data?.preferences as Record<string, unknown>)?.timezone as string || 'UTC';
-  } catch { return 'UTC'; }
+  } catch {
+    logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); return 'UTC'; }
 }
 
 export async function POST(request: NextRequest) {
@@ -154,6 +157,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (err: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
   }
 }

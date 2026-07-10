@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 // @ts-ignore
 import { auth } from '@/lib/auth.js';
 import { runNewsletterDigest } from '@/lib/arcus/tools';
+import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 60;
 
@@ -35,6 +36,7 @@ export async function POST(request: Request) {
       markdown: result.markdown,
     });
   } catch (error: any) {
+    logEvent({ channel: "failures", event: "❌ API Error", description: String(error) });
     if (error?.message === 'GMAIL_NOT_CONNECTED') {
       return NextResponse.json({ success: false, error: 'Gmail is not connected.' }, { status: 400 });
     }
