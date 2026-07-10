@@ -675,6 +675,105 @@ function humanizeReason(reason: string): string {
   return map[reason?.trim()] || reason || 'waiting on you';
 }
 
+// Deterministic fallback recommendations — built PURELY from the real buckets,
+// with zero LLM. Shown when the AI recs are unavailable (rate-limited / offline)
+// so the section degrades to accurate, instant picks instead of vanishing after
+// it analyzes. Every number and name is read straight off the payload, so it can
+// never hallucinate a lead or a count. Ordered by what costs most to miss.
+function buildDeterministicRecs(
+  decide: DecideItem[],
+  chase: ChaseItem[],
+  actionItems: ActionItem[],
+  showUp: ShowUpItem[],
+): Recommendation[] {
+  const out: Recommendation[] = [];
+
+  // 1. Overdue promises — you committed and it's past due (highest cost to miss).
+  const overdue = actionItems.filter(a => a.isOverdue);
+  if (overdue.length > 0) {
+    out.push({
+      id: 'det-overdue',
+      tone: 'focus',
+      icon: <AlertTriangle className="w-3.5 h-3.5" strokeWidth={2} />,
+      title: overdue.length === 1 ? 'Close an overdue promise' : `Close ${overdue.length} overdue promises`,
+      summary: overdue.length === 1
+        ? `You committed to "${(overdue[0].text || '').slice(0, 80)}" and it's past due.`
+        : `${overdue.length} things you committed to are past due — clear them before they cost you.`,
+      stat: { value: overdue.length, label: 'overdue' },
+      cta: { label: 'Show me', prompt: 'Show me my overdue promises and help me close each one.' },
+      groundedIn: overdue.length,
+      atRisk: true,
+    });
+  }
+
+  // 2. Replies waiting on you (Decide).
+  if (decide.length > 0) {
+    const first = decide[0];
+    const who = cleanName(first.sender?.name || first.sender?.email || '');
+    out.push({
+      id: 'det-decide',
+      tone: 'focus',
+      icon: <Reply className="w-3.5 h-3.5" strokeWidth={2} />,
+      title: decide.length === 1 ? `Reply to ${who}` : `Clear ${decide.length} replies waiting on you`,
+      summary: decide.length === 1
+        ? `${who} — ${humanizeReason(first.reason)}.`
+        : `${decide.length} threads need your response today — draft them in one pass and move on.`,
+      stat: { value: decide.length, label: decide.length === 1 ? 'reply needed' : 'replies needed' },
+      cta: {
+        label: decide.length === 1 ? 'Draft reply' : 'Draft replies',
+        prompt: decide.length === 1
+          ? `Draft a reply to ${who}'s email "${(first.subject || '').slice(0, 100)}".`
+          : `Draft replies to the ${decide.length} emails waiting on me in my inbox today.`,
+      },
+      groundedIn: decide.length,
+    });
+  }
+
+  // 3. Follow-ups going quiet (Chase) — relationship at risk of stalling.
+  if (chase.length > 0) {
+    const first = chase[0];
+    const who = cleanName(first.recipient?.name || first.recipient?.email || '');
+    const maxSilent = Math.max(...chase.map(c => c.daysSilent || 0));
+    out.push({
+      id: 'det-chase',
+      tone: 'connect',
+      icon: <Clock className="w-3.5 h-3.5" strokeWidth={2} />,
+      title: chase.length === 1 ? `Follow up with ${who}` : `Nudge ${chase.length} threads going quiet`,
+      summary: chase.length === 1
+        ? `You emailed ${who} ${first.daysSilent}d ago about "${(first.subject || '').slice(0, 60)}" — still no reply.`
+        : `${chase.length} threads you started have gone quiet — a nudge keeps them warm.`,
+      stat: chase.length === 1 ? { value: first.daysSilent || 0, label: 'days silent' } : { value: chase.length, label: 'going quiet' },
+      cta: {
+        label: 'Draft nudge',
+        prompt: chase.length === 1
+          ? `Draft a warm, low-pressure follow-up to ${who} about "${(first.subject || '').slice(0, 100)}".`
+          : 'Draft friendly follow-up nudges for the threads I am waiting to hear back on.',
+      },
+      groundedIn: chase.length,
+      atRisk: maxSilent >= 7,
+    });
+  }
+
+  // 4. Meetings to prep for.
+  if (showUp.length > 0) {
+    const first = showUp[0];
+    out.push({
+      id: 'det-meeting',
+      tone: 'momentum',
+      icon: <CalendarClock className="w-3.5 h-3.5" strokeWidth={2} />,
+      title: showUp.length === 1 ? 'Prep for your meeting' : `Prep for ${showUp.length} meetings`,
+      summary: showUp.length === 1
+        ? `"${(first.title || 'A meeting').slice(0, 60)}" is on your calendar — walk in ready.`
+        : `${showUp.length} meetings on your calendar — pull context and agendas so you walk in ready.`,
+      stat: { value: showUp.length, label: showUp.length === 1 ? 'to prep' : 'meetings' },
+      cta: { label: 'Prep me', prompt: 'Prep me for my meetings today — pull the relevant context and draft an agenda for each.' },
+      groundedIn: showUp.length,
+    });
+  }
+
+  return out.slice(0, 4);
+}
+
 const TONE_CHIP: Record<RecTone, string> = {
   connect: 'text-emerald-700 dark:text-emerald-300 bg-emerald-500/[0.08] dark:bg-emerald-400/[0.08]',
   focus: 'text-black/70 dark:text-white/70 bg-black/[0.05] dark:bg-white/[0.07]',
@@ -894,17 +993,23 @@ function RecommendationsSection({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generatedAt]);
 
-  // ONLY real AI recommendations — no deterministic mock fallback. If the AI
-  // produced nothing usable, the recommendations section simply doesn't render.
-  // At-risk opportunities float to the top — the buried thing that costs money
-  // to miss should be the first thing the founder sees. Stable within groups.
-  const recs = aiRecs && aiRecs.length
+  // AI recommendations when the engine produced them — at-risk opportunities
+  // float to the top so the buried thing that costs money to miss is seen first.
+  const aiSorted = aiRecs && aiRecs.length
     ? [...aiRecs].sort((a, b) => (b.atRisk ? 1 : 0) - (a.atRisk ? 1 : 0))
     : [];
+  // When the AI produced nothing usable (rate-limited / offline), fall back to
+  // deterministic picks built purely from the real buckets — accurate, instant,
+  // never hallucinated — so the section degrades gracefully instead of vanishing
+  // right after it finishes analyzing (which read as "it does nothing").
+  const recs = aiSorted.length
+    ? aiSorted
+    : buildDeterministicRecs(decide, chase, actionItems, showUp);
   // "reviewing" = the AI is still composing the picks; drives the live header,
   // the in-progress checklist row, and the recommendation skeletons.
   const reviewing = aiLoading && !aiRecs;
 
+  // Only truly nothing to show (no buckets at all) collapses the section.
   if (recs.length === 0 && !reviewing) return null;
 
   // REVIEWING YOUR ACTIVITY — the three steps the briefing actually runs, with
