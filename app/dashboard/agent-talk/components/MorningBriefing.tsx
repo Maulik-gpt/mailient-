@@ -167,9 +167,9 @@ function CategoryPill({
 
 function MeetingCard({ meeting, delay = 0 }: { meeting: MeetingItem; delay?: number }) {
   const typeColors: Record<string, string> = {
-    discovery: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    'check-in': 'bg-green-500/10 text-green-400 border-green-500/20',
-    demo: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+    discovery: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20',
+    'check-in': 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20',
+    demo: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/20',
     internal: 'bg-black/5 text-black/50 border-black/10 dark:bg-white/5 dark:text-white/50 dark:border-white/10',
     other: 'bg-black/5 text-black/50 border-black/10 dark:bg-white/5 dark:text-white/50 dark:border-white/10',
   };
@@ -211,8 +211,8 @@ function ActionCard({
   onView?: () => void;
 }) {
   const urgencyConfig = {
-    high: { dot: 'bg-red-400', text: 'text-red-400', label: 'Urgent' },
-    medium: { dot: 'bg-amber-400', text: 'text-amber-400', label: 'Medium' },
+    high: { dot: 'bg-red-500 dark:bg-red-400', text: 'text-red-600 dark:text-red-400', label: 'Urgent' },
+    medium: { dot: 'bg-amber-500 dark:bg-amber-400', text: 'text-amber-600 dark:text-amber-400', label: 'Medium' },
     low: { dot: 'bg-black/30 dark:bg-white/30', text: 'text-black/30 dark:text-white/30', label: 'Low' },
   };
 
@@ -237,7 +237,7 @@ function ActionCard({
         <p className="text-[11px] text-black/40 dark:text-white/40 truncate">From {item.from}</p>
         <p className="text-[12px] text-black/30 dark:text-white/30 truncate mt-0.5">{item.snippet}</p>
       </div>
-      <ChevronRight className="w-4 h-4 text-black/10 dark:text-white/10 group-hover:text-white/30 transition-colors mt-1 flex-shrink-0" />
+      <ChevronRight className="w-4 h-4 text-black/10 dark:text-white/10 group-hover:text-black/30 dark:group-hover:text-white/30 transition-colors mt-1 flex-shrink-0" />
     </motion.button>
   );
 }
@@ -303,10 +303,10 @@ export function MorningBriefing({
   const stats = emailStats || { total: 0, drafted: 0, archived: 0, flagged: 0 };
 
   const defaultCategories: BriefingCategory[] = categories || [
-    { id: 'urgent', label: 'Urgent Client', count: 0, icon: AlertTriangle, color: 'text-red-400', bgColor: 'bg-red-500/5', borderColor: 'border-red-500/15' },
-    { id: 'follow-up', label: 'Follow-up Needed', count: 0, icon: Clock, color: 'text-amber-400', bgColor: 'bg-amber-500/5', borderColor: 'border-amber-500/15' },
-    { id: 'meeting', label: 'Meeting Request', count: 0, icon: Calendar, color: 'text-blue-400', bgColor: 'bg-blue-500/5', borderColor: 'border-blue-500/15' },
-    { id: 'payment', label: 'Payment / Invoice', count: 0, icon: DollarSign, color: 'text-green-400', bgColor: 'bg-green-500/5', borderColor: 'border-green-500/15' },
+    { id: 'urgent', label: 'Urgent Client', count: 0, icon: AlertTriangle, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-500/5', borderColor: 'border-red-500/15' },
+    { id: 'follow-up', label: 'Follow-up Needed', count: 0, icon: Clock, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-500/5', borderColor: 'border-amber-500/15' },
+    { id: 'meeting', label: 'Meeting Request', count: 0, icon: Calendar, color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-500/5', borderColor: 'border-blue-500/15' },
+    { id: 'payment', label: 'Payment / Invoice', count: 0, icon: DollarSign, color: 'text-green-700 dark:text-green-400', bgColor: 'bg-green-500/5', borderColor: 'border-green-500/15' },
     { id: 'noise', label: 'Archived / Noise', count: 0, icon: Archive, color: 'text-black/30 dark:text-white/30', bgColor: 'bg-black/[0.02] dark:bg-white/[0.02]', borderColor: 'border-black/[0.05] dark:border-white/[0.05]' },
   ];
 
@@ -345,10 +345,10 @@ export function MorningBriefing({
       {/* Quick Stats Row */}
       {stats.total > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
-          <StatCard icon={Mail} label="Arrived" value={stats.total} color="bg-blue-500/10 text-blue-400 border-blue-500/20" delay={0.1} />
-          <StatCard icon={FileText} label="Drafted" value={stats.drafted} color="bg-green-500/10 text-green-400 border-green-500/20" delay={0.15} />
+          <StatCard icon={Mail} label="Arrived" value={stats.total} color="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20" delay={0.1} />
+          <StatCard icon={FileText} label="Drafted" value={stats.drafted} color="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/20" delay={0.15} />
           <StatCard icon={Archive} label="Archived" value={stats.archived} color="bg-black/5 text-black/40 border-black/10 dark:bg-white/5 dark:text-white/40 dark:border-white/10" delay={0.2} />
-          <StatCard icon={AlertTriangle} label="Flagged" value={stats.flagged} color="bg-red-500/10 text-red-400 border-red-500/20" delay={0.25} />
+          <StatCard icon={AlertTriangle} label="Flagged" value={stats.flagged} color="bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20" delay={0.25} />
         </div>
       )}
 
@@ -389,7 +389,7 @@ export function MorningBriefing({
             <h3 className="text-[11px] font-bold text-black/30 dark:text-white/30 uppercase tracking-wider">Today's Meetings</h3>
             <button
               onClick={onViewMeetings}
-              className="text-[11px] text-black/30 dark:text-white/30 hover:text-white/60 transition-colors font-medium flex items-center gap-1"
+              className="text-[11px] text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 transition-colors font-medium flex items-center gap-1"
             >
               View all <ChevronRight className="w-3 h-3" />
             </button>

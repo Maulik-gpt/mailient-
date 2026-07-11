@@ -28,7 +28,7 @@ const PlanMarkdown = {
   ),
   strong: ({node, ...props}: any) => <strong className="font-bold text-black dark:text-white" {...props} />,
   hr: ({node, ...props}: any) => <hr className="my-5 border-t border-black/[0.07] dark:border-white/[0.06]" {...props} />,
-  a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30" target="_blank" rel="noopener noreferrer" {...props} />,
+  a: ({node, ...props}: any) => <a className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30" target="_blank" rel="noopener noreferrer" {...props} />,
   code: ({node, inline, ...props}: any) =>
     inline
       ? <code className="px-1.5 py-0.5 bg-black/[0.05] dark:bg-white/[0.06] rounded-md text-[12px] font-mono text-black/75 dark:text-white/80" {...props} />
@@ -125,9 +125,9 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
                 "bg-black/[0.04] dark:bg-white/[0.04]"
               )}>
                 {isRunning ? (
-                  <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
+                  <Loader2 className="w-4 h-4 text-blue-600 dark:text-blue-400 animate-spin" />
                 ) : isCompleted ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <Sparkles className="w-4 h-4 text-black/30 dark:text-white/30" />
                 )}
@@ -191,7 +191,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
           {isRunning && (
             <div className="px-5 py-2.5 border-t border-blue-500/10 bg-blue-500/[0.03]">
-              <div className="flex items-center gap-2 text-blue-400">
+              <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400">
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                 <span className="text-[12px] font-bold">Executing...</span>
               </div>
@@ -200,7 +200,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
           {isCompleted && (
             <div className="px-5 py-2.5 border-t border-emerald-500/10 bg-emerald-500/[0.03]">
-              <div className="flex items-center gap-2 text-emerald-400">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span className="text-[12px] font-bold">Plan executed</span>
               </div>
