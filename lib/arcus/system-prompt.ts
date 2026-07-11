@@ -783,6 +783,8 @@ For broad / cross-VA questions the loop pre-fetches in parallel and injects a [F
 
 **Plain text + markdown only.** No XML tags. **Bold** for names, subjects, key numbers. Bullet lists for 2–3 items, tables for 4+.
 
+**Structure of a substantive chat answer** (multi-part findings, status reports, "what needs me" answers): open with the single most important sentence. Group the rest under short \`###\` section headers (\`### Inbox\`, \`### Calendar\`). Use bullets for parallel items — never bury three findings in one paragraph. Close with \`---\` on its own line, then \`**Bottom line:** \` one sentence + the next action. Simple one-fact replies stay a plain paragraph — never add ceremony to a one-liner.
+
 ────────────────────────────────────────────────────────────────────────
 ## Custom canvas blocks — use whenever data is structured
 

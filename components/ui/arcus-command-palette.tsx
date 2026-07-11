@@ -67,23 +67,80 @@ function stripThinking(text: string): string {
         .trim();
 }
 
-// Minimal, safe markdown → HTML for the inline answer (bold, links, bullets, headings).
+// Structured, safe markdown → HTML for the inline answer. Renders the
+// components a clean answer is made of: quiet section headers, hairline
+// dividers, custom bullet & numbered lists, blockquote callout boxes, inline
+// bold/code/links — and promotes a `**Label:** …` summary paragraph (the
+// model's "Bottom line:") into a boxed takeaway card so the one thing that
+// matters reads at a glance instead of drowning in prose.
 function renderAnswer(md: string): string {
     md = md.replace(/<br\s*\/?>/gi, '\n');
     const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
     const inline = (s: string) => esc(s)
+        .replace(/`([^`]+)`/g, '<code class="px-1 py-0.5 rounded-md bg-arcus-surface text-[12.5px] font-mono text-arcus-fg">$1</code>')
         .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
         .replace(/\[(.+?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" class="underline">$1</a>');
+
     let html = '';
-    let inList = false;
+    let list: 'ul' | 'ol' | null = null;
+    let quote: string[] = [];
+
+    const closeList = () => { if (list) { html += list === 'ul' ? '</ul>' : '</ol>'; list = null; } };
+    const flushQuote = () => {
+        if (!quote.length) return;
+        html += `<div class="my-2.5 rounded-xl border border-arcus-border bg-arcus-surface px-3.5 py-2.5">${quote.map((q) => `<p class="my-0.5 leading-relaxed">${inline(q)}</p>`).join('')}</div>`;
+        quote = [];
+    };
+
     for (const raw of md.split('\n')) {
         const line = raw.trimEnd();
-        if (/^#{1,3}\s+/.test(line)) { if (inList) { html += '</ul>'; inList = false; } html += `<p class="font-semibold mt-2 mb-1">${inline(line.replace(/^#{1,3}\s+/, ''))}</p>`; }
-        else if (/^[-*]\s+/.test(line)) { if (!inList) { html += '<ul class="list-disc pl-5 my-1 space-y-0.5">'; inList = true; } html += `<li>${inline(line.replace(/^[-*]\s+/, ''))}</li>`; }
-        else if (line === '') { if (inList) { html += '</ul>'; inList = false; } }
-        else { if (inList) { html += '</ul>'; inList = false; } html += `<p class="my-1 leading-relaxed">${inline(line)}</p>`; }
+
+        // Blockquotes group into one callout box.
+        const q = line.match(/^>\s?(.*)$/);
+        if (q) { closeList(); quote.push(q[1]); continue; }
+        flushQuote();
+
+        // Horizontal rule → hairline divider.
+        if (/^(-{3,}|_{3,}|\*{3,})$/.test(line.trim())) { closeList(); html += '<div class="my-3 h-px w-full bg-arcus-divider"></div>'; continue; }
+
+        // Headers → quiet uppercase section labels (palette answers are small;
+        // full-size headings would shout).
+        const h = line.match(/^(#{1,4})\s+(.*)$/);
+        if (h) { closeList(); html += `<p class="mt-4 mb-1.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-arcus-fg-tertiary">${inline(h[2])}</p>`; continue; }
+
+        // Bulleted list with a tidy custom dot.
+        if (/^[-*]\s+/.test(line)) {
+            if (list !== 'ul') { closeList(); html += '<ul class="my-1.5 space-y-1 pl-1">'; list = 'ul'; }
+            html += `<li class="flex gap-2.5 leading-relaxed"><span class="mt-[9px] w-1 h-1 rounded-full bg-arcus-fg-muted shrink-0"></span><span class="min-w-0">${inline(line.replace(/^[-*]\s+/, ''))}</span></li>`;
+            continue;
+        }
+
+        // Numbered list.
+        const n = line.match(/^(\d+)[.)]\s+(.*)$/);
+        if (n) {
+            if (list !== 'ol') { closeList(); html += '<ol class="my-1.5 space-y-1 pl-1">'; list = 'ol'; }
+            html += `<li class="flex gap-2.5 leading-relaxed"><span class="w-4 shrink-0 text-right text-[12.5px] tabular-nums font-medium text-arcus-fg-tertiary mt-[1px]">${n[1]}.</span><span class="min-w-0">${inline(n[2])}</span></li>`;
+            continue;
+        }
+
+        closeList();
+        if (line === '') continue;
+
+        // Full-line italic (_…_) → muted footnote (the palette's own notes use this).
+        const it = line.match(/^_(.+)_$/);
+        if (it) { html += `<p class="my-1.5 text-[13px] italic text-arcus-fg-tertiary leading-relaxed">${inline(it[1])}</p>`; continue; }
+
+        // `**Label:** rest` → boxed takeaway card ("Bottom line:", "Next step:").
+        const label = line.match(/^\*\*([^*]{2,40}):\*\*\s*(.+)$/);
+        if (label) {
+            html += `<div class="mt-3 rounded-xl border border-arcus-border bg-arcus-surface px-3.5 py-3"><p class="mb-1 text-[10.5px] font-semibold uppercase tracking-[0.12em] text-arcus-fg-tertiary">${inline(label[1])}</p><p class="leading-relaxed text-arcus-fg">${inline(label[2])}</p></div>`;
+            continue;
+        }
+
+        html += `<p class="my-1.5 leading-relaxed">${inline(line)}</p>`;
     }
-    if (inList) html += '</ul>';
+    closeList();
+    flushQuote();
     return html;
 }
 
