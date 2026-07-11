@@ -253,7 +253,7 @@ export function CanvasPanel({
       transition={{ duration: 0.34, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
         'flex flex-col flex-shrink-0 relative',
-        'bg-arcus-elevated border border-arcus-border shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
+        'bg-arcus-elevated border border-arcus-border shadow-[0_12px_48px_-12px_rgba(0,0,0,0.18)] dark:shadow-[0_32px_80px_-8px_rgba(0,0,0,0.8)]',
         'overflow-hidden select-text',
         isMobile
           ? 'fixed inset-x-2 bottom-2 top-auto rounded-[24px] z-[200]'
@@ -275,7 +275,7 @@ export function CanvasPanel({
       />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-white/[0.03] bg-arcus-elevated">
+      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-black/[0.05] dark:border-white/[0.03] bg-arcus-elevated">
         {/* Type badge + title */}
         <div className="flex items-center gap-3 min-w-0">
           <span className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold tracking-wide shrink-0', cfg.badge, cfg.badgeText)}>
@@ -336,7 +336,7 @@ export function CanvasPanel({
 
       {/* ── Email metadata strip ────────────────────────────────────────────── */}
       {isEmail && (
-        <div className="shrink-0 border-b border-white/[0.03] bg-arcus-elevated/60">
+        <div className="shrink-0 border-b border-black/[0.05] dark:border-white/[0.03] bg-arcus-elevated/60">
           <EmailField label="To"      value={displayedData.content?.to      || ''} />
           <EmailField label="Subject" value={displayedData.content?.subject || ''} last />
         </div>
@@ -390,7 +390,7 @@ export function CanvasPanel({
       </div>
 
       {/* ── Footer ───────────────────────────────────────────────────────────── */}
-      <footer className="shrink-0 border-t border-white/[0.03] bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
+      <footer className="shrink-0 border-t border-black/[0.05] dark:border-white/[0.03] bg-arcus-elevated px-5 py-3.5 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
           <span className="text-[11px] text-arcus-fg-muted tabular-nums">
             {wordCount(getTextContent())} words
@@ -450,7 +450,7 @@ export function CanvasPanel({
 
 function EmailField({ label, value, last }: { label: string; value: string; last?: boolean }) {
   return (
-    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-white/[0.03]')}>
+    <div className={cn('flex items-start gap-3 px-6 py-2.5', !last && 'border-b border-black/[0.05] dark:border-white/[0.03]')}>
       <span className="text-[11px] font-semibold text-arcus-fg-muted uppercase tracking-widest w-[42px] shrink-0 pt-[1px]">{label}</span>
       <span className="text-[13px] text-arcus-fg-secondary leading-snug">{value || '—'}</span>
     </div>
@@ -475,7 +475,7 @@ function FooterButton({
       className={cn(
         'flex items-center gap-1.5 px-3.5 h-8 rounded-xl text-[12px] font-semibold transition-all active:scale-95 disabled:opacity-50',
         variant === 'primary'
-          ? 'bg-white text-black hover:bg-white/90'
+          ? 'bg-arcus-fg text-arcus-fg-inverse hover:opacity-90'
           : 'text-arcus-fg-tertiary hover:text-arcus-fg-secondary hover:bg-arcus-surface',
       )}
     >
@@ -537,9 +537,9 @@ function MetaInsights({ type, content }: { type: string; content: string }) {
             className={cn(
               "px-2.5 py-0.5 rounded-full text-[10px] font-semibold border transition-all duration-200",
               tag === 'High Priority' 
-                ? "bg-white text-black border-white animate-pulse"
+                ? "bg-black text-white border-black dark:bg-white dark:text-black dark:border-white animate-pulse"
                 : tag === 'Revenue Deal'
-                ? "bg-white/80 text-black border-white"
+                ? "bg-black/80 text-white border-black dark:bg-white/80 dark:text-black dark:border-white"
                 : "bg-arcus-elevated border-arcus-border text-arcus-fg-secondary"
             )}
           >
@@ -691,7 +691,7 @@ function InteractiveChart({ data }: { data: ChartData }) {
           </svg>
           <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
             <span className="text-[10px] text-arcus-fg-muted font-semibold uppercase tracking-wider">Total</span>
-            <span className="text-[20px] font-bold text-white tracking-tight">{total}</span>
+            <span className="text-[20px] font-bold text-arcus-fg tracking-tight">{total}</span>
           </div>
         </div>
 
@@ -1034,7 +1034,7 @@ function MarkdownView({ content }: { content: string }) {
         hr: () => <hr className="my-6 border-arcus-border" />,
         a: ({ href, children }) => (
           <a href={href} target="_blank" rel="noopener noreferrer"
-            className="text-white underline underline-offset-2 hover:text-white/80 transition-colors">
+            className="text-arcus-fg underline underline-offset-2 hover:opacity-80 transition-opacity">
             {children}
           </a>
         ),
