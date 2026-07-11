@@ -128,7 +128,7 @@ export function ConnectorRequiredPanel({
   return (
     <div className="w-full my-4">
       {/* Card */}
-      <div className="bg-arcus-surface border border-arcus-divider rounded-2xl overflow-hidden shadow-xl shadow-black/40">
+      <div className="arcus-glass-card rounded-2xl overflow-hidden">
         {/* Header */}
         <div className="px-5 pt-5 pb-3 border-b border-arcus-border">
           <p className="text-[13px] font-bold text-arcus-fg uppercase tracking-widest">
@@ -174,7 +174,7 @@ export function ConnectorRequiredPanel({
               {!c.connected && (
                 <button
                   onClick={() => onConnect(c.id)}
-                  className="flex-shrink-0 px-4 py-2 bg-zinc-100 text-zinc-950 rounded-xl text-[13px] font-bold hover:bg-white active:scale-95 transition-all"
+                  className="flex-shrink-0 px-4 py-2 bg-arcus-fg text-arcus-fg-inverse rounded-xl text-[13px] font-bold hover:opacity-90 active:scale-95 transition-all"
                 >
                   Connect
                 </button>
@@ -208,7 +208,7 @@ export function ConnectorRequiredPanel({
             </button>
             <button
               onClick={onApply}
-              className="px-4 py-2 rounded-xl text-[13px] font-bold text-zinc-950 bg-zinc-100 hover:bg-white active:scale-95 transition-all"
+              className="px-4 py-2 rounded-xl text-[13px] font-bold text-arcus-fg-inverse bg-arcus-fg hover:opacity-90 active:scale-95 transition-all"
             >
               Apply
             </button>

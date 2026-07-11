@@ -14,25 +14,25 @@ export type { PlanArtifact, PlanStatus };
 
 // ─── Markdown styling for plan cards ──────────────────────────
 const PlanMarkdown = {
-  h1: ({node, ...props}: any) => <h1 className="text-xl font-bold text-white mt-5 mb-3 tracking-tight" {...props} />,
-  h2: ({node, ...props}: any) => <h2 className="text-lg font-bold text-white mt-5 mb-2 tracking-tight" {...props} />,
-  h3: ({node, ...props}: any) => <h3 className="text-[15px] font-bold text-white mt-4 mb-2 tracking-tight" {...props} />,
-  p: ({node, ...props}: any) => <p className="mb-3 last:mb-0 leading-[1.7] text-[14px] text-white/70" {...props} />,
+  h1: ({node, ...props}: any) => <h1 className="text-xl font-bold text-black dark:text-white mt-5 mb-3 tracking-tight" {...props} />,
+  h2: ({node, ...props}: any) => <h2 className="text-lg font-bold text-black dark:text-white mt-5 mb-2 tracking-tight" {...props} />,
+  h3: ({node, ...props}: any) => <h3 className="text-[15px] font-bold text-black dark:text-white mt-4 mb-2 tracking-tight" {...props} />,
+  p: ({node, ...props}: any) => <p className="mb-3 last:mb-0 leading-[1.7] text-[14px] text-black/70 dark:text-white/70" {...props} />,
   ul: ({node, ...props}: any) => <ul className="space-y-1.5 my-3 list-none pl-1" {...props} />,
-  ol: ({node, ...props}: any) => <ol className="space-y-1.5 my-3 list-decimal pl-5 text-white/70 text-[14px]" {...props} />,
+  ol: ({node, ...props}: any) => <ol className="space-y-1.5 my-3 list-decimal pl-5 text-black/70 dark:text-white/70 text-[14px]" {...props} />,
   li: ({node, ...props}: any) => (
-    <li className="relative pl-4 text-[14px] text-white/70">
-      <span className="absolute left-0 top-2 w-1 h-1 bg-white/40 rounded-full" />
+    <li className="relative pl-4 text-[14px] text-black/70 dark:text-white/70">
+      <span className="absolute left-0 top-2 w-1 h-1 bg-black/40 dark:bg-white/40 rounded-full" />
       {props.children}
     </li>
   ),
-  strong: ({node, ...props}: any) => <strong className="font-bold text-white" {...props} />,
-  hr: ({node, ...props}: any) => <hr className="my-5 border-t border-white/[0.06]" {...props} />,
+  strong: ({node, ...props}: any) => <strong className="font-bold text-black dark:text-white" {...props} />,
+  hr: ({node, ...props}: any) => <hr className="my-5 border-t border-black/[0.07] dark:border-white/[0.06]" {...props} />,
   a: ({node, ...props}: any) => <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4 decoration-blue-400/30" target="_blank" rel="noopener noreferrer" {...props} />,
   code: ({node, inline, ...props}: any) =>
     inline
-      ? <code className="px-1.5 py-0.5 bg-white/[0.06] rounded-md text-[12px] font-mono text-white/80" {...props} />
-      : <code className="block p-4 bg-white/[0.03] text-white/80 rounded-xl my-4 text-[13px] font-mono overflow-x-auto border border-white/[0.06]" {...props} />,
+      ? <code className="px-1.5 py-0.5 bg-black/[0.05] dark:bg-white/[0.06] rounded-md text-[12px] font-mono text-black/75 dark:text-white/80" {...props} />
+      : <code className="block p-4 bg-black/[0.03] dark:bg-white/[0.03] text-black/75 dark:text-white/80 rounded-xl my-4 text-[13px] font-mono overflow-x-auto border border-black/[0.07] dark:border-white/[0.06]" {...props} />,
 };
 
 // ─── Typewriter Hook ──────────────────────────────────────────
@@ -108,11 +108,11 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
       >
         <div className={cn(
           "relative overflow-hidden rounded-2xl border transition-all duration-300",
-          "bg-[#0c0c0c] shadow-[0_2px_20px_rgba(0,0,0,0.4)]",
-          isDraft ? "border-white/[0.08]" :
+          "arcus-glass-card",
+          isDraft ? "border-black/[0.08] dark:border-white/[0.08]" :
           isRunning ? "border-blue-500/20" :
           isCompleted ? "border-emerald-500/15" :
-          "border-white/[0.06]"
+          "border-black/[0.07] dark:border-white/[0.06]"
         )}>
 
           {/* ── Header ── */}
@@ -122,25 +122,25 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
                 "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
                 isRunning ? "bg-blue-500/10" :
                 isCompleted ? "bg-emerald-500/10" :
-                "bg-white/[0.04]"
+                "bg-black/[0.04] dark:bg-white/[0.04]"
               )}>
                 {isRunning ? (
                   <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
                 ) : isCompleted ? (
                   <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                 ) : (
-                  <Sparkles className="w-4 h-4 text-white/30" />
+                  <Sparkles className="w-4 h-4 text-black/30 dark:text-white/30" />
                 )}
               </div>
               <div className="min-w-0 flex-1">
-                <h3 className="text-[15px] font-bold text-white tracking-tight truncate">{plan.title}</h3>
+                <h3 className="text-[15px] font-bold text-black dark:text-white tracking-tight truncate">{plan.title}</h3>
                 <StatusLabel status={plan.status} />
               </div>
             </div>
 
             <button
               onClick={() => setIsModalOpen(true)}
-              className="w-7 h-7 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] flex items-center justify-center text-white/25 hover:text-white/50 transition-all shrink-0 ml-3"
+              className="w-7 h-7 rounded-lg bg-black/[0.04] dark:bg-white/[0.04] hover:bg-black/[0.08] dark:hover:bg-white/[0.08] flex items-center justify-center text-black/25 dark:text-white/25 hover:text-black/50 dark:hover:text-white/50 transition-all shrink-0 ml-3"
               title="Expand plan"
             >
               <Maximize2 className="w-3.5 h-3.5" />
@@ -149,12 +149,12 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
           {/* ── Plan Content with Typewriter ── */}
           <div className="px-5 pb-4 max-h-[280px] overflow-y-auto arcus-scrollbar">
-            <div className="text-[14px] text-white/60 leading-[1.75]">
+            <div className="text-[14px] text-black/60 dark:text-white/60 leading-[1.75]">
               <ReactMarkdown remarkPlugins={[remarkGfm]} components={PlanMarkdown}>
                 {displayed}
               </ReactMarkdown>
               {!isDone && (
-                <span className="inline-block w-[2px] h-[14px] bg-white/50 ml-0.5 animate-pulse align-text-bottom" />
+                <span className="inline-block w-[2px] h-[14px] bg-black/50 dark:bg-white/50 ml-0.5 animate-pulse align-text-bottom" />
               )}
             </div>
           </div>
@@ -164,12 +164,12 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
             <motion.div
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              className="px-5 py-3 border-t border-white/[0.04] flex items-center gap-2"
+              className="px-5 py-3 border-t border-black/[0.05] dark:border-white/[0.04] flex items-center gap-2"
             >
               <button
                 onClick={handleExecute}
                 disabled={isExecuting || isProcessing}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-black text-[12px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
+                className="flex items-center gap-2 px-4 py-2 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-[12px] font-bold rounded-xl transition-all disabled:opacity-40 active:scale-[0.98]"
               >
                 {isExecuting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -181,7 +181,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
               {onDecline && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onDecline(plan.planId); }}
-                  className="px-3 py-2 text-white/25 hover:text-white/50 text-[12px] font-bold rounded-xl hover:bg-white/[0.04] transition-all"
+                  className="px-3 py-2 text-black/25 dark:text-white/25 hover:text-black/50 dark:hover:text-white/50 text-[12px] font-bold rounded-xl hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all"
                 >
                   Dismiss
                 </button>
@@ -224,23 +224,23 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-              className="w-full max-w-2xl max-h-[85vh] bg-[#0a0a0a] border border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col"
+              className="w-full max-w-2xl max-h-[85vh] bg-white dark:bg-[#0a0a0a] border border-black/[0.08] dark:border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.8)] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="shrink-0 px-6 py-5 border-b border-white/[0.05] flex items-center justify-between">
+              <div className="shrink-0 px-6 py-5 border-b border-black/[0.05] dark:border-white/[0.05] flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <div className="w-9 h-9 rounded-xl bg-white/[0.04] flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4.5 h-4.5 text-white/30" />
+                  <div className="w-9 h-9 rounded-xl bg-black/[0.04] dark:bg-white/[0.04] flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5 text-black/30 dark:text-white/30" />
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-[17px] font-bold text-white tracking-tight truncate">{plan.title}</h2>
+                    <h2 className="text-[17px] font-bold text-black dark:text-white tracking-tight truncate">{plan.title}</h2>
                     <StatusLabel status={plan.status} />
                   </div>
                 </div>
                 <button
                   onClick={() => setIsModalOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/[0.05] hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-white transition-all shrink-0"
+                  className="w-8 h-8 rounded-full bg-black/[0.05] dark:bg-white/[0.05] hover:bg-black/[0.10] dark:hover:bg-white/[0.10] flex items-center justify-center text-white/30 hover:text-black dark:hover:text-white transition-all shrink-0"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -248,7 +248,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
               {/* Modal Body (Scrollable) */}
               <div className="flex-1 overflow-y-auto px-6 py-6 arcus-scrollbar">
-                <div className="text-[15px] text-white/65 leading-[1.8]">
+                <div className="text-[15px] text-black/65 dark:text-white/65 leading-[1.8]">
                   <ReactMarkdown remarkPlugins={[remarkGfm]} components={PlanMarkdown}>
                     {planText}
                   </ReactMarkdown>
@@ -257,11 +257,11 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 
               {/* Modal Footer */}
               {isDraft && (
-                <div className="shrink-0 px-6 py-4 border-t border-white/[0.05] bg-[#070707] flex items-center gap-3">
+                <div className="shrink-0 px-6 py-4 border-t border-black/[0.05] dark:border-white/[0.05] bg-black/[0.02] dark:bg-[#070707] flex items-center gap-3">
                   <button
                     onClick={handleExecute}
                     disabled={isExecuting || isProcessing}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-white text-black text-[13px] font-bold rounded-xl hover:bg-neutral-200 transition-all disabled:opacity-40 active:scale-[0.98]"
+                    className="flex items-center gap-2 px-5 py-2.5 bg-black text-white hover:bg-neutral-800 dark:bg-white dark:text-black dark:hover:bg-neutral-200 text-[13px] font-bold rounded-xl transition-all disabled:opacity-40 active:scale-[0.98]"
                   >
                     {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
                     {isExecuting ? 'Starting...' : 'Execute'}
@@ -269,7 +269,7 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
                   {onDecline && (
                     <button
                       onClick={() => onDecline(plan.planId)}
-                      className="px-4 py-2.5 text-white/30 hover:text-white/60 text-[13px] font-bold rounded-xl bg-white/[0.03] hover:bg-white/[0.06] transition-all"
+                      className="px-4 py-2.5 text-black/30 dark:text-white/30 hover:text-black/60 dark:hover:text-white/60 text-[13px] font-bold rounded-xl bg-black/[0.03] dark:bg-white/[0.03] hover:bg-black/[0.06] dark:hover:bg-white/[0.06] transition-all"
                     >
                       Dismiss
                     </button>
@@ -287,14 +287,14 @@ export function PlanCanvas({ plan, onExecute, onDecline, isProcessing }: PlanCan
 // ─── Status Label ─────────────────────────────────────────────
 function StatusLabel({ status }: { status: PlanStatus }) {
   const config: Partial<Record<PlanStatus, { label: string; cls: string }>> = {
-    draft:     { label: 'Draft',     cls: 'text-amber-400/60' },
-    approved:  { label: 'Approved',  cls: 'text-emerald-400/60' },
-    executing: { label: 'Running',   cls: 'text-blue-400/60' },
-    completed: { label: 'Done',      cls: 'text-emerald-400/60' },
-    failed:    { label: 'Failed',    cls: 'text-red-400/60' },
-    cancelled: { label: 'Cancelled', cls: 'text-white/20' },
+    draft:     { label: 'Draft',     cls: 'text-amber-600/80 dark:text-amber-400/60' },
+    approved:  { label: 'Approved',  cls: 'text-emerald-600/80 dark:text-emerald-400/60' },
+    executing: { label: 'Running',   cls: 'text-blue-600/80 dark:text-blue-400/60' },
+    completed: { label: 'Done',      cls: 'text-emerald-600/80 dark:text-emerald-400/60' },
+    failed:    { label: 'Failed',    cls: 'text-red-600/80 dark:text-red-400/60' },
+    cancelled: { label: 'Cancelled', cls: 'text-black/20 dark:text-white/20' },
   };
-  const c = config[status] || { label: status, cls: 'text-white/40' };
+  const c = config[status] || { label: status, cls: 'text-black/40 dark:text-white/40' };
   return (
     <span className={cn("text-[10px] font-bold uppercase tracking-wider", c.cls)}>
       {c.label}

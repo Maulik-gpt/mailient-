@@ -88,7 +88,7 @@ function WaitingIndicator() {
           />
         ))}
       </svg>
-      <span className="text-[11px] font-medium text-yellow-400/80">
+      <span className="text-[11px] font-medium text-amber-600/90 dark:text-yellow-400/80">
         Waiting for you to connect and proceed
       </span>
     </motion.div>
@@ -257,22 +257,22 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 8, scale: 0.97 }}
       transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-      className="w-full max-w-[640px] mx-auto mb-4 rounded-3xl bg-[#09090b]/80 backdrop-blur-2xl border border-zinc-200/10 shadow-[0_24px_50px_-12px_rgba(0,0,0,0.7),inset_0_1px_1px_rgba(255,255,255,0.05)] overflow-hidden"
+      className="w-full max-w-[640px] mx-auto mb-4 rounded-3xl arcus-glass-card overflow-hidden"
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200/10">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-black/[0.06] dark:border-zinc-200/10">
         <div className="flex items-center gap-2.5">
-          <div className="p-1 rounded-lg bg-amber-500/10 text-amber-400">
+          <div className="p-1 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
             <Zap className="w-4 h-4 fill-amber-400/20" />
           </div>
-          <span className="text-xs font-bold text-zinc-200 uppercase tracking-widest">
+          <span className="text-xs font-bold text-zinc-800 dark:text-zinc-200 uppercase tracking-widest">
             Required Integrations
           </span>
         </div>
         <button
           onClick={refresh}
           disabled={isRefreshing}
-          className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 transition-all disabled:opacity-40"
+          className="p-1.5 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 transition-all disabled:opacity-40"
           title="Re-check connections"
         >
           <RefreshCw className={cn('w-4 h-4', isRefreshing && 'animate-spin')} />
@@ -280,17 +280,17 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
       </div>
 
       {/* Spec preview — modern Obsidian card styling */}
-      <div className="mx-6 mt-4 p-4.5 rounded-2xl bg-zinc-950/60 border border-zinc-200/5 shadow-inner">
-        <p className="text-[14px] font-bold text-zinc-100 leading-snug mb-1">{data.agentName}</p>
-        <p className="text-[12px] text-zinc-400 leading-relaxed mb-3 font-light">
+      <div className="mx-6 mt-4 p-4.5 rounded-2xl bg-black/[0.03] dark:bg-zinc-950/60 border border-black/[0.05] dark:border-zinc-200/5 shadow-inner">
+        <p className="text-[14px] font-bold text-zinc-900 dark:text-zinc-100 leading-snug mb-1">{data.agentName}</p>
+        <p className="text-[12px] text-zinc-600 dark:text-zinc-400 leading-relaxed mb-3 font-light">
           {data.agentParams.task_description}
         </p>
         <div className="flex items-center gap-4 text-[11px] text-zinc-500 font-mono">
-          <span className="flex items-center gap-1.5 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">
+          <span className="flex items-center gap-1.5 bg-black/[0.04] dark:bg-zinc-900 px-2 py-1 rounded-md border border-black/[0.06] dark:border-zinc-800">
             <span>📅</span> {data.agentParams.cron_schedule}
           </span>
           <span>→</span>
-          <span className="capitalize flex items-center gap-1.5 bg-zinc-900 px-2 py-1 rounded-md border border-zinc-800">
+          <span className="capitalize flex items-center gap-1.5 bg-black/[0.04] dark:bg-zinc-900 px-2 py-1 rounded-md border border-black/[0.06] dark:border-zinc-800">
             <span>🚀</span> {data.agentParams.output_channel}
           </span>
         </div>
@@ -298,7 +298,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
 
       {/* Body */}
       <div className="px-6 py-4 space-y-3">
-        <p className="text-[13px] text-zinc-400 leading-relaxed font-light">
+        <p className="text-[13px] text-zinc-600 dark:text-zinc-400 leading-relaxed font-light">
           Activate the integrations below to deploy this agent.
         </p>
 
@@ -315,20 +315,20 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
                   'flex items-center gap-4 px-4 py-3 rounded-2xl border transition-all duration-300',
                   isConnected
                     ? 'bg-emerald-500/[0.04] border-emerald-500/20 hover:bg-emerald-500/[0.06]'
-                    : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-700/60 hover:bg-zinc-900/60',
+                    : 'bg-black/[0.02] dark:bg-zinc-900/40 border-black/[0.07] dark:border-zinc-800 hover:border-black/[0.14] dark:hover:border-zinc-700/60 hover:bg-black/[0.04] dark:hover:bg-zinc-900/60',
                 )}
               >
                 {/* Icon */}
-                <div className="w-10 h-10 rounded-xl bg-zinc-950 border border-zinc-800 flex items-center justify-center shrink-0 shadow-sm">
+                <div className="w-10 h-10 rounded-xl bg-white dark:bg-zinc-950 border border-black/[0.07] dark:border-zinc-800 flex items-center justify-center shrink-0 shadow-sm">
                   {info.Icon
                     ? <info.Icon className="w-5.5 h-5.5" />
-                    : <span className="text-[12px] font-bold text-zinc-400">{info.label[0]}</span>
+                    : <span className="text-[12px] font-bold text-zinc-500 dark:text-zinc-400">{info.label[0]}</span>
                   }
                 </div>
 
                 {/* Label + description */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-[13.5px] font-semibold text-zinc-200 leading-tight mb-0.5">{info.label}</p>
+                  <p className="text-[13.5px] font-semibold text-zinc-800 dark:text-zinc-200 leading-tight mb-0.5">{info.label}</p>
                   <p className="text-[11.5px] text-zinc-500 truncate font-light">{info.description}</p>
                 </div>
 
@@ -341,7 +341,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.9 }}
                       transition={{ type: 'spring', damping: 18, stiffness: 320 }}
-                      className="flex items-center gap-1.5 text-emerald-400 shrink-0 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20"
+                      className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 shrink-0 bg-emerald-500/10 px-3 py-1 rounded-full border border-emerald-500/20"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span className="text-[11px] font-bold tracking-tight">Connected</span>
@@ -354,7 +354,7 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
                       exit={{ opacity: 0 }}
                       onClick={() => connectIntegration(id)}
                       disabled={isConnecting}
-                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-bold bg-white text-black hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 disabled:opacity-60 shadow-lg shadow-black/25"
+                      className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12px] font-bold bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 hover:scale-[1.02] active:scale-[0.98] transition-all shrink-0 disabled:opacity-60 shadow-lg shadow-black/10 dark:shadow-black/25"
                     >
                       {isConnecting ? (
                         <RefreshCw className="w-3 h-3 animate-spin" />
@@ -380,23 +380,23 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
               exit={{ opacity: 0, y: -4 }}
               className="flex items-start gap-2.5 mt-2 px-4 py-3 rounded-2xl bg-red-500/10 border border-red-500/20"
             >
-              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-              <p className="text-[12px] text-red-300 leading-relaxed">{error}</p>
+              <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400 shrink-0 mt-0.5" />
+              <p className="text-[12px] text-red-700 dark:text-red-300 leading-relaxed">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
 
       {/* Footer */}
-      <div className="px-6 py-4 border-t border-zinc-200/10 bg-zinc-950/20 flex flex-col items-center gap-3">
+      <div className="px-6 py-4 border-t border-black/[0.06] dark:border-zinc-200/10 bg-black/[0.015] dark:bg-zinc-950/20 flex flex-col items-center gap-3">
         <button
           onClick={() => createAgent(false)}
           disabled={!allConnected || isCreating}
           className={cn(
             'flex items-center gap-2 px-6 py-3 rounded-2xl text-[13px] font-extrabold tracking-wide transition-all w-full justify-center shadow-lg',
             allConnected && !isCreating
-              ? 'bg-white text-black hover:bg-zinc-100 hover:scale-[1.01] active:scale-[0.99] shadow-white/5'
-              : 'bg-zinc-900 border border-zinc-800 text-zinc-500 cursor-not-allowed',
+              ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-100 hover:scale-[1.01] active:scale-[0.99] shadow-black/10 dark:shadow-white/5'
+              : 'bg-black/[0.04] dark:bg-zinc-900 border border-black/[0.07] dark:border-zinc-800 text-zinc-400 dark:text-zinc-500 cursor-not-allowed',
           )}
         >
           {isCreating ? (
@@ -408,13 +408,13 @@ export function IntegrationRequiredCard({ data, onAgentCreated }: IntegrationReq
         <button
           onClick={() => createAgent(true)}
           disabled={isCreating}
-          className="text-[11.5px] text-zinc-500 hover:text-zinc-300 transition-colors font-medium"
+          className="text-[11.5px] text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 transition-colors font-medium"
         >
           Create without connecting (agent may fail)
         </button>
       </div>
 
-       <div className="border-t border-zinc-200/5 bg-zinc-950/40 py-2.5 flex justify-center">
+       <div className="border-t border-black/[0.04] dark:border-zinc-200/5 bg-black/[0.02] dark:bg-zinc-950/40 py-2.5 flex justify-center">
         <WaitingIndicator />
       </div>
     </motion.div>

@@ -92,7 +92,7 @@ export function ConnectorBar({ connectors, onOpenConnectors, className }: Connec
         
         {/* More indicator */}
         {connectors.length > 4 && (
-          <div className="w-7 h-7 rounded-md bg-white/[0.03] border border-white/[0.1] flex items-center justify-center shrink-0">
+          <div className="w-7 h-7 rounded-md bg-black/[0.03] dark:bg-white/[0.03] border border-black/[0.08] dark:border-white/[0.1] flex items-center justify-center shrink-0">
             <span className="text-[10px] text-black/40 dark:text-white/40 font-medium">
               +{connectors.length - 4}
             </span>

@@ -96,7 +96,7 @@ export function StatusBar({
       transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
         "flex items-center gap-1 px-1.5 py-1 rounded-full",
-        "bg-white/[0.03] border border-white/[0.06]",
+        "bg-black/[0.02] dark:bg-white/[0.03] border border-black/[0.06] dark:border-white/[0.06]",
         "backdrop-blur-md",
         className
       )}
@@ -104,7 +104,7 @@ export function StatusBar({
       {/* Activity indicator */}
       <div className="flex items-center gap-1.5 px-2">
         <div className="relative">
-          <Zap className="w-3 h-3 text-white/30" />
+          <Zap className="w-3 h-3 text-black/30 dark:text-white/30" />
           {agentsRunning > 0 && (
             <motion.div
               className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-green-400 rounded-full"
@@ -115,25 +115,25 @@ export function StatusBar({
         </div>
       </div>
 
-      <div className="w-[1px] h-3 bg-white/[0.06]" />
+      <div className="w-[1px] h-3 bg-black/[0.06] dark:bg-white/[0.06]" />
 
       {/* Metrics */}
       {metrics.filter(m => m.value > 0).map((metric, i) => (
         <React.Fragment key={metric.id}>
-          {i > 0 && <div className="w-[1px] h-3 bg-white/[0.04]" />}
+          {i > 0 && <div className="w-[1px] h-3 bg-black/[0.04] dark:bg-white/[0.04]" />}
           <button
             onClick={() => onMetricClick?.(metric.id)}
             className={cn(
               "flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-              "hover:bg-white/[0.04] transition-all",
+              "hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-all",
               "group/metric cursor-default"
             )}
           >
             <metric.icon className={cn("w-3 h-3", metric.color, "opacity-70 group-hover/metric:opacity-100 transition-opacity")} />
-            <span className="text-[11px] font-bold text-white/70 tabular-nums group-hover/metric:text-white/90 transition-colors">
+            <span className="text-[11px] font-bold text-black/70 dark:text-white/70 tabular-nums group-hover/metric:text-black/90 dark:group-hover/metric:text-white/90 transition-colors">
               {metric.value}
             </span>
-            <span className="text-[10px] text-white/25 font-medium hidden sm:inline group-hover/metric:text-white/40 transition-colors">
+            <span className="text-[10px] text-black/30 dark:text-white/25 font-medium hidden sm:inline group-hover/metric:text-black/45 dark:group-hover/metric:text-white/40 transition-colors">
               {metric.label}
             </span>
             {metric.pulse && (

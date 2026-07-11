@@ -240,26 +240,26 @@ export function DraftReplyBox({
     };
 
     return (
-        <div className="bg-[#242424] border border-white/[0.08] rounded-[24px] overflow-hidden shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
+        <div className="arcus-glass-card rounded-[24px] overflow-hidden animate-in fade-in slide-in-from-bottom-6 duration-700 max-w-2xl mx-auto my-6 relative select-text">
             {/* Technical subtle noise overlay */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.015] z-[0] bg-[url('/noise.svg')] brightness-100 contrast-150" />
 
             {/* Ambient Glow */}
-            <div className="absolute -top-24 -right-24 w-48 h-48 bg-white/[0.02] rounded-full blur-[60px] pointer-events-none" />
+            <div className="absolute -top-24 -right-24 w-48 h-48 bg-black/[0.02] dark:bg-white/[0.02] rounded-full blur-[60px] pointer-events-none" />
 
             {/* Header */}
-            <div className="flex items-center justify-between px-6 py-5 border-b border-white/[0.04] bg-[#333333]/30 relative z-10">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-black/[0.05] dark:border-white/[0.04] bg-black/[0.02] dark:bg-[#333333]/30 relative z-10">
                 <div className="flex items-center gap-4">
                     <ArcusLogo size={36} className="shrink-0" />
                     <div>
-                        <h3 className="text-white font-bold text-xs tracking-wider uppercase">Arcus AI Draft</h3>
+                        <h3 className="text-black dark:text-white font-bold text-xs tracking-wider uppercase">Arcus AI Draft</h3>
                         <p className="text-[10px] text-zinc-500 uppercase tracking-tight font-bold">Gmail Triage Agent</p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2">
                     <button
                         onClick={handleCopyDraft}
-                        className="p-2 hover:bg-white/[0.06] rounded-xl text-zinc-400 hover:text-white transition-all duration-300"
+                        className="p-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white transition-all duration-300"
                         title="Copy draft"
                     >
                         <Copy className="w-4.5 h-4.5" />
@@ -268,9 +268,9 @@ export function DraftReplyBox({
                         onClick={() => setIsEditing(!isEditing)}
                         className={cn(
                             "p-2 rounded-xl transition-all duration-300",
-                            isEditing 
-                                ? "bg-white text-black font-bold" 
-                                : "hover:bg-white/[0.06] text-zinc-400 hover:text-white"
+                            isEditing
+                                ? "bg-black text-white dark:bg-white dark:text-black font-bold"
+                                : "hover:bg-black/[0.05] dark:hover:bg-white/[0.06] text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                         )}
                         title={isEditing ? 'Save changes' : 'Edit message'}
                     >
@@ -278,7 +278,7 @@ export function DraftReplyBox({
                     </button>
                     <button
                         onClick={onDismiss}
-                        className="p-2 hover:bg-white/[0.06] rounded-xl transition-all duration-300 text-zinc-400 hover:text-white"
+                        className="p-2 hover:bg-black/[0.05] dark:hover:bg-white/[0.06] rounded-xl transition-all duration-300 text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white"
                         title="Dismiss"
                     >
                         <X className="w-4.5 h-4.5" />
@@ -287,22 +287,22 @@ export function DraftReplyBox({
             </div>
 
             {/* Recipient & Subject Strip */}
-            <div className="px-6 py-4 bg-[#333333]/15 border-b border-white/[0.04] flex flex-col gap-2 relative z-10">
+            <div className="px-6 py-4 bg-black/[0.015] dark:bg-[#333333]/15 border-b border-black/[0.05] dark:border-white/[0.04] flex flex-col gap-2 relative z-10">
                 <div className="flex items-center gap-4 text-xs tracking-wide">
                     <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">To</span>
-                    <span className="text-zinc-200 font-semibold">{draftData.recipientName}</span>
+                    <span className="text-zinc-800 dark:text-zinc-200 font-semibold">{draftData.recipientName}</span>
                     {draftData.recipientEmail && (
                         <span className="text-zinc-500 font-medium truncate font-mono text-[11px]">&lt;{draftData.recipientEmail}&gt;</span>
                     )}
                 </div>
-                <div className="h-px bg-white/[0.02] w-full" />
+                <div className="h-px bg-black/[0.04] dark:bg-white/[0.02] w-full" />
                 <div className="flex items-center gap-4 text-xs tracking-wide">
                     <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">Subject</span>
-                    <span className="text-zinc-300 font-medium truncate">{draftData.subject}</span>
+                    <span className="text-zinc-700 dark:text-zinc-300 font-medium truncate">{draftData.subject}</span>
                 </div>
                 {typeof draftData.voiceScore === 'number' && (
                     <>
-                        <div className="h-px bg-white/[0.02] w-full" />
+                        <div className="h-px bg-black/[0.04] dark:bg-white/[0.02] w-full" />
                         <div className="flex items-start gap-4 text-xs tracking-wide">
                             <span className="text-zinc-500 font-bold uppercase tracking-widest w-12 shrink-0">Voice</span>
                             <div className="flex flex-col gap-1 min-w-0">
@@ -311,10 +311,10 @@ export function DraftReplyBox({
                                         className={cn(
                                             'px-1.5 py-0.5 rounded-md font-bold text-[11px] tracking-wide tabular-nums',
                                             draftData.voiceScore >= 85
-                                                ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/20'
+                                                ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/20'
                                                 : draftData.voiceScore >= 70
-                                                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/20'
-                                                    : 'bg-rose-500/15 text-rose-300 border border-rose-500/25',
+                                                    ? 'bg-amber-500/15 text-amber-700 dark:text-amber-300 border border-amber-500/20'
+                                                    : 'bg-rose-500/15 text-rose-700 dark:text-rose-300 border border-rose-500/25',
                                         )}
                                     >
                                         {draftData.voiceScore}/100
@@ -328,7 +328,7 @@ export function DraftReplyBox({
                                     </span>
                                 </div>
                                 {draftData.voiceScore < 70 && draftData.voiceCritique && (
-                                    <span className="text-rose-300/70 text-[11px] leading-snug">
+                                    <span className="text-rose-600/80 dark:text-rose-300/70 text-[11px] leading-snug">
                                         {draftData.voiceCritique}
                                     </span>
                                 )}
@@ -344,19 +344,19 @@ export function DraftReplyBox({
                     <textarea
                         value={editedContent}
                         onChange={(e) => setEditedContent(e.target.value)}
-                        className="w-full min-h-[200px] bg-[#1A1A1A] border border-white/[0.06] focus:border-white/[0.12] rounded-2xl p-6 text-zinc-100 text-[15px] leading-[1.8] resize-none focus:outline-none transition-all duration-300 placeholder:text-zinc-600 font-sans selection:bg-blue-500/30"
+                        className="w-full min-h-[200px] bg-white/70 dark:bg-[#1A1A1A] border border-black/[0.08] dark:border-white/[0.06] focus:border-black/[0.16] dark:focus:border-white/[0.12] rounded-2xl p-6 text-zinc-900 dark:text-zinc-100 text-[15px] leading-[1.8] resize-none focus:outline-none transition-all duration-300 placeholder:text-zinc-400 dark:placeholder:text-zinc-600 font-sans selection:bg-blue-500/30"
                         placeholder="Type your message here..."
                         autoFocus
                     />
                 ) : (
-                    <div className="min-h-[120px] text-zinc-100 text-[15px] whitespace-pre-wrap leading-[1.8] selection:bg-blue-500/25 tracking-tight font-sans">
+                    <div className="min-h-[120px] text-zinc-900 dark:text-zinc-100 text-[15px] whitespace-pre-wrap leading-[1.8] selection:bg-blue-500/25 tracking-tight font-sans">
                         {proposedRefinement && selection ? (
                             <>
                                 {editedContent.slice(0, selection.start)}
-                                <span className="text-zinc-500 line-through decoration-red-500/40 decoration-1 bg-red-500/5 px-0.5 rounded">
+                                <span className="text-zinc-400 dark:text-zinc-500 line-through decoration-red-500/40 decoration-1 bg-red-500/5 px-0.5 rounded">
                                     {selection.text}
                                 </span>
-                                <span className="text-white bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] font-semibold">
+                                <span className="text-black dark:text-white bg-blue-500/15 dark:bg-blue-500/20 px-1.5 py-0.5 rounded border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.15)] font-semibold">
                                     <WordBlurStream text={proposedRefinement} loop={false} />
                                 </span>
                                 {editedContent.slice(selection.end)}
@@ -364,8 +364,8 @@ export function DraftReplyBox({
                         ) : (
                             editedContent || (
                                 <div className="flex flex-col items-center justify-center py-8 text-zinc-500 text-sm gap-3">
-                                    <div className="w-6.5 h-6.5 border-[2.5px] border-white/20 border-t-white rounded-full animate-spin" />
-                                    <span className="font-mono text-[10.5px] uppercase tracking-[0.15em] text-zinc-400">Arcus is writing...</span>
+                                    <div className="w-6.5 h-6.5 border-[2.5px] border-black/15 border-t-black dark:border-white/20 dark:border-t-white rounded-full animate-spin" />
+                                    <span className="font-mono text-[10.5px] uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400">Arcus is writing...</span>
                                 </div>
                             )
                         )}
@@ -470,15 +470,15 @@ export function DraftReplyBox({
             </div>
 
             {/* Footer / Controls */}
-            <div className="px-8 py-5 bg-[#333333]/30 border-t border-white/[0.04] flex items-center justify-between relative z-10">
+            <div className="px-8 py-5 bg-black/[0.02] dark:bg-[#333333]/30 border-t border-black/[0.05] dark:border-white/[0.04] flex items-center justify-between relative z-10">
                 <div className="flex items-center gap-3">
                     {sendError ? (
-                        <div className="flex items-center gap-2 text-red-400 text-[10px] tracking-wider bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase font-bold">
+                        <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-[10px] tracking-wider bg-red-500/5 px-4 py-2 rounded-xl border border-red-500/10 uppercase font-bold">
                             <X className="w-3 h-3" />
                             {sendError}
                         </div>
                     ) : sendSuccess ? (
-                        <div className="flex items-center gap-2 text-emerald-400 text-[10px] tracking-wider bg-emerald-500/5 px-4 py-2 rounded-xl border border-emerald-500/10 uppercase font-bold">
+                        <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-[10px] tracking-wider bg-emerald-500/5 px-4 py-2 rounded-xl border border-emerald-500/10 uppercase font-bold">
                             <Check className="w-3 h-3" />
                             Sent successfully
                         </div>
@@ -495,7 +495,7 @@ export function DraftReplyBox({
                     <button
                         onClick={onDismiss}
                         disabled={isSending || sendSuccess}
-                        className="px-5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none"
+                        className="px-5 py-2.5 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none"
                     >
                         Save to Drafts
                     </button>
@@ -506,8 +506,8 @@ export function DraftReplyBox({
                         className={cn(
                             'px-5 py-2.5 rounded-xl font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-30 disabled:pointer-events-none',
                             isEditing
-                                ? 'bg-white text-black hover:bg-zinc-200'
-                                : 'text-zinc-300 hover:text-white border border-white/10 hover:border-white/20 hover:bg-white/5',
+                                ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200'
+                                : 'text-zinc-600 dark:text-zinc-300 hover:text-black dark:hover:text-white border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 hover:bg-black/5 dark:hover:bg-white/5',
                         )}
                     >
                         {isEditing ? 'Done Editing' : 'Edit Draft'}
@@ -527,7 +527,7 @@ export function DraftReplyBox({
                         className={cn(
                             'group relative flex items-center gap-2.5 px-6 py-2.5 rounded-xl font-bold text-xs tracking-widest uppercase transition-all duration-300 transform active:scale-95',
                             isSending || sendSuccess
-                                ? 'bg-white/5 text-zinc-600 cursor-not-allowed border border-white/5'
+                                ? 'bg-black/5 dark:bg-white/5 text-zinc-400 dark:text-zinc-600 cursor-not-allowed border border-black/5 dark:border-white/5'
                                 : 'bg-emerald-500 text-white hover:bg-emerald-400 shadow-lg shadow-emerald-500/25',
                         )}
                     >
@@ -568,24 +568,24 @@ export function DraftReplyBox({
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: 12, scale: 0.97 }}
                             transition={{ type: 'spring', damping: 26, stiffness: 320 }}
-                            className="mx-6 w-full max-w-md rounded-[20px] bg-[#1A1A1A] border border-white/10 shadow-2xl overflow-hidden"
+                            className="mx-6 w-full max-w-md rounded-[20px] bg-white dark:bg-[#1A1A1A] border border-black/10 dark:border-white/10 shadow-2xl overflow-hidden"
                         >
-                            <div className="px-6 py-5 border-b border-white/[0.06]">
-                                <p className="text-[10px] tracking-widest uppercase font-bold text-emerald-400/80 mb-2">Final confirmation</p>
-                                <p className="text-[15px] text-white/90 leading-snug">
+                            <div className="px-6 py-5 border-b border-black/[0.06] dark:border-white/[0.06]">
+                                <p className="text-[10px] tracking-widest uppercase font-bold text-emerald-600/90 dark:text-emerald-400/80 mb-2">Final confirmation</p>
+                                <p className="text-[15px] text-black/90 dark:text-white/90 leading-snug">
                                     Sending to <span className="font-semibold">{draftData.recipientName}</span>
                                     {draftData.recipientEmail && (
-                                        <span className="font-mono text-[12px] text-white/55"> &lt;{draftData.recipientEmail}&gt;</span>
+                                        <span className="font-mono text-[12px] text-black/55 dark:text-white/55"> &lt;{draftData.recipientEmail}&gt;</span>
                                     )}
                                     .
                                 </p>
-                                <p className="text-[12px] text-white/45 mt-1">This cannot be undone.</p>
+                                <p className="text-[12px] text-black/45 dark:text-white/45 mt-1">This cannot be undone.</p>
                             </div>
-                            <div className="px-6 py-4 flex items-center justify-end gap-3 bg-white/[0.02]">
+                            <div className="px-6 py-4 flex items-center justify-end gap-3 bg-black/[0.02] dark:bg-white/[0.02]">
                                 <button
                                     onClick={() => setShowConfirmOverlay(false)}
                                     disabled={isSending}
-                                    className="px-5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
+                                    className="px-5 py-2.5 rounded-xl text-zinc-500 dark:text-zinc-400 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/5 font-bold text-xs tracking-wider uppercase transition-all duration-300 disabled:opacity-40 disabled:pointer-events-none"
                                 >
                                     Cancel
                                 </button>
