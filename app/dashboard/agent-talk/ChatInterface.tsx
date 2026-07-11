@@ -1164,18 +1164,52 @@ function AgentTaskPill({ step }: { step: AgentStep }) {
 }
 
 // ─── Collapsible Execution Steps wrapper ─────────────────────────────────────
+// The dependency-ordered plan built before the first tool call, with per-phase
+// statuses the SSE handlers already advance off REAL tool events (tool_call →
+// running, tool_result → completed/failed). Rendered as the Manus-style phase
+// rail at the top of the processing trace — zero extra LLM calls, and it can
+// never show progress that didn't happen because the statuses ARE the run.
+interface PhasePlanData {
+  intent: string;
+  steps: Array<{ label: string; tools: string[]; parallel: boolean; isWrite: boolean; requiredIntegration: string | null }>;
+  stepStatuses?: Record<number, 'pending' | 'running' | 'completed' | 'failed'>;
+}
+
+function PhaseStatusIcon({ status }: { status: 'pending' | 'running' | 'completed' | 'failed' }) {
+  if (status === 'completed') {
+    return <Check className="w-3.5 h-3.5 text-black/45 dark:text-white/45 flex-shrink-0" strokeWidth={2.5} />;
+  }
+  if (status === 'failed') {
+    return <X className="w-3.5 h-3.5 text-rose-500/80 dark:text-rose-400/80 flex-shrink-0" strokeWidth={2.5} />;
+  }
+  if (status === 'running') {
+    return (
+      <span className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+        <motion.span
+          className="w-2 h-2 rounded-full bg-black/70 dark:bg-white/70"
+          animate={{ scale: [1, 1.25, 1], opacity: [0.55, 1, 0.55] }}
+          transition={{ repeat: Infinity, duration: 1.3, ease: 'easeInOut' }}
+        />
+      </span>
+    );
+  }
+  return <Circle className="w-3.5 h-3.5 text-black/20 dark:text-white/20 flex-shrink-0" strokeWidth={2} />;
+}
+
 function CollapsibleSteps({
   steps,
   narratives,
   isActive,
   runId,
   totalDurationMs,
+  plan,
 }: {
   steps: AgentStep[];
   narratives?: AgentNarrative[];
   isActive: boolean;
   runId?: string;
   totalDurationMs?: number;
+  plan?: PhasePlanData;
 }) {
   const [collapsed, setCollapsed] = useState(!isActive);
 
@@ -1193,6 +1227,12 @@ function CollapsibleSteps({
   const completedCount = steps.filter(s => s.status === 'completed').length;
   const totalCount = steps.length;
 
+  // Manus-style phase rail — only when the plan has real multi-phase shape.
+  const showPhases = !!plan && plan.steps.length >= 2;
+  const runningPhase = showPhases
+    ? plan!.steps.find((_, i) => plan!.stepStatuses?.[i] === 'running')?.label
+    : undefined;
+
   return (
     <div className={cn('mb-3 arcus-glass rounded-2xl px-3.5 transition-all', collapsed ? 'py-2' : 'py-2.5')}>
       {/* Toggle row */}
@@ -1209,11 +1249,15 @@ function CollapsibleSteps({
             collapsed ? '-rotate-90' : 'rotate-0',
           )}
         />
-        <span className="text-[12px] font-medium tracking-wide">
+        <span className="text-[12px] font-medium tracking-wide truncate">
           {collapsed
-            ? `${totalCount} step${totalCount !== 1 ? 's' : ''}`
+            ? isActive && runningPhase
+              ? runningPhase
+              : `${totalCount} step${totalCount !== 1 ? 's' : ''}`
             : isActive
-            ? `${completedCount} / ${totalCount} steps`
+            ? runningPhase
+              ? `${runningPhase} · ${completedCount}/${totalCount}`
+              : `${completedCount} / ${totalCount} steps`
             : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`}
         </span>
         {isActive && (
@@ -1235,6 +1279,35 @@ function CollapsibleSteps({
             transition={{ duration: 0.2, ease: [0.4, 0, 0.2, 1] }}
             className="overflow-hidden"
           >
+            {/* Phase rail — the run's plan with live statuses driven by real
+                tool events. The "Deep research → Analyze → Deliver" anatomy. */}
+            {showPhases && (
+              <div className="mb-2.5 pb-2.5 border-b border-black/[0.05] dark:border-white/[0.06] space-y-1.5">
+                {plan!.steps.map((s, i) => {
+                  const st = plan!.stepStatuses?.[i] || 'pending';
+                  return (
+                    <div key={i} className="flex items-center gap-2 min-w-0">
+                      <PhaseStatusIcon status={st} />
+                      <span className={cn(
+                        'text-[12.5px] tracking-tight truncate',
+                        st === 'running'
+                          ? 'text-black/85 dark:text-white/85 font-medium'
+                          : st === 'completed'
+                            ? 'text-black/40 dark:text-white/35'
+                            : st === 'failed'
+                              ? 'text-black/60 dark:text-white/55'
+                              : 'text-black/30 dark:text-white/25',
+                      )}>
+                        {s.label}
+                      </span>
+                      {s.parallel && st === 'running' && (
+                        <span className="text-[10px] text-black/30 dark:text-white/25 font-medium flex-shrink-0">parallel</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             <LiveStepTracker
               steps={steps}
               narratives={narratives}
@@ -5484,6 +5557,7 @@ export default function ChatInterface({
                                          isActive={(msg as AgentMessage).meta?.isStreaming !== false}
                                          runId={(msg as AgentMessage).meta?.agentRunId}
                                          totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
+                                         plan={(msg as AgentMessage).meta?.orchestrationPlan}
                                        />
                                      )}
 
