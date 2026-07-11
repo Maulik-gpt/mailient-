@@ -294,7 +294,7 @@ export function CanvasPanel({
             title="Copy content"
             className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+            {copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
           </button>
           <button
             onClick={handleExportPdf}
@@ -318,7 +318,7 @@ export function CanvasPanel({
               onClick={handleSend}
               title="Send as Email"
               disabled={isExecuting}
-              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-emerald-400 transition-all disabled:opacity-40"
+              className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-emerald-600 dark:hover:text-emerald-400 transition-all disabled:opacity-40"
             >
               {isExecuting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
             </button>

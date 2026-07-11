@@ -107,9 +107,9 @@ export function SearchExecutionPanel({
             transition={isSearching ? { duration: 2, repeat: Infinity, ease: 'linear' } : {}}
           >
             {isSearching ? (
-              <Search className="w-4 h-4 text-blue-400" />
+              <Search className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             ) : (
-              <CheckCircle2 className="w-4 h-4 text-green-400" />
+              <CheckCircle2 className="w-4 h-4 text-green-700 dark:text-green-400" />
             )}
           </motion.div>
           <span className="text-neutral-600 dark:text-gray-400">
@@ -117,7 +117,7 @@ export function SearchExecutionPanel({
           </span>
           <button 
             onClick={() => setExpanded(!expanded)}
-            className="ml-auto text-neutral-600 dark:text-gray-500 hover:text-neutral-900 dark:text-gray-300 transition-colors"
+            className="ml-auto text-neutral-600 dark:text-gray-500 hover:text-neutral-900 dark:hover:text-gray-300 transition-colors"
           >
             {expanded ? (
               <ChevronUp className="w-4 h-4" />
@@ -131,12 +131,12 @@ export function SearchExecutionPanel({
       {/* Main Query */}
       <div className="px-4 py-3 border-b border-neutral-200 dark:border-gray-800">
         <div className="flex items-start gap-3">
-          <Globe className="w-4 h-4 text-blue-400 mt-0.5" />
+          <Globe className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5" />
           <div>
             <p className="text-sm text-neutral-900 dark:text-gray-300">{mainQuery}</p>
             <div className="mt-2 flex items-center gap-2">
               {isSearching && (
-                <span className="text-xs text-blue-400 animate-pulse">Searching...</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400 animate-pulse">Searching...</span>
               )}
             </div>
           </div>
