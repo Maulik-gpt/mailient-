@@ -429,11 +429,11 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                   disabled={cell.isDisabled}
                   className={cn(
                     'text-[12px] py-1.5 rounded-lg text-center font-bold transition-all',
-                    cell.isCurrentMonth ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-600 dark:text-zinc-300 dark:text-zinc-700',
-                    cell.isDisabled && 'text-zinc-900 dark:text-zinc-100 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
+                    cell.isCurrentMonth ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-400 dark:text-zinc-700',
+                    cell.isDisabled && 'text-zinc-300 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
                     !cell.isDisabled && !isSelected && 'hover:bg-zinc-100 dark:hover:bg-zinc-900/50',
                     isTodayCell && !isSelected && 'border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100',
-                    isSelected && 'bg-zinc-100 dark:bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
+                    isSelected && 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/10 dark:shadow-white/5'
                   )}
                 >
                   {cell.day}
@@ -716,7 +716,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
 
               {/* Optional name */}
               <div>
-                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-400 dark:text-zinc-555">(optional)</span></label>
+                <label className="block text-[13px] font-bold text-zinc-600 dark:text-zinc-400 mb-2">Agent name <span className="font-normal text-zinc-400 dark:text-zinc-500">(optional)</span></label>
                 <input
                   value={name}
                   onChange={e => setName(e.target.value)}
@@ -763,7 +763,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
                       </div>
                     )}
                     <div className={activePat.needsDay ? 'flex-1' : 'w-full'}>
-                      <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-555 mb-1.5">Time <span className="font-normal text-zinc-500 dark:text-zinc-600">({browserTz})</span></label>
+                      <label className="block text-[11px] font-bold text-zinc-400 dark:text-zinc-500 mb-1.5">Time <span className="font-normal text-zinc-500 dark:text-zinc-600">({browserTz})</span></label>
                       <PremiumTimePicker
                         value={scheduleTime}
                         onChange={setScheduleTime}
@@ -887,7 +887,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
       <DialogContent showCloseButton={false} className="w-full max-w-md bg-white/90 dark:bg-[#0A0A0B]/85 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl shadow-black/20 dark:shadow-black/60">
         <div className="px-6 pt-6 pb-4 border-b border-zinc-200 dark:border-zinc-800/60 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700/60 bg-zinc-800/60 text-zinc-600 dark:text-zinc-300">
+            <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700/60 bg-zinc-100 dark:bg-zinc-800/60 text-zinc-600 dark:text-zinc-300">
               {cronToLabel(agent.cron_schedule)}
             </div>
           </div>
@@ -901,7 +901,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
 
         <div className="px-6 py-5">
           <h3 className="text-[18px] font-bold text-zinc-900 dark:text-zinc-100 leading-snug mb-2">{agent.name}</h3>
-          <p className="text-[14px] text-zinc-400 leading-relaxed line-clamp-4 mb-5">{agent.task_description}</p>
+          <p className="text-[14px] text-zinc-600 dark:text-zinc-400 leading-relaxed line-clamp-4 mb-5">{agent.task_description}</p>
 
           <div className="space-y-2 mb-5">
             {[
@@ -922,7 +922,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
             <div className="mb-5">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Last run</p>
               <div className="bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/50 rounded-lg p-4">
-                <p className="text-[13px] text-zinc-400 font-medium mb-1">{formatRunDate(agent.last_run_at)}</p>
+                <p className="text-[13px] text-zinc-700 dark:text-zinc-400 font-medium mb-1">{formatRunDate(agent.last_run_at)}</p>
                 <p className="text-[13px] text-zinc-500 leading-relaxed line-clamp-3">{agent.last_report_summary || 'Run completed successfully.'}</p>
               </div>
             </div>
@@ -937,7 +937,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
             </button>
             <button
               onClick={() => { onClose(); onDelete(); }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[14px] font-semibold text-red-400 hover:bg-red-500/20 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-red-500/10 border border-red-500/20 text-[14px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-all"
             >
               <Trash2 className="w-4 h-4" /> Delete
             </button>
@@ -1066,11 +1066,11 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
                     </button>
                     <div className={cn(
                       'w-7 h-7 flex items-center justify-center text-[13px] font-bold rounded-full transition-colors',
-                      isToday 
-                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm shadow-white/10' 
-                        : isPast 
-                          ? 'text-zinc-700' 
-                          : 'text-zinc-400 group-hover/cell:text-zinc-200',
+                      isToday
+                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm shadow-black/10 dark:shadow-white/10'
+                        : isPast
+                          ? 'text-zinc-400 dark:text-zinc-700'
+                          : 'text-zinc-500 dark:text-zinc-400 group-hover/cell:text-zinc-800 dark:group-hover/cell:text-zinc-200',
                     )}>
                       {cell.day}
                     </div>
@@ -1086,7 +1086,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
                       >
                         <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors truncate leading-tight">{agent.name}</p>
                         <p className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center gap-1.5">
-                          <span className="w-1 h-1 rounded-full bg-zinc-500 group-hover:bg-zinc-300 transition-colors" />
+                          <span className="w-1 h-1 rounded-full bg-zinc-500 group-hover:bg-zinc-700 dark:group-hover:bg-zinc-300 transition-colors" />
                           {formatTime(date)}
                         </p>
                       </button>
@@ -1107,7 +1107,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
 function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) => void }) {
   return (
     <div>
-      <p className="text-[15px] text-zinc-400 mb-8 text-center">
+      <p className="text-[15px] text-zinc-500 dark:text-zinc-400 mb-8 text-center">
         Get started with a pre-built agent — activate in one click, customize anytime.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1117,15 +1117,15 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className="bg-white/70 dark:bg-[#141414]/60 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-5 flex flex-col hover:border-black/20 dark:hover:border-white/20 hover:bg-zinc-800 dark:hover:bg-white dark:hover:bg-[#141414]/85 transition-all group shadow-sm"
+            className="bg-white/70 dark:bg-[#141414]/60 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-5 flex flex-col hover:border-black/20 dark:hover:border-white/20 hover:bg-white dark:hover:bg-[#141414]/85 transition-all group shadow-sm"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-zinc-200 dark:bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-zinc-200 dark:bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-300 dark:group-hover:bg-zinc-700/80 transition-colors">
                 {getTemplateIcon(t.name)}
               </div>
               <h4 className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100 leading-tight">{t.name}</h4>
             </div>
-            <p className="text-[13px] text-zinc-400 leading-relaxed flex-1 mb-4">{t.description}</p>
+            <p className="text-[13px] text-zinc-500 dark:text-zinc-400 leading-relaxed flex-1 mb-4">{t.description}</p>
             <div className="flex items-center justify-between">
               <span className="text-[12px] text-zinc-600 font-medium">{cronToLabel(t.cron_schedule)}</span>
               <button
@@ -1200,7 +1200,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
           {/* Left Column: Icon Badge & Details */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-[#121214] text-zinc-400">
+              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-[#121214] text-zinc-500 dark:text-zinc-400">
                 {cronToLabel(agent.cron_schedule).split(' ')[0]}
               </span>
               {agent.expires_at && (
@@ -1225,7 +1225,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
             <DropdownMenuRoot.Root>
               <DropdownMenuTrigger asChild>
-                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
+                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#121214] border border-transparent hover:border-zinc-200 dark:hover:border-zinc-900 transition-all">
                   <MoreHorizontal className="w-4.5 h-4.5" />
                 </button>
               </DropdownMenuTrigger>
@@ -1261,7 +1261,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
             <span className={cn(
               'inline-flex px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors shadow-sm',
               agent.status === 'running'
-                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border-zinc-100'
+                ? 'bg-zinc-900 text-white border-zinc-900 dark:bg-zinc-100 dark:text-zinc-950 dark:border-zinc-100'
                 : agent.status === 'active'
                   ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300'
                   : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 border-zinc-200 dark:border-zinc-900',
@@ -1459,7 +1459,7 @@ function ScheduledPageInner() {
             className={cn(
               'flex items-center gap-2 px-1 py-3.5 mr-8 text-[15px] font-semibold transition-all border-b-2 -mb-px',
               tab === key
-                ? 'text-zinc-900 dark:text-zinc-100 border-zinc-100'
+                ? 'text-zinc-900 dark:text-zinc-100 border-zinc-900 dark:border-zinc-100'
                 : 'text-zinc-500 border-transparent hover:text-zinc-700 dark:hover:text-zinc-300',
             )}
           >
@@ -1513,7 +1513,7 @@ function ScheduledPageInner() {
             <p className="text-[13.5px] text-zinc-500 leading-relaxed mb-6">
               Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
             </p>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-[#121214] text-zinc-500 dark:text-zinc-450 border border-zinc-300 dark:border-zinc-800 uppercase tracking-widest">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-[#121214] text-zinc-500 border border-zinc-300 dark:border-zinc-800 uppercase tracking-widest">
               Under Development
             </span>
           </div>
