@@ -48,6 +48,7 @@ import { invalidateGmailScope } from './gmail-scope';
 import { getSupabaseAdmin } from '../supabase.js';
 import { buildExecutionPlan, planToHint, checkPrerequisites } from './orchestrator';
 import { classifyUserIntent, shouldSuppressTools, intentSystemHint } from './intent-classifier';
+import { withNarrationField, extractNarrations } from './narration';
 import type { LLMMessage } from './engine';
 
 // ── Audit logging — fire-and-forget, never blocks the loop ────────────────────
@@ -384,23 +385,6 @@ function parseStructuredAgentParams(msg: string): Record<string, any> | null {
   }
 }
 
-// ── Narrated Execution Protocol ──────────────────────────────────────────────
-// The schema key injected into every tool (see narratedTools below): a live,
-// first-person "what I'm doing right now" line the model writes AS PART of the
-// tool call. Extracted + stripped here before executors ever see the input, and
-// re-emitted with the tool_call SSE event so the step tracker shows a specific
-// human sentence per step instead of a bare verb.
-const NARRATION_FIELD = '_narration';
-function extractNarrations(toolCalls: any[]): void {
-  for (const tc of toolCalls) {
-    if (tc?.input && typeof tc.input === 'object' && NARRATION_FIELD in tc.input) {
-      const n = tc.input[NARRATION_FIELD];
-      (tc as any).narration = typeof n === 'string' ? n.trim().slice(0, 220) : '';
-      delete tc.input[NARRATION_FIELD];
-    }
-  }
-}
-
 function sseEvent(type: string, data: unknown): string {
   return `event: ${type}\ndata: ${JSON.stringify(data)}\n\n`;
 }
@@ -640,27 +624,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     : getAvailableTools(connectedIntegrations, isBackgroundAgent, vaFilter);
 
   // ── NARRATED EXECUTION PROTOCOL ─────────────────────────────────────────────
-  // Manus-grade transparency, enforced at the PROTOCOL level instead of hoped
-  // for in the prompt: every tool schema gains a leading `_narration` field the
-  // model fills as part of the call itself. Models fill schema fields far more
-  // reliably than they volunteer prose between tool calls — so every step in
-  // the UI gets a specific, first-person "what I'm doing right now" line even
-  // from terse models. The field is stripped before execution (executors never
-  // see it) and emitted with the tool_call event for the step tracker.
-  const narratedTools = availableTools.map((t: any) => ({
-    ...t,
-    input_schema: {
-      ...t.input_schema,
-      properties: {
-        [NARRATION_FIELD]: {
-          type: 'string',
-          description:
-            'ALWAYS fill this FIRST. One short first-person line shown live to the user, present tense, specific to THIS exact call — what you are doing and what it serves (e.g. "Scanning your inbox for unanswered investor threads from this week"). Plain human language: no tool names, no jargon.',
-        },
-        ...((t.input_schema && t.input_schema.properties) || {}),
-      },
-    },
-  }));
+  // Every tool schema gains a leading `_narration` field the model fills as
+  // part of the call itself — see lib/arcus/narration.ts for the full doctrine.
+  // Stripped before execution (extractNarrations), emitted with tool_call.
+  const narratedTools = withNarrationField(availableTools as any[]);
 
   if (vaFilter) {
     log('info', 'tool surface VA-filtered', {
