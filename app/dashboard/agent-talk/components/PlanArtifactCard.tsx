@@ -1,17 +1,22 @@
 'use client';
 /**
  * Arcus V3 — Plan Artifact Card
- * 
+ *
  * State machine component with exactly 4 states:
  * detected → plan_built → executing → completed
- * 
- * Shared glass shell, editorial typography (Fraunces), 
- * and liquid interaction language.
+ *
+ * Presentation is built on the app's own theme tokens (arcus-* + glass), so
+ * the card and every element on it is legible in BOTH themes. The previous
+ * version styled itself with the standalone arcus-v3 token sheet whose
+ * companion classes (.arcus-badge, .arcus-btn-primary, …) were never loaded
+ * in the chat bundle — badges and buttons rendered unstyled and inherited
+ * near-invisible colors on the light theme.
  */
 import React, { useState, useCallback } from 'react';
+import { Loader2, Check, X, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { useRelativeTime } from '../hooks/useRelativeTime';
 import { usePlanSSE, type SSEEvent } from '../hooks/usePlanSSE';
-import '../arcus-tokens.css';
 
 export type PlanStatus = 'detected' | 'plan_built' | 'executing' | 'completed' | 'failed' | 'dismissed' | 'proposed' | 'approved' | 'draft' | 'cancelled';
 
@@ -91,10 +96,10 @@ interface PlanArtifactCardProps {
   onUpdate?: () => void;
 }
 
-const SEVERITY_MAP: Record<string, { label: string; color: string }> = {
-  low: { label: 'Low Priority', color: 'blue' },
-  medium: { label: 'Needs Attention', color: 'amber' },
-  high: { label: 'Action Required', color: 'red' },
+const SEVERITY_MAP: Record<string, { label: string; chip: string }> = {
+  low:    { label: 'Low Priority',    chip: 'bg-black/[0.05] dark:bg-white/[0.07] text-arcus-fg-secondary' },
+  medium: { label: 'Needs Attention', chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-300' },
+  high:   { label: 'Action Required', chip: 'bg-rose-500/10 text-rose-700 dark:text-rose-300' },
 };
 
 export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifactCardProps) {
@@ -120,6 +125,10 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
   );
   const [loading, setLoading] = useState(false);
   const relativeTime = useRelativeTime(normalizedPlan.created_at);
+  // Hooks must be unconditional — the previous version called useRelativeTime
+  // inside the completed-state branch, so the hook count changed the moment a
+  // plan transitioned to completed.
+  const completedRelativeTime = useRelativeTime(normalizedPlan.completed_at);
 
   // SSE for real-time execution feedback
   usePlanSSE({
@@ -196,82 +205,95 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
   // State: Completed (Collapsed)
   if (status === 'completed') {
     return (
-      <div className="glass-surface" style={{ padding: 'var(--space-4) var(--space-6)', opacity: 0.6, height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-4)' }}>
-        <span style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%', fontFamily: 'var(--font-ui)' }}>
+      <div className="arcus-glass rounded-2xl px-5 py-3.5 mb-4 flex items-center justify-between gap-3 opacity-70">
+        <span className="text-[13px] text-arcus-fg-secondary truncate">
           {normalizedPlan.findings?.[0]?.headline || normalizedPlan.headline}
         </span>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
-          Completed · {useRelativeTime(normalizedPlan.completed_at)}
+        <span className="text-[11.5px] text-arcus-fg-tertiary shrink-0">
+          Completed · {completedRelativeTime}
         </span>
       </div>
     );
   }
 
-  const severity = SEVERITY_MAP[normalizedPlan.severity || 'low'];
+  const severity = SEVERITY_MAP[normalizedPlan.severity || 'low'] || SEVERITY_MAP.low;
   const finding = normalizedPlan.findings?.[0];
 
   return (
-    <div className={`glass-surface ${isNew ? 'arcus-card-enter' : ''}`} style={{ padding: 'var(--space-6)', marginBottom: 'var(--space-4)' }}>
+    <div className={cn('arcus-glass-card rounded-2xl p-6 mb-4', isNew && 'animate-in fade-in slide-in-from-bottom-2 duration-300')}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-        <span className={`arcus-badge arcus-badge-${normalizedPlan.severity || 'low'}`}>
+      <div className="flex items-center justify-between mb-4">
+        <span className={cn('px-2.5 py-1 rounded-full text-[10.5px] font-semibold uppercase tracking-[0.08em]', severity.chip)}>
           {severity.label}
         </span>
-        <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
-          {relativeTime}
-        </span>
+        <span className="text-[11.5px] text-arcus-fg-tertiary">{relativeTime}</span>
       </div>
 
       {/* Headline & Impact */}
-      <h3 style={{ fontFamily: 'var(--font-content)', fontSize: 'var(--text-md)', fontWeight: 500, color: 'var(--text-on-dark-primary)', lineHeight: 1.3, marginBottom: 'var(--space-2)' }}>
+      <h3 className="text-[15.5px] font-semibold text-arcus-fg leading-snug mb-1.5">
         {finding?.headline || normalizedPlan.headline}
       </h3>
-      <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-secondary)', lineHeight: 1.6, marginBottom: 'var(--space-3)', fontFamily: 'var(--font-ui)' }}>
+      <p className="text-[13.5px] text-arcus-fg-secondary leading-relaxed mb-3">
         {finding?.impact || normalizedPlan.impact}
       </p>
 
       {/* Detected State */}
       {(status === 'proposed' || status === 'detected') && finding && (
         <>
-          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-tertiary)', marginBottom: 'var(--space-4)', fontFamily: 'var(--font-ui)' }}>
+          <div className="text-[11.5px] text-arcus-fg-tertiary mb-4">
             Detected from {normalizedPlan.source || 'connected apps'}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-            {finding.options.map((option, idx) => (
-              <div
-                key={idx}
-                onClick={() => setSelectedOption(idx)}
-                style={{
-                  display: 'flex',
-                  gap: 'var(--space-3)',
-                  padding: 'var(--space-3)',
-                  borderRadius: 'var(--radius-md)',
-                  cursor: 'pointer',
-                  border: selectedOption === idx ? '0.5px solid rgba(255,255,255,0.20)' : '0.5px solid transparent',
-                  background: selectedOption === idx ? 'rgba(255,255,255,0.06)' : 'transparent',
-                }}
-              >
-                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `1.5px solid ${selectedOption === idx ? '#FFF' : 'rgba(255,255,255,0.3)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
-                  {selectedOption === idx && <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FFF' }} className="arcus-option-pop" />}
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-                    <span style={{ fontSize: 'var(--text-sm)', fontWeight: 500, color: 'var(--text-on-dark-primary)', fontFamily: 'var(--font-ui)' }}>{option.label}</span>
-                    <span className="arcus-effort-badge">{option.effort}</span>
-                  </div>
-                  <div style={{ fontSize: 'var(--text-xs)', color: option.irreversible ? 'var(--color-warning)' : 'var(--text-on-dark-tertiary)', fontFamily: 'var(--font-ui)' }}>
-                    {option.irreversible && '⚠ '}
-                    {option.tradeoff}
-                  </div>
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col gap-2 mb-4">
+            {finding.options.map((option, idx) => {
+              const active = selectedOption === idx;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setSelectedOption(idx)}
+                  className={cn(
+                    'flex gap-3 p-3 rounded-xl text-left border transition-all',
+                    active
+                      ? 'border-black/[0.14] dark:border-white/[0.18] bg-black/[0.03] dark:bg-white/[0.05]'
+                      : 'border-transparent hover:bg-black/[0.02] dark:hover:bg-white/[0.03]',
+                  )}
+                >
+                  {/* Radio */}
+                  <span className={cn(
+                    'mt-0.5 w-4 h-4 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-colors',
+                    active ? 'border-arcus-fg' : 'border-black/25 dark:border-white/30',
+                  )}>
+                    {active && <span className="w-2 h-2 rounded-full bg-arcus-fg" />}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span className="text-[13.5px] font-medium text-arcus-fg">{option.label}</span>
+                      <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-black/[0.05] dark:bg-white/[0.07] text-arcus-fg-tertiary shrink-0">
+                        {option.effort} effort
+                      </span>
+                    </span>
+                    <span className={cn(
+                      'block text-[12px] leading-snug mt-0.5',
+                      option.irreversible ? 'text-amber-700 dark:text-amber-400' : 'text-arcus-fg-tertiary',
+                    )}>
+                      {option.irreversible && <AlertTriangle className="inline w-3 h-3 mr-1 -mt-0.5" />}
+                      {option.tradeoff}
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="arcus-btn-primary" onClick={handleBuildPlan} disabled={loading}>
-              {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Build Plan'}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={handleBuildPlan}
+              disabled={loading}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-arcus-fg text-arcus-fg-inverse text-[13px] font-semibold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+            >
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Build Plan'}
             </button>
           </div>
         </>
@@ -280,32 +302,68 @@ export default function PlanArtifactCard({ plan, isNew, onUpdate }: PlanArtifact
       {/* Plan Built / Executing States */}
       {(status === 'approved' || status === 'executing' || status === 'failed') && (
         <>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
+          <div className="flex flex-col gap-1.5 mb-4">
             {steps.map((step, idx) => (
-              <div key={step.id} style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', padding: 'var(--space-2) var(--space-3)', borderRadius: 'var(--radius-md)', background: step.status === 'completed' ? 'rgba(52,211,153,0.08)' : 'transparent' }} className={step.status === 'completed' ? 'arcus-step-flash' : ''}>
-                <div style={{ width: 20, height: 20, borderRadius: '50%', background: step.status === 'completed' ? 'var(--color-success-bg)' : 'rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 'var(--text-xs)', color: 'var(--text-on-dark-secondary)', fontFamily: 'var(--font-ui)' }}>
+              <div
+                key={step.id}
+                className={cn(
+                  'flex items-center gap-3 px-3 py-2 rounded-xl transition-colors',
+                  step.status === 'completed' && 'bg-emerald-500/[0.06]',
+                )}
+              >
+                <span className={cn(
+                  'w-5 h-5 rounded-full flex items-center justify-center shrink-0 text-[11px] tabular-nums',
+                  step.status === 'completed'
+                    ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
+                    : 'bg-black/[0.05] dark:bg-white/[0.08] text-arcus-fg-tertiary',
+                )}>
                   {step.status === 'pending' && (idx + 1)}
-                  {step.status === 'executing' && <span className="arcus-spinner arcus-spinner-small" />}
-                  {step.status === 'completed' && <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5L4 7L8 3" stroke="var(--color-success)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>}
-                  {step.status === 'failed' && <span style={{ color: 'var(--color-danger)' }}>×</span>}
-                </div>
-                <span style={{ flex: 1, fontSize: 'var(--text-sm)', color: 'var(--text-on-dark-primary)', fontFamily: 'var(--font-ui)' }}>{step.human_readable}</span>
-                <span className="arcus-step-app-chip">{step.app}</span>
+                  {step.status === 'executing' && <Loader2 className="w-3 h-3 animate-spin" />}
+                  {step.status === 'completed' && <Check className="w-3 h-3" strokeWidth={2.5} />}
+                  {step.status === 'failed' && <X className="w-3 h-3 text-rose-600 dark:text-rose-400" strokeWidth={2.5} />}
+                </span>
+                <span className="flex-1 text-[13px] text-arcus-fg leading-snug">{step.human_readable}</span>
+                <span className="text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded bg-black/[0.04] dark:bg-white/[0.06] border border-black/[0.06] dark:border-white/[0.08] text-arcus-fg-tertiary shrink-0">
+                  {step.app}
+                </span>
               </div>
             ))}
           </div>
 
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+          <div className="flex justify-end gap-2.5">
             {status === 'approved' && (
               <>
-                <button className="arcus-btn-ghost" onClick={handleDismiss}>Dismiss</button>
-                <button className="arcus-btn-primary" onClick={handleExecute} disabled={loading}>
-                  {loading ? <span className="arcus-spinner arcus-spinner-small" /> : 'Execute'}
+                <button
+                  type="button"
+                  onClick={handleDismiss}
+                  className="px-4 py-2 rounded-xl text-[13px] font-medium text-arcus-fg-secondary hover:bg-black/[0.04] dark:hover:bg-white/[0.05] transition-colors"
+                >
+                  Dismiss
+                </button>
+                <button
+                  type="button"
+                  onClick={handleExecute}
+                  disabled={loading}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-arcus-fg text-arcus-fg-inverse text-[13px] font-semibold hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+                >
+                  {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Execute'}
                 </button>
               </>
             )}
-            {status === 'executing' && <button className="arcus-btn-ghost" disabled style={{ opacity: 0.8, cursor: 'default' }}>Running…</button>}
-            {status === 'failed' && <button className="arcus-btn arcus-btn-destructive" onClick={() => setStatus('approved')}>Retry</button>}
+            {status === 'executing' && (
+              <span className="inline-flex items-center gap-2 px-4 py-2 text-[13px] font-medium text-arcus-fg-tertiary">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Running…
+              </span>
+            )}
+            {status === 'failed' && (
+              <button
+                type="button"
+                onClick={() => setStatus('approved')}
+                className="px-4 py-2 rounded-xl text-[13px] font-semibold text-rose-700 dark:text-rose-300 bg-rose-500/10 hover:bg-rose-500/15 transition-colors"
+              >
+                Retry
+              </button>
+            )}
           </div>
         </>
       )}

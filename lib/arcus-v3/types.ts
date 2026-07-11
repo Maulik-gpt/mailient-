@@ -107,7 +107,8 @@ export const StepSchema = z.object({
   humanReadable: z.string(),
 });
 
-// Option schema — each finding has 2-3 options
+// Option schema — each finding has 1-3 options (a single obvious right move
+// is BETTER than padding to two; forced alternatives read as mock data)
 export const OptionSchema = z.object({
   label: z.string(),
   effort: z.enum(['low', 'medium', 'high']),
@@ -121,7 +122,7 @@ export const FindingSchema = z.object({
   id: z.string(),
   headline: z.string(),
   impact: z.string(),
-  options: z.array(OptionSchema).min(2).max(3),
+  options: z.array(OptionSchema).min(1).max(3),
   recommended: z.number().int().min(0),
 });
 

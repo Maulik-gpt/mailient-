@@ -1047,6 +1047,24 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
         )}
       </div>
 
+      {/* The live thought itself — this prop was passed but never rendered,
+          so the run showed a shimmer label + timer with no actual thinking.
+          One quiet line, updating as the loop reasons (the Manus feel). */}
+      {!isComplete && content && content.length > 3 && (
+        <AnimatePresence mode="wait">
+          <motion.p
+            key={content}
+            initial={{ opacity: 0, y: 3 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="text-[12.5px] text-black/45 dark:text-white/40 leading-snug pl-9 -mt-0.5 line-clamp-2"
+          >
+            {content}
+          </motion.p>
+        </AnimatePresence>
+      )}
+
       <style jsx global>{`
         @keyframes shimmer-text {
           0%   { background-position: 200% 0; }
@@ -3600,13 +3618,17 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
+              // A run that called NO tools is just a reply — drop the processing
+              // card entirely so simple answers read like a person responding,
+              // not software finishing a job. The trace is for real work only.
+              const ranTools = currentAgentSteps.some(s => s.type === 'tool_call' || s.type === 'tool_result');
               // A question/plan card IS the message — no chat text needed there.
               // But if real work ran (tool steps) and no text came back, NEVER
               // leave a blank bubble — give a real, useful fallback.
               if (hadQuestionEvent || hadPlanEvent) {
                 finalProcessedText = '';
               } else if (!finalProcessedText) {
-                finalProcessedText = currentAgentSteps.length > 0
+                finalProcessedText = ranTools
                   ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
                   : '';
               }
@@ -3614,9 +3636,11 @@ export default function ChatInterface({
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
               const needsConfirmation = /should\s+i\s+proceed\??$/i.test(finalProcessedText.trim());
 
-              const finalSteps = currentAgentSteps.map(s =>
-                s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
-              );
+              const finalSteps = ranTools
+                ? currentAgentSteps.map(s =>
+                    s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
+                  )
+                : [];
 
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.role !== 'assistant') return m;
@@ -4748,20 +4772,23 @@ export default function ChatInterface({
     processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId });
   };
 
-  // Auto-run a prefill handed over from SiftToday's recommendation buttons. We
-  // wait until the chat has settled (not already loading) and fire handleSend
-  // exactly once — so the recommendation actually EXECUTES a full Arcus run (with
-  // every connected integration available to the agent), instead of silently
-  // filling an input box the user then has to send themselves.
+  // Prefill handed over from SiftToday's recommendation buttons. This used to
+  // auto-SEND — but if handleSend bailed on any precondition the prompt was
+  // already drained and silently lost, and the user landed on an empty chat
+  // with no idea why ("the redirect does nothing"). Now the handoff is VISIBLE:
+  // the request lands in the composer, focused, with a toast explaining where
+  // it came from — the user reads it and hits send. Transparent and unlosable.
   useEffect(() => {
-    if (!pendingPrefill || isLoading) return;
+    if (!pendingPrefill) return;
     const text = pendingPrefill;
     setPendingPrefill(null);
-    const t = setTimeout(() => { handleSend(text); }, 80);
-    return () => clearTimeout(t);
-    // handleSend is stable enough for this one-shot trigger; deps kept minimal.
+    setSuggestionInput({ text, id: Date.now() });
+    toast.info('Handed over from your briefing', {
+      description: 'The request is in the box below — review it and hit send.',
+      duration: 5000,
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingPrefill, isLoading]);
+  }, [pendingPrefill]);
 
   const startNewChat = () => {
     // Save current conversation asynchronously in the background before starting new one
