@@ -190,7 +190,7 @@ const LoadingTimer = () => {
     }, []);
 
     return (
-        <span className="ml-1.5 text-[10px] font-mono opacity-50 bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5 inline-flex items-center gap-1">
+        <span className="ml-1.5 text-[10px] font-mono opacity-50 bg-black/5 dark:bg-white/5 px-1.5 py-0.5 rounded-md border border-black/5 dark:border-white/5 inline-flex items-center gap-1">
             <Clock className="w-2.5 h-2.5" />
             {seconds}s
         </span>
@@ -1949,14 +1949,14 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
 
                             {/* Stats Grid */}
                             {summary && (
-                                <div className="mb-12 md:mb-16 overflow-hidden rounded-2xl border border-white/5 bg-[#111111] shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
-                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-white/5 lg:divide-y-0">
+                                <div className="mb-12 md:mb-16 overflow-hidden rounded-2xl border border-neutral-200 dark:border-white/5 bg-white dark:bg-[#111111] shadow-[0_20px_50px_rgba(0,0,0,0.06)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 divide-x divide-y divide-neutral-200 dark:divide-white/5 lg:divide-y-0">
                                          {/* Opportunities */}
                                          <div className="p-6 transition-colors bg-transparent">
                                              <div className="flex items-center gap-3 mb-4">
                                                  <Target className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.opportunities_detected || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.opportunities_detected || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">Opportunities</p>
                                          </div>
 
@@ -1965,7 +1965,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                              <div className="flex items-center gap-3 mb-4">
                                                  <Zap className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.urgent_action_required || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.urgent_action_required || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">Urgent</p>
                                          </div>
 
@@ -1974,7 +1974,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                              <div className="flex items-center gap-3 mb-4">
                                                  <TrendingUp className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.hot_leads_heating_up || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.hot_leads_heating_up || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">Hot Leads</p>
                                          </div>
 
@@ -1983,7 +1983,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                              <div className="flex items-center gap-3 mb-4">
                                                  <AlertCircle className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.conversations_at_risk || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.conversations_at_risk || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">At Risk</p>
                                          </div>
 
@@ -1992,7 +1992,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                              <div className="flex items-center gap-3 mb-4">
                                                  <Clock className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.missed_follow_ups || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.missed_follow_ups || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">Follow-ups</p>
                                          </div>
 
@@ -2001,7 +2001,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                              <div className="flex items-center gap-3 mb-4">
                                                  <Mail className="h-4 w-4 text-neutral-500" strokeWidth={1} />
                                              </div>
-                                             <p className="text-2xl font-light text-white mb-1">{summary.unread_but_important || 0}</p>
+                                             <p className="text-2xl font-light text-black dark:text-white mb-1">{summary.unread_but_important || 0}</p>
                                              <p className="text-xs text-neutral-500 font-light tracking-tight">Newsletters</p>
                                          </div>
                                      </div>
@@ -2024,13 +2024,13 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                             </div>
                                             <a
                                                 href="/pricing"
-                                                className="h-10 px-6 bg-white hover:bg-zinc-200 text-black rounded-full text-[13px] font-bold transition-all shadow-lg shadow-white/5 flex items-center justify-center shrink-0 active:scale-95"
+                                                className="h-10 px-6 bg-black text-white hover:bg-black/85 dark:bg-white dark:hover:bg-zinc-200 dark:text-black rounded-full text-[13px] font-bold transition-all shadow-lg shadow-black/10 dark:shadow-white/5 flex items-center justify-center shrink-0 active:scale-95"
                                             >
                                                 Upgrade
                                             </a>
                                         </div>
                                     ) : (
-                                        <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-zinc-900/30 flex items-center justify-between">
+                                        <div className="p-4 border border-neutral-200 dark:border-zinc-800 rounded-xl bg-neutral-50 dark:bg-zinc-900/30 flex items-center justify-between">
                                             <div className="flex items-center gap-3">
                                                 <AlertCircle className="h-4 w-4 text-neutral-600 dark:text-zinc-500" />
                                                 <p className="text-sm text-neutral-600 dark:text-zinc-400 font-light">{error}</p>
@@ -2039,7 +2039,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                 <Button
                                                     onClick={() => signOut({ callbackUrl: '/' })}
                                                     variant="outline"
-                                                    className="h-8 px-4 text-xs bg-transparent hover:bg-white/5 text-neutral-300 border-neutral-700/50 flex-shrink-0"
+                                                    className="h-8 px-4 text-xs bg-transparent hover:bg-black/5 dark:hover:bg-white/5 text-neutral-600 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700/50 flex-shrink-0"
                                                 >
                                                     Sign In Again
                                                 </Button>
@@ -2057,7 +2057,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                     <div className="hidden xl:flex w-64 bg-neutral-50 dark:bg-neutral-900/10 border border-neutral-200 dark:border-neutral-800/30 rounded-3xl overflow-hidden flex-col duration-500 border-dashed">
                                         {!selectedContactEmail ? (
                                             <div className="flex-1 flex items-center justify-center p-8 opacity-20">
-                                                <div className="w-px h-12 bg-white/20" />
+                                                <div className="w-px h-12 bg-black/20 dark:bg-white/20" />
                                             </div>
                                         ) : (
                                             <div className="p-6 space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
@@ -2093,7 +2093,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
 
                                     {/* Middle Column: Conversation List */}
                                     <div className={`${selectedContactEmail ? 'hidden lg:flex' : 'flex'} flex-1 bg-white dark:bg-[#0a0a0a] border border-neutral-200 dark:border-neutral-800/50 rounded-3xl overflow-hidden flex-col shadow-sm duration-300`}>
-                                        <div className="p-6 border-b border-white/[0.03] flex items-center justify-between bg-white/[0.01]">
+                                        <div className="p-6 border-b border-neutral-100 dark:border-white/[0.03] flex items-center justify-between bg-black/[0.01] dark:bg-white/[0.01]">
                                             <h3 className="text-[10px] uppercase tracking-[0.2em] font-bold text-neutral-600 dark:text-neutral-500">Recently Contacted</h3>
                                             <div className="relative">
                                                 <input
@@ -2118,7 +2118,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                         onClick={() => fetchContactDetail(contact.email)}
                                                         className={`group flex items-center gap-6 p-5 hover:bg-white/[0.04] active:bg-white/[0.06] transition-all cursor-pointer border-b border-white/[0.02] last:border-0 relative ${selectedContactEmail === contact.email ? 'bg-black/[0.05] dark:bg-white/[0.05]' : ''}`}
                                                     >
-                                                        <Avatar className="w-12 h-12 border border-white/[0.05]">
+                                                        <Avatar className="w-12 h-12 border border-neutral-200 dark:border-white/[0.05]">
                                                             <AvatarFallback className="bg-neutral-800 text-black dark:text-white/50 text-sm font-normal">
                                                                 {contact.name?.[0]?.toUpperCase() || contact.email?.[0]?.toUpperCase() || 'U'}
                                                             </AvatarFallback>
@@ -2143,7 +2143,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                             <ChevronRight className={`w-4 h-4 text-neutral-600 transition-all ${selectedContactEmail === contact.email ? 'translate-x-1 text-black dark:text-white' : 'opacity-0 group-hover:opacity-100'}`} />
                                                         </div>
                                                         {selectedContactEmail === contact.email && (
-                                                            <div className="absolute inset-y-0 left-0 w-1 bg-white" />
+                                                            <div className="absolute inset-y-0 left-0 w-1 bg-black dark:bg-white" />
                                                         )}
                                                     </div>
                                                 ))
@@ -2391,7 +2391,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
 
                                                 {/* Load More Button */}
                                                 {traditionalNextPageToken && (
-                                                    <div className="p-8 text-center border-t border-white/[0.02] bg-white/[0.01]">
+                                                    <div className="p-8 text-center border-t border-neutral-100 dark:border-white/[0.02] bg-black/[0.01] dark:bg-white/[0.01]">
                                                         <Button
                                                             onClick={handleLoadMoreTraditional}
                                                             disabled={isLoadingMoreTraditional}
@@ -2986,7 +2986,7 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
                                                                          </button>
                                                                          <button
                                                                              onClick={() => window.open(`https://mail.google.com/mail/u/0/#inbox/${selectedTraditionalEmail.id}`, '_blank')}
-                                                                             className="flex items-center gap-3 px-10 py-4 bg-white text-black hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-2xl active:scale-95"
+                                                                             className="flex items-center gap-3 px-10 py-4 bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-neutral-200 rounded-2xl text-base font-bold transition-all shadow-xl shadow-black/10 dark:shadow-2xl active:scale-95"
                                                                          >
                                                                              <ExternalLink className="w-5 h-5" />
                                                                              Open in Gmail

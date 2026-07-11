@@ -429,11 +429,11 @@ function PremiumDatePicker({ value, onChange, minDate }: {
                   disabled={cell.isDisabled}
                   className={cn(
                     'text-[12px] py-1.5 rounded-lg text-center font-bold transition-all',
-                    cell.isCurrentMonth ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-300 dark:text-zinc-700',
-                    cell.isDisabled && 'text-zinc-100 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
+                    cell.isCurrentMonth ? 'text-zinc-700 dark:text-zinc-300' : 'text-zinc-600 dark:text-zinc-300 dark:text-zinc-700',
+                    cell.isDisabled && 'text-zinc-900 dark:text-zinc-100 dark:text-zinc-800/30 cursor-not-allowed hover:bg-transparent',
                     !cell.isDisabled && !isSelected && 'hover:bg-zinc-100 dark:hover:bg-zinc-900/50',
                     isTodayCell && !isSelected && 'border border-zinc-300 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100',
-                    isSelected && 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
+                    isSelected && 'bg-zinc-100 dark:bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 font-bold shadow-md shadow-black/5 dark:shadow-white/5'
                   )}
                 >
                   {cell.day}
@@ -862,7 +862,7 @@ function NewScheduleModal({ open, onClose, onSave, initial }: {
             <button
               onClick={handleSave}
               disabled={saving || !task.trim()}
-              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-black hover:bg-zinc-900 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+              className="flex-1 py-3.5 rounded-xl text-[15px] font-extrabold text-white bg-black hover:bg-zinc-100 dark:hover:bg-zinc-900 dark:text-zinc-950 dark:bg-zinc-100 dark:hover:bg-white active:scale-[0.98] transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
             >
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
               {saving ? 'Saving…' : initial?.id ? 'Save changes' : 'Create schedule'}
@@ -884,23 +884,23 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
 
   return (
     <Dialog open onOpenChange={v => !v && onClose()}>
-      <DialogContent showCloseButton={false} className="w-full max-w-md bg-[#0A0A0B]/85 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl shadow-black/60">
-        <div className="px-6 pt-6 pb-4 border-b border-zinc-800/60 flex items-start justify-between gap-3">
+      <DialogContent showCloseButton={false} className="w-full max-w-md bg-white/90 dark:bg-[#0A0A0B]/85 backdrop-blur-2xl border border-black/10 dark:border-white/10 rounded-[2.5rem] p-0 overflow-hidden shadow-2xl shadow-black/20 dark:shadow-black/60">
+        <div className="px-6 pt-6 pb-4 border-b border-zinc-200 dark:border-zinc-800/60 flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-700/60 bg-zinc-800/60 text-zinc-300">
+            <div className="px-2.5 py-1 rounded-md text-[11px] font-semibold border border-zinc-300 dark:border-zinc-700/60 bg-zinc-800/60 text-zinc-600 dark:text-zinc-300">
               {cronToLabel(agent.cron_schedule)}
             </div>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-200 hover:bg-zinc-800 transition-all">
+            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all">
               <X className="w-4 h-4" />
             </button>
           </div>
         </div>
 
         <div className="px-6 py-5">
-          <h3 className="text-[18px] font-bold text-zinc-100 leading-snug mb-2">{agent.name}</h3>
+          <h3 className="text-[18px] font-bold text-zinc-900 dark:text-zinc-100 leading-snug mb-2">{agent.name}</h3>
           <p className="text-[14px] text-zinc-400 leading-relaxed line-clamp-4 mb-5">{agent.task_description}</p>
 
           <div className="space-y-2 mb-5">
@@ -911,9 +911,9 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
               { label: 'Output', value: agent.output_channel === 'both' ? 'Gmail + Slack' : agent.output_channel.charAt(0).toUpperCase() + agent.output_channel.slice(1) },
               ...(agent.expires_at ? [{ label: 'Expires', value: new Date(agent.expires_at + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) }] : []),
             ].map((row, i) => (
-              <div key={i} className="flex items-center justify-between py-2.5 px-4 bg-zinc-900/60 rounded-lg border border-zinc-800/50">
+              <div key={i} className="flex items-center justify-between py-2.5 px-4 bg-zinc-100/80 dark:bg-zinc-900/60 rounded-lg border border-zinc-200 dark:border-zinc-800/50">
                 <span className="text-[13px] text-zinc-500">{row.label}</span>
-                <span className="text-[13px] text-zinc-200 font-medium">{row.value}</span>
+                <span className="text-[13px] text-zinc-800 dark:text-zinc-200 font-medium">{row.value}</span>
               </div>
             ))}
           </div>
@@ -921,7 +921,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
           {agent.last_run_at && (
             <div className="mb-5">
               <p className="text-[11px] font-semibold uppercase tracking-widest text-zinc-600 mb-2">Last run</p>
-              <div className="bg-zinc-900/60 border border-zinc-800/50 rounded-lg p-4">
+              <div className="bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-200 dark:border-zinc-800/50 rounded-lg p-4">
                 <p className="text-[13px] text-zinc-400 font-medium mb-1">{formatRunDate(agent.last_run_at)}</p>
                 <p className="text-[13px] text-zinc-500 leading-relaxed line-clamp-3">{agent.last_report_summary || 'Run completed successfully.'}</p>
               </div>
@@ -931,7 +931,7 @@ function AgentDetailModal({ agent, onClose, onToggle, onEdit, onDelete, onToggle
           <div className="flex gap-2">
             <button
               onClick={() => { onClose(); onEdit(); }}
-              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-900 border border-zinc-700/60 text-[14px] font-semibold text-zinc-300 hover:bg-zinc-800 transition-all"
+              className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700/60 text-[14px] font-semibold text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-all"
             >
               <Edit2 className="w-4 h-4" /> Edit
             </button>
@@ -989,32 +989,32 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
   const nextMonth = () => { if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); } else setViewMonth(m => m + 1); };
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 bg-zinc-950">
+    <div className="flex-1 flex flex-col min-h-0 bg-zinc-50 dark:bg-zinc-950">
       {/* Calendar nav bar */}
-      <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-900 flex-shrink-0 bg-zinc-950/60 backdrop-blur-md">
+      <div className="flex items-center justify-between px-8 py-5 border-b border-zinc-200 dark:border-zinc-900 flex-shrink-0 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-md">
         <div className="flex items-center gap-2">
-          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+          <button onClick={prevMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-150">
             <ChevronLeft className="w-4.5 h-4.5" />
           </button>
-          <h3 className="text-[18px] font-extrabold text-zinc-100 min-w-[170px] text-center tracking-tight font-sans">
+          <h3 className="text-[18px] font-extrabold text-zinc-900 dark:text-zinc-100 min-w-[170px] text-center tracking-tight font-sans">
             {MONTH_NAMES[viewMonth]} {viewYear}
           </h3>
-          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-100 hover:bg-zinc-900 border border-zinc-900 hover:border-zinc-800 transition-all duration-150">
+          <button onClick={nextMonth} className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800 transition-all duration-150">
             <ChevronRight className="w-4.5 h-4.5" />
           </button>
         </div>
         <div className="flex items-center gap-3">
           <button
             onClick={() => { setViewYear(today.getFullYear()); setViewMonth(today.getMonth()); }}
-            className="px-4 py-2 rounded-xl text-[13px] font-bold text-zinc-300 bg-zinc-900 border border-zinc-900 hover:border-zinc-800 hover:text-white transition-all duration-150 animate-none"
+            className="px-4 py-2 rounded-xl text-[13px] font-bold text-zinc-600 dark:text-zinc-300 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-900 hover:border-zinc-300 dark:hover:border-zinc-800 hover:text-black dark:hover:text-white transition-all duration-150 animate-none"
           >
             Today
           </button>
-          <div className="flex border border-zinc-900 bg-zinc-950 rounded-xl overflow-hidden p-0.5">
-            <button className="w-8 h-8 flex items-center justify-center bg-zinc-900 text-zinc-100 rounded-lg transition-all duration-150">
+          <div className="flex border border-zinc-200 dark:border-zinc-900 bg-zinc-50 dark:bg-zinc-950 rounded-xl overflow-hidden p-0.5">
+            <button className="w-8 h-8 flex items-center justify-center bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 rounded-lg transition-all duration-150">
               <CalendarDays className="w-4 h-4" />
             </button>
-            <button className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:bg-zinc-900 hover:text-zinc-300 rounded-lg transition-all duration-150">
+            <button className="w-8 h-8 flex items-center justify-center text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-700 dark:hover:text-zinc-300 rounded-lg transition-all duration-150">
               <List className="w-4 h-4" />
             </button>
           </div>
@@ -1022,9 +1022,9 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 border-b border-zinc-900/60 flex-shrink-0 bg-zinc-950">
+      <div className="grid grid-cols-7 border-b border-zinc-200/80 dark:border-zinc-900/60 flex-shrink-0 bg-zinc-50 dark:bg-zinc-950">
         {DAY_NAMES.map(d => (
-          <div key={d} className="text-center text-[11px] font-bold uppercase tracking-widest text-zinc-500 py-3.5 border-r border-zinc-900/40 last:border-r-0">
+          <div key={d} className="text-center text-[11px] font-bold uppercase tracking-widest text-zinc-500 py-3.5 border-r border-zinc-200/60 dark:border-zinc-900/40 last:border-r-0">
             {d}
           </div>
         ))}
@@ -1032,7 +1032,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
 
       {/* Calendar grid — fills all remaining space */}
       <div
-        className="flex-1 grid grid-cols-7 min-h-0 bg-zinc-950"
+        className="flex-1 grid grid-cols-7 min-h-0 bg-zinc-50 dark:bg-zinc-950"
         style={{ gridTemplateRows: `repeat(${weeks}, 1fr)` }}
       >
         {cells.map((cell, idx) => {
@@ -1042,13 +1042,13 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
             <div
               key={idx}
               className={cn(
-                'flex flex-col border-r border-b border-zinc-900/60 p-2.5 overflow-hidden transition-all duration-200 group/cell',
+                'flex flex-col border-r border-b border-zinc-200/80 dark:border-zinc-900/60 p-2.5 overflow-hidden transition-all duration-200 group/cell',
                 idx % 7 === 6 && 'border-r-0',
                 cell.day === null 
-                  ? 'bg-[#050505]' 
+                  ? 'bg-zinc-100/60 dark:bg-[#050505]' 
                   : isToday 
-                    ? 'bg-zinc-900/45' 
-                    : 'bg-zinc-950/20 hover:bg-zinc-900/20',
+                    ? 'bg-zinc-100 dark:bg-zinc-900/45' 
+                    : 'bg-white/40 dark:bg-zinc-950/20 hover:bg-zinc-100/60 dark:hover:bg-zinc-900/20',
               )}
             >
               {cell.day !== null && (
@@ -1058,7 +1058,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
                     <button
                       onClick={onCreateNew}
                       className={cn(
-                        'w-6 h-6 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-200 hover:bg-zinc-900 transition-all',
+                        'w-6 h-6 flex items-center justify-center rounded-lg text-zinc-600 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-all',
                         isToday ? 'opacity-100' : 'opacity-0 group-hover/cell:opacity-100'
                       )}
                     >
@@ -1067,7 +1067,7 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
                     <div className={cn(
                       'w-7 h-7 flex items-center justify-center text-[13px] font-bold rounded-full transition-colors',
                       isToday 
-                        ? 'bg-zinc-100 text-zinc-950 shadow-sm shadow-white/10' 
+                        ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 shadow-sm shadow-white/10' 
                         : isPast 
                           ? 'text-zinc-700' 
                           : 'text-zinc-400 group-hover/cell:text-zinc-200',
@@ -1082,9 +1082,9 @@ function CalendarView({ agents, onAgentClick, onCreateNew }: {
                       <button
                         key={ri}
                         onClick={() => onAgentClick(agent)}
-                        className="w-full text-left bg-zinc-900/90 border border-zinc-800/80 hover:bg-zinc-800 hover:border-zinc-700 rounded-lg px-2.5 py-2 transition-all duration-150 active:scale-[0.98] group flex flex-col justify-between min-h-[50px] shadow-sm shadow-black/20"
+                        className="w-full text-left bg-white border border-zinc-200 hover:bg-zinc-50 hover:border-zinc-300 dark:bg-zinc-900/90 dark:border-zinc-800/80 dark:hover:bg-zinc-800 dark:hover:border-zinc-700 rounded-lg px-2.5 py-2 transition-all duration-150 active:scale-[0.98] group flex flex-col justify-between min-h-[50px] shadow-sm shadow-black/5 dark:shadow-black/20"
                       >
-                        <p className="text-[12px] font-bold text-zinc-200 group-hover:text-white transition-colors truncate leading-tight">{agent.name}</p>
+                        <p className="text-[12px] font-bold text-zinc-800 dark:text-zinc-200 group-hover:text-black dark:group-hover:text-white transition-colors truncate leading-tight">{agent.name}</p>
                         <p className="text-[10px] text-zinc-500 font-mono mt-1 flex items-center gap-1.5">
                           <span className="w-1 h-1 rounded-full bg-zinc-500 group-hover:bg-zinc-300 transition-colors" />
                           {formatTime(date)}
@@ -1117,20 +1117,20 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
-            className="bg-[#141414]/60 backdrop-blur-xl border border-white/[0.08] rounded-2xl p-5 flex flex-col hover:border-white/20 hover:bg-[#141414]/85 transition-all group shadow-sm"
+            className="bg-white/70 dark:bg-[#141414]/60 backdrop-blur-xl border border-black/[0.08] dark:border-white/[0.08] rounded-2xl p-5 flex flex-col hover:border-black/20 dark:hover:border-white/20 hover:bg-zinc-800 dark:hover:bg-white dark:hover:bg-[#141414]/85 transition-all group shadow-sm"
           >
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
+              <div className="w-9 h-9 rounded-xl bg-zinc-200 dark:bg-zinc-800/80 flex items-center justify-center flex-shrink-0 group-hover:bg-zinc-700/80 transition-colors">
                 {getTemplateIcon(t.name)}
               </div>
-              <h4 className="text-[15px] font-bold text-zinc-100 leading-tight">{t.name}</h4>
+              <h4 className="text-[15px] font-bold text-zinc-900 dark:text-zinc-100 leading-tight">{t.name}</h4>
             </div>
             <p className="text-[13px] text-zinc-400 leading-relaxed flex-1 mb-4">{t.description}</p>
             <div className="flex items-center justify-between">
               <span className="text-[12px] text-zinc-600 font-medium">{cronToLabel(t.cron_schedule)}</span>
               <button
                 onClick={() => onActivate(t)}
-                className="px-4 py-1.5 rounded-lg bg-zinc-100 text-zinc-950 text-[13px] font-bold hover:bg-white active:scale-95 transition-all"
+                className="px-4 py-1.5 rounded-lg bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 text-[13px] font-bold hover:bg-zinc-800 dark:hover:bg-white active:scale-95 transition-all"
               >
                 Activate
               </button>
@@ -1149,22 +1149,22 @@ function TemplateCards({ onActivate }: { onActivate: (t: typeof TEMPLATES[0]) =>
 
 function AgentTaskCardSkeleton() {
   return (
-    <div className="bg-[#0A0A0B]/60 border border-zinc-900 rounded-2xl overflow-hidden animate-pulse">
+    <div className="bg-white dark:bg-[#0A0A0B]/60 border border-zinc-200 dark:border-zinc-900 rounded-2xl overflow-hidden animate-pulse">
       <div className="p-6">
         <div className="flex items-start gap-4">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-3">
-              <div className="h-6 w-20 rounded-lg bg-zinc-800/70" />
+              <div className="h-6 w-20 rounded-lg bg-zinc-200 dark:bg-zinc-800/70" />
             </div>
-            <div className="h-5 w-2/5 rounded bg-zinc-800/70 mb-3" />
-            <div className="h-3.5 w-4/5 rounded bg-zinc-900 mb-2" />
-            <div className="h-3.5 w-3/5 rounded bg-zinc-900 mb-4" />
+            <div className="h-5 w-2/5 rounded bg-zinc-200 dark:bg-zinc-800/70 mb-3" />
+            <div className="h-3.5 w-4/5 rounded bg-zinc-100 dark:bg-zinc-900 mb-2" />
+            <div className="h-3.5 w-3/5 rounded bg-zinc-100 dark:bg-zinc-900 mb-4" />
             <div className="flex items-center gap-4">
-              <div className="h-3 w-24 rounded bg-zinc-900" />
-              <div className="h-3 w-16 rounded bg-zinc-900" />
+              <div className="h-3 w-24 rounded bg-zinc-100 dark:bg-zinc-900" />
+              <div className="h-3 w-16 rounded bg-zinc-100 dark:bg-zinc-900" />
             </div>
           </div>
-          <div className="w-10 h-6 rounded-full bg-zinc-800/70 flex-shrink-0" />
+          <div className="w-10 h-6 rounded-full bg-zinc-200 dark:bg-zinc-800/70 flex-shrink-0" />
         </div>
       </div>
     </div>
@@ -1193,14 +1193,14 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -6 }}
-      className="bg-[#0A0A0B]/60 backdrop-blur-xl border border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-800 hover:shadow-lg hover:shadow-black/20 transition-all duration-200 group"
+      className="bg-white dark:bg-[#0A0A0B]/60 backdrop-blur-xl border border-zinc-200 dark:border-zinc-900 rounded-2xl overflow-hidden hover:border-zinc-300 dark:hover:border-zinc-800 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20 transition-all duration-200 group"
     >
       <div className="p-6">
         <div className="flex items-start gap-4">
           {/* Left Column: Icon Badge & Details */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-3 mb-2.5 flex-wrap">
-              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-800 bg-[#121214] text-zinc-400">
+              <span className="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border border-zinc-300 dark:border-zinc-800 bg-zinc-100 dark:bg-[#121214] text-zinc-400">
                 {cronToLabel(agent.cron_schedule).split(' ')[0]}
               </span>
               {agent.expires_at && (
@@ -1213,7 +1213,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
             
             <button
               onClick={onClick}
-              className="text-[17px] font-extrabold text-zinc-100 text-left hover:text-white transition-colors leading-tight line-clamp-1 block w-full tracking-tight"
+              className="text-[17px] font-extrabold text-zinc-900 dark:text-zinc-100 text-left hover:text-black dark:hover:text-white transition-colors leading-tight line-clamp-1 block w-full tracking-tight"
             >
               {agent.name}
             </button>
@@ -1225,12 +1225,12 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
             <Toggle checked={agent.status !== 'paused'} onChange={onToggle} />
             <DropdownMenuRoot.Root>
               <DropdownMenuTrigger asChild>
-                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-200 hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
+                <button className="w-9 h-9 flex items-center justify-center rounded-xl text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-[#121214] border border-transparent hover:border-zinc-900 transition-all">
                   <MoreHorizontal className="w-4.5 h-4.5" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[140px] bg-[#141414]/90 backdrop-blur-xl border border-white/10 rounded-xl p-1 shadow-2xl">
-                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-300 hover:text-zinc-100 cursor-pointer rounded-lg transition-colors">
+              <DropdownMenuContent align="end" className="min-w-[140px] bg-white/90 dark:bg-[#141414]/90 backdrop-blur-xl border border-black/10 dark:border-white/10 rounded-xl p-1 shadow-2xl">
+                <DropdownMenuItem onClick={onEdit} className="flex items-center gap-2 px-3 py-2 text-[13px] text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer rounded-lg transition-colors">
                   <Edit2 className="w-3.5 h-3.5" /> Edit schedule
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={onDelete} variant="destructive" className="flex items-center gap-2 px-3 py-2 text-[13px] cursor-pointer rounded-lg transition-colors">
@@ -1242,29 +1242,29 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
         </div>
 
         {/* Separator & Metadata dashboard */}
-        <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-zinc-900/60">
+        <div className="grid grid-cols-3 gap-4 mt-5 pt-5 border-t border-zinc-200/80 dark:border-zinc-900/60">
           <div className="flex items-start gap-2.5">
             <CalendarDays className="w-4.5 h-4.5 text-zinc-600 mt-0.5" />
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-0.5">Schedule</span>
-              <span className="text-[13px] text-zinc-300 font-semibold leading-none">{cronToLabel(agent.cron_schedule)}</span>
+              <span className="text-[13px] text-zinc-600 dark:text-zinc-300 font-semibold leading-none">{cronToLabel(agent.cron_schedule)}</span>
             </div>
           </div>
           <div className="flex items-start gap-2.5">
             <Clock className="w-4.5 h-4.5 text-zinc-600 mt-0.5" />
             <div>
               <span className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 block mb-0.5">Next run</span>
-              <span className="text-[13px] text-zinc-300 font-semibold leading-none">{formatNextRun(nextRun)}</span>
+              <span className="text-[13px] text-zinc-600 dark:text-zinc-300 font-semibold leading-none">{formatNextRun(nextRun)}</span>
             </div>
           </div>
           <div className="flex flex-col items-end justify-center">
             <span className={cn(
               'inline-flex px-3 py-1 rounded-xl text-[11px] font-bold border transition-colors shadow-sm',
               agent.status === 'running'
-                ? 'bg-zinc-100 text-zinc-950 border-zinc-100'
+                ? 'bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 border-zinc-100'
                 : agent.status === 'active'
-                  ? 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                  : 'bg-zinc-950 text-zinc-600 border-zinc-900',
+                  ? 'bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300'
+                  : 'bg-zinc-50 dark:bg-zinc-950 text-zinc-600 border-zinc-200 dark:border-zinc-900',
             )}>
               {agent.status === 'running' ? 'Running' : agent.status === 'active' ? 'Active' : 'Paused'}
             </span>
@@ -1273,9 +1273,9 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
       </div>
 
       {/* Skip confirmations inside box */}
-      <div className="mx-6 mb-6 bg-[#121214] border border-zinc-900 rounded-2xl px-5 py-4 flex items-center justify-between transition-colors hover:bg-[#151517]">
+      <div className="mx-6 mb-6 bg-zinc-100 dark:bg-[#121214] border border-zinc-200 dark:border-zinc-900 rounded-2xl px-5 py-4 flex items-center justify-between transition-colors hover:bg-zinc-50 dark:hover:bg-[#151517]">
         <div>
-          <p className="text-[13px] font-bold text-zinc-200">Skip confirmations</p>
+          <p className="text-[13px] font-bold text-zinc-800 dark:text-zinc-200">Skip confirmations</p>
           <p className="text-[12px] text-zinc-500 mt-0.5">No approval needed before execution</p>
         </div>
         <Toggle checked={agent.skip_confirmations} onChange={onToggleConfirmations} />
@@ -1426,20 +1426,20 @@ function ScheduledPageInner() {
   // Hold the UI behind a plain backdrop until the paywall gate resolves, so the
   // paid agents surface never flashes for an unpaid user before the redirect.
   if (!gateOk) {
-    return <div className="bg-zinc-950" style={{ height: '100dvh' }} />;
+    return <div className="bg-zinc-50 dark:bg-zinc-950" style={{ height: '100dvh' }} />;
   }
 
   return (
-    <div className="bg-zinc-950 text-zinc-100 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="bg-zinc-50 dark:bg-zinc-950 text-zinc-900 dark:text-zinc-100 flex flex-col overflow-hidden" style={{ height: '100dvh' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-8 pt-8 pb-0 flex-shrink-0">
         <div>
-          <h1 className="text-[30px] font-bold tracking-tight text-zinc-100">Scheduled</h1>
+          <h1 className="text-[30px] font-bold tracking-tight text-zinc-900 dark:text-zinc-100">Scheduled</h1>
           <p className="text-zinc-500 text-[14px] mt-1">Autonomous agents working for you around the clock</p>
         </div>
         <button
           onClick={() => setCreateOpen(true)}
-          className="flex items-center gap-2 px-5 py-3 bg-zinc-100 text-zinc-950 rounded-xl font-bold text-[14px] hover:bg-white active:scale-95 transition-all shadow-sm"
+          className="flex items-center gap-2 px-5 py-3 bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 rounded-xl font-bold text-[14px] hover:bg-zinc-800 dark:hover:bg-white active:scale-95 transition-all shadow-sm"
         >
           <Plus className="w-4 h-4" />
           New schedule
@@ -1447,7 +1447,7 @@ function ScheduledPageInner() {
       </div>
 
       {/* Tabs */}
-      <div className="flex items-center px-8 mt-6 border-b border-zinc-800/70 flex-shrink-0">
+      <div className="flex items-center px-8 mt-6 border-b border-zinc-200 dark:border-zinc-800/70 flex-shrink-0">
         {([
           { key: 'tasks', label: 'Tasks', icon: List },
           { key: 'calendar', label: 'Calendar', icon: CalendarDays },
@@ -1459,8 +1459,8 @@ function ScheduledPageInner() {
             className={cn(
               'flex items-center gap-2 px-1 py-3.5 mr-8 text-[15px] font-semibold transition-all border-b-2 -mb-px',
               tab === key
-                ? 'text-zinc-100 border-zinc-100'
-                : 'text-zinc-500 border-transparent hover:text-zinc-300',
+                ? 'text-zinc-900 dark:text-zinc-100 border-zinc-100'
+                : 'text-zinc-500 border-transparent hover:text-zinc-700 dark:hover:text-zinc-300',
             )}
           >
             <Icon className="w-4 h-4" />
@@ -1486,7 +1486,7 @@ function ScheduledPageInner() {
         /* Calendar: no padding, fills remaining viewport height */
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
           {tableError && (
-            <div className="mx-8 mt-4 p-3 bg-zinc-900 border border-zinc-700/60 rounded-xl flex items-start gap-3 flex-shrink-0">
+            <div className="mx-8 mt-4 p-3 bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700/60 rounded-xl flex items-start gap-3 flex-shrink-0">
               <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
               <p className="text-[13px] text-zinc-400">Scheduled agents aren't ready yet — your workspace is still finishing setup.</p>
             </div>
@@ -1500,20 +1500,20 @@ function ScheduledPageInner() {
       ) : tab === 'marketplace' ? (
         <div className="flex-1 overflow-y-auto px-8 py-7 flex flex-col items-center justify-center">
           {tableError && (
-            <div className="w-full max-w-md mb-6 p-4 bg-[#121214] border border-zinc-900 rounded-xl flex items-start gap-3">
+            <div className="w-full max-w-md mb-6 p-4 bg-zinc-100 dark:bg-[#121214] border border-zinc-200 dark:border-zinc-900 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
               <p className="text-[13px] text-zinc-400">Scheduled agents aren't ready yet — your workspace is still finishing setup.</p>
             </div>
           )}
-          <div className="max-w-md w-full py-16 px-6 bg-[#0a0a0b] border border-zinc-900 rounded-3xl text-center flex flex-col items-center shadow-lg shadow-black/40">
-            <div className="w-14 h-14 rounded-2xl bg-[#121214] border border-zinc-800/80 flex items-center justify-center mb-5">
+          <div className="max-w-md w-full py-16 px-6 bg-white dark:bg-[#0a0a0b] border border-zinc-200 dark:border-zinc-900 rounded-3xl text-center flex flex-col items-center shadow-lg shadow-black/10 dark:shadow-black/40">
+            <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-5">
               <Compass className="w-7 h-7 text-zinc-400 animate-pulse" />
             </div>
-            <h3 className="text-[20px] font-extrabold text-zinc-100 tracking-tight mb-2.5 font-sans">Marketplace Coming Soon</h3>
+            <h3 className="text-[20px] font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight mb-2.5 font-sans">Marketplace Coming Soon</h3>
             <p className="text-[13.5px] text-zinc-500 leading-relaxed mb-6">
               Pre-built agents, custom automation workflows, and community-shared templates will be available here soon.
             </p>
-            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-[#121214] text-zinc-450 border border-zinc-800 uppercase tracking-widest">
+            <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-bold bg-zinc-100 dark:bg-[#121214] text-zinc-500 dark:text-zinc-450 border border-zinc-300 dark:border-zinc-800 uppercase tracking-widest">
               Under Development
             </span>
           </div>
@@ -1522,26 +1522,26 @@ function ScheduledPageInner() {
         /* Tasks: padded scroll area */
         <div className="flex-1 overflow-y-auto px-8 py-7">
           {tableError && (
-            <div className="mb-6 p-4 bg-zinc-900/60 border border-zinc-700/40 rounded-xl flex items-start gap-3">
+            <div className="mb-6 p-4 bg-zinc-100/80 dark:bg-zinc-900/60 border border-zinc-300 dark:border-zinc-700/40 rounded-xl flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-zinc-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-zinc-300 font-bold text-[14px]">Scheduled agents aren't ready yet</p>
+                <p className="text-zinc-600 dark:text-zinc-300 font-bold text-[14px]">Scheduled agents aren't ready yet</p>
                 <p className="text-zinc-500 text-[13px] mt-0.5">Your workspace is still finishing setup. This usually resolves on its own shortly — if it persists, reach out to support.</p>
               </div>
             </div>
           )}
           {loadError ? (
             <div className="max-w-md mx-auto mt-16 text-center flex flex-col items-center">
-              <div className="w-14 h-14 rounded-2xl bg-[#121214] border border-zinc-800/80 flex items-center justify-center mb-5">
+              <div className="w-14 h-14 rounded-2xl bg-zinc-100 dark:bg-[#121214] border border-zinc-200 dark:border-zinc-800/80 flex items-center justify-center mb-5">
                 <AlertCircle className="w-7 h-7 text-zinc-400" />
               </div>
-              <h3 className="text-[18px] font-extrabold text-zinc-100 tracking-tight mb-2">Couldn't load your schedules</h3>
+              <h3 className="text-[18px] font-extrabold text-zinc-900 dark:text-zinc-100 tracking-tight mb-2">Couldn't load your schedules</h3>
               <p className="text-[13.5px] text-zinc-500 leading-relaxed mb-6">
                 Something went wrong reaching the server. Your agents are safe — this is just the list failing to load.
               </p>
               <button
                 onClick={() => { setLoading(true); setLoadError(false); fetchAgents(); }}
-                className="px-5 py-2.5 rounded-xl bg-zinc-100 text-zinc-950 text-[13.5px] font-bold hover:bg-white active:scale-95 transition-all"
+                className="px-5 py-2.5 rounded-xl bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-950 text-[13.5px] font-bold hover:bg-zinc-800 dark:hover:bg-white active:scale-95 transition-all"
               >
                 Try again
               </button>
@@ -1607,7 +1607,7 @@ function ScheduledPageInner() {
 export default function ScheduledPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+      <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex items-center justify-center">
         <Loader2 className="w-7 h-7 text-zinc-600 animate-spin" />
       </div>
     }>
