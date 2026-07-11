@@ -141,6 +141,17 @@ export default function SiftOnboardingPage() {
   const urlStep = Number(searchParams?.get('step') || FIRST);
   const [step, setStep] = useState<Step>(urlStep >= FIRST && urlStep <= LAST ? urlStep : FIRST);
 
+  // Keep the UI step in sync with ROUTER-driven URL changes. The paywall
+  // return path (abandoned checkout → router.replace('?step=13')) and the
+  // "Change plan" link depend on this: `step` is state initialized once, so
+  // without this sync those redirects changed the URL while the screen stayed
+  // frozen on step 15. commit() uses history.replaceState, which does NOT
+  // update useSearchParams — so normal forward navigation never re-fires this.
+  useEffect(() => {
+    if (urlStep >= FIRST && urlStep <= LAST && urlStep !== step) setStep(urlStep);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlStep]);
+
   const firstName = useMemo(() => {
     const raw = session?.user?.name?.trim();
     if (raw) return raw.split(/\s+/)[0];
@@ -365,7 +376,7 @@ export default function SiftOnboardingPage() {
               {step === 1  && <S1Welcome onBegin={() => go(2)} />}
               {step === 2  && <S2Gmail isConnected={isConnected('gmail')} onConnect={() => signIn('google', { callbackUrl: `${window.location.pathname}?step=2`, redirect: true })} onContinue={() => next()} />}
               {step === 3  && <S3Calendar connected={isConnected('gcal') || isConnected('google_calendar')} onConnect={() => connectViaPopup('google_calendar')} onContinue={() => next()} onSkip={() => next()} />}
-              {step === 4  && <S4Scan scan={scan} setScan={setScan} onDone={(s) => next({ scan: s })} reduce={!!reduce} />}
+              {step === 4  && <S4Scan scan={scan} setScan={setScan} onDone={(s) => next({ scan: s })} onSkip={() => next()} reduce={!!reduce} />}
               {step === 5  && <S5ScanResults scan={scan} onContinue={() => next()} />}
               {step === 6  && <S6BuildVoice done={voiceDone} setDone={setVoiceDone} onDone={() => next({ voiceDone: true })} />}
               {step === 7  && <S7VoicePreview onContinue={() => next()} />}
@@ -681,7 +692,7 @@ function S3Calendar({ connected, onConnect, onContinue, onSkip }: { connected: b
 
 /* ═══════════════════════════ 4 · FIRST SCAN (real data, auto-advance) ═══════════════════════════ */
 
-function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; setScan: (s: ScanResult) => void; onDone: (s: ScanResult) => void; reduce: boolean }) {
+function S4Scan({ scan, setScan, onDone, onSkip, reduce }: { scan: ScanResult | null; setScan: (s: ScanResult) => void; onDone: (s: ScanResult) => void; onSkip: () => void; reduce: boolean }) {
   const [display, setDisplay] = useState(0);
   const [phase, setPhase] = useState<'reading' | 'settled' | 'error'>(scan ? 'settled' : 'reading');
   const started = useRef(false);
@@ -737,7 +748,9 @@ function S4Scan({ scan, setScan, onDone, reduce }: { scan: ScanResult | null; se
         <IconBadge><Inbox className="w-5 h-5 text-[#0A0A0A]" strokeWidth={1.75} /></IconBadge>
         <Display className="text-[26px] mb-3">The scan didn’t finish</Display>
         <Body className="text-[15px] max-w-sm mx-auto mb-7">It may have timed out. We can do this later — your inbox is safe.</Body>
-        <PrimaryButton onClick={() => scan && onDone(scan)}>Continue <ArrowRight className="w-4 h-4" /></PrimaryButton>
+        {/* Must advance even with NO scan — `scan && onDone(scan)` was a dead
+            button in exactly the case this screen exists for. */}
+        <PrimaryButton onClick={() => (scan ? onDone(scan) : onSkip())}>Continue <ArrowRight className="w-4 h-4" /></PrimaryButton>
       </div>
     );
   }
@@ -1155,6 +1168,14 @@ function S9Arcus({ scan, firstName, onContinue, reduce }: { scan: ScanResult | n
             )}
           </div>
 
+          {/* Never hold the user hostage to a slow model — the run keeps going
+              server-side; the drafts still land in Gmail either way. */}
+          {phase === 'working' && (
+            <div className="text-center mt-4">
+              <SkipLink onClick={onContinue}>Skip — it&apos;ll finish in the background</SkipLink>
+            </div>
+          )}
+
           {phase === 'done' && (
             <div className="mt-6 text-center">
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full lg-pane text-[13px] font-medium text-[#0A0A0A] mb-6">
@@ -1494,6 +1515,13 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
       </div>
 
       <GlassCard className="max-w-md mx-auto text-center">
+        {/* Badge was defined in PLAN_PRICING but never rendered — the annual
+            and lifetime nudges were invisible at the exact moment they matter. */}
+        {p.badge && (
+          <div className="inline-flex items-center px-2.5 py-0.5 mb-2 rounded-full bg-[#0A0A0A] text-white text-[11px] font-semibold tracking-wide">
+            {p.badge}
+          </div>
+        )}
         <div className="flex items-baseline justify-center mb-1">
           <span className="text-[48px] font-medium tracking-tight text-[#0A0A0A]">{p.price}</span>
           <span className="text-[13px] text-[#0A0A0A]/50 ml-2">{p.unit}</span>
@@ -1520,9 +1548,19 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
           </li>
         </ul>
 
+        {/* The CTA carries the risk-reversal, not just the plan name — "Start
+            3-day free trial" converts; "Continue with Monthly" reads like a
+            commitment. */}
         <PrimaryButton onClick={() => onChoose(selected)} className="w-full">
-          Continue with {p.label} <ArrowRight className="w-4 h-4" />
+          {selected === 'monthly'
+            ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
+            : selected === 'annual'
+              ? <>Continue with Annual <ArrowRight className="w-4 h-4" /></>
+              : <>Get lifetime access <ArrowRight className="w-4 h-4" /></>}
         </PrimaryButton>
+        <p className="text-[11.5px] text-[#0A0A0A]/40 mt-3">
+          {selected === 'lifetime' ? 'Secure checkout · One-time payment' : 'Secure checkout · Cancel anytime'}
+        </p>
       </GlassCard>
     </div>
   );
@@ -1704,17 +1742,39 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
           <SummaryRow icon={<Sparkles className="w-4 h-4" />} label="First agent" value="None yet — add one from your dashboard" />
         )}
         {scan?.hoursPerWeek != null && <SummaryRow icon={<Activity className="w-4 h-4" />} label="Taking off your plate" value={`~${scan.hoursPerWeek}h / week`} />}
+        {/* The user is one click from a payment page — the price they'll see
+            there must be on THIS screen, or Polar's total reads as a surprise. */}
+        {!paid && plan && (
+          <SummaryRow
+            icon={<Check className="w-4 h-4" />}
+            label="Plan"
+            value={plan === 'monthly' ? '3 days free, then $29/mo' : plan === 'annual' ? 'Annual — $199/year' : 'Lifetime — $499 once'}
+          />
+        )}
       </GlassCard>
 
       <PrimaryButton onClick={finish} disabled={busy} className="px-8 py-3.5 text-[15px]">
         {busy
           ? <><Loader2 className="w-4 h-4 animate-spin" /> Opening…</>
-          : (paid || !plan)
+          : paid
             ? <>Go to Mailient <ArrowRight className="w-4 h-4" /></>
-            : plan === 'monthly'
-              ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
-              : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
+            : !plan
+              // Without a plan this button routes to the paywall — say so.
+              // "Go to Mailient" that lands on a pricing screen reads as a trick.
+              ? <>Choose your plan <ArrowRight className="w-4 h-4" /></>
+              : plan === 'monthly'
+                ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
+                : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
       </PrimaryButton>
+
+      {!paid && plan && (
+        <div className="mt-4 flex flex-col items-center gap-1.5">
+          <p className="text-[11.5px] text-[#0A0A0A]/40">
+            {plan === 'monthly' ? 'No charge today · Secure checkout · Cancel anytime' : plan === 'annual' ? 'Secure checkout · Cancel anytime' : 'Secure checkout · One-time payment'}
+          </p>
+          <SkipLink onClick={() => router.replace('/onboarding?step=13')}>Change plan</SkipLink>
+        </div>
+      )}
     </div>
   );
 }
