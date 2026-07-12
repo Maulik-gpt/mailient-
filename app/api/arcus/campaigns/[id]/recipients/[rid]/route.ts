@@ -50,6 +50,17 @@ export async function PATCH(
       patch.deliverability_score = lint.score;
       patch.generic_flag = lint.flags.includes('reads generic');
     }
+    // Regenerate: wipe the draft and send the row back through the drafting
+    // pipeline (the review screen's top-up call picks it up within seconds).
+    if (body.regenerate === true) {
+      patch.status = 'pending';
+      patch.subject = null;
+      patch.body = null;
+      patch.hook = null;
+      patch.voice_score = null;
+      patch.deliverability_score = null;
+      patch.generic_flag = false;
+    }
     if (body.exclude === true) { patch.status = 'excluded'; patch.error = 'excluded by you'; }
     if (body.exclude === false && row.status === 'excluded') {
       // Re-included rows that were auto-excluded at creation have no draft yet —

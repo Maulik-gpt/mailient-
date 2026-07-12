@@ -9,6 +9,7 @@ import {
     Settings2, 
     ChevronRight,
     Sparkles,
+    Send,
     LogOut,
     Gift,
     HelpCircle,
@@ -115,6 +116,7 @@ export function HomeFeedSidebar({
     const mainNavItems = [
         { id: 'home', icon: LayoutGrid, label: 'Home', route: '/home-feed' },
         { id: 'arcus', icon: Sparkles, label: 'Arcus', route: '/dashboard/agent-talk' },
+        { id: 'outreach', icon: Send, label: 'Outreach', route: '/dashboard/outreach' },
     ];
 
     const bottomNavItems = [

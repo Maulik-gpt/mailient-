@@ -1,3 +1,4 @@
+
 -- ──────────────────────────────────────────────────────────────────────────────
 -- Arcus: Scheduled email send
 -- Run this in the Supabase SQL editor.

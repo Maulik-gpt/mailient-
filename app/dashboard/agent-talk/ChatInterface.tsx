@@ -23,6 +23,7 @@ import { DraftApprovalModal } from './components/DraftApprovalModal';
 import { DraftGalleryCard, type DraftGalleryItem } from './components/DraftGalleryCard';
 import { ActionResultCard } from './components/ActionResultCard';
 import { ScheduledAgentCard, type ScheduledAgentData } from './components/ScheduledAgentCard';
+import { CampaignCard, type CampaignSnapshotData } from './components/CampaignCard';
 import { IntegrationRequiredCard, type IntegrationRequiredData } from './components/IntegrationRequiredCard';
 import { ConfirmationCard, type ConfirmationData } from './components/ConfirmationCard';
 import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
@@ -836,6 +837,9 @@ interface AgentMessage {
       verbLabel?: string;
     }>;
     scheduledAgent?: ScheduledAgentData;
+    /** Outreach campaign snapshot — rendered as an inline CampaignCard that
+     *  links to the /dashboard/outreach command center. */
+    campaign?: CampaignSnapshotData;
     integrationRequired?: IntegrationRequiredData;
     confirmationData?: ConfirmationData;
     confirmationStatus?: 'confirmed' | 'cancelled';
@@ -2989,6 +2993,18 @@ export default function ChatInterface({
                 break;
               }
 
+              // Outreach campaign — inline card linking to the command center.
+              // Never opens the canvas panel (the markdown on it is only a
+              // fallback for surfaces without the card).
+              if (cv.type === 'campaign' && cv.pageMeta?.campaign) {
+                const campaign = cv.pageMeta.campaign as CampaignSnapshotData;
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), campaign } };
+                }));
+                break;
+              }
+
               // ── Integration required gate ────────────────────────────────────
               // Emitted when create_scheduled_agent detects missing integrations.
               if (cv.type === 'integration_required' && cv.pageMeta) {
@@ -3364,7 +3380,7 @@ export default function ChatInterface({
               finalContent = roadmapText;
 
               // Open canvas panel if the agent produced canvas content (excluding inline-card types)
-              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.type !== 'confirmation_required' && data.canvasContent.markdown) {
+              if (data.canvasContent && data.canvasContent.type !== 'email_draft' && data.canvasContent.type !== 'reply' && data.canvasContent.type !== 'scheduled_agent' && data.canvasContent.type !== 'integration_required' && data.canvasContent.type !== 'confirmation_required' && data.canvasContent.type !== 'campaign' && data.canvasContent.markdown) {
                 const cv = data.canvasContent;
                 // email_draft needs structured {to,subject,body} from draftMeta —
                 // NOT the raw markdown (which wraps in a "[Open in Gmail]" footer
@@ -6077,6 +6093,17 @@ export default function ChatInterface({
                                           ));
                                         }}
                                       />
+                                    )}
+
+                                    {/* Outreach campaign card — drafting progress → review CTA → sending stats */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.campaign && (
+                                      <motion.div
+                                        initial={{ opacity: 0, y: 12, scale: 0.97 }}
+                                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                                        transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+                                      >
+                                        <CampaignCard campaign={(msg as AgentMessage).meta!.campaign!} />
+                                      </motion.div>
                                     )}
 
                                     {/* Scheduled-agent flow — swap IntegrationRequired → ScheduledAgent with a smooth transition */}
