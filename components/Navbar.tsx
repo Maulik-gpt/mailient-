@@ -32,7 +32,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
   }, []);
 
   const handleConnectGmail = () => {
-    router.push("/auth/signup");
+    router.push("/request-access");
   };
 
   return (
@@ -328,7 +328,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                 className="rounded-full !h-8.5 px-4 font-bold text-[11px] tracking-tight hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-1.5"
               >
                 <Mail className="w-3.5 h-3.5 animate-pulse" />
-                Get started
+                Request Access
               </LiquidButton>
             </>
           )}

@@ -32,7 +32,14 @@
       "Bash(grep -n \"return { decide, chase, showUp, briefing }\" lib/arcus/today-agent.ts)",
       "Bash(git stash *)",
       "Bash(grep -n \"ignoreBuildErrors\" next.config.*)",
-      "Bash(echo \"---EXIT:$?---\")"
+      "Bash(echo \"---EXIT:$?---\")",
+      "Bash(node -e \"const p=require\\('./package.json'\\); console.log\\('tsx:', p.devDependencies?.tsx || p.dependencies?.tsx || 'NO'\\); console.log\\('ts-node:', p.devDependencies?.['ts-node'] || 'NO'\\)\")",
+      "Bash(node test-narration.js)",
+      "Bash(python -)",
+      "WebSearch",
+      "WebFetch(domain:superdesign.dev)",
+      "WebFetch(domain:www.createwithswift.com)",
+      "Bash(xargs grep -ln \"GmailInterfaceFixed\")"
     ]
   }
 }

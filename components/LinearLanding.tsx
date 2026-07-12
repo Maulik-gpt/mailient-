@@ -280,9 +280,21 @@ export function LinearLanding() {
 
           {/* Premium CTAs */}
           <BlurFade delay={0.3} duration={0.8} inView>
-            <div className="flex flex-wrap items-center justify-center gap-4 mt-12">
-              <CircleExpandButton href="/auth/signup">
-                Start free trial
+            {/* Scarcity pill */}
+            <div className="flex justify-center mb-5 mt-10">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-400">
+                  45 founding slots remaining
+                </span>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              <CircleExpandButton href="/request-access">
+                Request Early Access
               </CircleExpandButton>
 
               <CircleExpandButton

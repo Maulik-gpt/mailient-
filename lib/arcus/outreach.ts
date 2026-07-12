@@ -24,6 +24,8 @@
 import { callLLM, getText } from './engine';
 import { detectGenericFiller } from './autonomy';
 import { enqueueScheduledEmail } from './scheduled-send';
+import { getGmailToken, refreshGoogleToken, getGcalToken } from './tools/http-tokens';
+import { buildRaw } from './tools/encoding-helpers';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -965,6 +967,244 @@ export interface CampaignSnapshot {
   approvedAt: string | null;
   completedAt: string | null;
   lastError: string | null;
+}
+
+// ─── Reply intelligence — the loop closes itself ─────────────────────────────
+//
+// Cron entry: find replies on sent campaign emails, classify the intent, and
+// DRAFT the follow-through in the user's voice — saved as a Gmail draft in the
+// thread (never sent; the approval law holds everywhere). `interested` replies
+// get REAL calendar slots proposed when Calendar is connected — never invented
+// times. `unsubscribe` suppresses the address permanently.
+
+const REPLIES_PER_TICK = 8;
+
+const REPLY_SYSTEM = `You are the sender's assistant handling replies to their cold outreach. For each reply, classify the intent and (when a response is warranted) write it AS the sender, in their voice.
+
+Intents: "interested" (wants to talk / asks to meet / positive), "question" (asks something answerable), "objection" (pushback but engaged), "not_now" (polite decline / later), "unsubscribe" (stop contacting / hostile), "wrong_person".
+
+Rules for responses:
+- interested/question/objection get a response; not_now/unsubscribe/wrong_person get NONE (empty string).
+- interested: if AVAILABLE SLOTS are provided, propose 2 of them naturally; if none provided, ask for their availability — NEVER invent times.
+- Short (40-100 words), plain text, sender's voice, no filler.
+- Ground every claim in the campaign brief — never invent product facts.
+
+Return ONLY a JSON array: [{"id":"<id>","intent":"...","response":"<body or empty string>"}]`;
+
+/** Coarse free-slot finder: next 3 weekdays, 10:00/11:00/14:00/15:00 starts in
+ *  the user's tz, skipping hours that overlap a calendar event. Returns human
+ *  strings like "Tue 2:00 PM". Empty when Calendar isn't connected. */
+async function findFreeSlots(userId: string, tz: string): Promise<string[]> {
+  try {
+    const token = await getGcalToken(userId);
+    if (!token) return [];
+    const now = new Date();
+    const end = new Date(now.getTime() + 4 * 86_400_000);
+    const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=50`;
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000) });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const busy: Array<{ s: number; e: number }> = (data.items || [])
+      .filter((ev: any) => ev.start?.dateTime && ev.end?.dateTime)
+      .map((ev: any) => ({ s: Date.parse(ev.start.dateTime), e: Date.parse(ev.end.dateTime) }));
+
+    const fmt = new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short', hour: 'numeric', minute: '2-digit' });
+    const hourInTz = (d: Date) => parseInt(new Intl.DateTimeFormat('en-US', { timeZone: tz, hour: 'numeric', hour12: false }).format(d), 10);
+    const weekdayInTz = (d: Date) => new Intl.DateTimeFormat('en-US', { timeZone: tz, weekday: 'short' }).format(d);
+
+    const slots: string[] = [];
+    const CANDIDATE_HOURS = [10, 11, 14, 15];
+    for (let day = 1; day <= 3 && slots.length < 3; day++) {
+      for (const h of CANDIDATE_HOURS) {
+        if (slots.length >= 3) break;
+        // Walk hour marks on the target day until the tz-local hour matches.
+        const base = new Date(now.getTime() + day * 86_400_000);
+        base.setUTCMinutes(0, 0, 0);
+        let probe: Date | null = null;
+        for (let off = -14; off <= 14; off++) {
+          const t = new Date(base.getTime() + off * 3_600_000);
+          if (hourInTz(t) === h) { probe = t; break; }
+        }
+        if (!probe) continue;
+        if (['Sat', 'Sun'].includes(weekdayInTz(probe))) continue;
+        const s = probe.getTime(), e = s + 3_600_000;
+        if (busy.some(b => b.s < e && b.e > s)) continue;
+        slots.push(fmt.format(probe));
+      }
+    }
+    return slots;
+  } catch { return []; }
+}
+
+/** Save a Gmail draft reply into the recipient's thread. Returns draft id. */
+async function saveThreadDraft(
+  userId: string,
+  to: string,
+  subject: string,
+  body: string,
+  threadId: string,
+): Promise<string | null> {
+  try {
+    let token = await getGmailToken(userId);
+    if (!token) return null;
+    const raw = buildRaw(to, subject, body);
+    const payload = JSON.stringify({ message: { raw, threadId } });
+    const post = (t: string) => fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
+      body: payload,
+      signal: AbortSignal.timeout(12000),
+    });
+    let res = await post(token);
+    if (res.status === 401) {
+      const fresh = await refreshGoogleToken(userId);
+      if (fresh) res = await post(fresh);
+    }
+    if (!res.ok) return null;
+    const d = await res.json().catch(() => ({}));
+    return d?.id || null;
+  } catch { return null; }
+}
+
+/**
+ * Cron entry: detect + classify replies for active campaigns and draft the
+ * follow-through. Bounded per tick; never throws.
+ */
+export async function classifyCampaignReplies(supabase: any): Promise<number> {
+  let handled = 0;
+  try {
+    // Sending campaigns plus recently-completed ones (replies trail sends).
+    const cutoff = new Date(Date.now() - 14 * 86_400_000).toISOString();
+    const { data: campaigns } = await supabase
+      .from('arcus_campaigns')
+      .select('*')
+      .or(`status.eq.sending,and(status.eq.completed,completed_at.gte.${cutoff})`)
+      .limit(3);
+    if (!campaigns?.length) return 0;
+
+    for (const campaign of campaigns) {
+      const { data: candidates } = await supabase
+        .from('arcus_campaign_recipients')
+        .select('id, email, name, subject, thread_id, sent_at')
+        .eq('campaign_id', campaign.id)
+        .eq('status', 'sent')
+        .not('thread_id', 'is', null)
+        .is('replied_at', null)
+        .limit(REPLIES_PER_TICK);
+      if (!candidates?.length) continue;
+
+      let token = await getGmailToken(campaign.user_id);
+      if (!token) continue;
+
+      // 1. Detect replies: a message in the thread FROM the recipient.
+      const replied: Array<{ row: any; snippet: string }> = [];
+      for (const r of candidates) {
+        try {
+          const get = (t: string) => fetch(
+            `https://gmail.googleapis.com/gmail/v1/users/me/threads/${r.thread_id}?format=metadata&metadataHeaders=From`,
+            { headers: { Authorization: `Bearer ${t}` }, signal: AbortSignal.timeout(8000) },
+          );
+          let res = await get(token);
+          if (res.status === 401) {
+            const fresh = await refreshGoogleToken(campaign.user_id);
+            if (!fresh) break;
+            token = fresh;
+            res = await get(token);
+          }
+          if (!res.ok) continue;
+          const thread = await res.json();
+          const fromRecipient = (thread.messages || []).filter((m: any) => {
+            const from = (m.payload?.headers || []).find((h: any) => h.name === 'From')?.value || '';
+            return from.toLowerCase().includes(r.email.toLowerCase());
+          });
+          if (fromRecipient.length > 0) {
+            const last = fromRecipient[fromRecipient.length - 1];
+            replied.push({ row: r, snippet: (last.snippet || '').slice(0, 400) });
+          }
+        } catch { /* next candidate */ }
+      }
+      if (!replied.length) continue;
+
+      // 2. Classify + compose follow-throughs in ONE call.
+      let voicePrompt = '';
+      try {
+        // @ts-ignore — JS module
+        const { voiceProfileService } = await import('../voice-profile-service.js');
+        const profile: any = await voiceProfileService.getVoiceProfile(campaign.user_id);
+        voicePrompt = (voiceProfileService.generateVoicePrompt(profile) as string | undefined)?.trim() || '';
+      } catch { /* voice optional */ }
+      const tz = await getUserTimezone(supabase, campaign.user_id);
+      const slots = await findFreeSlots(campaign.user_id, tz);
+
+      const blocks = replied.map(({ row, snippet }) =>
+        `REPLY id=${row.id}\nfrom: ${row.name || row.email} <${row.email}>\noriginal subject: ${row.subject || ''}\ntheir reply: "${snippet}"`,
+      ).join('\n\n---\n\n');
+      const userMsg =
+        `CAMPAIGN BRIEF:\n${campaign.brief}\n\n` +
+        (voicePrompt ? `SENDER VOICE PROFILE:\n${voicePrompt}\n\n` : '') +
+        (slots.length ? `AVAILABLE SLOTS (sender's real calendar, their timezone): ${slots.join(' · ')}\n\n` : 'AVAILABLE SLOTS: none known — ask for their availability instead.\n\n') +
+        `REPLIES (${replied.length}):\n\n${blocks}\n\nReturn the JSON array now.`;
+
+      let parsed: any[] = [];
+      try {
+        const res = await callLLM(
+          [{ role: 'system', content: REPLY_SYSTEM }, { role: 'user', content: userMsg }],
+          [],
+          { maxTokens: 250 * replied.length + 200, temperature: 0.4 },
+        );
+        const text = getText((res as any).content).trim();
+        const m = text.match(/\[[\s\S]*\]/);
+        if (m) parsed = JSON.parse(m[0]);
+      } catch {
+        // Classification unavailable this tick (429 etc.) — mark nothing;
+        // candidates stay 'sent' and get re-checked next tick. No loss.
+        continue;
+      }
+      const byId = new Map(parsed.filter(p => p && p.id).map(p => [String(p.id), p]));
+
+      // 3. Persist outcomes + draft follow-throughs.
+      for (const { row, snippet } of replied) {
+        const cls = byId.get(String(row.id));
+        const intent = ['interested', 'question', 'objection', 'not_now', 'unsubscribe', 'wrong_person'].includes(cls?.intent)
+          ? cls.intent : 'question';
+        const nowIso = new Date().toISOString();
+
+        let responseDraftId: string | null = null;
+        const responseBody = typeof cls?.response === 'string' ? cls.response.trim() : '';
+        if (responseBody && ['interested', 'question', 'objection'].includes(intent) && row.thread_id) {
+          responseDraftId = await saveThreadDraft(
+            campaign.user_id, row.email,
+            row.subject ? `Re: ${row.subject}` : 'Re:',
+            responseBody, row.thread_id,
+          );
+        }
+
+        if (intent === 'unsubscribe') {
+          await supabase.from('arcus_suppression_list')
+            .upsert(
+              { user_id: campaign.user_id, email: row.email.toLowerCase(), reason: 'unsubscribe' },
+              { onConflict: 'user_id,email', ignoreDuplicates: true },
+            );
+        }
+
+        await supabase.from('arcus_campaign_recipients')
+          .update({
+            status: intent === 'unsubscribe' ? 'suppressed' : 'replied',
+            reply_intent: intent,
+            reply_snippet: snippet.slice(0, 300),
+            response_draft_id: responseDraftId,
+            replied_at: nowIso,
+            updated_at: nowIso,
+          })
+          .eq('id', row.id);
+        handled++;
+      }
+      await refreshCampaignCounts(supabase, campaign.id);
+    }
+  } catch (e: any) {
+    console.error('[outreach] reply classification failed:', e?.message || e);
+  }
+  return handled;
 }
 
 export async function getCampaignSnapshot(

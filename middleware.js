@@ -32,6 +32,7 @@ export async function middleware(request) {
     pathname.startsWith('/_next') ||
     pathname.startsWith('/auth') ||
     pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/request-access') ||
     pathname === '/'
   ) {
     if (ref) {
