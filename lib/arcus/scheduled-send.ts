@@ -30,7 +30,7 @@ export interface EnqueueScheduledEmailInput {
   sendAt: string | Date;   // ISO 8601 or Date
   threadId?: string;
   dedupKey?: string;
-  source?: 'agent' | 'chat' | 'sequence';
+  source?: 'agent' | 'chat' | 'sequence' | 'campaign';
   agentId?: string;
 }
 

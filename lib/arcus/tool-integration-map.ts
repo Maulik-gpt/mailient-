@@ -45,6 +45,12 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   report_send_gmail: 'gmail',
   memory_relationship_intelligence: 'gmail',
 
+  // Outreach campaigns (paced cold email — sends via Gmail)
+  create_outreach_campaign: 'gmail',
+  get_campaign_status: 'gmail',
+  set_campaign_state: 'gmail',
+  list_campaign_replies: 'gmail',
+
   // Calendar
   schedule_meeting: 'gcal',
   get_calendar_events: 'gcal',
@@ -86,6 +92,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   notion_read_page: 'notion',
   notion_create_task: 'notion',
   notion_get_calendar_events: 'notion',
+  notion_query_database: 'notion',
   notion_auto_create_contact_profiles: 'notion',
   notion_auto_log_all_communication: 'notion',
   notion_batch_create_database_entries: 'notion',
@@ -223,6 +230,11 @@ export const TOOL_VA_OWNERSHIP: Record<string, ArcusVA[]> = {
   gmail_generate_auto_replies: ['inbox'],
   send_email: ['inbox'],
   gmail_batch_send_emails: ['inbox'],
+  // Outreach campaigns — inbox VA owns outbound email
+  create_outreach_campaign: ['inbox'],
+  get_campaign_status: ['inbox'],
+  set_campaign_state: ['inbox'],
+  list_campaign_replies: ['inbox'],
   schedule_email_send: ['inbox'],
   list_scheduled_emails: ['inbox'],
   cancel_scheduled_email: ['inbox'],
@@ -255,6 +267,7 @@ export const TOOL_VA_OWNERSHIP: Record<string, ArcusVA[]> = {
 
   // 📝 CRM VA (Notion)
   search_notion: ['crm'],
+  notion_query_database: ['crm', 'inbox'], // contact lists feed outreach campaigns
   notion_read_page: ['crm'],
   fetch_notion_schema: ['crm'],
   notion_get_calendar_events: ['crm', 'calendar'], // Notion calendar straddles two VAs
