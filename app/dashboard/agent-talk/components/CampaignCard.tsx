@@ -71,7 +71,7 @@ export function CampaignCard({ campaign: initial }: { campaign: CampaignSnapshot
   const draftPct = c.recipients > 0 ? Math.round((c.drafted / c.recipients) * 100) : 0;
   const sentPct = c.recipients > 0 ? Math.round((c.sent / c.recipients) * 100) : 0;
 
-  const open = () => router.push(`/dashboard/outreach/${campaign.id}`);
+  const open = () => router.push(`/dashboard/agents?tab=outreach&campaign=${campaign.id}`);
 
   return (
     <div className="mt-3 mb-1 w-full max-w-[560px] arcus-glass-card rounded-2xl overflow-hidden">
@@ -157,7 +157,7 @@ export function CampaignCard({ campaign: initial }: { campaign: CampaignSnapshot
             : 'border-black/[0.05] dark:border-white/[0.06] text-black/60 dark:text-white/60 hover:text-black dark:hover:text-white hover:bg-black/[0.03] dark:hover:bg-white/[0.04]',
         )}
       >
-        {campaign.status === 'review' ? 'Review & approve' : 'Open command center'}
+        {campaign.status === 'review' ? 'Review & approve' : 'Open workstation'}
         <ArrowUpRight className="w-3.5 h-3.5" strokeWidth={2.25} />
       </button>
     </div>

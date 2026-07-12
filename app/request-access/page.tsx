@@ -245,7 +245,7 @@ export default function RequestAccessPage() {
                           type="text"
                           value={name}
                           onChange={(e) => setName(e.target.value)}
-                          placeholder="Jane Smith"
+                          placeholder="Patrick Jane"
                           disabled={step === "submitting"}
                           className="w-full h-11 bg-transparent pl-11 pr-4 text-sm font-light text-white focus:outline-none placeholder:text-neutral-700 disabled:opacity-50"
                         />

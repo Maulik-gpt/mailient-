@@ -6,9 +6,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus, Clock, Mail, Zap, Loader2, X, ChevronLeft, ChevronRight,
   MoreHorizontal, List, Slack, Trash2, Edit2, AlertCircle, CalendarDays, Compass,
-  Sunrise, DollarSign, Target, BarChart3, Layers,
+  Sunrise, DollarSign, Target, BarChart3, Layers, Send,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { OutreachWorkstation } from './OutreachWorkstation';
 import { cn } from '@/lib/utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -162,6 +163,7 @@ const TEMPLATES = [
   { name: 'Client Pulse', description: 'Every hour, checks if email arrived from your top contacts. Sends an immediate Slack ping.', cron_schedule: '0 */1 * * *', output_channel: 'slack' as const, task_description: 'Every hour, check if any new email arrived from my most important contacts. If so, immediately send me a Slack message with the sender name, subject line, and first two sentences.' },
   { name: 'Notion + Inbox Sync', description: 'Every morning at 8am, cross-references your Notion tasks with Gmail, sends a project briefing.', cron_schedule: '0 8 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 8am, read my current Notion task list, search my Gmail inbox for emails related to each active project, find which projects have unread messages, and email me a concise project briefing.' },
   { name: 'Lead Harvest', description: 'Every morning at 5am, runs the full lead qualification flow across inbox and web, pushes to Notion.', cron_schedule: '0 5 * * *', output_channel: 'gmail' as const, task_description: 'Every morning at 5am, search my inbox for any new inbound leads, partnership inquiries, or business development emails, use web search to research and qualify each lead, save qualified leads to my Notion database, and email me a harvest report.' },
+  { name: 'Outreach Manager', description: 'Weekly, finds fresh leads, researches them, and preps a personalized cold-email campaign in your voice — left in review for your approval.', cron_schedule: '0 8 * * 1', output_channel: 'gmail' as const, task_description: 'Every Monday at 8am, identify new potential leads that fit my ideal customer profile (based on my recent outreach, inbox, and connected Notion contacts), research each one, and prepare a personalized cold-outreach campaign in my voice using create_outreach_campaign. Leave the campaign in review so I can approve it — never send anything without my approval. Email me a short note when the campaign is ready to review.' },
 ];
 
 function getTemplateIcon(name: string) {
@@ -179,6 +181,8 @@ function getTemplateIcon(name: string) {
       return <Layers {...iconProps} />;
     case 'Lead Harvest':
       return <Target {...iconProps} />;
+    case 'Outreach Manager':
+      return <Send {...iconProps} />;
     default:
       return <Clock {...iconProps} />;
   }
@@ -1289,7 +1293,7 @@ function AgentTaskCard({ agent, onClick, onToggle, onEdit, onDelete, onToggleCon
 function ScheduledPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const tab = (searchParams.get('tab') as 'calendar' | 'tasks' | 'marketplace') || 'tasks';
+  const tab = (searchParams.get('tab') as 'calendar' | 'tasks' | 'marketplace' | 'outreach') || 'tasks';
 
   const [agents, setAgents] = useState<Agent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -1321,11 +1325,33 @@ function ScheduledPageInner() {
     return () => { cancelled = true; };
   }, [router]);
 
-  const setTab = (t: 'calendar' | 'tasks' | 'marketplace') => {
+  const setTab = (t: 'calendar' | 'tasks' | 'marketplace' | 'outreach') => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('tab', t);
+    // Leaving the Outreach tab drops the deep-linked campaign so re-entering
+    // lands on the list, not a stale war room.
+    if (t !== 'outreach') params.delete('campaign');
     router.replace(`?${params.toString()}`);
   };
+
+  // Lightweight badge signal: how many campaigns are waiting on approval.
+  const [outreachReviewCount, setOutreachReviewCount] = useState(0);
+  useEffect(() => {
+    if (!gateOk) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const r = await fetch('/api/arcus/campaigns');
+        if (!r.ok) return;
+        const d = await r.json();
+        if (cancelled) return;
+        setOutreachReviewCount((d.campaigns || []).filter((c: any) => c.status === 'review').length);
+      } catch { /* badge is best-effort */ }
+    };
+    load();
+    const t = setInterval(load, 30_000);
+    return () => { cancelled = true; clearInterval(t); };
+  }, [gateOk]);
 
   const fetchAgents = async () => {
     try {
@@ -1451,6 +1477,7 @@ function ScheduledPageInner() {
         {([
           { key: 'tasks', label: 'Tasks', icon: List },
           { key: 'calendar', label: 'Calendar', icon: CalendarDays },
+          { key: 'outreach', label: 'Outreach', icon: Send },
           { key: 'marketplace', label: 'Marketplace', icon: Compass },
         ] as const).map(({ key, label, icon: Icon }) => (
           <button
@@ -1465,12 +1492,24 @@ function ScheduledPageInner() {
           >
             <Icon className="w-4 h-4" />
             {label}
+            {key === 'outreach' && outreachReviewCount > 0 && (
+              <span className="ml-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300 text-[11px] font-bold tabular-nums">
+                {outreachReviewCount}
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {/* Content */}
-      {loading ? (
+      {tab === 'outreach' ? (
+        // Outreach is a self-contained system (own data + views). It fills the
+        // tab and deep-links via ?campaign=; "Deploy as an agent" opens the
+        // same create-schedule modal as everything else here.
+        <div className="flex-1 overflow-y-auto px-8 py-7">
+          <OutreachWorkstation onDeployAgent={() => setCreateOpen(true)} />
+        </div>
+      ) : loading ? (
         // Tasks is the default tab — preview its card shapes with a skeleton.
         // Calendar/marketplace have non-card layouts, so a subtle spinner fits.
         tab === 'calendar' || tab === 'marketplace' ? (

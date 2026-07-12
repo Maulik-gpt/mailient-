@@ -628,7 +628,7 @@ function CampaignPulse() {
         {items.map((it) => (
           <a
             key={it.id}
-            href={`/dashboard/outreach/${it.id}`}
+            href={`/dashboard/agents?tab=outreach&campaign=${it.id}`}
             className={cn(
               'group flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-colors',
               it.kind === 'review'
