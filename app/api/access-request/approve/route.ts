@@ -23,7 +23,8 @@ async function handleApproval(req: NextRequest) {
 
     // Simple token auth — matches first 16 chars of AUTH_SECRET
     const expectedToken = process.env.AUTH_SECRET?.replace(/"/g, '').slice(0, 16);
-    if (!token || token !== expectedToken) {
+    const sanitizedToken = token?.replace(/ /g, '+');
+    if (!sanitizedToken || sanitizedToken !== expectedToken) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

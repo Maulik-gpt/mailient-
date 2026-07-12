@@ -98,8 +98,8 @@ export async function POST(req: Request) {
     if (resend) {
       const authToken = process.env.AUTH_SECRET?.replace(/"/g, '').slice(0, 16);
       const baseUrl = process.env.NEXTAUTH_URL || 'https://mailient.xyz';
-      const approveUrl = `${baseUrl}/api/access-request/approve?email=${encodeURIComponent(trimmedEmail)}&token=${authToken}`;
-      const rejectUrl = `${baseUrl}/api/access-request/reject?email=${encodeURIComponent(trimmedEmail)}&token=${authToken}`;
+      const approveUrl = `${baseUrl}/api/access-request/approve?email=${encodeURIComponent(trimmedEmail)}&token=${encodeURIComponent(authToken || '')}`;
+      const rejectUrl = `${baseUrl}/api/access-request/reject?email=${encodeURIComponent(trimmedEmail)}&token=${encodeURIComponent(authToken || '')}`;
       const dmUrl = `https://x.com/messages/compose?recipient_id=maulik_5&text=${encodeURIComponent(`Hi! I just requested access to Mailient. My email: ${trimmedEmail}`)}`;
 
       const adminHtml = `
