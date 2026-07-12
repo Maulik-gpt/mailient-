@@ -25,6 +25,7 @@ import {
   continueDraftingCampaigns,
   dispatchCampaignSends,
   syncCampaignSendOutcomes,
+  classifyCampaignReplies,
 } from '../../../../lib/arcus/outreach';
 
 export const runtime = 'nodejs';
@@ -50,11 +51,15 @@ export async function GET(request: NextRequest) {
   const dispatch = await dispatchCampaignSends(supabase);
   const result = await drainScheduledEmails(supabase, { limit: 50 });
   await syncCampaignSendOutcomes(supabase);
+  // Reply intelligence: classify new replies + draft the follow-through in
+  // the user's voice (Gmail drafts in-thread — approval law holds).
+  const repliesHandled = await classifyCampaignReplies(supabase);
 
   return NextResponse.json({
     ok: true,
     ...result,
     campaignDraftsAdvanced: draftsAdvanced,
     campaignQueued: dispatch.queued,
+    campaignRepliesHandled: repliesHandled,
   });
 }

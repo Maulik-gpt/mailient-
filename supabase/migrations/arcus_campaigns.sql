@@ -93,8 +93,11 @@ CREATE TABLE IF NOT EXISTS arcus_suppression_list (
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Plain-column unique (NOT an expression index): the reply classifier upserts
+-- with ON CONFLICT (user_id, email), which can only target a column constraint.
+-- Every writer lowercases email before insert, so the plain index is safe.
 CREATE UNIQUE INDEX IF NOT EXISTS arcus_suppression_unique_idx
-  ON arcus_suppression_list (user_id, lower(email));
+  ON arcus_suppression_list (user_id, email);
 
 ALTER TABLE arcus_campaigns ENABLE ROW LEVEL SECURITY;
 ALTER TABLE arcus_campaign_recipients ENABLE ROW LEVEL SECURITY;
