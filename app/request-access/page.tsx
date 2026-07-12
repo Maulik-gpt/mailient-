@@ -17,13 +17,6 @@ import {
 import Link from "next/link";
 import confetti from "canvas-confetti";
 
-// X logo icon
-const XIcon = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg className={`${className} fill-current`} viewBox="0 0 24 24" aria-hidden="true">
-    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-  </svg>
-);
-
 export default function RequestAccessPage() {
   const [step, setStep] = useState<"form" | "submitting" | "success">("form");
   const [email, setEmail] = useState("");
@@ -47,7 +40,7 @@ export default function RequestAccessPage() {
         if (d.remaining != null) setSlotsRemaining(d.remaining);
       })
       .catch(() => {
-        // keep default
+        // Fallback to default
       });
   }, []);
 
@@ -122,13 +115,7 @@ export default function RequestAccessPage() {
         return;
       }
 
-      if (data.alreadyApproved) {
-        setSuccessMessage(data.message);
-      } else if (data.alreadyRequested) {
-        setSuccessMessage(data.message);
-      } else {
-        setSuccessMessage(data.message);
-      }
+      setSuccessMessage(data.message);
 
       if (data.slotsRemaining != null) {
         setSlotsRemaining(data.slotsRemaining);
@@ -141,384 +128,331 @@ export default function RequestAccessPage() {
     }
   };
 
-  const shareText = `Just requested founding access to @mailient — AI that runs your inbox while you build your company. Only ${slotsRemaining} spots left. Check it out: https://mailient.xyz`;
-
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-start relative overflow-hidden font-sans selection:bg-white selection:text-black">
-      {/* Atmospheric background */}
-      <div className="absolute inset-0 pointer-events-none select-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.04),transparent_60%)]" />
-        <div className="absolute top-1/3 left-[10%] w-[500px] h-[500px] bg-white/[0.008] blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/4 right-[10%] w-[500px] h-[500px] bg-white/[0.008] blur-[150px] rounded-full" />
+    <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start relative overflow-x-hidden font-inter strichpunkt-theme selection:bg-white selection:text-black">
+      
+      {/* Liquid Glass / Strichpunkt font styles */}
+      <style dangerouslySetInnerHTML={{ __html: `
+        .strichpunkt-theme {
+          font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+        .strichpunkt-theme :not(.font-mono):not([class*="font-mono"]):not(code):not(pre) {
+          font-family: 'Strichpunkt Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+        }
+      `}} />
+
+      {/* SVG filter for glass distortion */}
+      <svg className="hidden pointer-events-none absolute h-0 w-0" aria-hidden="true">
+        <filter id="glass-liquid-filter">
+          <feTurbulence type="fractalNoise" baseFrequency="0.012 0.012" numOctaves="1" seed="5" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="8" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
+
+      {/* Atmospheric lighting */}
+      <div className="absolute inset-0 pointer-events-none select-none z-0">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[600px] bg-[radial-gradient(circle_at_50%_0%,rgba(255,255,255,0.03),transparent_60%)]" />
+        <div className="absolute top-[30%] left-[10%] w-[400px] h-[400px] bg-white/[0.005] blur-[150px] rounded-full" />
+        <div className="absolute bottom-[20%] right-[10%] w-[500px] h-[500px] bg-white/[0.005] blur-[150px] rounded-full" />
       </div>
 
-      {/* Back to home */}
+      {/* Back button */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="w-full max-w-2xl mx-auto px-6 pt-8 z-10"
+        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        className="w-full max-w-xl mx-auto px-6 pt-10 z-10"
       >
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+          className="inline-flex items-center gap-2 text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
         >
-          <ArrowRight className="w-3 h-3 rotate-180" />
+          <ArrowRight className="w-3.5 h-3.5 rotate-180 text-neutral-500" />
           Back to Mailient
         </Link>
       </motion.div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 w-full max-w-2xl mx-auto z-10">
-        <AnimatePresence mode="wait">
-          {/* ─── FORM STATE ─── */}
-          {(step === "form" || step === "submitting") && (
-            <motion.div
-              key="form"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.4 }}
-              className="w-full max-w-md"
-            >
-              {/* Slots badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1 }}
-                className="flex justify-center mb-8"
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/[0.04] border border-white/[0.08]">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                  </span>
-                  <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-400">
-                    {slotsRemaining} of 45 founding slots remaining
-                  </span>
-                </div>
-              </motion.div>
+      {/* Main Container */}
+      <div className="flex-1 flex flex-col items-center justify-center px-6 py-16 w-full max-w-xl mx-auto z-10">
+        
+        {/* Frosted Glass Card Wrapper */}
+        <div className="relative w-full rounded-[28px] p-8 md:p-10 shadow-[0_50px_100px_rgba(0,0,0,0.85)] border border-white/[0.08] overflow-hidden bg-neutral-950/20">
+          
+          {/* Glass Distortion Layers */}
+          <div 
+            className="absolute inset-0 z-0 backdrop-blur-[24px]"
+            style={{
+              filter: "url(#glass-liquid-filter)",
+              isolation: "isolate",
+            }}
+          />
+          <div className="absolute inset-0 z-[1] bg-white/[0.02]" />
+          <div 
+            className="absolute inset-0 z-[2] rounded-[28px] pointer-events-none"
+            style={{
+              boxShadow: "inset 1px 1px 1px 0 rgba(255, 255, 255, 0.1), inset -1px -1px 1px 1px rgba(255, 255, 255, 0.02)"
+            }}
+          />
 
-              {/* Header */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="text-center mb-10"
-              >
-                <h1 className="text-3xl md:text-[42px] font-bold tracking-[-0.03em] leading-[1.1] mb-4 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent">
-                  Request Founding Access
-                </h1>
-                <p className="text-zinc-500 text-sm md:text-[15px] leading-relaxed max-w-sm mx-auto font-light">
-                  Mailient is in private beta. Submit your details and we'll
-                  review your request within 24 hours.
-                </p>
-              </motion.div>
-
-              {/* Form */}
-              <motion.form
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                onSubmit={handleSubmit}
-                className="space-y-4"
-              >
-                {/* Name */}
-                <div>
-                  <label
-                    htmlFor="request-name"
-                    className="block text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500 mb-2 ml-1"
-                  >
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                    <input
-                      id="request-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Jane Smith"
-                      disabled={step === "submitting"}
-                      className="w-full h-12 bg-white/[0.03] border border-white/[0.08] focus:border-white/20 rounded-xl pl-11 pr-4 text-sm font-medium focus:outline-none transition-all placeholder:text-zinc-700 disabled:opacity-50"
-                    />
+          <div className="relative z-10">
+            <AnimatePresence mode="wait">
+              
+              {/* ─── FORM STATE ─── */}
+              {(step === "form" || step === "submitting") && (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="w-full"
+                >
+                  {/* Slots badge */}
+                  <div className="flex justify-center mb-6">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08]">
+                      <span className="relative flex h-1.5 w-1.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
+                      </span>
+                      <span className="text-[10px] font-medium text-neutral-400">
+                        {slotsRemaining} of 45 founding slots remaining
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                {/* Email */}
-                <div>
-                  <label
-                    htmlFor="request-email"
-                    className="block text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500 mb-2 ml-1"
-                  >
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-                    <input
-                      ref={emailRef}
-                      id="request-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="jane@company.com"
-                      disabled={step === "submitting"}
-                      className="w-full h-12 bg-white/[0.03] border border-white/[0.08] focus:border-white/20 rounded-xl pl-11 pr-4 text-sm font-medium focus:outline-none transition-all placeholder:text-zinc-700 disabled:opacity-50"
-                    />
+                  {/* Header */}
+                  <div className="text-center mb-8">
+                    <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-2.5">
+                      Request founding access
+                    </h1>
+                    <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mx-auto font-light">
+                      Mailient is currently in private beta. Submit your details to request access to our autonomous email client.
+                    </p>
                   </div>
-                </div>
 
-                {/* International Card Checkbox */}
-                <div className="pt-2">
-                  <label
-                    htmlFor="intl-card-check"
-                    className="flex items-start gap-3 cursor-pointer group"
-                  >
-                    <div className="relative mt-0.5 shrink-0">
-                      <input
-                        id="intl-card-check"
-                        type="checkbox"
-                        checked={hasCard}
-                        onChange={(e) => setHasCard(e.target.checked)}
-                        disabled={step === "submitting"}
-                        className="sr-only peer"
-                      />
-                      <div className="w-5 h-5 rounded-md border border-white/[0.12] bg-white/[0.03] peer-checked:bg-white peer-checked:border-white transition-all flex items-center justify-center">
-                        {hasCard && (
-                          <Check className="w-3.5 h-3.5 text-black" />
-                        )}
+                  {/* Form */}
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    
+                    {/* Name Input */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="request-name" className="block text-[11px] font-medium text-neutral-500 ml-1">
+                        Full name
+                      </label>
+                      <div className="relative rounded-xl border border-white/[0.06] bg-white/[0.02] focus-within:border-white/20 transition-all duration-300">
+                        <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+                        <input
+                          id="request-name"
+                          type="text"
+                          value={name}
+                          onChange={(e) => setName(e.target.value)}
+                          placeholder="Jane Smith"
+                          disabled={step === "submitting"}
+                          className="w-full h-11 bg-transparent pl-11 pr-4 text-sm font-light text-white focus:outline-none placeholder:text-neutral-700 disabled:opacity-50"
+                        />
                       </div>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm text-zinc-300 font-medium leading-snug group-hover:text-white transition-colors">
-                        I have an international payment card
-                      </span>
-                      <span className="text-[11px] text-zinc-600 mt-0.5 flex items-center gap-1">
-                        <CreditCard className="w-3 h-3" />
-                        Visa, Mastercard, or Amex required for trial activation
-                      </span>
-                    </div>
-                  </label>
-                </div>
 
-                {/* Error */}
-                <AnimatePresence>
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-red-500/[0.08] border border-red-500/20">
-                        <AlertCircle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-                        <p className="text-xs text-red-300 leading-relaxed">
-                          {error}
-                        </p>
+                    {/* Email Input */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="request-email" className="block text-[11px] font-medium text-neutral-500 ml-1">
+                        Email address
+                      </label>
+                      <div className="relative rounded-xl border border-white/[0.06] bg-white/[0.02] focus-within:border-white/20 transition-all duration-300">
+                        <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+                        <input
+                          ref={emailRef}
+                          id="request-email"
+                          type="email"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          placeholder="jane@company.com"
+                          disabled={step === "submitting"}
+                          className="w-full h-11 bg-transparent pl-11 pr-4 text-sm font-light text-white focus:outline-none placeholder:text-neutral-700 disabled:opacity-50"
+                        />
                       </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Submit */}
-                <button
-                  type="submit"
-                  disabled={step === "submitting"}
-                  id="request-access-submit"
-                  className="w-full h-13 mt-4 bg-white text-black rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 hover:bg-zinc-200 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer shadow-[0_20px_40px_rgba(255,255,255,0.06)]"
-                >
-                  {step === "submitting" ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      Request Early Access
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
-              </motion.form>
-
-              {/* Trust signals */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.35 }}
-                className="mt-8 flex items-center justify-center gap-5 text-[10px] text-zinc-600 uppercase tracking-[0.15em] font-bold"
-              >
-                <span className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-3 h-3" /> Encrypted
-                </span>
-                <span className="w-px h-3 bg-zinc-800" />
-                <span className="flex items-center gap-1.5">
-                  <Mail className="w-3 h-3" /> Gmail Compatible
-                </span>
-                <span className="w-px h-3 bg-zinc-800" />
-                <span>SOC-2 Ready</span>
-              </motion.div>
-
-              {/* Already have access? */}
-              <motion.p
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="text-center mt-6 text-xs text-zinc-600"
-              >
-                Already approved?{" "}
-                <Link
-                  href="/auth/signin"
-                  className="text-zinc-400 hover:text-white underline underline-offset-2 transition-colors"
-                >
-                  Sign in here
-                </Link>
-              </motion.p>
-            </motion.div>
-          )}
-
-          {/* ─── SUCCESS STATE ─── */}
-          {step === "success" && (
-            <motion.div
-              key="success"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-              className="w-full max-w-md text-center"
-            >
-              {/* Success badge */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.1, type: "spring", damping: 15 }}
-                className="flex justify-center mb-6"
-              >
-                <div className="w-16 h-16 rounded-2xl bg-white/[0.05] border border-white/[0.1] flex items-center justify-center">
-                  <Sparkles className="w-7 h-7 text-zinc-300" />
-                </div>
-              </motion.div>
-
-              <motion.h1
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-                className="text-3xl md:text-[40px] font-bold tracking-[-0.03em] leading-[1.1] mb-4 bg-gradient-to-b from-white via-white to-zinc-500 bg-clip-text text-transparent"
-              >
-                Request Submitted
-              </motion.h1>
-
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-zinc-400 text-sm md:text-[15px] leading-relaxed max-w-sm mx-auto mb-8"
-              >
-                {successMessage ||
-                  "We'll review your request and send you a sign-up link within 24 hours."}
-              </motion.p>
-
-              {/* What happens next */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-                className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-6 mb-8 text-left"
-              >
-                <p className="text-[11px] font-bold uppercase tracking-[0.15em] text-zinc-500 mb-4">
-                  What happens next
-                </p>
-                <div className="space-y-3">
-                  {[
-                    {
-                      num: "1",
-                      text: "We review your request (usually within a few hours)",
-                    },
-                    {
-                      num: "2",
-                      text: "You'll receive an approval email with a sign-up link",
-                    },
-                    {
-                      num: "3",
-                      text: "Connect Gmail, complete onboarding, start your trial",
-                    },
-                    {
-                      num: "4",
-                      text: "Wake up to your first morning briefing — not Gmail",
-                    },
-                  ].map((item) => (
-                    <div
-                      key={item.num}
-                      className="flex items-start gap-3 text-[13px]"
-                    >
-                      <span className="w-5 h-5 rounded-md bg-white/[0.06] border border-white/[0.08] flex items-center justify-center text-[10px] font-bold text-zinc-400 shrink-0 mt-0.5">
-                        {item.num}
-                      </span>
-                      <span className="text-zinc-400 leading-relaxed">
-                        {item.text}
-                      </span>
                     </div>
-                  ))}
-                </div>
-              </motion.div>
 
-              {/* Share on X */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <button
-                  onClick={() => {
-                    window.open(
-                      `https://x.com/intent/tweet?text=${encodeURIComponent(shareText)}`,
-                      "_blank"
-                    );
-                  }}
-                  id="share-request-on-x"
-                  className="w-full h-13 bg-white text-black rounded-xl font-bold text-sm flex items-center justify-center gap-2.5 hover:bg-zinc-200 transition-all active:scale-[0.98] cursor-pointer shadow-[0_20px_40px_rgba(255,255,255,0.06)]"
-                >
-                  <XIcon className="w-4 h-4" />
-                  Share on X to skip the queue
-                </button>
-              </motion.div>
+                    {/* International Card Checkbox */}
+                    <div className="pt-2">
+                      <label htmlFor="intl-card-check" className="flex items-start gap-3 cursor-pointer group select-none">
+                        <div className="relative mt-0.5 shrink-0">
+                          <input
+                            id="intl-card-check"
+                            type="checkbox"
+                            checked={hasCard}
+                            onChange={(e) => setHasCard(e.target.checked)}
+                            disabled={step === "submitting"}
+                            className="sr-only peer"
+                          />
+                          <div className="w-5 h-5 rounded-md border border-white/[0.12] bg-white/[0.02] peer-checked:bg-white peer-checked:border-white transition-all duration-300 flex items-center justify-center">
+                            {hasCard && <Check className="w-3.5 h-3.5 text-black" />}
+                          </div>
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm text-neutral-300 font-light group-hover:text-white transition-colors">
+                            I have an international payment card
+                          </span>
+                          <span className="text-[11px] text-neutral-600 mt-0.5 flex items-center gap-1.5 font-light">
+                            <CreditCard className="w-3 h-3 text-neutral-600" />
+                            Visa, Mastercard, or Amex required for trial activation
+                          </span>
+                        </div>
+                      </label>
+                    </div>
 
-              {/* Bottom links */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.4 }}
-                className="mt-6 flex items-center justify-center gap-4"
-              >
-                <Link
-                  href="/"
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                    {/* Error display */}
+                    <AnimatePresence>
+                      {error && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: "auto" }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-rose-500/[0.04] border border-rose-500/20">
+                            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
+                            <p className="text-xs text-rose-300 leading-relaxed font-light">
+                              {error}
+                            </p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      disabled={step === "submitting"}
+                      id="request-access-submit"
+                      className="w-full h-12 mt-4 bg-white text-black rounded-xl font-medium text-sm flex items-center justify-center gap-2 hover:bg-neutral-200 transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                    >
+                      {step === "submitting" ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          Submitting...
+                        </>
+                      ) : (
+                        <>
+                          Request early access
+                          <ArrowRight className="w-4 h-4" />
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Direct Contact / X option for instant review */}
+                  <div className="mt-6 pt-5 border-t border-white/[0.06] text-center">
+                    <p className="text-xs text-neutral-500 font-light">
+                      Want to skip the queue? Chat with Maulik directly on X{" "}
+                      <a
+                        href="https://x.com/messages/compose?recipient_id=maulik_5"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-neutral-300 hover:text-white underline underline-offset-2 transition-all inline-flex items-center gap-0.5"
+                      >
+                        @maulik_5 <ExternalLink className="w-2.5 h-2.5" />
+                      </a>{" "}
+                      to get approved instantly.
+                    </p>
+                  </div>
+
+                  {/* Trust Signals */}
+                  <div className="mt-6 flex items-center justify-center gap-4 text-[10px] text-neutral-600 font-light">
+                    <span className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5" /> Client-side encrypted
+                    </span>
+                    <span className="w-px h-2.5 bg-neutral-800" />
+                    <span className="flex items-center gap-1.5">
+                      <Mail className="w-3.5 h-3.5" /> Gmail compatible
+                    </span>
+                  </div>
+
+                  {/* Back to sign in */}
+                  <p className="text-center mt-6 text-xs text-neutral-500 font-light">
+                    Already approved?{" "}
+                    <Link
+                      href="/auth/signin"
+                      className="text-neutral-300 hover:text-white underline underline-offset-2 transition-colors"
+                    >
+                      Sign in
+                    </Link>
+                  </p>
+                </motion.div>
+              )}
+
+              {/* ─── SUCCESS STATE ─── */}
+              {step === "success" && (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                  className="w-full text-center"
                 >
-                  ← Back to Mailient
-                </Link>
-                <span className="w-px h-3 bg-zinc-800" />
-                <a
-                  href="https://x.com/maulik_5"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors inline-flex items-center gap-1"
-                >
-                  Follow @maulik_5
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+                  <div className="flex justify-center mb-6">
+                    <div className="w-14 h-14 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-neutral-300 animate-pulse" />
+                    </div>
+                  </div>
+
+                  <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white mb-3">
+                    Request submitted
+                  </h1>
+
+                  <p className="text-neutral-400 text-sm leading-relaxed max-w-sm mx-auto mb-6 font-light">
+                    {successMessage || "We will review your request and send you a link within 24 hours."}
+                  </p>
+
+                  {/* Direct validation helper */}
+                  <div className="bg-white/[0.02] border border-white/[0.06] rounded-2xl p-5 text-left mb-6">
+                    <p className="text-[11px] font-medium text-neutral-500 mb-3.5">
+                      What happens next
+                    </p>
+                    <div className="space-y-3">
+                      {[
+                        { num: "1", text: "We review your request details." },
+                        { num: "2", text: "You get approved and receive the onboarding link." },
+                        { num: "3", text: "Connect Gmail, active your trial, and start shipping." },
+                      ].map((item) => (
+                        <div key={item.num} className="flex items-start gap-3 text-xs font-light">
+                          <span className="w-5 h-5 rounded-md bg-white/[0.04] border border-white/[0.08] flex items-center justify-center text-[10px] text-neutral-400 shrink-0 mt-0.5">
+                            {item.num}
+                          </span>
+                          <span className="text-neutral-400 leading-relaxed">
+                            {item.text}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Skip Queue with X message */}
+                  <div className="mb-6 p-4 rounded-xl border border-white/[0.06] bg-white/[0.01] text-xs text-neutral-400 font-light leading-relaxed">
+                    Want instant approval? Message Maulik at{" "}
+                    <a
+                      href="https://x.com/messages/compose?recipient_id=maulik_5"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-white underline underline-offset-2 hover:text-neutral-200"
+                    >
+                      @maulik_5 on X
+                    </a>{" "}
+                    with your request email to skip the review queue.
+                  </div>
+
+                  {/* Back Link */}
+                  <Link
+                    href="/"
+                    className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors inline-flex items-center gap-1.5 font-light"
+                  >
+                    ← Back to Mailient
+                  </Link>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
       </div>
-
-      {/* Decorative watermark */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 0.015 }}
-        transition={{ delay: 0.8, duration: 1.5 }}
-        className="text-white text-[10vw] font-black uppercase select-none pointer-events-none absolute bottom-0 leading-none whitespace-nowrap"
-      >
-        FOUNDING ACCESS • MAILIENT
-      </motion.p>
     </div>
   );
 }
