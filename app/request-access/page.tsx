@@ -21,6 +21,7 @@ export default function RequestAccessPage() {
   const [step, setStep] = useState<"form" | "submitting" | "success">("form");
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
+  const [xHandle, setXHandle] = useState("");
   const [hasCard, setHasCard] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState("");
@@ -103,6 +104,7 @@ export default function RequestAccessPage() {
         body: JSON.stringify({
           email: trimmedEmail,
           name: trimmedName,
+          xHandle: xHandle.trim(),
           hasInternationalCard: hasCard,
         }),
       });
@@ -266,6 +268,25 @@ export default function RequestAccessPage() {
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
                           placeholder="jane@company.com"
+                          disabled={step === "submitting"}
+                          className="w-full h-11 bg-transparent pl-11 pr-4 text-sm font-light text-white focus:outline-none placeholder:text-neutral-700 disabled:opacity-50"
+                        />
+                      </div>
+                    </div>
+
+                    {/* X Handle Input */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="request-x-handle" className="block text-[11px] font-medium text-neutral-500 ml-1">
+                        X Handle (Optional)
+                      </label>
+                      <div className="relative rounded-xl border border-white/[0.06] bg-white/[0.02] focus-within:border-white/20 transition-all duration-300">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600 font-medium text-xs flex items-center justify-center">@</span>
+                        <input
+                          id="request-x-handle"
+                          type="text"
+                          value={xHandle}
+                          onChange={(e) => setXHandle(e.target.value)}
+                          placeholder="maulik_5"
                           disabled={step === "submitting"}
                           className="w-full h-11 bg-transparent pl-11 pr-4 text-sm font-light text-white focus:outline-none placeholder:text-neutral-700 disabled:opacity-50"
                         />

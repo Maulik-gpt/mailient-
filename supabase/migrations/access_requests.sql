@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS access_requests (
   email TEXT NOT NULL,
   name TEXT NOT NULL,
   has_international_card BOOLEAN NOT NULL DEFAULT false,
+  x_handle TEXT,
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
   approved_at TIMESTAMPTZ,
   rejected_at TIMESTAMPTZ,

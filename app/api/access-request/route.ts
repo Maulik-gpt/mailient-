@@ -9,7 +9,7 @@ const TOTAL_SLOTS = 45;
 
 export async function POST(req: Request) {
   try {
-    const { email, name, hasInternationalCard } = await req.json();
+    const { email, name, xHandle, hasInternationalCard } = await req.json();
 
     // --- Validation ---
     if (!email || !name) {
@@ -75,6 +75,7 @@ export async function POST(req: Request) {
         email: trimmedEmail,
         name: trimmedName,
         has_international_card: hasInternationalCard,
+        x_handle: xHandle || null,
         status: 'pending',
       });
 
@@ -100,7 +101,8 @@ export async function POST(req: Request) {
       const baseUrl = process.env.NEXTAUTH_URL || 'https://mailient.xyz';
       const approveUrl = `${baseUrl}/api/access-request/approve?email=${encodeURIComponent(trimmedEmail)}&token=${encodeURIComponent(authToken || '')}`;
       const rejectUrl = `${baseUrl}/api/access-request/reject?email=${encodeURIComponent(trimmedEmail)}&token=${encodeURIComponent(authToken || '')}`;
-      const dmUrl = `https://x.com/messages/compose?recipient_id=maulik_5&text=${encodeURIComponent(`Hi! I just requested access to Mailient. My email: ${trimmedEmail}`)}`;
+      const userXHandle = xHandle ? xHandle.replace('@', '').trim() : null;
+      const dmUrl = userXHandle ? `https://x.com/${encodeURIComponent(userXHandle)}` : null;
 
       const adminHtml = `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 560px; margin: 0 auto; padding: 40px 24px; color: #111; background: #fff; border-radius: 20px; border: 1px solid #f0f0f0;">
@@ -130,6 +132,14 @@ export async function POST(req: Request) {
                   ${hasInternationalCard ? '✅ Confirmed' : '—'}
                 </td>
               </tr>
+              ${userXHandle ? `
+              <tr>
+                <td style="padding: 7px 0; color: #888; font-weight: 500;">X Handle</td>
+                <td style="padding: 7px 0; color: #000; font-weight: 600;">
+                  <a href="${dmUrl}" style="color: #0066cc; text-decoration: none;">@${userXHandle}</a>
+                </td>
+              </tr>
+              ` : ''}
               <tr>
                 <td style="padding: 7px 0; color: #888; font-weight: 500;">Slots left</td>
                 <td style="padding: 7px 0; color: #000; font-weight: 600;">${slotsRemaining} of ${TOTAL_SLOTS}</td>
@@ -155,12 +165,14 @@ export async function POST(req: Request) {
             </a>
           </div>
 
+          ${userXHandle ? `
           <div style="text-align: center; margin-bottom: 24px;">
             <a href="${dmUrl}"
                style="display: inline-block; color: #666; text-decoration: none; padding: 8px 20px; font-size: 13px; font-weight: 500;">
               or chat with them on X →
             </a>
           </div>
+          ` : ''}
 
           <div style="background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 14px 16px; margin-top: 8px;">
             <p style="margin: 0; font-size: 12px; color: #92400e; line-height: 1.5;">

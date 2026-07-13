@@ -39,7 +39,8 @@
       "WebSearch",
       "WebFetch(domain:superdesign.dev)",
       "WebFetch(domain:www.createwithswift.com)",
-      "Bash(xargs grep -ln \"GmailInterfaceFixed\")"
+      "Bash(xargs grep -ln \"GmailInterfaceFixed\")",
+      "Bash(git fetch *)"
     ]
   }
 }
