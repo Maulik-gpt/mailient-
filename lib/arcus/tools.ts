@@ -25,6 +25,7 @@ import { buildExecutionPlan } from './orchestrator';
 import {
   recordPendingApproval,
   consumeApproval,
+  consumeApprovalById,
   hasDeclinedApproval,
   normalizeTargetKey,
   type ApprovalActionType,
@@ -1319,19 +1320,35 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'schedule_email_send',
     description:
-      'Schedule an email to be sent automatically at a future time (the cron dispatcher delivers it — the user does NOT need to be online). Use for "send this tomorrow at 9am", staggered follow-up sequences, or timezone-friendly sends. The email IS committed to send once scheduled, so the same confirmation as send_email applies. To reply within a thread, pass threadId. ' +
-      'Output: scheduled id + send time. Errors (success:false): confirmation_required, gmail_not_connected, validation_error.',
+      'Schedule email to be sent automatically at a future time (the cron dispatcher delivers it — the user does NOT need to be online). Two modes:\n' +
+      'SINGLE: pass to/subject/body/sendAt for one email ("send this tomorrow at 9am"). Same confirmation as send_email applies.\n' +
+      'BATCH: pass items[] (up to 100 emails, each with its own to/subject/body/sendAt) plus the approvalId from an approved batch request_confirmation. This is how you run bulk personalized outreach: draft each email individually, get ONE batch confirmation from the user, then schedule everything in ONE call with send times spread out (business hours, minutes apart, ~30-40/day). ' +
+      'Output: scheduled count + send window. Errors (success:false): confirmation_required, gmail_not_connected, validation_error.',
     input_schema: {
       type: 'object',
       properties: {
-        to: { type: 'string', description: 'Recipient email address.' },
-        subject: { type: 'string', description: 'Email subject.' },
-        body: { type: 'string', description: 'Full email body (plain text).' },
-        sendAt: { type: 'string', description: 'When to send, as ISO 8601 (e.g. "2026-06-21T09:00:00-04:00"). Must be in the future, at most 1 year out.' },
-        threadId: { type: 'string', description: 'Optional Gmail thread id to reply into.' },
-        dedupKey: { type: 'string', description: 'Optional idempotency key — scheduling the same key twice is a no-op (use for sequence steps to avoid duplicates).' },
+        to: { type: 'string', description: 'SINGLE mode: recipient email address.' },
+        subject: { type: 'string', description: 'SINGLE mode: email subject.' },
+        body: { type: 'string', description: 'SINGLE mode: full email body (plain text).' },
+        sendAt: { type: 'string', description: 'SINGLE mode: when to send, ISO 8601 (e.g. "2026-06-21T09:00:00-04:00"). Future, at most 1 year out.' },
+        threadId: { type: 'string', description: 'Optional Gmail thread id to reply into (single mode).' },
+        dedupKey: { type: 'string', description: 'Optional idempotency key — scheduling the same key twice is a no-op.' },
+        items: {
+          type: 'array',
+          description: 'BATCH mode: the full list of emails to schedule. Each item is one personalized email with its own send time.',
+          items: {
+            type: 'object',
+            properties: {
+              to: { type: 'string', description: 'Recipient email address.' },
+              subject: { type: 'string', description: 'Subject — short, specific, natural.' },
+              body: { type: 'string', description: 'Personalized plain-text body for THIS recipient.' },
+              sendAt: { type: 'string', description: 'ISO 8601 send time for this email — spread the batch across business hours and days.' },
+            },
+            required: ['to', 'body', 'sendAt'],
+          },
+        },
+        approvalId: { type: 'string', description: 'BATCH mode: the approvalId returned by the batch request_confirmation the user approved. Required for batches in live chat.' },
       },
-      required: ['to', 'body', 'sendAt'],
     },
   },
   {
@@ -3438,6 +3455,12 @@ async function scheduleEmailSend(userId: string, input: any, context: ToolContex
       'confirmation_required',
     );
   }
+
+  // ── BATCH MODE — many personalized emails, ONE user approval ──────────────
+  if (Array.isArray(input.items) && input.items.length > 0) {
+    return await scheduleEmailBatch(userId, input, context);
+  }
+
   if (context.conversationId) {
     const targetKey = normalizeTargetKey('send_email', input);
     const { approved, failedOpen } = await consumeApproval({
@@ -3486,6 +3509,111 @@ async function scheduleEmailSend(userId: string, input: any, context: ToolContex
   });
   return {
     output: `Email scheduled. It will send to ${input.to} on ${whenLabel} — no further action needed. (id: ${res.id})`,
+  };
+}
+
+/**
+ * BATCH scheduling — the scale gate. Up to 100 personalized emails in one
+ * call, each with its own body and send time, flowing into the same
+ * arcus_scheduled_emails queue the cron already drains.
+ *
+ * The approval law, batch-shaped: in live chat the call MUST carry the
+ * approvalId of a batch request_confirmation the user clicked Confirm on
+ * (consumed by id — single use). Background agents pass through their own
+ * approval surface exactly like single sends (skip_confirmations/autonomy).
+ */
+async function scheduleEmailBatch(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {
+  const rawItems: any[] = input.items;
+  if (rawItems.length > 100) {
+    return failureResult(`Batch too large (${rawItems.length}). Maximum is 100 emails per call — split the list.`, 'validation_error');
+  }
+
+  // Validate every item BEFORE consuming the approval — a bad batch must not
+  // burn the user's confirmation.
+  const problems: string[] = [];
+  const seen = new Set<string>();
+  const items = rawItems.map((it: any, i: number) => {
+    const to = String(it?.to || '').trim().toLowerCase();
+    const body = String(it?.body || '').trim();
+    const sendAt = String(it?.sendAt || '').trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(to)) problems.push(`item ${i + 1}: invalid recipient "${to || '(empty)'}"`);
+    if (body.length < 20) problems.push(`item ${i + 1} (${to}): body missing or too short`);
+    if (!Number.isFinite(Date.parse(sendAt))) problems.push(`item ${i + 1} (${to}): sendAt is not a valid ISO date`);
+    if (seen.has(to)) problems.push(`item ${i + 1}: duplicate recipient ${to}`);
+    seen.add(to);
+    return { to, subject: String(it?.subject || '').trim() || '(no subject)', body, sendAt };
+  });
+  if (problems.length) {
+    return failureResult(
+      `Batch rejected — fix these and retry (the approval was NOT consumed):\n- ${problems.slice(0, 10).join('\n- ')}${problems.length > 10 ? `\n…and ${problems.length - 10} more` : ''}`,
+      'validation_error',
+    );
+  }
+
+  // The approval law. Explicit id handshake — no key reconstruction.
+  if (context.conversationId && !context.isBackgroundAgent) {
+    const { approved, failedOpen } = await consumeApprovalById({
+      approvalId: String(input.approvalId || ''),
+      userId,
+      actionType: 'batch_email_send',
+      conversationId: context.conversationId,
+      isBackgroundAgent: context.isBackgroundAgent,
+    });
+    if (!approved && !failedOpen) {
+      return failureResult(
+        `Refusing to schedule ${items.length} emails — no approved batch confirmation. Call request_confirmation with action "Send ${items.length} personalized emails to …" and details including Count: "${items.length}", wait for the user to click Confirm, then retry with the approvalId from that confirmation.`,
+        'confirmation_required',
+      );
+    }
+  } else {
+    // Background agents: same autonomy surface as every other write.
+    const gate = await applyAutonomyGate({ userId, action: 'send_email', toolName: 'schedule_email_send', input, context, verb: 'schedule' });
+    if (gate.handled) return gate.result!;
+  }
+
+  const token = await getGmailToken(userId);
+  if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
+
+  const supabase = getSupabaseAdmin();
+  let scheduled = 0;
+  let duplicates = 0;
+  const failures: string[] = [];
+  let earliest = Infinity;
+  let latest = -Infinity;
+
+  for (const it of items) {
+    const res = await enqueueScheduledEmail(supabase, {
+      userId,
+      to: it.to,
+      subject: it.subject,
+      body: it.body,
+      sendAt: it.sendAt,
+      // Idempotent per (batch, recipient): a retried call never double-books.
+      dedupKey: `batch:${input.approvalId || context.agentId || 'run'}:${it.to}`,
+      source: context.isBackgroundAgent ? 'agent' : 'chat',
+      agentId: context.agentId,
+    });
+    if (res.ok && res.duplicate) { duplicates++; continue; }
+    if (!res.ok) { failures.push(`${it.to}: ${res.error}`); continue; }
+    scheduled++;
+    const t = Date.parse(it.sendAt);
+    if (t < earliest) earliest = t;
+    if (t > latest) latest = t;
+  }
+
+  const fmt = (ms: number) => new Date(ms).toLocaleString('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+  });
+  const windowLabel = scheduled > 0
+    ? (latest > earliest ? `${fmt(earliest)} → ${fmt(latest)}` : fmt(earliest))
+    : '';
+
+  return {
+    output:
+      `Batch scheduled: ${scheduled} of ${items.length} emails queued${windowLabel ? ` (sending ${windowLabel})` : ''}.` +
+      (duplicates ? ` ${duplicates} already scheduled (skipped).` : '') +
+      (failures.length ? `\nFailed to queue:\n- ${failures.slice(0, 5).join('\n- ')}` : '') +
+      `\nThe dispatcher delivers each at its send time — the user does not need to be online. They can review or cancel anything with list_scheduled_emails / cancel_scheduled_email.`,
   };
 }
 
@@ -6129,7 +6257,16 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   // Slack"), so we use a coarse keyword classifier.
   const lower = (input.action || '').toLowerCase();
   let actionType: ApprovalActionType | null = null;
-  if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
+  // Batch first — "send 40 personalized emails…" must NOT classify as a single
+  // send_email (its target key would be empty and unconsumable). A batch is
+  // signalled by an explicit Count detail or a number of emails in the action.
+  const detailCount = Number((input.details && (input.details.Count || input.details.count)) || 0);
+  const actionCountMatch = lower.match(/\b(\d{2,3})\b[^.]*\bemails?\b|\bemails?\b[^.]*\b(\d{2,3})\b/);
+  if (
+    /\bsend\b|\bschedule\b/.test(lower) && /\bemails?\b/.test(lower) &&
+    (detailCount > 1 || actionCountMatch)
+  ) actionType = 'batch_email_send';
+  else if (/\bsend\b.*\bemail\b|\bemail\b.*\bsend\b|\bsend\b.*\breply\b/.test(lower)) actionType = 'send_email';
   // Cal.com first — its actions also contain "book"/"meeting"/"cancel", so they
   // must be classified before the generic calendar rules below.
   else if (/cal\.?com/.test(lower) && /\bcancel\b/.test(lower)) actionType = 'calcom_cancel';
@@ -6150,6 +6287,9 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
     if (actionType === 'send_email') {
       detailsLower.to = detailsLower.to || detailsLower.recipient || detailsLower['to:'];
       detailsLower.subject = detailsLower.subject || detailsLower['subject:'];
+    } else if (actionType === 'batch_email_send') {
+      detailsLower.count = detailsLower.count || detailCount ||
+        (actionCountMatch ? (actionCountMatch[1] || actionCountMatch[2]) : '');
     } else if (actionType === 'send_slack_message') {
       detailsLower.channel = detailsLower.channel || detailsLower.to || detailsLower.recipient;
     } else if (actionType === 'send_slack_dm') {
@@ -6198,7 +6338,11 @@ async function requestConfirmation(input: any, userId: string, context: ToolCont
   }
 
   return {
-    output: `Confirmation requested. Waiting for user to approve: "${input.action}". Do NOT call any more tools — the loop will stop here.`,
+    output:
+      `Confirmation requested. Waiting for user to approve: "${input.action}". Do NOT call any more tools — the loop will stop here.` +
+      (approvalId && actionType === 'batch_email_send'
+        ? ` This is a BATCH approval (approvalId: ${approvalId}). After the user confirms, call schedule_email_send ONCE with the items array AND approvalId: "${approvalId}".`
+        : ''),
     requiresConfirmation: true,
     canvasData: {
       title: input.action || 'Confirm action',

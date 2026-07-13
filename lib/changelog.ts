@@ -26,6 +26,29 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 13, 2026',
+    entries: [
+      {
+        tag: 'New',
+        title: 'Arcus runs your outreach — hand it a list, approve once',
+        points: [
+          'Paste a list or attach a CSV and say "email these 40 people about…" — Arcus researches each person, writes every email individually in your voice, and shows you samples.',
+          'One approval covers the whole batch. After your yes, emails go out paced like a human sends them — spread over days, business hours, minutes apart — so your Gmail reputation stays clean.',
+          'Before a first bulk send from a custom domain, Arcus checks your SPF/DMARC and tells you exactly what to fix if something\'s missing.',
+          'Ask for a watcher and Arcus sets up a scheduled agent that reads the replies, drafts responses in your voice with real openings from your calendar, nudges the silent ones once with a fresh angle, and never contacts anyone who opts out.',
+          'Nothing new to learn — it\'s the same chat, the same agents, now trusted with bigger jobs.',
+        ],
+      },
+      {
+        tag: 'Fixed',
+        title: 'Attachments actually reach Arcus now',
+        points: [
+          'CSV and text files uploaded in chat were silently invisible to the AI. Fixed — attach a contact list or notes and Arcus reads the real contents.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 11, 2026',
     entries: [
       {
