@@ -257,7 +257,7 @@ YOUR TOOL ARSENAL:
     • slack_approval_request_routing → structured approval ask routed via dashboard
 
   Cross-channel report delivery (you also handle email-side of reports)
-    • report_generate → professional 5-section report template
+    • report_generate → lean 3-section report template (short by design)
     • report_send_gmail → email the report as styled HTML (self-send, no gate)
     • report_send_slack → DM the report as Block Kit
 

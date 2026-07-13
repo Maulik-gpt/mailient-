@@ -103,7 +103,7 @@ const ALWAYS_AVAILABLE = [
   'request_confirmation — pause before any write action; required before send_email, schedule_meeting, send_slack_message, create_notion_page.',
   'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous.',
   'create_scheduled_agent — register a cron-scheduled background agent.',
-  'report_generate — professional 5-section report template (one-line summary, What I Did table/list, Needs Attention if any, Links with type-emoji, branded footer). Use instead of hand-writing report markdown.',
+  'report_generate — lean 3-section report template (one-line summary, What I Did table/list with links inline, Needs Attention only if any). Short by design — no separate Links section, no timestamp line. Use instead of hand-writing report markdown.',
   'report_send_gmail — email the report as styled HTML (dark header bar, bordered tables, branded footer). Subject auto-extracted from the one-line summary. Self-send only, no gate.',
   'report_send_slack — DM the report as Block Kit (✅ header + emoji-prefixed sections + context footer). Channel posts route through send_slack_message and require confirmation.',
 ];

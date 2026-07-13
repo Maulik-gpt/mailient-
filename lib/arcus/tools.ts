@@ -1859,20 +1859,17 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'report_generate',
     description:
-      'Render a structured agent-run report from a tool-call execution log. Deterministic templating (no LLM call) producing a professional 5-section markdown report: ' +
-      '(1) One-line summary as the very first line — human-readable action counts like "Drafted 6 replies, booked 2 meetings, archived 12 threads." ' +
-      '(2) "What I Did" section — table format (Action | Details | Link) when 4+ items, bullet list for fewer. Tool names are converted to human-readable labels. ' +
-      '(3) "Needs Your Attention" — only present when there are failures or skipped items. Omitted entirely when everything succeeded. ' +
-      '(4) "Links" — grouped direct links to every artifact created, with type-emoji prefixes (📧 📅 📝 💬). ' +
-      '(5) Branded footer: "Sent by Arcus for Mailient • mailient.xyz" with run timestamp and optional next-run time. ' +
+      'Render a lean agent-run report from a tool-call execution log. Deterministic templating (no LLM call) producing a SHORT 3-section markdown report the user can skim in five seconds: ' +
+      '(1) One-line summary as the very first line — human-readable action counts like "Drafted 6 replies, booked 2 meetings, archived 12 threads." This is the headline AND the email subject. ' +
+      '(2) "What I Did" — table (Action | Details | Link) when 4+ items, bullet list for fewer. Tool names become human labels; links ride inline on their own row. ' +
+      '(3) "Needs Your Attention" — ONLY when there are failures or skipped items. Omitted entirely when everything succeeded. ' +
+      'Then a single-line footer. There is deliberately NO separate Links section (links are already on their line item) and no run-timestamp line — keep reports short. ' +
       'Use this instead of hand-writing report markdown — keeps every report visually consistent. ' +
       'Output: plain text containing the rendered markdown. Pass it to report_send_gmail or report_send_slack for delivery. ' +
       'No failure path — empty executionLog still produces a valid report.',
     input_schema: {
       type: 'object',
       properties: {
-        agentName: { type: 'string', description: 'Display name for the report header.' },
-        runTimestamp: { type: 'string', description: 'ISO 8601 timestamp of the run; falls back to "now" if omitted.' },
         executionLog: {
           type: 'array',
           description: 'Tool calls executed during the run. Each entry: { tool, success, summary, error?, links? }.',
@@ -1891,7 +1888,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         summaryLine: { type: 'string', description: 'Optional one-line summary override. If omitted, derived from executionLog with human-readable action names.' },
         nextRunTime: { type: 'string', description: 'Optional human-readable next run time for recurring agents (e.g. "Tomorrow at 9:00 AM"). Appears in footer.' },
       },
-      required: ['agentName', 'executionLog'],
+      required: ['executionLog'],
     },
   },
   {
@@ -7302,8 +7299,6 @@ interface ExecutionLogEntry {
   links?: string[];
 }
 
-const URL_RE = /https?:\/\/[^\s"<>)]+/g;
-
 /**
  * Human-readable action labels for tool names.
  * Used in report summaries and "What I Did" tables so the user never sees
@@ -7445,18 +7440,7 @@ function deriveSummaryLine(log: ExecutionLogEntry[]): string {
   return joined.charAt(0).toUpperCase() + joined.slice(1);
 }
 
-/** Detect link type from URL for grouping in the Links section. */
-function classifyLink(url: string): string {
-  if (/gmail\.googleapis\.com|mail\.google\.com|gmail:\/\//.test(url)) return '📧';
-  if (/calendar\.google\.com|calendar:\/\//.test(url)) return '📅';
-  if (/notion\.so|notion:\/\//.test(url)) return '📝';
-  if (/slack\.com|slack:\/\//.test(url)) return '💬';
-  return '🔗';
-}
-
 function reportGenerate(input: any): ToolResult {
-  const agentName = String(input?.agentName || 'Arcus agent').trim() || 'Arcus agent';
-  const runTs = input?.runTimestamp ? new Date(input.runTimestamp) : new Date();
   const log: ExecutionLogEntry[] = Array.isArray(input?.executionLog) ? input.executionLog : [];
   const skipped: string[] = Array.isArray(input?.skippedItems)
     ? input.skippedItems.filter((s: any) => typeof s === 'string' && s.trim()).map((s: string) => s.trim())
@@ -7466,46 +7450,38 @@ function reportGenerate(input: any): ToolResult {
   const succeeded = log.filter((e) => e.success);
   const failed = log.filter((e) => !e.success);
 
-  // Collect links: explicit `links` arrays + any urls extracted from summaries
-  const linkSet = new Set<string>();
-  for (const e of log) {
-    if (Array.isArray(e.links)) e.links.forEach((u) => u && linkSet.add(String(u)));
-    if (e.summary) {
-      const matches = String(e.summary).match(URL_RE);
-      if (matches) matches.forEach((u) => linkSet.add(u));
-    }
-  }
+  // Report shape is deliberately LEAN: a headline, what got done, and only the
+  // items that actually need a human. Everything that was ceremony — a redundant
+  // "# <agent> — Run Report" heading under a headline that already says it, a
+  // standalone Links section restating links already attached to their line item,
+  // empty-state filler ("No links produced this run."), and a machine UTC stamp —
+  // is gone. A report the user skims in five seconds beats a complete one they skip.
 
-  // ── Section 1: One-line summary ──
-  const lines: string[] = [
-    summaryLine,
-    '',
-    `# ${agentName} — Run Report`,
-    '',
-  ];
+  // ── Section 1: One-line summary (the headline; also the email subject) ──
+  const lines: string[] = [summaryLine, ''];
 
-  // ── Section 2: What I Did ──
+  // ── Section 2: What I Did — links ride inline on their own item, never twice ──
   lines.push('## What I Did');
   lines.push('');
 
   if (succeeded.length) {
     if (succeeded.length >= 4) {
-      // Table format for 4+ items
+      // Table for 4+ items. Details stay short — a report is a skim surface, not a log.
       lines.push('| Action | Details | Link |');
       lines.push('|--------|---------|------|');
       for (const e of succeeded) {
         const action = friendlyToolName(e.tool);
-        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 200).replace(/\|/g, '\\|');
+        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 90).replace(/\|/g, '\\|');
         const entryLinks = Array.isArray(e.links) && e.links.length
           ? e.links.map((u) => `[Open](${u})`).join(', ')
           : '—';
         lines.push(`| ${action} | ${details || '—'} | ${entryLinks} |`);
       }
     } else {
-      // Bullet list for 2–3 items
+      // Bullet list for 1–3 items
       for (const e of succeeded) {
         const action = friendlyToolName(e.tool);
-        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 280);
+        const details = (e.summary || '').replace(/\s+/g, ' ').trim().slice(0, 120);
         const entryLinks = Array.isArray(e.links) && e.links.length
           ? ' — ' + e.links.map((u) => `[Open](${u})`).join(', ')
           : '';
@@ -7516,13 +7492,13 @@ function reportGenerate(input: any): ToolResult {
     lines.push('No actions were taken this run.');
   }
 
-  // ── Section 3: Needs Your Attention (omitted when empty) ──
+  // ── Section 3: Needs Your Attention — omitted entirely when there's nothing ──
   if (failed.length || skipped.length) {
     lines.push('', '## Needs Your Attention');
     lines.push('');
     for (const e of failed) {
       const action = friendlyToolName(e.tool);
-      const why = (e.error || e.summary || 'unknown error').replace(/\s+/g, ' ').trim().slice(0, 280);
+      const why = (e.error || e.summary || 'unknown error').replace(/\s+/g, ' ').trim().slice(0, 140);
       lines.push(`- ⚠️ **${action}** — ${why}`);
     }
     for (const s of skipped) {
@@ -7530,28 +7506,9 @@ function reportGenerate(input: any): ToolResult {
     }
   }
 
-  // ── Section 4: Links ──
-  lines.push('', '## Links');
-  lines.push('');
-  if (linkSet.size) {
-    for (const url of linkSet) {
-      const emoji = classifyLink(url);
-      lines.push(`- ${emoji} ${url}`);
-    }
-  } else {
-    lines.push('No links produced this run.');
-  }
-
-  // ── Section 5: Footer ──
-  const runTimeStr = runTs.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  // ── Footer — one line. Next run only when there is one. ──
   const nextRun = input?.nextRunTime ? String(input.nextRunTime).trim() : '';
-  lines.push(
-    '',
-    '---',
-    `Sent by Arcus for Mailient • mailient.xyz`,
-    `Run completed: ${runTimeStr}`,
-  );
-  if (nextRun) lines.push(`Next run: ${nextRun}`);
+  lines.push('', '---', `Sent by Arcus • mailient.xyz${nextRun ? ` • Next run: ${nextRun}` : ''}`);
 
   return { output: lines.join('\n') };
 }
