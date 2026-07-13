@@ -164,7 +164,7 @@ function ts() { return new Date().toISOString().slice(11, 23); }
  */
 async function embedTextAttachments(
   message: string,
-  attachments: Array<{ name: string; url: string; type: string; size?: number }>,
+  attachments: Array<{ name: string; url: string; type: string; size?: number; base64?: string }>,
 ): Promise<string> {
   if (!attachments?.length) return message;
 
@@ -183,9 +183,24 @@ async function embedTextAttachments(
   const blocks: string[] = [];
   for (const a of textAttachments) {
     try {
-      const res = await fetch(a.url, { signal: AbortSignal.timeout(6000) });
-      if (!res.ok) continue;
-      const raw = await res.text();
+      let raw: string | null = null;
+
+      // Primary path: the composer sends the file's base64 alongside a blob:
+      // object URL. blob: URLs are browser-only — fetch()ing them server-side
+      // always fails, which meant every CSV/text upload silently never reached
+      // the AI. Decode the base64 we already have instead.
+      if (a.base64) {
+        // Accept both a raw base64 string and a data: URL.
+        const b64 = a.base64.includes(',') ? a.base64.slice(a.base64.indexOf(',') + 1) : a.base64;
+        raw = Buffer.from(b64, 'base64').toString('utf-8');
+      } else if (/^https?:\/\//i.test(a.url || '')) {
+        // Fallback: a real hosted URL (e.g. Vercel Blob) — fetch it.
+        const res = await fetch(a.url, { signal: AbortSignal.timeout(6000) });
+        if (!res.ok) continue;
+        raw = await res.text();
+      }
+      if (raw == null) continue;
+
       const truncated = raw.length > MAX_BODY_BYTES
         ? `${raw.slice(0, MAX_BODY_BYTES)}\n…[truncated — ${raw.length - MAX_BODY_BYTES} more bytes]`
         : raw;
@@ -239,7 +254,7 @@ export async function POST(request: NextRequest) {
     history?: Array<{ role: 'user' | 'assistant'; content: string }>;
     conversationId?: string;
     isPlanMode?: boolean;
-    attachments?: Array<{ name: string; url: string; type: string; size?: number }>;
+    attachments?: Array<{ name: string; url: string; type: string; size?: number; base64?: string }>;
     /** PART 47 — per-request override of the saved actionMode. 'auto' →
      *  skipConfirmations=true for this run. Falls back to the persisted
      *  user pref when omitted. */

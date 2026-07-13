@@ -31,6 +31,7 @@ function countSessionDecision(userId: string, actionType: string, targetKey: str
 
 export type ApprovalActionType =
   | 'send_email'
+  | 'batch_email_send'
   | 'schedule_meeting'
   | 'send_slack_message'
   | 'send_slack_dm'
@@ -52,6 +53,13 @@ export function normalizeTargetKey(action: ApprovalActionType, input: Record<str
       // Subject helps disambiguate two emails to the same recipient
       const subj = String(input.subject || input.Subject || '').trim().toLowerCase().slice(0, 80);
       return `${to}|${subj}`;
+    }
+    case 'batch_email_send': {
+      // One approval covers a described batch of N sends. The batch tool
+      // consumes it explicitly BY ID (consumeApprovalById), so the key only
+      // needs to be stable, not reconstructable from the send input.
+      const count = String(input.count || input.Count || input.recipients || '').trim();
+      return `batch|${count}`;
     }
     case 'schedule_meeting': {
       const attendees: string[] = Array.isArray(input.attendees)
@@ -217,6 +225,68 @@ export async function consumeApproval(params: {
     // here would let any write through whenever Supabase is unreachable,
     // exactly the kind of silent defeat this module is supposed to prevent.
     console.warn('[Arcus:Approvals] consumeApproval threw — failing CLOSED:', err.message);
+    return { approved: false, failedOpen: false };
+  }
+}
+
+/**
+ * Consume a specific approval BY ID — the explicit handshake for batch sends.
+ *
+ * Key-matching (consumeApproval) works when the write tool's input can
+ * reconstruct the same target key the confirmation carried. A batch of N
+ * personalized emails has no single (to, subject), so the flow is explicit
+ * instead: request_confirmation returns its approvalId in the tool result,
+ * the user clicks Confirm, and the batch tool passes that id straight back.
+ * No reconstruction, no fragile matching.
+ *
+ * Same fail-open/closed semantics as consumeApproval: background agents and
+ * a missing table fail open; everything else fails CLOSED. Single-use.
+ */
+export async function consumeApprovalById(params: {
+  approvalId: string;
+  userId: string;
+  actionType: ApprovalActionType;
+  conversationId?: string;
+  isBackgroundAgent?: boolean;
+}): Promise<{ approved: boolean; failedOpen: boolean }> {
+  if (params.isBackgroundAgent) {
+    return { approved: true, failedOpen: true };
+  }
+  if (!params.approvalId) {
+    return { approved: false, failedOpen: false };
+  }
+  try {
+    const supabase = getSupabaseAdmin();
+    let query = supabase
+      .from(APPROVAL_TABLE)
+      .select('id, expires_at')
+      .eq('id', params.approvalId)
+      .eq('user_id', normalizeUserId(params.userId))
+      .eq('action_type', params.actionType)
+      .eq('status', 'approved');
+    if (params.conversationId) query = query.eq('conversation_id', params.conversationId);
+    const { data, error } = await query.maybeSingle();
+
+    if (error) {
+      if ((error as any).code === '42P01') {
+        console.warn('[Arcus:Approvals] table missing, failing open');
+        return { approved: true, failedOpen: true };
+      }
+      console.warn('[Arcus:Approvals] consumeApprovalById lookup error — failing CLOSED:', error.message);
+      return { approved: false, failedOpen: false };
+    }
+    if (!data) return { approved: false, failedOpen: false };
+    if (data.expires_at && new Date(data.expires_at).getTime() < Date.now()) {
+      return { approved: false, failedOpen: false };
+    }
+
+    await supabase
+      .from(APPROVAL_TABLE)
+      .update({ status: 'consumed', consumed_at: new Date().toISOString() })
+      .eq('id', data.id);
+    return { approved: true, failedOpen: false };
+  } catch (err: any) {
+    console.warn('[Arcus:Approvals] consumeApprovalById threw — failing CLOSED:', err.message);
     return { approved: false, failedOpen: false };
   }
 }

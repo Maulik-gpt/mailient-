@@ -29,7 +29,17 @@ export const dynamic = 'force-dynamic';
 // is cache-backed + cron-prewarmed, so this only applies to a cold recompute.
 export const maxDuration = 60;
 
-const MAX_PER_BUCKET = 3;
+// Cap for the HEURISTIC FALLBACK ONLY (the no-AI regex path). This path has no
+// judgment — it can't tell a $12k invoice from a newsletter — so it stays
+// deliberately conservative rather than dumping a wide unranked pool on the user.
+// The AI triage path does NOT use this: it decides how many items actually matter
+// (0, 2, or 7) and is bounded only by BUCKET_CEILING in lib/arcus/today-agent.ts.
+const HEURISTIC_MAX_PER_BUCKET = 5;
+// Separate buckets that were previously (and accidentally) sharing the top-3 cap.
+// They aren't AI-triaged — they're straight DB reads — so they keep an explicit
+// bound of their own rather than inheriting one that no longer means the same thing.
+const MAX_ACTION_ITEMS = 8;
+const MAX_AGENT_RUNS = 5;
 const ACTION_ITEM_HORIZON_HOURS = 48;
 
 interface DecideItem {
@@ -271,7 +281,7 @@ async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string,
 // signal order. This is only a candidate net now — the AI triage does the real
 // selection/prioritization. Returns up to `limit` items WITH their preview
 // snippet attached (used by the agent to read what each email says).
-async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise<{ items: DecideItem[]; scanned: number }> {
+async function fetchDecide(gmail: GmailService, limit = HEURISTIC_MAX_PER_BUCKET): Promise<{ items: DecideItem[]; scanned: number }> {
   try {
     // WIDER raw net (was 30) — the AI decides importance now, so give it more to
     // choose from. Gmail's own promotions/social categories are still excluded
@@ -323,7 +333,7 @@ async function fetchDecide(gmail: GmailService, limit = MAX_PER_BUCKET): Promise
   }
 }
 
-async function fetchShowUp(cal: CalendarService, userEmail: string, limit = MAX_PER_BUCKET): Promise<ShowUpItem[]> {
+async function fetchShowUp(cal: CalendarService, userEmail: string, limit = HEURISTIC_MAX_PER_BUCKET): Promise<ShowUpItem[]> {
   try {
     const now = new Date();
     const endOfWindow = new Date(now);
@@ -363,7 +373,7 @@ async function fetchShowUp(cal: CalendarService, userEmail: string, limit = MAX_
   }
 }
 
-async function fetchChase(gmail: GmailService, userEmail: string, limit = MAX_PER_BUCKET): Promise<ChaseItem[]> {
+async function fetchChase(gmail: GmailService, userEmail: string, limit = HEURISTIC_MAX_PER_BUCKET): Promise<ChaseItem[]> {
   try {
     const res = await (gmail as any).getEmails(40, 'in:sent newer_than:14d older_than:3d');
     const messages: any[] = res?.messages || [];
@@ -468,7 +478,7 @@ async function fetchActionItems(userEmail: string): Promise<ActionItem[]> {
       return 0;
     });
 
-    return items.slice(0, MAX_PER_BUCKET);
+    return items.slice(0, MAX_ACTION_ITEMS);
   } catch (err: any) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] action items fetch failed:', err?.message);
@@ -490,7 +500,7 @@ async function fetchAgentRuns(userEmail: string): Promise<AgentRunItem[]> {
       .eq('user_id', userEmail)
       .gte('started_at', sinceIso)
       .order('started_at', { ascending: false })
-      .limit(MAX_PER_BUCKET);
+      .limit(MAX_AGENT_RUNS);
 
     // Table not migrated yet, or any error — degrade silently, never break the feed.
     if (error || !runs?.length) return [];
@@ -671,12 +681,12 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   // ── HEURISTIC SAFETY NET — the pre-AI behavior: top-3 by signal order, with the
   // robust OpenRouterAIService reason enrichment on the Decide bucket.
   if (!agentOk) {
-    decide = decidePool.slice(0, MAX_PER_BUCKET);
+    decide = decidePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
     const snippetById = new Map<string, string>(decide.map((d) => [d.id, d.snippet || '']));
     await enrichDecideReasons(decide, snippetById);
     decide = decide.map(stripSnippet);
-    showUp = showUpPool.slice(0, MAX_PER_BUCKET);
-    chase = chasePool.slice(0, MAX_PER_BUCKET);
+    showUp = showUpPool.slice(0, HEURISTIC_MAX_PER_BUCKET);
+    chase = chasePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
   }
 
   const needsReconnect = (gmailExpired || calendarExpired)

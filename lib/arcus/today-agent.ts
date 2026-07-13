@@ -80,7 +80,14 @@ const READ_ONLY_TOOLS = new Set([
   'get_recipient_context',
 ]);
 
-const MAX_PER_BUCKET = 3;
+// NOT a target — a payload guard. The agent decides how many items actually
+// matter today (that's the whole job: rule 2, "triage ruthlessly"). Some days
+// that's zero, some days it's seven. A hard top-3 was throwing away real signal
+// whenever a genuinely busy day had a 4th thing that mattered — and it made a
+// quiet day look identically "full" to a burning one, which is the opposite of
+// the product. This ceiling only exists so a confused model can't dump the whole
+// unfiltered candidate pool into the response.
+const BUCKET_CEILING = 12;
 const MAX_TURNS = 8;
 
 /**
@@ -135,7 +142,7 @@ HOW YOU WORK:
 2. TRIAGE RUTHLESSLY. The list is wide and unfiltered — expect most of it to be noise. Out of all candidates only a handful truly need a human today. Keep the genuine signal; DROP the rest (newsletters, receipts, FYIs, automated notifications, cold outreach, anything a busy founder would ignore) — leave those out of the output entirely. An empty bucket is correct when nothing in it matters.
 3. RANK by real importance (revenue, a person waiting, a hard deadline, a relationship going cold), highest priority first.
 4. Write ONE specific reason per kept item — name the concrete ask/decision, grounded ONLY in what you read. Good: "Priya needs the Q3 budget approved before Friday's board call." Bad: "Needs your attention."
-5. At most ${MAX_PER_BUCKET} items per bucket.
+5. KEEP EXACTLY AS MANY AS GENUINELY MATTER — no quota, in either direction. There is no target count: if two things need them today, return two; if seven do, return all seven; if none do, return an empty bucket. Never pad a bucket to look busy, and never drop a real item just to stay short. The only test is "would a busy founder be worse off not seeing this today?" (Hard ceiling: ${BUCKET_CEILING} per bucket — if you are anywhere near it, you are not triaging ruthlessly enough.)
 
 When you have finished investigating, output ONE JSON object and NOTHING else (no prose, no markdown fence):
 {"briefing":"<=140 chars: the day in one line — what needs them, or 'all quiet' if nothing does",
@@ -165,8 +172,14 @@ evidence: 1-3 short phrases (max 5 words each) of CONCRETE grounding you actuall
         temperature: 0.2,
         deadlineAt,
       });
-    } catch {
-      break; // engine exhausted (all models/keys) → fall back
+    } catch (e: any) {
+      // Engine exhausted (every free model rate-limited AND the paid fallback
+      // unavailable) → the caller falls back to heuristics. This used to swallow
+      // the error entirely, which made a starved-AI day and a genuinely-quiet day
+      // look IDENTICAL from the outside: empty buckets, no explanation, nothing in
+      // the logs. Say it out loud so "the AI isn't working" is diagnosable.
+      console.error('[today-agent] LLM unavailable — falling back to heuristics:', e?.message || e);
+      break;
     }
 
     const text = getRawText(res.content);
@@ -202,11 +215,23 @@ evidence: 1-3 short phrases (max 5 words each) of CONCRETE grounding you actuall
     messages.push({ role: 'user', content: resultBlocks });
   }
 
+  // Both bail-outs below are legitimate — but they used to be INVISIBLE, and an
+  // invisible bail-out is why "the AI doesn't work, everything's empty" was
+  // impossible to diagnose from the outside. Log which one fired.
   const parsed = extractJsonObject(finalText);
-  if (!parsed) return null;
+  if (!parsed) {
+    console.error('[today-agent] no parseable JSON in final output — falling back to heuristics', {
+      toolCallsUsed,
+      finalTextPreview: finalText.slice(0, 200) || '(empty — model returned nothing)',
+    });
+    return null;
+  }
 
   const result = mapToBuckets(parsed, candidates);
   if (!result.decide.length && !result.chase.length && !result.showUp.length && !result.briefing) {
+    console.warn('[today-agent] agent returned an empty triage — falling back to heuristics', {
+      candidates: { decide: candidates.decide.length, chase: candidates.chase.length, showUp: candidates.showUp.length },
+    });
     return null; // agent produced nothing usable → let heuristics take over
   }
   return result;
@@ -254,7 +279,8 @@ function mapToBuckets(
       }
     }
     chosen.sort((a, b) => b.p - a.p);
-    return chosen.slice(0, MAX_PER_BUCKET);
+    // Ceiling, not a quota — see BUCKET_CEILING. The agent's own count stands.
+    return chosen.slice(0, BUCKET_CEILING);
   };
 
   const decide = resolve(candidates.decide, parsed?.decide, 'D', () => 'Needs your reply.').map(({ item, reason, signals }) => {
