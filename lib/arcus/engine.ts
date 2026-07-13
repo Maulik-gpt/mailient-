@@ -425,9 +425,18 @@ export async function callLLM(
     }
   }
 
-  // Race all active keys for a single model.
-  // Keys fire with a small random jitter (0-150ms) so concurrent callers from
-  // parallel tool results don't all hit the same endpoint at the exact same ms.
+  // Try each active key SEQUENTIALLY for a single model — first success wins,
+  // and we only touch key N+1 if key N actually failed.
+  //
+  // This used to race all keys with Promise.any. That was actively harmful:
+  // every key belongs to the SAME OpenRouter account, and the free-model daily
+  // request quota is metered per-ACCOUNT, not per-key. Racing 5 keys meant one
+  // logical LLM call burned up to 5 requests from the same daily bucket (the 4
+  // losers still reach OpenRouter and still count), so the daily cap was hit ~5x
+  // faster than it should be. It also made keys 2-5 look "unused" on the
+  // dashboard, because Promise.any resolved on key 1 and abandoned the rest
+  // in-flight. Sequential = 1 request per call, and the extra keys become a real
+  // failover reserve instead of a quota bonfire.
   async function tryModel(model: string, body: Record<string, any>, timeoutMs = 20000): Promise<LLMResponse | null> {
     if (isModelCooling(model)) {
       log('info', 'Engine', `Skip cooling model`, { model });
@@ -436,13 +445,26 @@ export async function callLLM(
     const active = keys.filter(k => !deadKeys.has(k));
     if (!active.length) return null;
     log('info', 'Engine', `Trying`, { model, keys: active.length });
-    return Promise.any(
-      active.map((k, i) =>
-        sleep(i === 0 ? 0 : jitter(150))
-          .then(() => tryOne(k, model, body, timeoutMs))
-          .then(r => r ?? Promise.reject(null))
-      )
-    ).catch(() => null);
+
+    for (let i = 0; i < active.length; i++) {
+      // Out of wall-clock budget — stop before opening another key's attempt.
+      if (timeoutMs <= 0) return null;
+      // Small jitter before retrying on the NEXT key so concurrent callers don't
+      // all stampede the same key at the same ms. No delay on the first attempt.
+      if (i > 0) await sleep(jitter(150));
+
+      const r = await tryOne(active[i], model, body, timeoutMs);
+      if (r) return r;
+
+      // A per-day quota wall (or a cooldown set by a parallel caller) applies to
+      // the whole ACCOUNT, so every remaining key would 429 identically. Bail out
+      // to the next model instead of burning the rest of the keys to prove it.
+      if (isModelCooling(model)) {
+        log('info', 'Engine', `Model cooling — skipping remaining keys`, { model, skipped: active.length - i - 1 });
+        return null;
+      }
+    }
+    return null;
   }
 
   const MODEL_TIMEOUT = 32000;
