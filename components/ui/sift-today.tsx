@@ -588,71 +588,6 @@ function AgentRunsSection({ runs, pendingApprovals }: { runs: AgentRunItem[]; pe
   );
 }
 
-// ─── Outreach pulse ──────────────────────────────────────────────────────────
-// The two campaign moments worth the founder's home-feed attention: drafts
-// waiting on their approval, and fresh replies. Everything else stays in the
-// command center. Fail-soft: any error → renders nothing.
-
-function CampaignPulse() {
-  const [items, setItems] = useState<Array<{
-    id: string; name: string; kind: 'review' | 'replies'; drafted: number; replied: number; meeting: number;
-  }>>([]);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch('/api/arcus/campaigns');
-        if (!res.ok) return;
-        const d = await res.json();
-        if (cancelled || !Array.isArray(d?.campaigns)) return;
-        const pulse: typeof items = [];
-        for (const c of d.campaigns) {
-          if (c.status === 'review' && (c.counts?.drafted ?? 0) > 0) {
-            pulse.push({ id: c.id, name: c.name, kind: 'review', drafted: c.counts.drafted, replied: 0, meeting: 0 });
-          } else if (['sending', 'completed'].includes(c.status) && (c.counts?.replied ?? 0) > 0) {
-            pulse.push({ id: c.id, name: c.name, kind: 'replies', drafted: 0, replied: c.counts.replied, meeting: c.counts.meeting ?? 0 });
-          }
-        }
-        setItems(pulse.slice(0, 3));
-      } catch { /* silent — the feed never breaks over outreach */ }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  if (items.length === 0) return null;
-
-  return (
-    <section className="mb-10">
-      <div className="space-y-2.5">
-        {items.map((it) => (
-          <a
-            key={it.id}
-            href={`/dashboard/agents?tab=outreach&campaign=${it.id}`}
-            className={cn(
-              'group flex items-center justify-between gap-3 px-4 py-3 rounded-2xl border transition-colors',
-              it.kind === 'review'
-                ? 'border-blue-500/25 dark:border-blue-400/20 bg-blue-500/[0.04] dark:bg-blue-400/[0.05] hover:border-blue-500/45 dark:hover:border-blue-400/40'
-                : 'border-emerald-500/25 dark:border-emerald-400/20 bg-emerald-500/[0.04] dark:bg-emerald-400/[0.05] hover:border-emerald-500/45 dark:hover:border-emerald-400/40',
-            )}
-          >
-            <span className="text-[12.5px] text-black/70 dark:text-white/70 leading-snug">
-              {it.kind === 'review' ? (
-                <><span className="font-semibold text-black dark:text-white">{it.drafted} outreach drafts</span> ready on “{it.name}” — waiting for your approval</>
-              ) : (
-                <><span className="font-semibold text-black dark:text-white">{it.replied} {it.replied === 1 ? 'reply' : 'replies'}</span> on “{it.name}”{it.meeting > 0 ? ` · ${it.meeting} ${it.meeting === 1 ? 'meeting' : 'meetings'}` : ''} — responses drafted for you</>
-              )}
-            </span>
-            <span className="text-[12px] font-medium text-black/50 dark:text-white/50 group-hover:text-black dark:group-hover:text-white transition-colors flex items-center gap-1 flex-shrink-0">
-              {it.kind === 'review' ? 'Review' : 'Open'} <ArrowUpRight className="w-3 h-3" strokeWidth={2.25} />
-            </span>
-          </a>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 // In-memory snapshot so swapping tabs (which remounts this component) is instant.
 // Stale-while-revalidate: show cached data immediately, refresh in the background.
 // Also persisted to localStorage so a full page RELOAD is instant too (not just tab
@@ -1620,11 +1555,6 @@ export default function SiftToday() {
         {data && ((data.agentRuns && data.agentRuns.length > 0) || (data.pendingApprovals ?? 0) > 0) && (
           <AgentRunsSection runs={data.agentRuns ?? []} pendingApprovals={data.pendingApprovals} />
         )}
-
-        {/* Outreach pulse — campaigns that need the founder (drafts waiting
-            for review) or earned their attention (fresh replies). Fail-soft:
-            renders nothing unless there's something real to say. */}
-        <CampaignPulse />
 
         {loading && !data && (
           <div className="space-y-10">

@@ -26,29 +26,6 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
-    date: 'July 12, 2026',
-    entries: [
-      {
-        tag: 'New',
-        title: 'Arcus Outreach — cold email, run by your employee',
-        points: [
-          'Hand Arcus a list (paste it, attach a CSV, or point at a Notion database) and a pitch — it researches every person, then writes each one a genuinely individual email in your voice. No templates, no {firstName} tricks.',
-          'Nothing sends until you approve. A keyboard-first review screen (J/K to move, E to edit, X to exclude, R to regenerate) shows every draft with the research it\'s built on — reviewing 100 drafts takes minutes.',
-          'Sending is paced to protect your reputation: starts at ~15/day and ramps up, business hours only, minutes between sends, automatic pause if anything starts failing. Before your first send, Arcus even checks your domain\'s SPF/DMARC and tells you exactly what to fix.',
-          'Replies handle themselves: Arcus classifies each one (interested, question, objection…), drafts your response in-thread — proposing real open slots from your calendar for the warm ones — and anyone who opts out is never contacted again.',
-          'Lives in Agents → Outreach: deploy it live in chat, or as a scheduled agent that preps campaigns for you on a cadence. A built-in workstation tracks the whole motion — funnel, live drafts, replies — and your home feed pings you when drafts await approval or replies land.',
-        ],
-      },
-      {
-        tag: 'Fixed',
-        title: 'Attachments actually reach Arcus now',
-        points: [
-          'CSV and text files uploaded in chat were silently invisible to the AI. Fixed — attach a contact list or notes and Arcus reads the real contents.',
-        ],
-      },
-    ],
-  },
-  {
     date: 'July 11, 2026',
     entries: [
       {
