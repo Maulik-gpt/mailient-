@@ -10,7 +10,14 @@ export default function AgentTalkPage() {
     const router = useRouter();
     const params = useParams();
     const [conversationId, setConversationId] = useState<string | null>(null);
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    // Seed from the session cache so a page remount (Next re-processing a
+    // pushState, params change) doesn't flash the full-screen loader over an
+    // active chat — that flash read as "redirected me to /agent-talk". The
+    // real checks still run below on every mount and redirect if they fail;
+    // the server-side layout gate remains the actual paywall.
+    const [isAuthenticated, setIsAuthenticated] = useState(
+        () => typeof window !== 'undefined' && sessionStorage.getItem('arcus_auth_ok') === '1'
+    );
 
     // Set page title
     useEffect(() => {
@@ -24,6 +31,7 @@ export default function AgentTalkPage() {
                 const session = await getSession();
                 if (!session) {
                     // Redirect to sign-in page if not authenticated
+                    try { sessionStorage.removeItem('arcus_auth_ok'); } catch { /* private mode */ }
                     router.push('/auth/signin?callbackUrl=/dashboard/agent-talk');
                     return;
                 }
@@ -56,6 +64,7 @@ export default function AgentTalkPage() {
                     const isPaid = !!pt && pt !== 'free' && pt !== 'none' && !subData?.subscription?.isExpired;
                     if (!isPaid) {
                         console.log('🔒 [AgentTalk] No active subscription — paywall (onboarding step 13).');
+                        try { sessionStorage.removeItem('arcus_auth_ok'); } catch { /* private mode */ }
                         router.replace('/onboarding?step=13');
                         return;
                     }
@@ -65,9 +74,11 @@ export default function AgentTalkPage() {
                     return;
                 }
 
+                try { sessionStorage.setItem('arcus_auth_ok', '1'); } catch { /* private mode */ }
                 setIsAuthenticated(true);
             } catch (error) {
                 console.error('Authentication check failed:', error);
+                try { sessionStorage.removeItem('arcus_auth_ok'); } catch { /* private mode */ }
                 router.push('/auth/signin?callbackUrl=/dashboard/agent-talk');
             }
         };

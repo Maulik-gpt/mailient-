@@ -1037,10 +1037,12 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
         )}
       </div>
 
-      {/* The live thought itself — this prop was passed but never rendered,
-          so the run showed a shimmer label + timer with no actual thinking.
-          One quiet line, updating as the loop reasons (the Manus feel). */}
-      {!isComplete && content && content.length > 3 && (
+      {/* The live thought itself — one quiet line, updating as the loop
+          reasons. Generic status placeholders ("Thinking...", "Analysing
+          your request…") are already carried by the shimmer label above;
+          rendering them here too read as a SECOND loader. Only real thought
+          sentences earn this line. */}
+      {!isComplete && content && content.length > 3 && !/^[A-Za-z\s'’-]{0,48}(?:\.\.\.|…)$/.test(content.trim()) && (
         <AnimatePresence mode="wait">
           <motion.p
             key={content}
@@ -4599,11 +4601,24 @@ export default function ChatInterface({
       loadedConversationIdRef.current = initialConversationId;
       loadConversation(initialConversationId);
     } else if (!initialConversationId && !isNewConversation) {
-      console.log('No conversation ID provided - starting fresh chat');
-      // Ensure we're in initial mode for new chats
-      setIsInitialMode(true);
-      setCurrentConversationId(null);
-      setMessages([]);
+      // A null parent prop must NEVER wipe an active conversation. This
+      // branch used to fire mid-conversation (the prop can flicker null
+      // right after the 2nd message flips isNewConversation to false) and
+      // blanked the workspace to the initial screen while the URL still
+      // held the conversation — the "kicked back to /agent-talk, refresh
+      // to recover" bug that also orphaned the in-flight run. Reset ONLY
+      // when the URL is genuinely at base AND nothing is streaming.
+      const path = typeof window !== 'undefined' ? window.location.pathname : '';
+      const urlHasConversation = /\/dashboard\/agent-talk\/(?:conv_|[0-9a-f-]{36})/.test(path);
+      if (!urlHasConversation && !isLoading && !isAgentLoopActive) {
+        console.log('No conversation ID provided - starting fresh chat');
+        // Ensure we're in initial mode for new chats
+        setIsInitialMode(true);
+        setCurrentConversationId(null);
+        setMessages([]);
+        // Unpin so re-opening the same conversation later reloads it.
+        loadedConversationIdRef.current = null;
+      }
     }
   }, [initialConversationId, currentConversationId, isNewConversation]);
 

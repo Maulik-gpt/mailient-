@@ -42,6 +42,15 @@ export const CHANGELOG: ChangelogGroup[] = [
       },
       {
         tag: 'Fixed',
+        title: 'Chat stays put, one loader, no email dumps',
+        points: [
+          'Sending a follow-up message no longer risks bouncing you back to the start screen mid-reply (the bug that forced a refresh and burned a second run).',
+          'The thinking indicator is truly singular now — the placeholder "Thinking..." line that doubled it is gone; only real reasoning shows under the header.',
+          'While drafting or triaging, Arcus references an email in a line or two instead of pasting the whole thing — full bodies only when you ask to see them.',
+        ],
+      },
+      {
+        tag: 'Fixed',
         title: 'Replies are fast again',
         points: [
           'A model-provider quirk was silently eating the response budget on "thinking", which made normal replies crawl to ~50 seconds and sometimes come back blank. Arcus now tells that model family to answer directly — replies land in seconds again.',
