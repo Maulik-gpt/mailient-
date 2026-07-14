@@ -26,6 +26,29 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 14, 2026',
+    entries: [
+      {
+        tag: 'Improved',
+        title: 'A cleaner live view while Arcus works',
+        points: [
+          'One thinking indicator, one place — the live "thinking" shimmer no longer shows up twice, and execution steps live only inside the collapsible steps box on the reply.',
+          'The steps box now starts closed and quietly shows what\'s running in its header; it opens itself only when a real multi-step task is underway, in a fixed-width, pure black-and-white design.',
+          'When Arcus asks a clarifying question, it now suggests the most likely answers as tappable choices — its best guess comes preselected, so one tap answers it. Your reply lands in the chat as a clean answer, not a form transcript.',
+          'A question from Arcus now reads like a normal message in the conversation — no more empty reply above the question card.',
+        ],
+      },
+      {
+        tag: 'New',
+        title: 'Arcus can decide to plan before it acts',
+        points: [
+          'When a request mid-conversation turns out to be big, multi-phase, or risky, Arcus now switches itself into plan mode and shows you a reviewable plan before touching anything.',
+          'Simple asks still just get done — the switch is reserved for work that deserves your sign-off first.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 13, 2026',
     entries: [
       {

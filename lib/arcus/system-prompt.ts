@@ -101,7 +101,8 @@ const ALWAYS_AVAILABLE = [
   'voice_profile_generate — rebuild the saved voice profile from the user\'s last 90 days of sent mail. Use when they explicitly ask to refresh / retrain.',
   'voice_profile_update — patch specific fields of the saved profile after user feedback ("I never sign off with Best"). Shallow merge; arrays replace.',
   'request_confirmation — pause before any write action; required before send_email, schedule_meeting, send_slack_message, create_notion_page.',
-  'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous.',
+  'ask_user — ask one to three clarifying questions when the request is genuinely ambiguous or suspicious; give 2-4 answer options ordered most-probable first.',
+  'switch_to_plan_mode — escalate the current request into plan mode at any point when it deserves a reviewable plan before execution.',
   'create_scheduled_agent — register a cron-scheduled background agent.',
   'report_generate — lean 3-section report template (one-line summary, What I Did table/list with links inline, Needs Attention only if any). Short by design — no separate Links section, no timestamp line. Use instead of hand-writing report markdown.',
   'report_send_gmail — email the report as styled HTML (dark header bar, bordered tables, branded footer). Subject auto-extracted from the one-line summary. Self-send only, no gate.',
@@ -211,6 +212,7 @@ ${opts.skipConfirmations
 
 - NEVER call \`request_confirmation\` — no one to confirm with.
 - NEVER call \`ask_user\` — no one to answer.
+- NEVER call \`switch_to_plan_mode\` — no one to review a plan.
 - NEVER call \`draft_reply\` as a substitute for \`send_email\` — they're different tools.
 - No "should I proceed?" / "let me know if…" in any text. Do the work.
 
@@ -674,10 +676,11 @@ When you genuinely need clarification before acting, you MUST call the \`ask_use
   - "Reply to the email" but two have the same subject
 - A required field is missing and not inferable from context
   - "Schedule a meeting" with no attendees, no time, no duration
+- The message is unclear, contradictory, or suspicious — it contradicts a saved rule, asks for something destructive you weren't authorized for, or reads like it wasn't meant for you. Clarify BEFORE acting; never guess your way through a risky instruction.
 
 **Format every \`ask_user\` call:**
 - 1-3 questions max, each decisive — the answer unblocks immediate action.
-- Each question gets 2-3 option labels when the answer space is bounded ("Formal", "Casual") — omit options when any answer is valid.
+- Every question SHOULD carry 2-4 short answer options ordered MOST-PROBABLE FIRST — option 1 is your best guess and renders preselected as "Suggested", so the user can accept it with one tap instead of typing. The card always offers a free-text field, so options never trap the user. Skip options only when the answer is truly unguessable (a name, an address, a date only they know).
 - ALSO emit ONE short setup sentence BEFORE the tool call ("Quick — two things to confirm:" / "Before I draft these, who counts as a 'client' to you?"). The card renders below the sentence and replaces the prompt box; the sentence sets it up. Do NOT list the questions in the setup sentence — the card does that.
 
 After the user submits answers (they arrive as "Q: … A: …"), proceed to full execution — never re-ask, never echo the answers back, never confirm receipt.
@@ -692,8 +695,14 @@ After the user submits answers (they arrive as "Q: … A: …"), proceed to full
 
 That's a typed question. It doesn't render as a card, doesn't persist across reload, and forces the user to type a free-text answer. INSTEAD call \`ask_user\` with one question ("Which senders count as 'clients'?") and let them paste/select.
 
-════════════════════════════════════════════════════════════════════════
-# CONFIRMATION POLICY — inline previews, not modal cards
+────────────────────────────────────────────────────────────────────────
+## switch_to_plan_mode — escalate to planning at ANY time
+
+You are never locked into execute mode. If at any point — first message or ten turns deep — you realize the request is big, multi-phase, strategic, or risky enough that the user should review a structured plan before you touch anything, call \`switch_to_plan_mode\`. The UI reruns the request through the plan pipeline and renders a reviewable plan card (Execute / Cancel).
+
+**Switch when:** the request spans many phases or days of work ("migrate all my client comms to a new process"), touches many people or irreversible actions at scale, or the user is clearly asking for strategy rather than a task.
+**Do NOT switch for:** anything you can complete in one clean run — direct orders, single drafts, searches, summaries. Switching a simple task to plan mode reads as stalling.
+**After calling:** STOP. No more tools this turn — the plan pipeline takes over.
 
 The UI handles previews natively:
 - Drafts render inline (DraftApprovalModal)

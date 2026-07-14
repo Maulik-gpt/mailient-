@@ -367,7 +367,16 @@ export interface AgentRunResult {
  */
 export async function generateRunPlan(
   agent: { user_id: string; task_description: string; name?: string },
+  opts: { deadlineMs?: number } = {},
 ): Promise<string> {
+  // This is a "nice to have" preview shown before the real work — it must never
+  // be the thing that eats the function's time budget. Previously it had NO
+  // deadline at all, so on a slow/rate-limited OpenRouter day it could walk
+  // through every fallback model+key combination and burn the entire 60s
+  // function lifetime before runAgentTask (the part that actually does the work
+  // and writes the report) ever started — surfacing as "cut short by the
+  // serverless time limit" with only the Plan step ever having run.
+  const deadlineAt = Date.now() + (opts.deadlineMs ?? 8_000);
   try {
     const { callLLM, getText } = await import('./engine');
     const selfHistory = await searchMemories(
@@ -397,7 +406,7 @@ export async function generateRunPlan(
         },
       ],
       [],
-      { maxTokens: 200, temperature: 0.2 },
+      { maxTokens: 200, temperature: 0.2, deadlineAt },
     );
     return getText(res.content).trim().slice(0, 1000);
   } catch {

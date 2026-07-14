@@ -13,14 +13,14 @@ function WaitingIndicator() {
       transition={{ delay: 0.4 }}
       className="flex items-center gap-2 px-4 pb-3"
     >
-      <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0">
+      <svg width="14" height="14" viewBox="0 0 14 14" className="flex-shrink-0 text-black/50 dark:text-white/50">
         {[0, 45, 90, 135, 180, 225, 270, 315].map((deg, i) => (
           <motion.circle
             key={deg}
             cx={7 + 5 * Math.cos((deg * Math.PI) / 180)}
             cy={7 + 5 * Math.sin((deg * Math.PI) / 180)}
             r="1.2"
-            fill="#EAB308"
+            fill="currentColor"
             animate={{ opacity: [1, 0.15, 1] }}
             transition={{
               repeat: Infinity,
@@ -31,7 +31,7 @@ function WaitingIndicator() {
           />
         ))}
       </svg>
-      <span className="text-[11px] font-medium text-yellow-400/80">
+      <span className="text-[11px] font-medium text-black/50 dark:text-white/50">
         Waiting for you to proceed
       </span>
     </motion.div>
@@ -51,7 +51,9 @@ interface AskUserCardProps {
 
 export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<string[]>(() => questions.map(() => ''));
+  // Options arrive ordered most-probable first, so the first one starts
+  // selected — one click on Submit accepts the AI's suggestion, zero typing.
+  const [answers, setAnswers] = useState<string[]>(() => questions.map(q => q.options?.[0] ?? ''));
   const [customInputs, setCustomInputs] = useState<boolean[]>(() => questions.map(() => false));
 
   const current = questions[currentIndex];
@@ -139,13 +141,13 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
         >
           {/* Question text */}
           <div className="flex items-start gap-3 mb-3">
-            <span className="text-[13px] font-bold text-blue-500 dark:text-blue-400/80 tabular-nums mt-0.5 shrink-0">
+            <span className="text-[13px] font-bold text-black/60 dark:text-white/60 tabular-nums mt-0.5 shrink-0">
               {currentIndex + 1}
             </span>
             <p className="text-[14px] font-semibold text-arcus-fg leading-snug">{current.text}</p>
           </div>
 
-          {/* Options */}
+          {/* Options — first one is the AI's best guess, preselected */}
           <div className="space-y-1.5">
             {(current.options ?? []).map((opt, i) => (
               <button
@@ -154,19 +156,24 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all duration-150",
                   currentAnswer === opt && !customInputs[currentIndex]
-                    ? "bg-blue-500/20 border border-blue-500/40 text-arcus-fg"
+                    ? "bg-black/[0.07] dark:bg-white/[0.10] border border-black/40 dark:border-white/40 text-arcus-fg"
                     : "bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] text-arcus-fg-secondary hover:bg-zinc-200 dark:hover:bg-white/[0.06] hover:text-arcus-fg"
                 )}
               >
                 <span className={cn(
                   "w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center shrink-0 transition-colors",
                   currentAnswer === opt && !customInputs[currentIndex]
-                    ? "bg-blue-500 text-white"
+                    ? "bg-black text-white dark:bg-white dark:text-black"
                     : "bg-zinc-200 dark:bg-white/[0.07] text-arcus-fg-muted"
                 )}>
                   {OPTION_LABELS[i]}
                 </span>
-                <span className="text-[13px] font-medium">{opt}</span>
+                <span className="text-[13px] font-medium flex-1">{opt}</span>
+                {i === 0 && (
+                  <span className="shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold border border-black/15 dark:border-white/15 text-black/45 dark:text-white/45">
+                    Suggested
+                  </span>
+                )}
               </button>
             ))}
 
@@ -175,7 +182,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
               className={cn(
                 "w-full flex items-center gap-3 rounded-xl transition-all duration-150 overflow-hidden",
                 customInputs[currentIndex]
-                  ? "bg-blue-500/10 border border-blue-500/30"
+                  ? "bg-black/[0.05] dark:bg-white/[0.07] border border-black/30 dark:border-white/30"
                   : "bg-zinc-100 dark:bg-white/[0.03] border border-zinc-200 dark:border-white/[0.06] hover:bg-zinc-200 dark:hover:bg-white/[0.06]"
               )}
             >
@@ -184,7 +191,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
                 className={cn(
                   "w-6 h-6 rounded-lg text-[11px] font-black flex items-center justify-center shrink-0 ml-3 my-2.5 cursor-pointer transition-colors",
                   customInputs[currentIndex]
-                    ? "bg-blue-500 text-white"
+                    ? "bg-black text-white dark:bg-white dark:text-black"
                     : "bg-zinc-200 dark:bg-white/[0.07] text-arcus-fg-muted"
                 )}
               >
@@ -223,7 +230,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
             className={cn(
               "px-4 py-1.5 rounded-xl text-[12px] font-bold transition-all",
               isAnswered
-                ? "bg-blue-500 hover:bg-blue-400 text-white"
+                ? "bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85"
                 : "bg-zinc-200 dark:bg-white/[0.05] text-arcus-fg-muted cursor-not-allowed"
             )}
           >
@@ -232,7 +239,7 @@ export function AskUserCard({ questions, onSubmit, onDismiss }: AskUserCardProps
         ) : (
           <button
             onClick={handleSubmit}
-            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold bg-blue-500 hover:bg-blue-400 text-white transition-all"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12px] font-bold bg-black text-white hover:bg-black/85 dark:bg-white dark:text-black dark:hover:bg-white/85 transition-all"
           >
             <Send className="w-3 h-3" />
             Submit

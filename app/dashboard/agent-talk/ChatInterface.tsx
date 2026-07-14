@@ -17,7 +17,6 @@ import { AskUserCard, type AskQuestion } from './components/AskUserCard';
 import { type AgentStep, type AgentNarrative } from './components/AgentExecutionTimeline';
 import { LiveStepTracker } from './components/LiveStepTracker';
 import { TaskProgressCard, type TaskList } from './components/TaskProgressCard';
-import { LiveTaskWidget } from './components/LiveTaskWidget';
 import { DraftReplyBox } from './components/DraftReplyBox';
 import { DraftApprovalModal } from './components/DraftApprovalModal';
 import { DraftGalleryCard, type DraftGalleryItem } from './components/DraftGalleryCard';
@@ -732,7 +731,7 @@ interface AgentMessage {
      * page reload — the conversation re-opens with the card right where the
      * user left it.
      */
-    pendingQuestion?: { questions: AskQuestion[]; runId: string };
+    pendingQuestion?: { questions: AskQuestion[]; runId: string; planMode?: boolean };
     result?: {
       type: string;
       title: string;
@@ -1198,7 +1197,7 @@ function PhaseStatusIcon({ status }: { status: 'pending' | 'running' | 'complete
     return <Check className="w-3.5 h-3.5 text-black/45 dark:text-white/45 flex-shrink-0" strokeWidth={2.5} />;
   }
   if (status === 'failed') {
-    return <X className="w-3.5 h-3.5 text-rose-500/80 dark:text-rose-400/80 flex-shrink-0" strokeWidth={2.5} />;
+    return <X className="w-3.5 h-3.5 text-black/60 dark:text-white/60 flex-shrink-0" strokeWidth={2.5} />;
   }
   if (status === 'running') {
     return (
@@ -1229,58 +1228,96 @@ function CollapsibleSteps({
   totalDurationMs?: number;
   plan?: PhasePlanData;
 }) {
-  const [collapsed, setCollapsed] = useState(!isActive);
+  // The box holds real tool work only — thinking-type steps render OUTSIDE
+  // the box (AgentThinkingSection), so they neither open the box nor count.
+  const visibleSteps = steps.filter(s => s.type !== 'thinking');
 
-  // Auto-collapse once the run finishes; don't re-open if user manually expanded
+  // Collapsed until the run proves it's a real multi-step task. Manual clicks
+  // always win over the auto behavior.
+  const [collapsed, setCollapsed] = useState(true);
+  const userToggledRef = useRef(false);
+
+  // Auto-expand once the AI is visibly running multiple steps.
+  useEffect(() => {
+    if (isActive && visibleSteps.length >= 2 && !userToggledRef.current) {
+      setCollapsed(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isActive, visibleSteps.length]);
+
+  // Auto-collapse once the run finishes.
   const prevActiveRef = useRef(isActive);
   useEffect(() => {
     if (prevActiveRef.current && !isActive) {
       setCollapsed(true);
+      userToggledRef.current = false;
     }
     prevActiveRef.current = isActive;
   }, [isActive]);
 
-  if (!steps || steps.length === 0) return null;
+  // No real tool step yet = no box. A message that never runs tools never
+  // shows the box at all; while the model is only thinking, the indicator
+  // outside the box carries that state.
+  if (visibleSteps.length === 0) return null;
 
-  const completedCount = steps.filter(s => s.status === 'completed').length;
-  const totalCount = steps.length;
+  const completedCount = visibleSteps.filter(s => s.status === 'completed').length;
+  const totalCount = visibleSteps.length;
 
   // Manus-style phase rail — only when the plan has real multi-phase shape.
   const showPhases = !!plan && plan.steps.length >= 2;
   const runningPhase = showPhases
     ? plan!.steps.find((_, i) => plan!.stepStatuses?.[i] === 'running')?.label
     : undefined;
+  // Live line for the collapsed header: current phase, else the running step.
+  const runningStep = isActive
+    ? [...visibleSteps].reverse().find(s => s.status === 'active')
+    : undefined;
+  const liveLabel = runningPhase || runningStep?.context || runningStep?.label;
+
+  const headerLabel = collapsed
+    ? isActive
+      ? liveLabel || `Working… ${completedCount}/${totalCount}`
+      : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`
+    : isActive
+    ? runningPhase
+      ? `${runningPhase} · ${completedCount}/${totalCount}`
+      : `${completedCount} / ${totalCount} steps`
+    : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`;
 
   return (
-    <div className={cn('mb-3 arcus-glass rounded-2xl px-3.5 transition-all', collapsed ? 'py-2' : 'py-2.5')}>
+    <div className={cn('mb-3 arcus-glass rounded-2xl px-3.5 transition-all w-[640px] max-w-full', collapsed ? 'py-2' : 'py-2.5')}>
       {/* Toggle row */}
       <button
-        onClick={() => setCollapsed(c => !c)}
+        onClick={() => {
+          userToggledRef.current = true;
+          setCollapsed(c => !c);
+        }}
         className={cn(
-          'flex items-center gap-1.5 text-black/45 dark:text-white/35 hover:text-black/70 dark:hover:text-white/60 transition-colors w-full',
+          'flex items-center gap-1.5 text-black/45 dark:text-white/35 hover:text-black/70 dark:hover:text-white/60 transition-colors w-full min-w-0',
           collapsed ? 'mb-0' : 'mb-1.5',
         )}
       >
         <ChevronDown
           className={cn(
-            'w-3.5 h-3.5 transition-transform duration-200',
+            'w-3.5 h-3.5 flex-shrink-0 transition-transform duration-200',
             collapsed ? '-rotate-90' : 'rotate-0',
           )}
         />
-        <span className="text-[12px] font-medium tracking-wide truncate">
-          {collapsed
-            ? isActive && runningPhase
-              ? runningPhase
-              : `${totalCount} step${totalCount !== 1 ? 's' : ''}`
-            : isActive
-            ? runningPhase
-              ? `${runningPhase} · ${completedCount}/${totalCount}`
-              : `${completedCount} / ${totalCount} steps`
-            : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`}
-        </span>
+        {collapsed && isActive ? (
+          <motion.span
+            className="text-[12px] font-medium tracking-wide truncate bg-[linear-gradient(110deg,#0000005c,35%,#000,50%,#0000005c,75%,#0000005c)] dark:bg-[linear-gradient(110deg,#ffffff59,35%,#fff,50%,#ffffff59,75%,#ffffff59)] bg-[length:250%_100%] bg-clip-text text-transparent"
+            initial={{ backgroundPosition: '200% 0' }}
+            animate={{ backgroundPosition: ['200% 0', '-200% 0'] }}
+            transition={{ repeat: Infinity, duration: 2.5, ease: 'linear' }}
+          >
+            {headerLabel}
+          </motion.span>
+        ) : (
+          <span className="text-[12px] font-medium tracking-wide truncate">{headerLabel}</span>
+        )}
         {isActive && (
           <motion.span
-            className="inline-block w-1 h-1 rounded-full bg-black/40 dark:bg-white/35"
+            className="inline-block w-1 h-1 rounded-full bg-black/40 dark:bg-white/35 flex-shrink-0"
             animate={{ opacity: [0.3, 1, 0.3] }}
             transition={{ repeat: Infinity, duration: 1.4, ease: 'easeInOut' }}
           />
@@ -2162,7 +2199,7 @@ export default function ChatInterface({
   const [isAgentLoopActive, setIsAgentLoopActive] = useState(false);
   const [liveTaskList, setLiveTaskList] = useState<TaskList | null>(null);
   const [agentRunMeta, setAgentRunMeta] = useState<{ runId?: string; totalDurationMs?: number } | null>(null);
-  const [pendingQuestion, setPendingQuestion] = useState<{ questions: AskQuestion[]; runId: string } | null>(null);
+  const [pendingQuestion, setPendingQuestion] = useState<{ questions: AskQuestion[]; runId: string; planMode?: boolean } | null>(null);
   const [liveActivityLine, setLiveActivityLine] = useState<string>('');
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -2744,6 +2781,10 @@ export default function ChatInterface({
     if (abortControllerRef.current) abortControllerRef.current.abort();
     abortControllerRef.current = new AbortController();
     const assistantMsgId = nextMessageId();
+    // When an answer to a clarifying question comes back, the API gets the
+    // full "Q: … / A: …" context (messageText) but the transcript shows only
+    // the clean answer (displayText). Persistence must match the transcript.
+    const displayedUserText: string = (options.displayText || messageText);
 
     setIsLoading(true);
     setIsAgentLoopActive(true);
@@ -2832,6 +2873,8 @@ export default function ChatInterface({
       let stepIndex = 0;
       let streamFinishedNormally = false;
       let hadQuestionEvent = false;
+      let questionBubbleText = '';   // question text shown as the assistant reply
+      let switchedToPlanMode = false; // AI called switch_to_plan_mode — re-run in plan mode
       let hadPlanEvent = false;
       let currentAgentSteps: AgentStep[] = [initThinkingStep]; // seed with the thinking pill
       let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
@@ -3459,6 +3502,17 @@ export default function ChatInterface({
               setCanvasData(null);
               break;
 
+            case 'mode_switch': {
+              // The AI decided mid-run that this request deserves a reviewed
+              // plan before execution. The stream ends here; after the read
+              // loop we re-dispatch the SAME message in plan mode.
+              if (data.mode === 'plan' && !options.isPlanMode) {
+                switchedToPlanMode = true;
+                streamFinishedNormally = true;
+              }
+              break;
+            }
+
             case 'question': {
               // AI needs user input — stream stops intentionally here
               streamFinishedNormally = true;
@@ -3466,7 +3520,20 @@ export default function ChatInterface({
               const qPayload = {
                 questions: data.questions || [],
                 runId: data.runId || '',
+                // Carry the mode so the answer resumes the SAME mode. A plan-mode
+                // clarify question answered into agent mode skipped the plan.
+                planMode: options.isPlanMode === true,
               };
+              // The question IS the reply. Without this the assistant turn
+              // rendered as an empty bubble with a stuck thinking shimmer —
+              // the card floated above the prompt but the transcript showed
+              // nothing. Put the question text (no Q:/A: tags) in the bubble
+              // so the conversation reads like a person asking.
+              const questionText = (qPayload.questions as AskQuestion[])
+                .map(q => q?.text || '')
+                .filter(Boolean)
+                .join('\n\n');
+              questionBubbleText = finalContent.trim() || questionText;
               setPendingQuestion(qPayload);
               // PART 66 — also persist on the latest assistant message so the
               // card survives reload. The conversation autosave writes the
@@ -3479,7 +3546,17 @@ export default function ChatInterface({
                 if (last.type !== 'agent') return msgs;
                 return [
                   ...msgs.slice(0, -1),
-                  { ...last, meta: { ...last.meta, pendingQuestion: qPayload } },
+                  {
+                    ...last,
+                    content: { text: questionBubbleText, list: [], footer: '' },
+                    meta: {
+                      ...last.meta,
+                      pendingQuestion: qPayload,
+                      isStreaming: false,
+                      thinkingComplete: true,
+                      liveThinking: '',
+                    },
+                  },
                 ];
               });
               setIsLoading(false);
@@ -3622,11 +3699,13 @@ export default function ChatInterface({
               // card entirely so simple answers read like a person responding,
               // not software finishing a job. The trace is for real work only.
               const ranTools = currentAgentSteps.some(s => s.type === 'tool_call' || s.type === 'tool_result');
-              // A question/plan card IS the message — no chat text needed there.
-              // But if real work ran (tool steps) and no text came back, NEVER
-              // leave a blank bubble — give a real, useful fallback.
-              if (hadQuestionEvent || hadPlanEvent) {
+              // A plan card IS the message — no chat text needed there. A
+              // question turn keeps the question text as the reply so the
+              // transcript never shows an empty assistant bubble.
+              if (hadPlanEvent) {
                 finalProcessedText = '';
+              } else if (hadQuestionEvent) {
+                finalProcessedText = questionBubbleText;
               } else if (!finalProcessedText) {
                 finalProcessedText = ranTools
                   ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
@@ -3670,6 +3749,21 @@ export default function ChatInterface({
         }
       }
 
+      // AI-initiated agent → plan mode switch: drop this run's placeholder and
+      // re-run the same message through the plan-mode pipeline. The re-dispatch
+      // is deferred so this call's finally block settles loading state first.
+      if (switchedToPlanMode) {
+        setMessages(prev => prev.filter(m => m.id !== assistantMsgId));
+        setAgentSteps([]);
+        toast.info('Arcus is planning this one first', {
+          description: 'This request is big enough to deserve a reviewable plan before execution.',
+        });
+        setTimeout(() => {
+          processAgentLoopMessage(messageText, conversationIdToUse, isNew, { ...options, isPlanMode: true }, attachments);
+        }, 0);
+        return;
+      }
+
       // Check if the stream closed without a 'done' event (e.g. timeout or sudden disconnect)
       if (!streamFinishedNormally) {
         console.warn('⚠️ Stream finished unexpectedly without DONE event. Finalizing state.');
@@ -3678,11 +3772,13 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
-        const fallbackText = hadQuestionEvent || hadPlanEvent
-          ? ''
-          : finalContent.trim() || (currentAgentSteps.length > 0
-              ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
-              : '');
+        const fallbackText = hadQuestionEvent
+          ? questionBubbleText
+          : hadPlanEvent
+            ? ''
+            : finalContent.trim() || (currentAgentSteps.length > 0
+                ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
+                : '');
 
         setMessages(msgs => msgs.map(m => {
           if (m.id !== assistantMsgId || m.type !== 'agent') return m;
@@ -3709,17 +3805,23 @@ export default function ChatInterface({
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
         
         // Check if the user message from handleSubmit is already present in existing messages
-        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
+        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === displayedUserText);
         let allMsgs = existing.messages || [];
         if (!hasUserMsg) {
-          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: displayedUserText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
           allMsgs = [...allMsgs, userMsg];
         }
 
         // PART 21: persist whatever real text the run produced — no
         // "Done — completed [tool salad]" fabrication. Empty string is the
-        // correct persisted value when cards carry the response.
-        const finalPersistedText = (hadQuestionEvent || hadPlanEvent) ? '' : (finalProcessedText || finalContent || '').trim();
+        // correct persisted value when cards carry the response. Question
+        // turns persist the question text so the transcript never shows an
+        // empty assistant reply on reload.
+        const finalPersistedText = hadPlanEvent
+          ? ''
+          : hadQuestionEvent
+            ? questionBubbleText
+            : (finalProcessedText || finalContent || '').trim();
         // Capture the in-memory message's live meta so EVERY card type the SSE
         // handlers set on this message (agentSpecConfirm, agentPlanPreview,
         // confirmationData, connectorRequired, actionResults,
@@ -3870,10 +3972,10 @@ export default function ChatInterface({
         const existing = existingRaw ? JSON.parse(existingRaw) : { id: conversationIdToUse, messages: [], title: messageText.split(' ').slice(0, 5).join(' '), lastUpdated: '', messageCount: 0 };
         
         // Check if the user message from handleSubmit is already present in existing messages
-        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === messageText);
+        const hasUserMsg = (existing.messages || []).some((m: any) => m.role === 'user' && m.content === displayedUserText);
         let allMsgs = existing.messages || [];
         if (!hasUserMsg) {
-          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: messageText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
+          const userMsg: UserMessage = { id: nextMessageId(), type: 'user', role: 'user', content: displayedUserText, time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }) };
           allMsgs = [...allMsgs, userMsg];
         }
 
@@ -4654,9 +4756,13 @@ export default function ChatInterface({
     return conversations;
   };
 
-  const handleSend = async (forcedMessage?: string, files?: File[], options: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string } = {}) => {
+  const handleSend = async (forcedMessage?: string, files?: File[], options: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string; displayText?: string } = {}) => {
     const messageText = (forcedMessage || message).trim();
     if (!messageText && (!files || files.length === 0)) return;
+    // displayText: what the transcript shows for this user turn. The full
+    // messageText (e.g. "Q: … / A: …" clarifying-answer context) still goes
+    // to the API — the tags just never render in the chat.
+    const displayText = (options.displayText || '').trim() || messageText;
 
     // Clear any pending question card (user may be typing manually instead)
     if (!forcedMessage) setPendingQuestion(null);
@@ -4730,7 +4836,7 @@ export default function ChatInterface({
       type: 'user',
       role: 'user',
       notes: [],
-      content: messageText,
+      content: displayText,
       attachments,
       time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true })
     };
@@ -4769,7 +4875,7 @@ export default function ChatInterface({
     localStorage.setItem(`conversation_${conversationIdToUse}`, JSON.stringify(conversationData));
 
     // Process the AI message — always immediate, no localStorage handoff.
-    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId });
+    processAIMessage(messageText, conversationIdToUse as string, shouldCreateNewConversation, attachments, { isDeepThinking, isCanvas, isSearch, isPlanMode, modelId: options?.modelId, displayText });
   };
 
   // Prefill handed over from SiftToday's recommendation buttons. This used to
@@ -6582,10 +6688,20 @@ export default function ChatInterface({
                                 questions={activeQ.questions}
                                 onSubmit={(answers) => {
                                   clearQuestion();
-                                  const formatted = activeQ.questions
+                                  // Internally the model gets full Q/A context;
+                                  // the transcript shows only the clean answers.
+                                  const internal = activeQ.questions
                                     .map((q, i) => `Q: ${q.text}\nA: ${answers[i]}`)
                                     .join('\n\n');
-                                  handleSend(formatted);
+                                  const display = answers.length === 1
+                                    ? answers[0]
+                                    : answers.map((a, i) => `${i + 1}. ${a}`).join('\n');
+                                  handleSend(internal, undefined, {
+                                    displayText: display,
+                                    // Resume in the mode the question came from —
+                                    // a plan-mode clarify continues into the plan.
+                                    isPlanMode: activeQ.planMode === true,
+                                  });
                                 }}
                                 onDismiss={clearQuestion}
                               />
@@ -6600,8 +6716,8 @@ export default function ChatInterface({
                             isActive={isAgentLoopActive}
                           />
                         )}
-                        {/* Live task widget — shows active/done tool steps above prompt */}
-                        <LiveTaskWidget steps={agentSteps} isActive={isAgentLoopActive} />
+                        {/* Execution steps live ONLY inside the collapsible box on the
+                            assistant message — no duplicate pill strip above the prompt. */}
                         <PromptInputBox
                           onSend={(msg, files, opts) => handleSend(msg, files, opts)}
                           onStop={() => abortControllerRef.current?.abort()}

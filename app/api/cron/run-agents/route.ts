@@ -421,9 +421,17 @@ export async function GET(request: NextRequest) {
       // Layer 1 — generate a short plain-English plan before executing, store it
       // on the run record so the UI can show "intended vs did". Best-effort: a
       // planning failure (or unmigrated `plan` column) never blocks the run.
-      if (runRecordId) {
+      // Bounded to a small slice of whatever's left this tick (capped at 8s so a
+      // healthy tick doesn't over-allocate to a "nice to have" preview). Below
+      // 5s remaining after the delivery reserve, skip planning outright rather
+      // than spend the agent's last few seconds on a preview instead of the
+      // actual work — that's the swap that was producing "Plan ran, nothing else
+      // did" timeouts.
+      const planBudgetMs = Math.min(8_000, timeLeftMs() - DELIVERY_RESERVE_MS);
+      if (runRecordId && planBudgetMs >= 5_000) {
         try {
-          const plan = await generateRunPlan(agent);
+          // generateRunPlan enforces this via deadlineAt — it's what actually caps the call.
+          const plan = await generateRunPlan(agent, { deadlineMs: planBudgetMs });
           if (plan) {
             await supabase.from('arcus_agent_runs').update({ plan }).eq('id', runRecordId);
           }

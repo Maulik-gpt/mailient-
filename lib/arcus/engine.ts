@@ -709,6 +709,7 @@ export function sanitizeModelText(text: string): string {
     'get_calendar_events', 'calendar_get_availability', 'calendar_cancel_event',
     'check_followups', 'digest_newsletters', 'voice_profile_generate',
     'get_voice_profile', 'report_generate', 'report_send_gmail', 'report_send_slack',
+    'switch_to_plan_mode',
   ];
   const TOOL_CALL_RE = new RegExp(
     `(^|\\n)\\s*(?:${KNOWN_TOOL_NAMES.join('|')})\\s*\\(\\s*\\{[\\s\\S]*?\\}\\s*\\)\\s*(?=\\n|$)`,

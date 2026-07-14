@@ -671,7 +671,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
       const emit = (type: string, data: unknown) => {
         if (type === 'tool_call') {
           anyToolRan = true;
-        } else if (type === 'question' || type === 'plan' || type === 'approval_required' || type === 'canvas') {
+        } else if (type === 'question' || type === 'plan' || type === 'approval_required' || type === 'canvas' || type === 'mode_switch') {
           sentUserFacing = true;
         } else if (type === 'message') {
           const c = (data as any)?.content;
@@ -782,7 +782,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     `Do NOT ask about: which apps to use (you can see what is connected), the user's name, timezone, or anything inferable from the request. ` +
                     `Do NOT ask more than 2 questions. ` +
                     `If the request is specific enough to plan immediately, respond with ONLY the word "proceed" — nothing else.\n\n` +
-                    `IF you call ask_user: ALSO output ONE short sentence of text BEFORE the tool call. The sentence sets up the questions ("Before I draft this plan, I need to nail down a couple of things:" / "Quick — to make this plan useful, two things to confirm:"). Do NOT explain WHY you need the answers — the questions speak for themselves. Do NOT list the questions in the text; they render as a separate card.`,
+                    `IF you call ask_user: give every question 2-4 short answer options ordered MOST-PROBABLE FIRST — the first option is your best guess and renders preselected, so the user can accept it with one tap. ALSO output ONE short sentence of text BEFORE the tool call. The sentence sets up the questions ("Before I draft this plan, I need to nail down a couple of things:" / "Quick — to make this plan useful, two things to confirm:"). Do NOT explain WHY you need the answers — the questions speak for themselves. Do NOT list the questions in the text; they render as a separate card.`,
                 },
                 ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
                 { role: 'user', content: userMessage },
@@ -1483,6 +1483,21 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
 
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];
 
+            // ── switch_to_plan_mode: hand the run to the plan pipeline ────
+            // The model decided this request deserves a reviewed plan before
+            // execution. Emit the switch and end the turn — the client
+            // re-runs the same message with isPlanMode: true.
+            const planSwitchCall = toolCalls.find(tc => tc.name === 'switch_to_plan_mode');
+            if (planSwitchCall && !isPlanMode && !isBackgroundAgent) {
+              emit('mode_switch', {
+                mode: 'plan',
+                reason: typeof planSwitchCall.input?.reason === 'string' ? planSwitchCall.input.reason : '',
+                runId,
+              });
+              closeStream(totalToolCalls);
+              return;
+            }
+
             // ── ask_user: emit question event and stop the loop ───────────
             const askUserCall = toolCalls.find(tc => tc.name === 'ask_user');
             if (askUserCall) {
@@ -1501,7 +1516,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             // drops 50-70% when the model requests 2+ tools simultaneously.
             // ask_user is already handled above. We respect the tool-call cap
             // by eagerly incrementing totalToolCalls before dispatching.
-            const executableTools = toolCalls.filter(tc => tc.name !== 'ask_user');
+            const executableTools = toolCalls.filter(tc => tc.name !== 'ask_user' && tc.name !== 'switch_to_plan_mode');
             const slotsLeft = toolCallLimit - totalToolCalls;
 
             // ── PART 9: Budget-aware task queue ──────────────────────────────

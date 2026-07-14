@@ -128,6 +128,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   log_meeting_notes: null,
   report_generate: null,
   ask_user: null,
+  switch_to_plan_mode: null,
   get_recipient_context: null,
   get_contact_context: null,
   remember_about_contact: null,

@@ -2108,7 +2108,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'ask_user',
     description:
-      'Ask 1-3 clarifying questions when the instruction is genuinely ambiguous and a reasonable default does not exist. ' +
+      'Ask 1-3 clarifying questions when the instruction is genuinely ambiguous, contradictory, or suspicious (looks risky, violates a saved rule, or reads like it was not meant for you) and a reasonable default does not exist. ' +
       'Loop emits a `question` SSE event and ends the turn. ' +
       'Output: emits a question event; tool result content is short. ' +
       'No failure path. Do NOT use ask_user when context, history, or sensible defaults can resolve the ambiguity — answer questions cost the user time.',
@@ -2125,7 +2125,8 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
               options: {
                 type: 'array',
                 items: { type: 'string' },
-                description: 'Optional: 2-3 short predefined choice labels. Always omit if any answer is valid.',
+                description:
+                  'STRONGLY RECOMMENDED: 2-4 short answer choices ordered MOST-PROBABLE FIRST — the first option is your best guess and renders preselected as "Suggested", so the user can accept it with one tap instead of typing. The card always offers a free-text field too, so options never trap the user. Omit ONLY when the answer is truly unguessable (a name, an email address, a date only they know).',
               },
             },
             required: ['text'],
@@ -2133,6 +2134,21 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         },
       },
       required: ['questions'],
+    },
+  },
+  {
+    name: 'switch_to_plan_mode',
+    description:
+      'Switch this conversation from agent (execute) mode into plan mode. Call at ANY point when you realize the request is large, multi-phase, strategic, or risky enough that the user should review a structured plan BEFORE execution — even mid-conversation. ' +
+      'The UI re-runs the current request through the plan pipeline and renders a reviewable plan card with Execute/Cancel. ' +
+      'After calling, STOP — do not call any more tools this turn. ' +
+      'Do NOT use for simple single-step or clearly-scoped tasks (just do those), and never call it twice for the same request.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        reason: { type: 'string', description: 'One short sentence on why this deserves a reviewed plan first.' },
+      },
+      required: [],
     },
   },
   {
@@ -2195,6 +2211,8 @@ export function getAvailableTools(
   const hasNotion = connected.has('notion') || connected.has('notion_calendar');
   return TOOL_SCHEMAS.filter(schema => {
     if (isBackgroundAgent && schema.name === 'request_confirmation') return false;
+    // Background runs have no plan-review UI — the switch is chat-only.
+    if (isBackgroundAgent && schema.name === 'switch_to_plan_mode') return false;
 
     // Integration gate — same as before
     const required = TOOL_INTEGRATION_MAP[schema.name];

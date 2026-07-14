@@ -162,7 +162,7 @@ function ToolRow({ step }: { step: AgentStep }) {
           isActive
             ? 'border-black/[0.08] dark:border-white/[0.10] bg-black/[0.03] dark:bg-white/[0.04]'
             : isError
-              ? 'border-rose-500/20 dark:border-rose-400/20 bg-rose-500/[0.04]'
+              ? 'border-black/[0.16] dark:border-white/[0.18] bg-black/[0.04] dark:bg-white/[0.05]'
               : 'border-black/[0.05] dark:border-white/[0.06] bg-black/[0.02] dark:bg-white/[0.025]',
           hasResult && 'hover:border-black/[0.12] dark:hover:border-white/[0.14] cursor-pointer',
         )}
@@ -172,7 +172,7 @@ function ToolRow({ step }: { step: AgentStep }) {
           isActive
             ? 'text-black/60 dark:text-white/60'
             : isError
-              ? 'text-rose-500/80 dark:text-rose-400/80'
+              ? 'text-black/70 dark:text-white/70'
               : 'text-black/45 dark:text-white/40',
         )}>
           {isError ? <AlertCircle className="w-3.5 h-3.5" /> : meta.icon}
@@ -224,22 +224,6 @@ function ToolRow({ step }: { step: AgentStep }) {
   );
 }
 
-function DottedLoader() {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="flex items-center gap-2 py-3"
-    >
-      <div
-        className="w-4 h-4 rounded-full border-[1.5px] border-dashed border-orange-400/55 dark:border-orange-300/45 animate-spin"
-        style={{ animationDuration: '2.2s' }}
-      />
-    </motion.div>
-  );
-}
-
 // ─── Per-iteration block ──────────────────────────────────────────────────────
 
 interface IterationBlock {
@@ -249,7 +233,7 @@ interface IterationBlock {
   isActive: boolean;
 }
 
-function IterationGroup({ block, isLastActive }: { block: IterationBlock; isLastActive: boolean }) {
+function IterationGroup({ block }: { block: IterationBlock }) {
   // Active iteration always expanded; completed ones default collapsed
   // (let user expand any of them with a click).
   const [open, setOpen] = useState(block.isActive);
@@ -301,7 +285,6 @@ function IterationGroup({ block, isLastActive }: { block: IterationBlock; isLast
                   <ToolRow key={step.id || i} step={step} />
                 ))}
               </div>
-              {block.isActive && isLastActive && <DottedLoader />}
             </div>
           </motion.div>
         )}
@@ -313,13 +296,11 @@ function IterationGroup({ block, isLastActive }: { block: IterationBlock; isLast
 // ─── Group steps by iteration, attach narratives ──────────────────────────────
 
 function buildBlocks(steps: AgentStep[], narratives: AgentNarrative[], isActive: boolean): IterationBlock[] {
-  const visible = steps.filter(s => {
-    if (s.type === 'thinking') {
-      const l = s.label?.toLowerCase() || '';
-      return !['reasoning...', 'processing...', 'thinking...', 'analysing your request...', 'analyzing your request...'].includes(l);
-    }
-    return true;
-  });
+  // Thinking-type steps never render inside the box — the live thinking
+  // indicator (shimmer label + thought line) already lives OUTSIDE the box
+  // in AgentThinkingSection. Rendering it here too showed the indicator
+  // twice. The box is for real tool work only.
+  const visible = steps.filter(s => s.type !== 'thinking');
 
   const byIteration = new Map<number, AgentStep[]>();
   const iterationOrder: number[] = [];
@@ -354,17 +335,11 @@ export function LiveStepTracker({ steps, narratives = [], isActive }: {
   const blocks = useMemo(() => buildBlocks(steps, narratives, isActive), [steps, narratives, isActive]);
   if (blocks.length === 0) return null;
 
-  const lastActiveIteration = blocks.reduce<number | null>((acc, b) => b.isActive ? b.iteration : acc, null);
-
   return (
     <div className="mt-0.5 mb-0">
       <AnimatePresence initial={false}>
         {blocks.map((block) => (
-          <IterationGroup
-            key={block.iteration}
-            block={block}
-            isLastActive={block.iteration === lastActiveIteration}
-          />
+          <IterationGroup key={block.iteration} block={block} />
         ))}
       </AnimatePresence>
     </div>
