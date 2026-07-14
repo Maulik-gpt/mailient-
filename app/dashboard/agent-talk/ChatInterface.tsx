@@ -357,30 +357,16 @@ const MessageContent = ({ content, isUser, isTyping, isNewResponse, hideLinks }:
       textColorClass,
       !isUser && "max-w-none prose prose-invert prose-headings:mb-4 prose-p:mb-4 prose-li:mb-1 prose-table:my-6"
     )}>
-      {isTyping && !textContent && (
-        <div className="flex items-center gap-2 mt-3 mb-2 min-w-0">
-          <SpiralLoader size={28} className="flex-shrink-0 opacity-85" />
-          <motion.span
-            className="text-[12px] font-semibold bg-[linear-gradient(110deg,#555,30%,#ddd,50%,#555,70%,#555)] bg-[length:250%_100%] bg-clip-text text-transparent select-none whitespace-nowrap shrink-0"
-            style={{ backgroundSize: '250% 100%', animation: 'shimmer-text 3s linear infinite' }}
-          >
-            Executing
-          </motion.span>
-        </div>
-      )}
+      {/* No spinner and no blinking caret here — the thinking indicator by
+          the executor box is the ONLY live-process animation. A second one
+          under the text doubled the indicators and, when a stream stalled,
+          sat there pulsing forever. */}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={markdownComponents}
       >
         {textContent}
       </ReactMarkdown>
-      {isTyping && textContent && (
-        <motion.span
-          className="inline-block w-1.5 h-4 ml-1 bg-white/40 rounded-sm align-middle"
-          animate={{ opacity: [0, 1, 0] }}
-          transition={{ repeat: Infinity, duration: 0.8 }}
-        />
-      )}
     </div>
   );
 };
@@ -491,6 +477,11 @@ function extractThinking(message: string): { thinking: string; cleanText: string
 
   // 5. Remove any partial malformed tag artifacts at start of lines (e.g. "<th<tool", "<th>")
   cleanText = cleanText.replace(/^<[^>\n]{0,40}$/gm, '');
+
+  // 5b. Strip lines that are ONLY a leaked programming literal ("False",
+  //     "True", "None", "null", "undefined"). Free models emit these as
+  //     stray text around tool calls and they rendered verbatim in chat.
+  cleanText = cleanText.replace(/^\s*(?:true|false|none|null|undefined)\s*[.!]?\s*$/gim, '');
 
   // 6. Collapse excess blank lines
   cleanText = cleanText.replace(/\n{3,}/g, '\n\n').trim();
@@ -1002,11 +993,11 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
   if (!content) return null;
 
   return (
-    <div className="flex flex-col gap-2 mt-3 mb-2 min-w-0">
+    <div className="flex flex-col gap-1.5 mt-1 mb-2 min-w-0">
       {/* Header — single line, no wrap */}
       <div className="flex items-center gap-2 min-w-0">
         {!isComplete ? (
-          <SpiralLoader size={28} className="flex-shrink-0 opacity-85" />
+          <SpiralLoader size={20} className="flex-shrink-0 opacity-85" />
         ) : (
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
@@ -1057,7 +1048,7 @@ function AgentThinkingSection({ content, isComplete }: { content: string, isComp
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
-            className="text-[12.5px] text-black/45 dark:text-white/40 leading-snug pl-9 -mt-0.5 line-clamp-2"
+            className="text-[12.5px] text-black/45 dark:text-white/40 leading-snug pl-7 -mt-0.5 line-clamp-2"
           >
             {content}
           </motion.p>
@@ -2886,8 +2877,28 @@ export default function ChatInterface({
       let currentActionResult: any = null;            // populated by canvas notion_page / calendar_event
       let currentDraftReply: any = null;              // populated by canvas email_draft
 
+      // Stall guard — if the stream goes silent for 90s (hung model call,
+      // dead connection the browser never surfaces), stop reading and let
+      // the "finished unexpectedly" path below finalize the message. Without
+      // this a stalled run sat live forever, wasting the user's time.
+      const STALL_TIMEOUT_MS = 90_000;
+      let stalled = false;
+
       while (true) {
-        const { done, value } = await reader.read();
+        let stallTimer: ReturnType<typeof setTimeout> | undefined;
+        const readResult = await Promise.race([
+          reader.read(),
+          new Promise<'__stalled__'>(resolve => {
+            stallTimer = setTimeout(() => resolve('__stalled__'), STALL_TIMEOUT_MS);
+          }),
+        ]);
+        clearTimeout(stallTimer);
+        if (readResult === '__stalled__') {
+          stalled = true;
+          try { reader.cancel(); } catch { /* already closed */ }
+          break;
+        }
+        const { done, value } = readResult;
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
@@ -3766,7 +3777,7 @@ export default function ChatInterface({
 
       // Check if the stream closed without a 'done' event (e.g. timeout or sudden disconnect)
       if (!streamFinishedNormally) {
-        console.warn('⚠️ Stream finished unexpectedly without DONE event. Finalizing state.');
+        console.warn(`⚠️ Stream finished unexpectedly without DONE event${stalled ? ' (stalled — no data for 90s)' : ''}. Finalizing state.`);
         
         const autoCompletedSteps = currentAgentSteps.map(s =>
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
@@ -5668,22 +5679,8 @@ export default function ChatInterface({
                                       </div>
                                     )}
 
-                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
-                                       <AgentThinkingSection 
-                                         content={(msg as AgentMessage).meta!.liveThinking!} 
-                                         isComplete={(msg as AgentMessage).meta?.thinkingComplete}
-                                       />
-                                     )}
-
-                                     {/* Plan text — what Arcus is about to do, shown before execution steps */}
-                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planText && (
-                                       <p className="text-[16px] text-arcus-fg leading-[1.7] mb-3">
-                                         {(msg as AgentMessage).meta!.planText}
-                                       </p>
-                                     )}
-
-                                     {/* Execution steps — above message text, collapsible */}
-                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && ((msg as AgentMessage).meta!.agentSteps!).length > 0 && (
+                                    {/* Executor box FIRST — the collapsible steps card leads the reply */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && ((msg as AgentMessage).meta!.agentSteps!).length > 0 && (
                                        <CollapsibleSteps
                                          steps={(msg as AgentMessage).meta!.agentSteps!}
                                          narratives={(msg as AgentMessage).meta?.agentNarratives}
@@ -5692,6 +5689,21 @@ export default function ChatInterface({
                                          totalDurationMs={(msg as AgentMessage).meta?.agentDurationMs}
                                          plan={(msg as AgentMessage).meta?.orchestrationPlan}
                                        />
+                                     )}
+
+                                     {/* Thoughts live UNDER the executor box, never as main chat text */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.liveThinking && (
+                                       <AgentThinkingSection
+                                         content={(msg as AgentMessage).meta!.liveThinking!}
+                                         isComplete={(msg as AgentMessage).meta?.thinkingComplete}
+                                       />
+                                     )}
+
+                                     {/* Plan text — quiet one-line narration of what Arcus is doing */}
+                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.planText && (
+                                       <p className="text-[13px] text-black/45 dark:text-white/40 leading-relaxed mb-3">
+                                         {(msg as AgentMessage).meta!.planText}
+                                       </p>
                                      )}
 
                                      {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && !(

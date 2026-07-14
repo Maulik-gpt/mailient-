@@ -34,6 +34,8 @@ export const CHANGELOG: ChangelogGroup[] = [
         points: [
           'One thinking indicator, one place — the live "thinking" shimmer no longer shows up twice, and execution steps live only inside the collapsible steps box on the reply.',
           'The steps box now starts closed and quietly shows what\'s running in its header; it opens itself only when a real multi-step task is underway, in a fixed-width, pure black-and-white design.',
+          'Thoughts now sit under the executor box as a quiet trace instead of reading like the reply itself, and the blinking bar that could get stuck under a reply is gone.',
+          'Stray model artifacts (a lone "False" line) no longer leak into the chat.',
           'When Arcus asks a clarifying question, it now suggests the most likely answers as tappable choices — its best guess comes preselected, so one tap answers it. Your reply lands in the chat as a clean answer, not a form transcript.',
           'A question from Arcus now reads like a normal message in the conversation — no more empty reply above the question card.',
         ],

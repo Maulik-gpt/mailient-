@@ -736,6 +736,11 @@ export function sanitizeModelText(text: string): string {
   // Closing quote left dangling after the prefix strip
   clean = clean.replace(/^(\s*[^"'\n]*[.!?])\s*["']\s*$/gm, '$1');
 
+  // Strip lines that are ONLY a leaked programming literal ("False", "True",
+  // "None", "null", "undefined"). Free models emit these as stray text
+  // around tool calls and they rendered verbatim in the chat bubble.
+  clean = clean.replace(/^\s*(?:true|false|none|null|undefined)\s*[.!]?\s*$/gim, '');
+
   // PART 67 — Strip the LLM's meta-commentary about its own output. Pattern
   // seen in the wild: "The message appears to garbled." / "My output looks
   // corrupted." / "It seems my response was cut off." These are leaked
