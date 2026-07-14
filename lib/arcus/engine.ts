@@ -353,6 +353,15 @@ export async function callLLM(
     if (deadKeys.has(key)) return null;
     // Out of wall-clock budget — don't start a call we can't finish in time.
     if (timeoutMs <= 0) return null;
+    // Nemotron models are REASONERS: left on default they spend the entire
+    // max_tokens budget thinking — small-budget calls come back as an empty
+    // 200 (the "super-120b returns empty 200" mystery) and bigger ones add
+    // 10-30s of latency per call. OpenRouter's unified `reasoning` param
+    // disables it; live-verified 2026-07-14: ultra answers in ~1s with real
+    // content AND still emits tool_calls. Non-reasoning models ignore the
+    // param, but we gate to nemotron anyway to keep the blast radius zero.
+    const finalBody: Record<string, any> = { ...body, model };
+    if (/nemotron/i.test(model)) finalBody.reasoning = { enabled: false };
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
@@ -362,7 +371,7 @@ export async function callLLM(
           'HTTP-Referer': 'https://mailient.xyz',
           'X-Title': 'Arcus AI',
         },
-        body: JSON.stringify({ ...body, model }),
+        body: JSON.stringify(finalBody),
         signal: AbortSignal.timeout(timeoutMs),
       });
 
@@ -386,6 +395,11 @@ export async function callLLM(
           log('error', 'Engine', `Key dead`, { key: `…${key.slice(-4)}`, status: res.status });
         } else {
           log('warn', 'Engine', `HTTP ${res.status}`, { model, key: `…${key.slice(-4)}`, resp: txt.slice(0, 200) });
+          // Every key belongs to the SAME account, so a model-level HTTP error
+          // (400 "provider returned error", 5xx) will repeat identically on the
+          // remaining keys. Cool the model briefly so this call and the next
+          // few skip it instead of proving the same failure 4 more times.
+          markModelRateLimited(model, 20);
         }
         return null;
       }
@@ -404,12 +418,20 @@ export async function callLLM(
           code: errCode,
           msg: String(data.error?.message ?? data.error ?? '').slice(0, 200),
         });
+        // Embedded upstream errors ("ResourceExhausted: worker limit reached",
+        // provider 5xx inside a 200) are model/provider-level — identical on
+        // every key of this account. Cool the model instead of re-proving it.
+        markModelRateLimited(model, 30);
         return null;
       }
 
       const parsed = parseOpenAIResponse(data);
       if (!parsed) {
         log('warn', 'Engine', `Empty response`, { model, finish: data.choices?.[0]?.finish_reason });
+        // An empty 200 is model behaviour (e.g. a reasoner that spent the whole
+        // token budget thinking), not key behaviour — retrying the same model
+        // on 3 more keys just burns quota and seconds. Cool it for a minute.
+        markModelRateLimited(model, 60);
         return null;
       }
 

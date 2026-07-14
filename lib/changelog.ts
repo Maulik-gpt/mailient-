@@ -41,6 +41,14 @@ export const CHANGELOG: ChangelogGroup[] = [
         ],
       },
       {
+        tag: 'Fixed',
+        title: 'Replies are fast again',
+        points: [
+          'A model-provider quirk was silently eating the response budget on "thinking", which made normal replies crawl to ~50 seconds and sometimes come back blank. Arcus now tells that model family to answer directly — replies land in seconds again.',
+          'When a model is having a bad day, Arcus now steps around it once instead of re-trying the same failure on every backup key.',
+        ],
+      },
+      {
         tag: 'New',
         title: 'Arcus can decide to plan before it acts',
         points: [

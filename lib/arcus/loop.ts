@@ -1384,7 +1384,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               { role: 'user', content: userMessage },
             ],
             [],
-            { maxTokens: 250 },
+            // Tiny JSON classification — lead with the small fast models, not
+            // the 550B reasoner. It runs fire-and-forget but still burns quota
+            // and cooldown budget for the models the MAIN call needs.
+            { maxTokens: 250, fastFirst: true },
           ).then(tlRes => {
             const raw = getText(tlRes.content).trim();
             const objMatch = raw.match(/\{[\s\S]*\}/);
