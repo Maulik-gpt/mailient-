@@ -111,6 +111,17 @@ export function useConnectors(options: UseConnectorsOptions) {
       return;
     }
 
+    // Cal.com cloud has NO OAuth app flow — it authenticates with a pasted API
+    // key, so /api/integrations/cal_com/auth builds a client_id-less OAuth URL
+    // that dead-ends on Cal.com's error page. Never open the popup for it; the
+    // API-key panel (connectors-modal / integrations-modal) is the real path.
+    if (provider === 'cal_com') {
+      const e = new Error('Cal.com connects with an API key — open the connectors panel to paste it.');
+      setError(e);
+      options.onError?.(e);
+      return;
+    }
+
     setIsConnecting(connectorId);
     setError(null);
 

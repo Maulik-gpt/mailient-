@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ToggleSwitch } from './toggle-switch';
 import { useSession } from 'next-auth/react';
-import { Shield } from 'lucide-react';
+import { Shield, ExternalLink, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Integration {
@@ -150,6 +150,15 @@ const BrandIcons = {
 
 export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
   const { data: session } = useSession();
+  // Cal.com cloud has NO OAuth app flow — it authenticates with a personal API
+  // key the user pastes (cal.com → Settings → Developer → API keys). The old
+  // toggle redirected to /api/integrations/cal_com/auth, which built an OAuth
+  // URL with an empty client_id (there is no client to configure), landing the
+  // user on a broken Cal.com error page. So Cal.com opens an inline key panel
+  // instead of redirecting — same flow as connectors-modal.tsx.
+  const [showCalcomPanel, setShowCalcomPanel] = useState(false);
+  const [calcomKey, setCalcomKey] = useState('');
+  const [calcomConnecting, setCalcomConnecting] = useState(false);
   const [integrations, setIntegrations] = useState<Integration[]>([
     {
       id: 'mailient',
@@ -262,6 +271,31 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
     }
   };
 
+  const connectCalcom = async () => {
+    const key = calcomKey.trim();
+    if (!key) { toast.error('Paste your Cal.com API key first.'); return; }
+    setCalcomConnecting(true);
+    try {
+      const res = await fetch('/api/integrations/cal_com/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey: key }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { toast.error(data.error || 'Could not connect Cal.com.'); return; }
+      toast.success('Cal.com connected.');
+      setCalcomKey('');
+      setShowCalcomPanel(false);
+      setIntegrations(prev => prev.map(item => item.id === 'cal_com' ? { ...item, enabled: true } : item));
+      await fetchIntegrationStatus();
+    } catch (err) {
+      console.error('Cal.com connect error:', err);
+      toast.error('Could not connect Cal.com.', { description: 'Please try again.' });
+    } finally {
+      setCalcomConnecting(false);
+    }
+  };
+
   const handleToggle = async (id: string, currentlyEnabled: boolean) => {
     if (id === 'mailient' || id === 'gmail') return;
 
@@ -274,6 +308,13 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
         cancel: { label: 'Cancel', onClick: () => {} },
       });
     } else {
+      // Cal.com connects via a pasted API key (no OAuth app flow) — open the
+      // inline key panel instead of redirecting to a broken client_id-less URL.
+      if (id === 'cal_com') {
+        setShowCalcomPanel(v => !v);
+        return;
+      }
+
       const V3_DIRECT_ROUTES: Record<string, string> = {
         google_calendar:  '/api/arcus/v3/oauth/gcal',
         slack:            '/api/arcus/v3/oauth/slack',
@@ -286,7 +327,7 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
         return;
       }
 
-      // Legacy providers (Google Meet, Cal.com)
+      // Legacy providers (Google Meet)
       try {
         const res = await fetch(`/api/integrations/${id}/auth`);
         if (res.ok) {
@@ -343,25 +384,66 @@ export function IntegrationsModal({ isOpen, onClose }: IntegrationsModalProps) {
         {/* Integration Items */}
         <div className="space-y-2 relative">
           {integrations.map((integration) => (
-            <div
-              key={integration.id}
-              className="flex items-center justify-between py-3.5 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.06] transition-all duration-300"
-            >
-              <div className="flex items-center gap-4.5 max-w-[280px]">
-                <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.06] shadow-sm select-none">
-                  {integration.logo}
+            <React.Fragment key={integration.id}>
+              <div
+                className="flex items-center justify-between py-3.5 px-4 rounded-2xl bg-white/[0.02] border border-white/[0.04] hover:bg-white/[0.04] hover:border-white/[0.06] transition-all duration-300"
+              >
+                <div className="flex items-center gap-4.5 max-w-[280px]">
+                  <div className="w-9 h-9 flex items-center justify-center rounded-xl bg-white/[0.03] border border-white/[0.06] shadow-sm select-none">
+                    {integration.logo}
+                  </div>
+                  <div className="flex flex-col gap-0.5 text-left">
+                    <span className="text-white text-xs font-bold font-sans tracking-tight">{integration.name}</span>
+                    <span className="text-neutral-500 text-[10px] leading-tight font-light font-sans">{integration.description}</span>
+                  </div>
                 </div>
-                <div className="flex flex-col gap-0.5 text-left">
-                  <span className="text-white text-xs font-bold font-sans tracking-tight">{integration.name}</span>
-                  <span className="text-neutral-500 text-[10px] leading-tight font-light font-sans">{integration.description}</span>
-                </div>
+                <ToggleSwitch
+                  checked={integration.enabled}
+                  onChange={() => handleToggle(integration.id, integration.enabled)}
+                  disabled={integration.disabled}
+                />
               </div>
-              <ToggleSwitch
-                checked={integration.enabled}
-                onChange={() => handleToggle(integration.id, integration.enabled)}
-                disabled={integration.disabled}
-              />
-            </div>
+
+              {/* Cal.com inline API-key panel — Cal.com has no OAuth flow */}
+              {integration.id === 'cal_com' && showCalcomPanel && !integration.enabled && (
+                <div className="px-4 py-4 rounded-2xl bg-white/[0.02] border border-white/[0.06] flex flex-col gap-3">
+                  <p className="text-[11px] leading-relaxed text-neutral-400 font-light">
+                    Cal.com connects with a personal API key — there's no login popup. Create a key, then paste it below.
+                  </p>
+                  <a
+                    href="https://app.cal.com/settings/developer/api-keys?createKey=Mailient"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 transition-colors"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" /> Open Cal.com → create your key
+                  </a>
+                  <input
+                    type="password"
+                    placeholder="cal_live_..."
+                    value={calcomKey}
+                    onChange={(e) => setCalcomKey(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') connectCalcom(); }}
+                    className="w-full px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.08] text-white text-xs font-mono placeholder:text-neutral-600 focus:outline-none focus:border-white/20 transition-colors"
+                  />
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => { setShowCalcomPanel(false); setCalcomKey(''); }}
+                      className="flex-1 py-2.5 rounded-xl text-[11px] font-semibold text-neutral-400 hover:text-white bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.06] transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={connectCalcom}
+                      disabled={calcomConnecting}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[11px] font-bold text-black bg-white hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                    >
+                      {calcomConnecting ? 'Connecting…' : <><Zap className="w-3.5 h-3.5 fill-black" /> Connect Cal.com</>}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </React.Fragment>
           ))}
         </div>
       </div>

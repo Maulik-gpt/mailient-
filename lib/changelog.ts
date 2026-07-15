@@ -26,6 +26,18 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 15, 2026',
+    entries: [
+      {
+        tag: 'Fixed',
+        title: 'Cal.com connects cleanly',
+        points: [
+          'Connecting Cal.com from the integrations panel used to bounce you to a broken Cal.com login page. Cal.com now connects the right way — paste your API key inline and you\'re done, no dead-end redirect.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 14, 2026',
     entries: [
       {
