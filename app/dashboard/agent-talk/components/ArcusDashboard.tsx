@@ -206,10 +206,10 @@ function OutreachWalkthroughCard({
         <div className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-500/12 dark:bg-purple-400/15 text-purple-700 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-black/[0.05] dark:bg-white/[0.08] text-black/70 dark:text-white/70 text-[10px] font-semibold uppercase tracking-wider">
                 <Sparkles className="w-3 h-3" /> Just shipped
               </span>
-              <h2 className="mt-2 text-[18px] font-bold text-black/90 dark:text-white/90 tracking-tight">
+              <h2 className="mt-2 text-[18px] font-semibold text-black/90 dark:text-white/90 tracking-tight">
                 Arcus runs your outreach
               </h2>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-black/55 dark:text-white/55">
@@ -232,7 +232,7 @@ function OutreachWalkthroughCard({
           {/* Progress rail */}
           <div className="h-1 w-full rounded-full bg-black/[0.06] dark:bg-white/[0.08] overflow-hidden mb-5">
             <motion.div
-              className="h-full rounded-full bg-purple-500 dark:bg-purple-400"
+              className="h-full rounded-full bg-black dark:bg-white"
               animate={{ width: `${progress}%` }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
             />
@@ -250,30 +250,22 @@ function OutreachWalkthroughCard({
                     className={cn(
                       'relative flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 transition-colors',
                       now
-                        ? 'bg-purple-500/15 dark:bg-purple-400/20'
+                        ? 'bg-black dark:bg-white'
                         : done
                           ? 'bg-emerald-500/12 dark:bg-emerald-400/15'
                           : 'bg-black/[0.04] dark:bg-white/[0.05]',
                     )}
-                    animate={now ? { scale: [1, 1.08, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.6, ease: 'easeInOut' }}
+                    animate={now ? { scale: [1, 1.06, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
                   >
                     {done ? (
                       <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
                     ) : (
-                      <StepIcon className={cn('w-4 h-4', now ? 'text-purple-600 dark:text-purple-300' : 'text-black/40 dark:text-white/35')} />
-                    )}
-                    {now && (
-                      <motion.span
-                        className="absolute inset-0 rounded-xl ring-2 ring-purple-500/40 dark:ring-purple-400/40"
-                        initial={{ opacity: 0.8, scale: 1 }}
-                        animate={{ opacity: 0, scale: 1.35 }}
-                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
-                      />
+                      <StepIcon className={cn('w-4 h-4', now ? 'text-white dark:text-black' : 'text-black/40 dark:text-white/35')} />
                     )}
                   </motion.div>
                   {i < OUTREACH_FLOW_STEPS.length - 1 && (
-                    <div className={cn('h-px flex-1 transition-colors', i < active ? 'bg-emerald-500/40 dark:bg-emerald-400/40' : 'bg-black/[0.08] dark:bg-white/[0.10]')} />
+                    <div className={cn('h-px flex-1 transition-colors', i < active ? 'bg-black/25 dark:bg-white/25' : 'bg-black/[0.08] dark:bg-white/[0.10]')} />
                   )}
                 </React.Fragment>
               );
@@ -290,7 +282,7 @@ function OutreachWalkthroughCard({
                 exit={{ opacity: 0, y: -6 }}
                 transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
               >
-                <p className="text-[13.5px] font-bold text-black/85 dark:text-white/85">
+                <p className="text-[13.5px] font-semibold text-black/85 dark:text-white/85">
                   {active + 1}. {OUTREACH_FLOW_STEPS[active].title}
                 </p>
                 <p className="mt-0.5 text-[12.5px] leading-relaxed text-black/55 dark:text-white/55">
@@ -316,14 +308,14 @@ function OutreachWalkthroughCard({
           <button
             type="button"
             onClick={onStart}
-            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-600/90 text-white font-bold text-[13px] tracking-wide transition-all active:scale-[0.98]"
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-black text-white hover:bg-black/90 dark:bg-white dark:text-black dark:hover:bg-white/90 font-semibold text-[13px] tracking-wide transition-all active:scale-[0.98]"
           >
             <Send className="w-3.5 h-3.5" /> Start outreach
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2.5 rounded-xl text-[13px] font-bold text-black/50 dark:text-white/50 hover:text-black/80 dark:hover:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+            className="px-4 py-2.5 rounded-xl text-[13px] font-medium text-black/50 dark:text-white/50 hover:text-black/80 dark:hover:text-white/80 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
             Maybe later
           </button>
@@ -368,25 +360,23 @@ function OutreachPill({ onStart }: { onStart: (text: string) => void }) {
           type="button"
           onClick={() => setCardOpen(true)}
           className={cn(
-            'inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-full',
-            'bg-purple-500/[0.10] dark:bg-purple-400/[0.12] border border-purple-500/20 dark:border-purple-400/20',
-            'hover:bg-purple-500/[0.16] dark:hover:bg-purple-400/[0.18] hover:border-purple-500/30 dark:hover:border-purple-400/30',
+            'inline-flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-full arcus-glass-pill arcus-glass-hover',
             'transition-all active:scale-[0.98]',
           )}
         >
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-purple-600 text-white text-[9.5px] font-bold uppercase tracking-wider">
+          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-black text-white dark:bg-white dark:text-black text-[9.5px] font-semibold uppercase tracking-wider">
             <Sparkles className="w-2.5 h-2.5" /> New
           </span>
-          <span className="text-[12.5px] font-semibold text-purple-700 dark:text-purple-200">
+          <span className="text-[12.5px] font-medium text-black/80 dark:text-white/80">
             Arcus can run your cold outreach
           </span>
-          <ArrowRight className="w-3 h-3 text-purple-600/70 dark:text-purple-300/70 group-hover/pill:translate-x-0.5 transition-transform" />
+          <ArrowRight className="w-3 h-3 text-black/35 dark:text-white/35 group-hover/pill:translate-x-0.5 group-hover/pill:text-black/60 dark:group-hover/pill:text-white/60 transition-all" />
         </button>
         <button
           type="button"
           onClick={dismiss}
           aria-label="Dismiss"
-          className="p-1 rounded-full text-purple-600/40 dark:text-purple-300/40 hover:text-purple-700 dark:hover:text-purple-200 hover:bg-purple-500/10 transition-colors"
+          className="p-1.5 rounded-full text-black/30 dark:text-white/30 hover:text-black/70 dark:hover:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
         >
           <X className="w-3 h-3" />
         </button>
