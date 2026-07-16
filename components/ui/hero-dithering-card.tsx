@@ -1,17 +1,30 @@
-import React, { useState, Suspense, lazy } from "react"
-import { ArrowRight } from "lucide-react"
-import { signIn } from "next-auth/react"
+import { useState, useRef, useEffect, Suspense, lazy } from "react"
 import { CircleExpandButton } from "@/components/CircleExpandButton"
 
-const Dithering = lazy(() => 
+const Dithering = lazy(() =>
   import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
 )
 
 export function CTASection() {
   const [isHovered, setIsHovered] = useState(false)
+  const sectionRef = useRef<HTMLElement>(null)
+  // The dithering shader is a WebGL canvas animating every frame; only mount it
+  // while the section is near the viewport so it never renders unseen.
+  const [shaderActive, setShaderActive] = useState(false)
+
+  useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      ([entry]) => setShaderActive(entry.isIntersecting),
+      { rootMargin: "200px" }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   return (
-    <section className="py-24 w-full flex justify-center items-center px-4 md:px-6 bg-black relative z-10">
+    <section ref={sectionRef} className="py-24 w-full flex justify-center items-center px-4 md:px-6 bg-black relative z-10">
       <div 
         className="w-full max-w-7xl relative"
         onMouseEnter={() => setIsHovered(true)}
@@ -19,19 +32,21 @@ export function CTASection() {
       >
         <div className="relative overflow-hidden rounded-[48px] border border-white/[0.08] bg-neutral-950/40 shadow-2xl min-h-[520px] flex flex-col items-center justify-center duration-500">
           
-          <Suspense fallback={<div className="absolute inset-0 bg-neutral-900/10 pointer-events-none" />}>
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] md:w-[150%] h-[250%] md:h-[150%] z-0 pointer-events-none opacity-50 dark:opacity-40 mix-blend-multiply dark:mix-blend-screen">
-              <Dithering
-                colorBack="#00000000" // Transparent
-                colorFront="#4a4a4a"  // Lighter gray instead of ultra-dark metallic gray
-                shape="warp"
-                type="4x4"
-                speed={isHovered ? 0.35 : 0.12}
-                className="size-full"
-                minPixelRatio={1}
-              />
-            </div>
-          </Suspense>
+          {shaderActive && (
+            <Suspense fallback={<div className="absolute inset-0 bg-neutral-900/10 pointer-events-none" />}>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] md:w-[150%] h-[250%] md:h-[150%] z-0 pointer-events-none opacity-50 dark:opacity-40 mix-blend-multiply dark:mix-blend-screen">
+                <Dithering
+                  colorBack="#00000000" // Transparent
+                  colorFront="#4a4a4a"  // Lighter gray instead of ultra-dark metallic gray
+                  shape="warp"
+                  type="4x4"
+                  speed={isHovered ? 0.35 : 0.12}
+                  className="size-full"
+                  minPixelRatio={1}
+                />
+              </div>
+            </Suspense>
+          )}
 
           <div className="relative z-10 px-6 max-w-4xl mx-auto text-center flex flex-col items-center">
             

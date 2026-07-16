@@ -30,6 +30,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Improved',
+        title: 'The website is dramatically faster and smoother',
+        points: [
+          'Several readers told us the homepage stuttered while scrolling — they were right. Under the hood, half a dozen background effects kept re-rendering the entire page many times per second, even for parts of the page you weren\'t looking at.',
+          'Every animation now runs only while it\'s actually on your screen, videos pause themselves when you scroll past them, and section reveals play once instead of replaying on every scroll. Scrolling should feel smooth now, and the page uses far less battery on laptops and phones.',
+          'Nothing visual was removed — same design, same motion, a fraction of the work.',
+        ],
+      },
+      {
+        tag: 'Improved',
         title: 'The home feed goes liquid glass',
         points: [
           'Your daily briefing now wears the new liquid-glass look — cards, the Today/Inbox switcher, and the refresh control are real glass: light bends at their edges and the feed refracts through them as you scroll.',

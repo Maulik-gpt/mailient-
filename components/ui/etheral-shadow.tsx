@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useRef, useId, useEffect, CSSProperties } from 'react';
-import { animate, useMotionValue, AnimationPlaybackControls } from 'framer-motion';
 
 // Type definitions
 interface ResponsiveImage {
@@ -65,42 +64,58 @@ export function EtheralShadow({
     const id = useInstanceId();
     const animationEnabled = animation && animation.scale > 0;
     const feColorMatrixRef = useRef<SVGFEColorMatrixElement>(null);
-    const hueRotateMotionValue = useMotionValue(180);
-    const hueRotateAnimation = useRef<AnimationPlaybackControls | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     const displacementScale = animation ? mapRange(animation.scale, 1, 100, 20, 100) : 0;
     const animationDuration = animation ? mapRange(animation.speed, 1, 100, 1000, 50) : 1;
 
     useEffect(() => {
-        if (feColorMatrixRef.current && animationEnabled) {
-            if (hueRotateAnimation.current) {
-                hueRotateAnimation.current.stop();
-            }
-            hueRotateMotionValue.set(0);
-            hueRotateAnimation.current = animate(hueRotateMotionValue, 360, {
-                duration: animationDuration / 25,
-                repeat: Infinity,
-                repeatType: "loop",
-                repeatDelay: 0,
-                ease: "linear",
-                delay: 0,
-                onUpdate: (value: number) => {
-                    if (feColorMatrixRef.current) {
-                        feColorMatrixRef.current.setAttribute("values", String(value));
-                    }
-                }
-            });
+        const container = containerRef.current;
+        if (!feColorMatrixRef.current || !animationEnabled || !container) return;
 
-            return () => {
-                if (hueRotateAnimation.current) {
-                    hueRotateAnimation.current.stop();
-                }
-            };
-        }
-    }, [animationEnabled, animationDuration, hueRotateMotionValue]);
+        // Every hueRotate update re-evaluates the turbulence + double displacement
+        // filter chain over the whole element, which is far too expensive to run at
+        // 60fps. ~12fps reads as continuous for a slow background morph, and the
+        // loop stops entirely while the element is offscreen.
+        const FRAME_MS = 80;
+        const cycleMs = (animationDuration / 25) * 1000;
+        const start = performance.now();
+        let rafId: number | null = null;
+        let lastUpdate = 0;
+
+        const tick = (now: number) => {
+            rafId = requestAnimationFrame(tick);
+            if (now - lastUpdate < FRAME_MS) return;
+            lastUpdate = now;
+            const value = (((now - start) / cycleMs) * 360) % 360;
+            feColorMatrixRef.current?.setAttribute("values", String(value));
+        };
+
+        const startLoop = () => {
+            if (rafId === null) rafId = requestAnimationFrame(tick);
+        };
+        const stopLoop = () => {
+            if (rafId !== null) {
+                cancelAnimationFrame(rafId);
+                rafId = null;
+            }
+        };
+
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) startLoop();
+            else stopLoop();
+        });
+        observer.observe(container);
+
+        return () => {
+            stopLoop();
+            observer.disconnect();
+        };
+    }, [animationEnabled, animationDuration]);
 
     return (
         <div
+            ref={containerRef}
             className={className}
             style={{
                 overflow: "hidden",

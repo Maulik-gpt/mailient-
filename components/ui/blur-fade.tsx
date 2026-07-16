@@ -2,7 +2,6 @@
 
 import { useRef } from "react"
 import {
-  AnimatePresence,
   motion,
   useInView,
   UseInViewOptions,
@@ -38,46 +37,40 @@ export function BlurFade({
   blur = "8px",
 }: BlurFadeProps) {
   const ref = useRef(null)
-  const inViewResult = useInView(ref, { once: false, margin: inViewMargin })
+  // once: true — re-running a full-section blur animation on every scroll pass
+  // repaints huge subtrees and is the main scroll-jank source on the landing page.
+  const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
   const isInView = !inView || inViewResult
-  
+
   const defaultVariants: Variants = {
-    hidden: { 
-      y: yOffset, 
-      opacity: 0, 
-      filter: `blur(${blur})` 
+    hidden: {
+      y: yOffset,
+      opacity: 0,
+      filter: `blur(${blur})`
     },
-    visible: { 
-      y: 0, 
-      opacity: 1, 
-      filter: "blur(0px)" 
+    visible: {
+      y: 0,
+      opacity: 1,
+      filter: "blur(0px)"
     },
   }
-  
+
   const combinedVariants = variant || defaultVariants
 
   return (
-    <AnimatePresence>
-      <motion.div
-        ref={ref}
-        initial="hidden"
-        animate={isInView ? "visible" : "hidden"}
-        exit="hidden"
-        variants={combinedVariants}
-        transition={{
-          delay: 0.04 + delay,
-          duration,
-          ease: [0.16, 1, 0.3, 1], // Premium cinematic easeOutExpo curve
-        }}
-        style={{
-          willChange: "transform, opacity, filter",
-          backfaceVisibility: "hidden",
-          transform: "translate3d(0,0,0)",
-        }}
-        className={className}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <motion.div
+      ref={ref}
+      initial="hidden"
+      animate={isInView ? "visible" : "hidden"}
+      variants={combinedVariants}
+      transition={{
+        delay: 0.04 + delay,
+        duration,
+        ease: [0.16, 1, 0.3, 1], // Premium cinematic easeOutExpo curve
+      }}
+      className={className}
+    >
+      {children}
+    </motion.div>
   )
 }

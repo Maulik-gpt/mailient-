@@ -39,26 +39,6 @@ export function FloatingNavbar() {
 
   return (
     <>
-      {/* SVG Filter for Liquid Distortion */}
-      <svg className="hidden pointer-events-none absolute h-0 w-0">
-        <filter id="liquid-glass-distortion">
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.01 0.01"
-            numOctaves="1"
-            seed="2"
-            result="noise"
-          />
-          <feDisplacementMap
-            in="SourceGraphic"
-            in2="noise"
-            scale="10"
-            xChannelSelector="R"
-            yChannelSelector="G"
-          />
-        </filter>
-      </svg>
-
       <AnimatePresence>
         {isVisible && (
           <motion.div 
@@ -71,14 +51,9 @@ export function FloatingNavbar() {
             <LayoutGroup>
               <nav className="relative flex items-center gap-1.5 p-1.5 rounded-[26px] pointer-events-auto transition-all duration-700 hover:scale-[1.02] shadow-[0_6px_6px_rgba(0,0,0,0.2),0_0_20px_rgba(0,0,0,0.1)] overflow-hidden">
                 
-                {/* Liquid Glass Layers */}
-                <div 
-                  className="absolute inset-0 z-0 backdrop-blur-[12px]"
-                  style={{
-                    filter: "url(#liquid-glass-distortion)",
-                    isolation: "isolate",
-                  }}
-                />
+                {/* Liquid Glass Layers — plain backdrop blur; an SVG displacement
+                    filter chained on top forced a full re-raster every scroll frame */}
+                <div className="absolute inset-0 z-0 backdrop-blur-[12px]" />
                 <div className="absolute inset-0 z-[1] bg-white/20 dark:bg-[#2e2e2e]/40" />
                 <div 
                   className="absolute inset-0 z-[2] rounded-[26px]"

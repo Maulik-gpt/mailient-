@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 
 export interface WordBlurStreamProps {
   text: string;
@@ -24,6 +24,7 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
   onComplete,
 }) => {
   const [phase, setPhase] = useState(0);
+  const containerRef = useRef<HTMLSpanElement>(null);
 
   // Parse text into tokens (words and whitespaces)
   const { parsedTokens, wordCount } = useMemo(() => {
@@ -49,48 +50,75 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
       return;
     }
 
-    let animationFrameId: number;
-    let startTime = performance.now();
+    // The reveal itself is short (~wordCount * msPerWord); the old loop kept a
+    // 60fps setState going through the entire hold as well, forever. Now frames
+    // only run during the reveal, the hold is a single timeout, and everything
+    // stops while the element is offscreen.
+    const playDuration = wordCount * msPerWord + startupMs;
+    let animationFrameId: number | null = null;
+    let holdTimeoutId: number | null = null;
+    let startTime: number | null = null;
     let hasCompleted = false;
 
     const tick = (now: number) => {
-      let elapsed = now - startTime;
-      const playDuration = wordCount * msPerWord + startupMs;
-      const totalDuration = playDuration + holdMs;
+      if (startTime === null) startTime = now;
+      const elapsed = now - startTime;
 
-      if (loop) {
-        if (elapsed >= totalDuration) {
-          startTime = now;
-          elapsed = 0;
-          if (onComplete) {
-            onComplete();
-          }
-        }
-      } else {
-        if (elapsed >= playDuration) {
-          elapsed = playDuration;
-          setPhase(1);
+      if (elapsed >= playDuration) {
+        animationFrameId = null;
+        setPhase(1);
+        if (!loop) {
           if (!hasCompleted) {
             hasCompleted = true;
-            if (onComplete) {
-              onComplete();
-            }
+            if (onComplete) onComplete();
           }
-          // Stop requesting animation frames if loop is false and we've reached the end
           return;
         }
+        holdTimeoutId = window.setTimeout(() => {
+          holdTimeoutId = null;
+          if (onComplete) onComplete();
+          startTime = null;
+          animationFrameId = requestAnimationFrame(tick);
+        }, holdMs);
+        return;
       }
 
-      const currentPhase = playDuration > 0 ? clamp01(elapsed / playDuration) : 1;
-      setPhase(currentPhase);
-
+      setPhase(playDuration > 0 ? clamp01(elapsed / playDuration) : 1);
       animationFrameId = requestAnimationFrame(tick);
     };
 
-    animationFrameId = requestAnimationFrame(tick);
+    const start = () => {
+      if (animationFrameId === null && holdTimeoutId === null && !(hasCompleted && !loop)) {
+        startTime = null;
+        animationFrameId = requestAnimationFrame(tick);
+      }
+    };
+    const stop = () => {
+      if (animationFrameId !== null) {
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+      }
+      if (holdTimeoutId !== null) {
+        window.clearTimeout(holdTimeoutId);
+        holdTimeoutId = null;
+      }
+    };
+
+    const container = containerRef.current;
+    let observer: IntersectionObserver | null = null;
+    if (container) {
+      observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) start();
+        else stop();
+      });
+      observer.observe(container);
+    } else {
+      start();
+    }
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      stop();
+      if (observer) observer.disconnect();
     };
   }, [text, wordCount, msPerWord, startupMs, holdMs, loop, onComplete]);
 
@@ -101,7 +129,7 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
   const head = phase * (wordCount + 3);
 
   return (
-    <span>
+    <span ref={containerRef}>
       {parsedTokens.map((token, tokenIdx) => {
         if (!token.isWord) {
           return <span key={tokenIdx}>{token.text}</span>;
@@ -120,7 +148,6 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
               display: 'inline-block',
               opacity,
               filter: filterStyle,
-              willChange: 'filter, opacity',
             }}
           >
             {token.text}

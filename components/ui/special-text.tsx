@@ -38,11 +38,6 @@ export function SpecialText({
   const [displayText, setDisplayText] = useState<string>(
     " ".repeat(text.length),
   );
-  const [currentPhase, setCurrentPhase] = useState<"phase1" | "phase2">(
-    "phase1",
-  );
-  const [animationStep, setAnimationStep] = useState<number>(0);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeoutRef = useRef<number | null>(null);
 
   function clearStartTimeout() {
@@ -51,123 +46,87 @@ export function SpecialText({
     startTimeoutRef.current = null;
   }
 
-  function startAnimation() {
-    setHasStarted(true);
-    setDisplayText(" ".repeat(text.length));
-    setCurrentPhase("phase1");
-    setAnimationStep(0);
-  }
-
-  const runPhase1 = () => {
-    const maxSteps = text.length * 2;
-    const currentLength = Math.min(animationStep + 1, text.length);
-
-    const chars: string[] = [];
-    for (let i = 0; i < currentLength; i++) {
-      const prevChar = i > 0 ? chars[i - 1] : undefined;
-      chars.push(getRandomChar(prevChar));
-    }
-
-    for (let i = currentLength; i < text.length; i++) {
-      chars.push("\u00A0");
-    }
-
-    setDisplayText(chars.join(""));
-
-    if (animationStep < maxSteps - 1) {
-      setAnimationStep((prev) => prev + 1);
-    } else {
-      setCurrentPhase("phase2");
-      setAnimationStep(0);
-    }
-  };
-
-  const runPhase2 = () => {
-    const revealedCount = Math.floor(animationStep / 2);
-    const chars: string[] = [];
-
-    for (let i = 0; i < revealedCount && i < text.length; i++) {
-      chars.push(text[i]);
-    }
-
-    if (revealedCount < text.length) {
-      if (animationStep % 2 === 0) {
-        chars.push("_");
-      } else {
-        chars.push(getRandomChar());
-      }
-    }
-
-    for (let i = chars.length; i < text.length; i++) {
-      chars.push(getRandomChar());
-    }
-
-    setDisplayText(chars.join(""));
-
-    if (animationStep < text.length * 2 - 1) {
-      setAnimationStep((prev) => prev + 1);
-    } else {
-      setDisplayText(text);
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }
-  };
-
   useEffect(() => {
     if (shouldAnimate && !hasStarted) {
       clearStartTimeout();
       if (delay <= 0) {
-        startAnimation();
+        setHasStarted(true);
         return;
       }
       startTimeoutRef.current = window.setTimeout(() => {
         startTimeoutRef.current = null;
-        startAnimation();
+        setHasStarted(true);
       }, delay * 1000);
     }
     return () => clearStartTimeout();
-  }, [shouldAnimate, hasStarted, delay, text.length]);
+  }, [shouldAnimate, hasStarted, delay]);
 
   useEffect(() => {
-    if (!hasStarted) {
-      return;
-    }
+    if (!hasStarted) return;
 
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-    }
+    setDisplayText(" ".repeat(text.length));
 
-    intervalRef.current = setInterval(() => {
-      if (currentPhase === "phase1") {
-        runPhase1();
+    // One interval per run, advanced via locals instead of per-step state (the
+    // old version tore down and recreated the interval on every step). Speeds
+    // below one frame (~16ms) batch multiple steps per tick, so the pacing is
+    // unchanged but the browser paints each frame once.
+    let phase: 1 | 2 = 1;
+    let step = 0;
+    let done = false;
+    const tickMs = Math.max(16, speed);
+    const stepsPerTick = Math.max(1, Math.round(tickMs / speed));
+
+    const advance = (): string => {
+      if (phase === 1) {
+        const maxSteps = text.length * 2;
+        const currentLength = Math.min(step + 1, text.length);
+        const chars: string[] = [];
+        for (let i = 0; i < currentLength; i++) {
+          chars.push(getRandomChar(i > 0 ? chars[i - 1] : undefined));
+        }
+        for (let i = currentLength; i < text.length; i++) {
+          chars.push("\u00A0");
+        }
+        if (step < maxSteps - 1) {
+          step++;
+        } else {
+          phase = 2;
+          step = 0;
+        }
+        return chars.join("");
+      }
+
+      const revealedCount = Math.floor(step / 2);
+      const chars: string[] = [];
+      for (let i = 0; i < revealedCount && i < text.length; i++) {
+        chars.push(text[i]);
+      }
+      if (revealedCount < text.length) {
+        chars.push(step % 2 === 0 ? "_" : getRandomChar());
+      }
+      for (let i = chars.length; i < text.length; i++) {
+        chars.push(getRandomChar());
+      }
+      if (step < text.length * 2 - 1) {
+        step++;
       } else {
-        runPhase2();
+        done = true;
+        return text;
       }
-    }, speed);
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      return chars.join("");
     };
-  }, [currentPhase, animationStep, text, speed, hasStarted]);
 
-  useEffect(() => {
-    if (hasStarted) {
-      setDisplayText(" ".repeat(text.length));
-      setCurrentPhase("phase1");
-      setAnimationStep(0);
-    }
-
-    return () => {
-      clearStartTimeout();
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+    const interval = window.setInterval(() => {
+      let frame = "";
+      for (let i = 0; i < stepsPerTick && !done; i++) {
+        frame = advance();
       }
-    };
-  }, [text, hasStarted]);
+      setDisplayText(frame);
+      if (done) window.clearInterval(interval);
+    }, tickMs);
+
+    return () => window.clearInterval(interval);
+  }, [text, speed, hasStarted]);
 
   return (
     <span

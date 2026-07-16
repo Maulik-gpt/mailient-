@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense, lazy } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useMotionValue, useMotionTemplate } from "framer-motion";
 import {
   Zap,
@@ -53,10 +53,6 @@ import { EtheralShadow } from "@/components/ui/etheral-shadow";
 import { CircleExpandButton } from "@/components/CircleExpandButton";
 import { landingFaqs } from "@/lib/landing-faqs";
 
-const Dithering = lazy(() => 
-  import("@paper-design/shaders-react").then((mod) => ({ default: mod.Dithering }))
-);
-
 function ActiveCounter({ target = 1420 }: { target?: number }) {
   const [count, setCount] = useState(0);
   const ref = useRef(null);
@@ -92,17 +88,14 @@ function ActiveCounter({ target = 1420 }: { target?: number }) {
 
 // landingFaqs moved to lib/landing-faqs.ts (shared with homepage FAQPage JSON-LD)
 
-export function LinearLanding() {
-  const router = useRouter();
-  const [activeStep, setActiveStep] = useState(0);
-  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+const DESCRIPTIONS = [
+  "Mailient removes email from your to-do list entirely.",
+  "The most expensive email in your inbox is the one you never opened.",
+  "Wake up. Read one briefing. Never dread Gmail again.",
+];
 
-  const DESCRIPTIONS = [
-    "Mailient removes email from your to-do list entirely.",
-    "The most expensive email in your inbox is the one you never opened.",
-    "Wake up. Read one briefing. Never dread Gmail again.",
-  ];
-
+// Isolated so its 5s rotation re-renders this span, not the whole page.
+function RotatingTagline() {
   const [descIndex, setDescIndex] = useState(0);
 
   useEffect(() => {
@@ -112,20 +105,52 @@ export function LinearLanding() {
     return () => clearInterval(timer);
   }, []);
 
-  // Custom video controller state
+  const currentText = DESCRIPTIONS[descIndex];
+  const dynamicSpeed = Math.max(4, Math.floor(750 / (currentText.length * 4)));
+
+  return (
+    <SpecialText speed={dynamicSpeed} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
+      {currentText}
+    </SpecialText>
+  );
+}
+
+// Isolated so timeupdate ticks (~4/s while playing) re-render only the player,
+// not the whole page; also pauses itself whenever it scrolls offscreen.
+function HeroVideoPlayer() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isMuted, setIsMuted] = useState(true);
+  const userPausedRef = useRef(false);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) {
+          if (!video.paused) video.pause();
+        } else if (!userPausedRef.current && video.paused) {
+          video.play().catch(() => {});
+        }
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, []);
 
   const togglePlay = (e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
     if (!videoRef.current) return;
     if (isPlaying) {
+      userPausedRef.current = true;
       videoRef.current.pause();
       setIsPlaying(false);
     } else {
+      userPausedRef.current = false;
       videoRef.current.play().then(() => {
         setIsPlaying(true);
       }).catch(err => console.log("Play failed:", err));
@@ -159,15 +184,110 @@ export function LinearLanding() {
     return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
   };
 
-  const getSubtitles = (time: number) => {
-    if (time >= 0 && time < 5) return "Up until now, email was a job you did by hand.";
-    if (time >= 5 && time < 10) return "Mailient removes email from your to-do list entirely.";
-    if (time >= 10 && time < 15) return "It reads your threads and writes replies in your voice.";
-    if (time >= 15 && time < 20) return "All handled overnight, waiting for your approval.";
-    if (time >= 20 && time < 25) return "Your emails are encrypted in your browser before they leave it.";
-    if (time >= 25 && time < 35) return "Connect Gmail. Two minutes later, it's working.";
-    return "";
-  };
+  return (
+    <div
+      onClick={(e) => togglePlay(e)}
+      className={cn(
+        "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative z-20 overflow-hidden group cursor-pointer transition-shadow duration-500",
+        isPlaying ? "shadow-none" : "shadow-[0_50px_100px_rgba(0,0,0,0.85)]"
+      )}
+    >
+      <video
+        ref={videoRef}
+        src="/founder-demo.mp4"
+        autoPlay
+        loop
+        muted={isMuted}
+        playsInline
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
+        onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
+        className="w-full h-full object-cover relative z-10"
+      />
+
+      {/* Custom Video Controls Overlay */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="absolute inset-x-0 bottom-0 p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:bg-gradient-to-t group-hover:from-black/90 group-hover:via-black/40 group-hover:to-transparent select-none"
+      >
+
+        {/* Buttons Row */}
+        <div className="flex items-center justify-between px-2 pb-3 text-white/90">
+          {/* Left: Play/Pause & Time */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={(e) => togglePlay(e)}
+              className="hover:text-white transition-colors focus:outline-none"
+            >
+              {isPlaying ? (
+                <Pause className="w-4 h-4 fill-white stroke-none" />
+              ) : (
+                <Play className="w-4 h-4 fill-white stroke-none" />
+              )}
+            </button>
+            <span className="text-[11px] font-mono tracking-wider opacity-85">
+              {formatTime(currentTime)} / {formatTime(duration)}
+            </span>
+          </div>
+
+          {/* Right: Mute & Fullscreen */}
+          <div className="flex items-center gap-4">
+            <button
+              onClick={(e) => toggleMute(e)}
+              className="hover:text-white transition-colors focus:outline-none"
+            >
+              {isMuted ? (
+                <VolumeX className="w-4.5 h-4.5" />
+              ) : (
+                <Volume2 className="w-4.5 h-4.5" />
+              )}
+            </button>
+            <button
+              onClick={(e) => toggleFullscreen(e)}
+              className="hover:text-white transition-colors focus:outline-none"
+            >
+              <Maximize className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Custom Progress Bar / Scrubber at the very bottom */}
+        <div
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!videoRef.current || !duration) return;
+            const rect = e.currentTarget.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const percentage = clickX / rect.width;
+            const newTime = percentage * duration;
+            videoRef.current.currentTime = newTime;
+            setCurrentTime(newTime);
+          }}
+          className="w-full h-1 bg-white/20 hover:h-1.5 transition-all duration-200 cursor-pointer relative z-40"
+        >
+          <div
+            className="h-full bg-white relative transition-all duration-100"
+            style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Autoplay "Three Things" cycle. The video steps (1 & 2) advance on the
+// video's onEnded so the FULL clip always plays regardless of load time;
+// these durations are generous FALLBACKS that only fire if a video fails to
+// load/play (so the carousel never freezes). Step 0 (no video) is timer-driven.
+const STEP_DURATIONS = [10000, 20000, 30000]; // ms — [Home Feed (timer), Voice demo (fallback), Scheduling demo (fallback)]
+
+export function LinearLanding() {
+  const router = useRouter();
+  const [activeAccordion, setActiveAccordion] = useState<number | null>(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const threeThingsRef = useRef<HTMLElement>(null);
+  const [threeThingsInView, setThreeThingsInView] = useState(false);
 
   // Mouse position tracker for cursor-reactive lighting on cards
   const mouseX = useMotionValue(0);
@@ -178,25 +298,45 @@ export function LinearLanding() {
     mouseY.set(e.clientY - top);
   };
 
-  // Autoplay "Three Things" cycle. The video steps (1 & 2) advance on the
-  // video's onEnded so the FULL clip always plays regardless of load time;
-  // these durations are generous FALLBACKS that only fire if a video fails to
-  // load/play (so the carousel never freezes). Step 0 (no video) is timer-driven.
-  const STEP_DURATIONS = [10000, 20000, 30000]; // ms — [Home Feed (timer), Voice demo (fallback), Scheduling demo (fallback)]
   useEffect(() => {
+    const el = threeThingsRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setThreeThingsInView(entry.isIntersecting),
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  // The cycle only runs while the section is on screen — offscreen it neither
+  // advances steps nor remounts demo videos.
+  useEffect(() => {
+    if (!threeThingsInView) return;
     const timer = setTimeout(() => {
       setActiveStep((prev) => (prev + 1) % 3);
     }, STEP_DURATIONS[activeStep] ?? 10000);
     return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeStep]);
+  }, [activeStep, threeThingsInView]);
+
+  // The demo videos would otherwise keep decoding (and their onEnded would keep
+  // advancing the carousel) while scrolled far away; pause them offscreen and
+  // resume in place when the section is back.
+  useEffect(() => {
+    const videos = threeThingsRef.current?.querySelectorAll("video");
+    if (!videos) return;
+    videos.forEach((v) => {
+      if (!threeThingsInView) {
+        if (!v.paused) v.pause();
+      } else if (v.paused) {
+        v.play().catch(() => {});
+      }
+    });
+  }, [threeThingsInView, activeStep]);
 
   useEffect(() => {
     document.title = "Mailient — Runs your inbox while you build your company";
   }, []);
-
-  const currentText = DESCRIPTIONS[descIndex];
-  const dynamicSpeed = Math.max(4, Math.floor(750 / (currentText.length * 4)));
 
   return (
     <div className="min-h-screen bg-[#000000] text-white flex flex-col items-center justify-start overflow-x-hidden font-inter strichpunkt-theme relative selection:bg-white selection:text-black">
@@ -272,9 +412,7 @@ export function LinearLanding() {
 
           <BlurFade delay={0.2} duration={0.8} inView>
             <p className="text-lg md:text-[22px] text-[#8a8f98] leading-relaxed max-w-4xl mt-8 font-light min-h-[4rem] flex items-center justify-center">
-              <SpecialText speed={dynamicSpeed} delay={0} className="text-lg md:text-[22px] text-[#8a8f98] font-sans font-light tracking-wide text-center">
-                {currentText}
-              </SpecialText>
+              <RotatingTagline />
             </p>
           </BlurFade>
 
@@ -296,95 +434,7 @@ export function LinearLanding() {
 
           {/* 16:9 Floating Obsidian Demo Video Window */}
           <BlurFade delay={0.4} duration={1.0} inView>
-            <div 
-              onClick={(e) => togglePlay(e)} 
-              className={cn(
-                "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative z-20 overflow-hidden group cursor-pointer transition-shadow duration-500",
-                isPlaying ? "shadow-none" : "shadow-[0_50px_100px_rgba(0,0,0,0.85)]"
-              )}
-            >
-              <video 
-                ref={videoRef}
-                src="/founder-demo.mp4" 
-                autoPlay 
-                loop 
-                muted={isMuted} 
-                playsInline 
-                onPlay={() => setIsPlaying(true)}
-                onPause={() => setIsPlaying(false)}
-                onTimeUpdate={(e) => setCurrentTime(e.currentTarget.currentTime)}
-                onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
-                className="w-full h-full object-cover relative z-10" 
-              />
-
-
-              {/* Custom Video Controls Overlay */}
-              <div 
-                onClick={(e) => e.stopPropagation()}
-                className="absolute inset-x-0 bottom-0 p-4 pb-0 flex flex-col justify-end z-35 transition-all duration-300 opacity-0 group-hover:opacity-100 group-hover:bg-gradient-to-t group-hover:from-black/90 group-hover:via-black/40 group-hover:to-transparent select-none"
-              >
-                
-                {/* Buttons Row */}
-                <div className="flex items-center justify-between px-2 pb-3 text-white/90">
-                  {/* Left: Play/Pause & Time */}
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={(e) => togglePlay(e)}
-                      className="hover:text-white transition-colors focus:outline-none"
-                    >
-                      {isPlaying ? (
-                        <Pause className="w-4 h-4 fill-white stroke-none" />
-                      ) : (
-                        <Play className="w-4 h-4 fill-white stroke-none" />
-                      )}
-                    </button>
-                    <span className="text-[11px] font-mono tracking-wider opacity-85">
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </span>
-                  </div>
-
-                  {/* Right: Mute & Fullscreen */}
-                  <div className="flex items-center gap-4">
-                    <button 
-                      onClick={(e) => toggleMute(e)}
-                      className="hover:text-white transition-colors focus:outline-none"
-                    >
-                      {isMuted ? (
-                        <VolumeX className="w-4.5 h-4.5" />
-                      ) : (
-                        <Volume2 className="w-4.5 h-4.5" />
-                      )}
-                    </button>
-                    <button 
-                      onClick={(e) => toggleFullscreen(e)}
-                      className="hover:text-white transition-colors focus:outline-none"
-                    >
-                      <Maximize className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Custom Progress Bar / Scrubber at the very bottom */}
-                <div 
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    if (!videoRef.current || !duration) return;
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const clickX = e.clientX - rect.left;
-                    const percentage = clickX / rect.width;
-                    const newTime = percentage * duration;
-                    videoRef.current.currentTime = newTime;
-                    setCurrentTime(newTime);
-                  }}
-                  className="w-full h-1 bg-white/20 hover:h-1.5 transition-all duration-200 cursor-pointer relative z-40"
-                >
-                  <div 
-                    className="h-full bg-white relative transition-all duration-100" 
-                    style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
-                  />
-                </div>
-              </div>
-            </div>
+            <HeroVideoPlayer />
           </BlurFade>
 
       </div>
@@ -506,7 +556,7 @@ export function LinearLanding() {
       </section>
 
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
+      <section ref={threeThingsRef} className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
           {/* Left panel: Vertical connected capability selectors */}

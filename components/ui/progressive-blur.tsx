@@ -13,10 +13,12 @@ const ProgressiveBlur = ({
   backgroundColor = "#000000",
   position = "top",
   height = "150px",
-  blurAmount = "4px",
 }: ProgressiveBlurProps) => {
   const isTop = position === "top";
 
+  // No backdrop-filter here: these strips sit fixed over the whole page, and a
+  // fixed backdrop blur forces the browser to re-blur the region on every
+  // scroll frame. The masked gradient fade carries the visual on its own.
   return (
     <div
       className={`pointer-events-none absolute left-0 w-full select-none ${className}`}
@@ -29,8 +31,6 @@ const ProgressiveBlur = ({
         maskImage: isTop
           ? `linear-gradient(to bottom, ${backgroundColor} 50%, transparent)`
           : `linear-gradient(to top, ${backgroundColor} 50%, transparent)`,
-        WebkitBackdropFilter: `blur(${blurAmount})`,
-        backdropFilter: `blur(${blurAmount})`,
         WebkitUserSelect: "none",
         userSelect: "none",
       }}
