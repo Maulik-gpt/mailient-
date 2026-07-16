@@ -2962,10 +2962,10 @@ export default function ChatInterface({
               const label = typeof data.label === 'string' ? data.label : 'items';
               const line =
                 phase === 'start'
-                  ? `Creating ${total} ${label} now.`
+                  ? `Writing ${total} ${label}…`
                   : phase === 'complete'
-                    ? `All ${total} ${label} created. Displaying them now.`
-                    : `Got ${current} of ${total} created. Finishing the remaining ${Math.max(0, total - current)} now.`;
+                    ? `${total} ${label} ready.`
+                    : `${current} of ${total} ${label} done…`;
               setMessages(msgs => msgs.map(m => {
                 if (m.id !== assistantMsgId || m.type !== 'agent') return m;
                 const prev = ((m as AgentMessage).meta?.progressLines || []) as string[];
@@ -6270,7 +6270,7 @@ export default function ChatInterface({
                                       <div className="mt-2 mb-3 flex flex-col gap-1.5 text-[13.5px] leading-relaxed text-zinc-300 dark:text-white/85">
                                         {(msg as AgentMessage).meta!.progressLines!.map((line, i, arr) => {
                                           const isLast = i === arr.length - 1;
-                                          const isComplete = isLast && /^All\s+\d+/.test(line);
+                                          const isComplete = isLast && /\bready\.$/.test(line);
                                           return (
                                             <div
                                               key={i}

@@ -277,6 +277,28 @@ function extractLastToolResults(messages: any[], maxResults = 3): string {
 // concrete alternative the model can act on or relay.
 
 /**
+ * Tools whose batched execution is worth showing the user as a live progress
+ * block. STRICTLY user-meaningful WRITES — things the user asked to have done
+ * to their accounts. Reads (search, recipient-context, voice-profile) are
+ * orchestration internals and must NOT surface progress lines (that's the
+ * "Creating 5 searches now / Got 4 of 5 created" leak). If it's not here, the
+ * batch runs silently and only the step trace reflects it.
+ */
+const BULK_PROGRESS_TOOLS = new Set<string>([
+  'draft_reply',
+  'draft_cold_email',
+  'send_email',
+  'schedule_email_send',
+  'schedule_meeting',
+  'create_notion_page',
+  'notion_create_task',
+  'send_slack_message',
+  'slack_send_dm',
+  'gmail_apply_label',
+  'gmail_archive_thread',
+]);
+
+/**
  * Convert a tool name to a plain-English bulk noun for progress lines
  * ("Creating 17 <label> now"). Defaults to tool-name with underscores
  * replaced by spaces when the tool isn't in the known list.
@@ -1589,16 +1611,23 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               totalToolCalls += batch.length;
 
               // ── PART 8 #1 — bulk progress streaming ──────────────────────────
-              // When the LLM batches ≥3 calls of the same write/draft tool in
-              // one assistant turn, treat it as a bulk operation and stream
-              // incremental progress events the UI can render as a live block.
+              // When the LLM batches ≥3 calls of the same USER-MEANINGFUL WRITE
+              // tool (drafts, sends, pages, meetings) in one assistant turn,
+              // stream incremental progress the UI renders as a live block.
               // Parallel execution stays — progress is just a side-channel
               // counter that increments as each Promise resolves.
+              //
+              // CRITICAL: only WRITE tools qualify. Batched READS (search_gmail,
+              // get_recipient_context, get_voice_profile) are internal plumbing —
+              // streaming "Creating 5 searches now / Got 4 of 5 created" for them
+              // dumps orchestration internals into the chat and reads like the
+              // model leaking its own machinery. Reads show only in the step
+              // trace, never as progress lines.
               const toolCounts = new Map<string, number>();
               for (const tc of batch) toolCounts.set(tc.name, (toolCounts.get(tc.name) || 0) + 1);
               const progressTrackers = new Map<string, { current: number; total: number; nextMilestone: number; label: string }>();
               for (const [name, total] of toolCounts) {
-                if (total >= 3) {
+                if (total >= 3 && BULK_PROGRESS_TOOLS.has(name)) {
                   const label = humanizeBulkLabel(name);
                   emit('progress', { phase: 'start', current: 0, total, label, tool: name, iteration });
                   // Update at quarter-completion checkpoints — for 17 items that's

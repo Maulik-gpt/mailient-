@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'Outreach now writes the actual emails, cleanly',
+        points: [
+          'Outreach could get stuck researching and then hand back a written-out "here\'s my approach for each person" summary instead of real, send-ready emails. Fixed — it now writes the finished emails for everyone, shows them in a tracker, samples a few in chat, and takes your one approval before anything goes out.',
+          'The pitch now comes from what you actually told it, personalized per person, instead of a generic stand-in line.',
+          'Cleaned up a stream of internal progress chatter ("creating 5 searches now, 4 of 5 done…") that was leaking into the conversation. You\'ll only see meaningful progress now, like drafts being written.',
+        ],
+      },
+      {
         tag: 'New',
         title: 'Meet the outreach capability — right from the chat',
         points: [
