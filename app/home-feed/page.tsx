@@ -358,9 +358,12 @@ function HomeFeedContent() {
           PART 69: sliding pill highlight via Framer layoutId so the
           selected-tab background animates between buttons instead of
           snapping. */}
-      <div className="sticky top-0 z-30 backdrop-blur-xl bg-white/80 dark:bg-black/70 border-b border-black/[0.04] dark:border-white/[0.04]">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-12 flex items-center justify-center">
-          <div className="relative inline-flex items-center gap-1 p-1 rounded-full bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.04] dark:border-white/[0.04]">
+      {/* Liquid Glass tab switcher — a floating glass pill over the feed
+          (iOS 26 style: refraction rim + blur, no full-width solid bar).
+          The wrapper stays sticky but is invisible; only the pill floats. */}
+      <div className="sticky top-0 z-30 pointer-events-none">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-center">
+          <div className="pointer-events-auto relative inline-flex items-center gap-1 p-1 rounded-full liquid-glass">
             {([
               { id: 'today' as TabId, Icon: Sparkles, label: 'Today' },
               { id: 'inbox' as TabId, Icon: Inbox,    label: 'Inbox' },

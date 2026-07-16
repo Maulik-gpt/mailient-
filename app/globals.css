@@ -2121,6 +2121,112 @@ textarea,
   .arcus-glass-hover:hover { transform: none; }
 }
 
+/* ── LIQUID GLASS (iOS 26) ─────────────────────────────────────────────────
+   The refraction-rim upgrade of the arcus-glass family. What sells the
+   "liquid" read is the DIRECTIONAL rim: a bright specular arc on the
+   top-left inner edge and a fainter counter-light on the bottom-right —
+   the same inset recipe the FloatingNavbar ships. Plus a diagonal sheen in
+   the background gradient and heavier blur+saturation so content underneath
+   bends through the surface. Radius comes from the markup (rounded-full /
+   rounded-2xl) so one vocabulary covers circles, pills, and cards.
+
+   - .liquid-glass       → panel / bar (tab switchers, digest strip)
+   - .liquid-glass-card  → feed card (more opaque so text stays readable)
+   - .liquid-glass-btn   → interactive: hover lift + brighten, press scale
+   -------------------------------------------------------------------------- */
+.liquid-glass,
+.liquid-glass-card,
+.liquid-glass-btn {
+  position: relative;
+  isolation: isolate;
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.32),
+      rgba(255, 255, 255, 0.06) 38%,
+      rgba(255, 255, 255, 0.02) 60%,
+      rgba(255, 255, 255, 0.2)),
+    rgba(255, 255, 255, 0.42);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.9),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.35),
+    0 1px 2px rgba(0, 0, 0, 0.04),
+    0 10px 30px -12px rgba(0, 0, 0, 0.18);
+  transition:
+    background-color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.dark .liquid-glass,
+.dark .liquid-glass-card,
+.dark .liquid-glass-btn {
+  border-color: rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.09),
+      rgba(255, 255, 255, 0.02) 38%,
+      rgba(255, 255, 255, 0.01) 60%,
+      rgba(255, 255, 255, 0.06)),
+    rgba(46, 46, 46, 0.42);
+  box-shadow:
+    inset 2px 2px 1px rgba(255, 255, 255, 0.14),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.05),
+    0 1px 2px rgba(0, 0, 0, 0.4),
+    0 12px 36px -14px rgba(0, 0, 0, 0.65);
+}
+
+/* Card variant — more body so 13px text never fights the backdrop. */
+.liquid-glass-card {
+  background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.5),
+      rgba(255, 255, 255, 0.16) 40%,
+      rgba(255, 255, 255, 0.08) 62%,
+      rgba(255, 255, 255, 0.34)),
+    rgba(255, 255, 255, 0.66);
+}
+.dark .liquid-glass-card {
+  background:
+    linear-gradient(135deg,
+      rgba(255, 255, 255, 0.07),
+      rgba(255, 255, 255, 0.015) 40%,
+      rgba(255, 255, 255, 0.008) 62%,
+      rgba(255, 255, 255, 0.045)),
+    rgba(30, 30, 32, 0.55);
+}
+
+/* Interactive variant — Apple-smooth lift on hover, gel press on tap. */
+.liquid-glass-btn { cursor: pointer; }
+.liquid-glass-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.75);
+  box-shadow:
+    inset 1.5px 1.5px 1px rgba(255, 255, 255, 0.95),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.45),
+    0 2px 4px rgba(0, 0, 0, 0.05),
+    0 16px 40px -14px rgba(0, 0, 0, 0.24);
+}
+.dark .liquid-glass-btn:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  box-shadow:
+    inset 2px 2px 1px rgba(255, 255, 255, 0.18),
+    inset -1px -1px 1px 1px rgba(255, 255, 255, 0.07),
+    0 2px 4px rgba(0, 0, 0, 0.45),
+    0 18px 44px -16px rgba(0, 0, 0, 0.75);
+}
+.liquid-glass-btn:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-glass,
+  .liquid-glass-card,
+  .liquid-glass-btn { transition: none; }
+  .liquid-glass-btn:hover { transform: none; }
+  .liquid-glass-btn:active { transform: none; }
+}
+
 /* ===== THEME-AWARE UTILITY CLASSES ===== */
 /* Background colors that respond to theme */
 .theme-bg-primary {

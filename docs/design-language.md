@@ -27,11 +27,22 @@ Apple's rule: **glass is for floating controls, not for content.**
   `globals.css`): things that float *over* content — sticky bars, the
   composer, processing-trace cards, result/artifact cards, message pills,
   confirmation cards, modals' chrome.
+- **Liquid Glass** (`.liquid-glass`, `.liquid-glass-card`,
+  `.liquid-glass-btn` in `globals.css`): the iOS-26 refraction-rim upgrade —
+  directional inset specular arc (bright top-left, faint counter-light
+  bottom-right) + diagonal sheen + blur(24px)/saturate(180%). Use for
+  floating controls and feed cards where the surface should read as a lens
+  over the page (home-feed tab switcher, briefing cards, refresh control,
+  FloatingNavbar — which also layers the `#liquid-glass-distortion` SVG
+  turbulence filter). Radius comes from markup so one vocabulary covers
+  circles, pills, and cards.
 - **Calm opaque ground** (`bg-arcus-bg/-elevated/-surface` tokens): content
   areas — document bodies (CanvasPanel body), email text, list interiors,
   settings panes.
-- **Never stack glass on glass.** A pill inside a blurred bar stays a flat
-  tint (see the home-feed Today/Inbox pill — that's correct, don't "fix" it).
+- **Never stack glass on glass.** A control inside a blurred bar stays a
+  flat tint. The home-feed Today/Inbox switcher resolves this the Apple way:
+  the full-width blurred bar was REMOVED and the pill itself is the (only)
+  glass, floating directly over the feed.
 - **Restraint**: Apple *reduced* default transparency in the 2026 revision.
   When in doubt, less blur, lower opacity delta, stronger hairline.
 

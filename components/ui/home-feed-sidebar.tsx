@@ -133,7 +133,7 @@ export function HomeFeedSidebar({
                     from localStorage) paints without animating on load. */}
                 <div
                     style={{ width: isCollapsed ? 72 : 260 }}
-                    className={`fixed left-0 top-0 h-screen bg-[#F4F5F8] dark:bg-black border-r border-[#EBE9E2] dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${isMounted ? 'transition-all duration-300' : ''} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
+                    className={`fixed left-0 top-0 h-screen bg-[#F4F5F8]/70 dark:bg-black/60 backdrop-blur-2xl backdrop-saturate-150 border-r border-[#EBE9E2]/80 dark:border-white/[0.06] flex flex-col z-[100] md:z-50 ${isMounted ? 'transition-all duration-300' : ''} ${isOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'} ${className} ${!isOpen ? 'pointer-events-none md:pointer-events-auto' : 'pointer-events-auto shadow-2xl'}`}
                 >
                     {/* Mobile Close Button */}
                     <AnimatePresence>

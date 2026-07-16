@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'Improved',
+        title: 'The home feed goes liquid glass',
+        points: [
+          'Your daily briefing now wears the new liquid-glass look — cards, the Today/Inbox switcher, and the refresh control are real glass: light bends at their edges and the feed refracts through them as you scroll.',
+          'The tab switcher floats over the feed instead of sitting on a solid bar, and the sidebar is frosted so the page reads as one continuous surface.',
+          'Works in light and dark, and respects reduced-motion settings.',
+        ],
+      },
+      {
         tag: 'New',
         title: 'Edit and re-send your messages — and flip between answers',
         points: [

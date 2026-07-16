@@ -234,7 +234,7 @@ function ItemCardBody({ topLeft, topRight, title, reason, signals, primaryAction
       onKeyDown={onDismiss ? (e: any) => {
         if (e.key === 'e' || e.key === 'E' || e.key === 'Backspace' || e.key === 'Delete') { e.preventDefault(); onDismiss(); }
       } : undefined}
-      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
+      className="group relative liquid-glass-card rounded-2xl px-4 py-3.5 outline-none focus-visible:ring-2 focus-visible:ring-black/15 dark:focus-visible:ring-white/20"
     >
       {onDismiss && (
         <button
@@ -431,7 +431,7 @@ function AgentRunCard({ run }: { run: AgentRunItem }) {
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="bg-white dark:bg-white/[0.02] border border-black/[0.05] dark:border-white/[0.04] rounded-2xl overflow-hidden hover:border-black/[0.12] dark:hover:border-white/[0.12] transition-colors"
+      className="liquid-glass-card rounded-2xl overflow-hidden"
     >
       {/* Collapsed header — always visible, the 10-second glance */}
       <button type="button" onClick={toggle} className="w-full text-left px-4 py-3.5 group">
@@ -789,7 +789,7 @@ function RecommendationCard({ rec, onAct }: { rec: Recommendation; onAct: (promp
       exit={{ opacity: 0, y: -4 }}
       transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
       whileHover={{ y: -1 }}
-      className="group relative bg-white dark:bg-white/[0.02] border border-black/[0.06] dark:border-white/[0.06] rounded-2xl px-4 py-3.5 hover:border-black/[0.14] dark:hover:border-white/[0.14] hover:shadow-[0_2px_18px_rgba(0,0,0,0.04)] dark:hover:shadow-[0_2px_18px_rgba(0,0,0,0.4)] transition-[border-color,box-shadow] duration-200"
+      className="group relative liquid-glass-card rounded-2xl px-4 py-3.5"
     >
       <div className="flex items-start gap-3">
         <div className={cn('mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ring-1 ring-black/[0.03] dark:ring-white/[0.04]', TONE_CHIP[rec.tone])}>
@@ -1056,7 +1056,7 @@ function RecommendationsSection({
 
       {/* Kept-briefing pill — only when we're serving a saved snapshot (offline / stale). */}
       {servingCached && (
-        <div className="mb-7 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl bg-black/[0.03] dark:bg-white/[0.04] border border-black/[0.05] dark:border-white/[0.06]">
+        <div className="mb-7 flex items-center justify-between gap-3 px-4 py-3 rounded-2xl liquid-glass">
           <div className="flex items-center gap-2.5 min-w-0">
             <Clock className="w-4 h-4 text-black/40 dark:text-white/40 flex-shrink-0" strokeWidth={2} />
             <span className="text-[13px] text-black/60 dark:text-white/55 truncate">Your last briefing — kept in case you need it</span>
@@ -1548,7 +1548,7 @@ export default function SiftToday() {
             type="button"
             onClick={() => load({ force: true })}
             disabled={loading || refreshing}
-            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40 flex-shrink-0"
+            className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white liquid-glass-btn disabled:opacity-40 flex-shrink-0"
             title="Refresh"
           >
             {loading || refreshing ? (
