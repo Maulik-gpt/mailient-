@@ -294,47 +294,6 @@ export function LinearLanding() {
             </div>
           </BlurFade>
 
-          {/* THE RECEIPT — the product's actual artifact as proof. Not an
-              illustration of the product: the morning brief IS an email, so we
-              render the email. Illustrative numbers; swap in a real anonymized
-              brief once live users generate one. */}
-          <BlurFade delay={0.35} duration={0.9} inView>
-            <div className="mt-16 w-full max-w-md mx-auto text-left">
-              <div className="bg-[#050505] border border-white/[0.08] rounded-2xl p-6 shadow-[0_30px_80px_rgba(0,0,0,0.6)] relative overflow-hidden">
-                <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(255,255,255,0.02),transparent_60%)] pointer-events-none" />
-
-                {/* Email header */}
-                <div className="flex items-center justify-between border-b border-white/[0.05] pb-3 mb-4 relative z-10">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-6 h-6 rounded-md overflow-hidden bg-black border border-white/10 shrink-0">
-                      <img src="/mailient-logo-v3.png" alt="" className="w-full h-full object-cover" />
-                    </div>
-                    <span className="text-[11px] text-neutral-400 font-mono">From: Mailient</span>
-                  </div>
-                  <span className="text-[11px] text-neutral-500 font-mono">7:00 AM</span>
-                </div>
-
-                <p className="text-[10px] font-mono tracking-[0.2em] text-neutral-500 uppercase mb-4 relative z-10">Morning Brief — Tuesday</p>
-
-                <div className="space-y-2.5 font-mono text-[12.5px] relative z-10">
-                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>213 emails processed</p>
-                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>12 drafts ready, in your voice</p>
-                  <p className="text-neutral-300"><span className="text-emerald-400 mr-2">✓</span>3 meetings booked</p>
-                  <p className="text-amber-300"><span className="mr-2">→</span>1 investor email needs you</p>
-                </div>
-
-                <div className="mt-5 pt-4 border-t border-white/[0.05] flex items-center justify-between relative z-10">
-                  <span className="text-[11px] text-neutral-500 font-mono">Time returned: <span className="text-white font-semibold">2h 14m</span></span>
-                  <span className="text-[11px] text-white font-mono font-semibold">Go build.</span>
-                </div>
-              </div>
-
-              <p className="text-center text-[11px] text-neutral-500 font-light mt-4 font-sans">
-                This is the actual email. Every morning. This is the product.
-              </p>
-            </div>
-          </BlurFade>
-
           {/* 16:9 Floating Obsidian Demo Video Window */}
           <BlurFade delay={0.4} duration={1.0} inView>
             <div 
