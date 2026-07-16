@@ -433,13 +433,26 @@ export async function runAgentTask(
   // tighter per-agent budget. (On Pro: 80 / 50_000.)
   const maxToolCalls = budget.maxToolCalls ?? 26;
   const deadlineMs = budget.deadlineMs ?? 50_000;
+  // Anchor an ABSOLUTE deadline the moment this function is entered — this is
+  // the true "clock start" for the agent's real work, called right after the
+  // cron route's own setup (reaper, agent fetch, plan step) already ran.
+  // buildAgentLoopArgs below does its OWN setup (mission compile — an LLM call
+  // on an agent's first run — plus memory/ledger reads) before runAgentLoop
+  // stamps its internal startedAt. That setup time used to be free: the loop's
+  // deadline was computed from ITS OWN start, so every stage's delay silently
+  // stacked on top of the 60s Vercel cap instead of being subtracted from it —
+  // which is how a run could still blow the limit even though each stage
+  // individually respected the duration it was handed. Recomputing the
+  // duration against this fixed anchor right before the loop starts closes
+  // that gap.
+  const taskDeadlineAt = Date.now() + deadlineMs;
 
   let report: string;
   let toolCalls: number;
   let artifactLinks: AgentRunResult['artifactLinks'] = null;
 
   if (useCommittee) {
-    const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs, agentRunId });
+    const committee = await runAgentAsCommittee(agent, { maxToolCalls, deadlineMs: Math.max(0, taskDeadlineAt - Date.now()), agentRunId });
     report = committee.report;
     toolCalls = committee.toolCalls;
     artifactLinks = committee.artifactLinks ?? null;
@@ -447,7 +460,13 @@ export async function runAgentTask(
     // Legacy single-LLM path — kept verbatim so flipping the kill switch
     // returns exactly the prior behaviour. Will be deleted in a future
     // PART once the committee mode has soak time in prod.
-    const args = await buildAgentLoopArgs(agent, budget);
+    const args = await buildAgentLoopArgs(agent, {
+      ...budget,
+      // Re-shrunk to what's ACTUALLY left after buildAgentLoopArgs's own setup
+      // (mission compile, memory/ledger reads) just ran — not the original
+      // duration replayed from a fresh clock.
+      deadlineMs: Math.max(0, taskDeadlineAt - Date.now()),
+    });
     const stream = runAgentLoop({ ...args, agentRunId });
 
     const reader = stream.getReader();

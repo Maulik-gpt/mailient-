@@ -442,11 +442,20 @@ export async function GET(request: NextRequest) {
       }
 
       try {
+        // Recompute against the REAL clock right before the real work starts.
+        // `sharedBudget` was a snapshot taken before this agent's run record
+        // insert + plan step (up to 8s) ran — reusing that stale number handed
+        // runAgentTask a duration that started counting from ITS OWN start
+        // time, not the cron tick's, so every upstream stage's time was pure
+        // bonus stacked on top of the 60s Vercel cap instead of being
+        // subtracted from it. That's what let a run blow past maxDuration even
+        // though every individual stage thought it was respecting its budget.
+        const remainingBudget = timeLeftMs() - DELIVERY_RESERVE_MS;
         const taskResult = await runAgentTask(agent, {
           // Per-agent override (advanced agents can be given a bigger/smaller
           // tool budget) falls back to the fair per-tick share.
           maxToolCalls: agent.max_tool_calls || perAgentToolCalls,
-          deadlineMs: sharedBudget,
+          deadlineMs: Math.max(0, remainingBudget),
         }, runRecordId || undefined);
         let report = taskResult.report;
         const { toolCalls, artifactLinks: structuredLinks } = taskResult;
