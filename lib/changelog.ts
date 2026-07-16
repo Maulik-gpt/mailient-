@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'New',
+        title: 'Meet the outreach capability — right from the chat',
+        points: [
+          'A "New" pill now sits on the Arcus home screen introducing cold outreach. Tap it for a quick walkthrough of what Arcus does, what happens step by step, and a one-tap "Start outreach" that drops a ready request into the chat for you to send.',
+          'There\'s no new tab or setup to hunt for. Outreach lives inside the same chat and agents you already use — the pill just shows you how to reach it.',
+          'Seen it already? Dismiss the pill and it won\'t come back.',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: 'Drafting replies to several emails no longer times out',
         points: [
