@@ -30,6 +30,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Fixed',
+        title: 'The home-screen Refresh button now shows it\'s working',
+        points: [
+          'Tapping "Refresh" on your daily briefing kicks off a fresh read of your inbox and calendar — but it used to give no sign it had started, so it looked like nothing happened. Now the button spins and reads "Refreshing…" the moment you tap it, then settles back to "just now" when the new briefing lands.',
+          'Your current briefing stays on screen the whole time — the refresh happens quietly in the background instead of blanking the page.',
+        ],
+      },
+      {
+        tag: 'Fixed',
         title: 'Outreach now writes the actual emails, cleanly',
         points: [
           'Outreach could get stuck researching and then hand back a written-out "here\'s my approach for each person" summary instead of real, send-ready emails. Fixed — it now writes the finished emails for everyone, shows them in a tracker, samples a few in chat, and takes your one approval before anything goes out.',

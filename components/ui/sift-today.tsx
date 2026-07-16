@@ -1152,6 +1152,12 @@ export default function SiftToday() {
   const { data: session } = useSession();
   const [data, setData] = useState<TodayPayload | null>(() => (typeof window !== 'undefined' ? loadPersistedToday() : null));
   const [loading, setLoading] = useState(() => !(typeof window !== 'undefined' && loadPersistedToday()));
+  // A manual "Refresh" triggers a COLD recompute (re-runs the AI triage) that can
+  // take ~30–60s. That path keeps the existing data on screen, so `loading` (which
+  // only fires when there's no cache) never turns on and the click looked dead.
+  // This flag drives the button's own spinner/disabled state so the click always
+  // gives instant feedback, independent of whether a snapshot is already cached.
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // True when we're showing cached data because a refresh couldn't reach the server
   // (offline / token expired) — surfaced as a quiet "cached · updated Xm ago" note.
@@ -1386,9 +1392,13 @@ export default function SiftToday() {
 
   const load = useCallback(async (opts?: { background?: boolean; force?: boolean }) => {
     const bg = !!opts?.background;
+    // A forced, foreground refresh is a user-initiated cold recompute — show the
+    // button's spinner even when a cache exists, so the click never looks dead.
+    const manualRefresh = !bg && !!opts?.force;
     // Only show the skeleton when there's nothing to show yet — never blank out data
     // we already have (stale-while-revalidate).
     if (!bg && !TODAY_CACHE) setLoading(true);
+    if (manualRefresh) setRefreshing(true);
     if (!bg) setError(null);
     try {
       // A manual refresh must bypass the server's 5-min snapshot cache and recompute
@@ -1411,6 +1421,7 @@ export default function SiftToday() {
       else if (!bg) setError(e?.message || 'Network error.');
     } finally {
       if (!bg) setLoading(false);
+      if (manualRefresh) setRefreshing(false);
     }
   }, []);
 
@@ -1536,16 +1547,16 @@ export default function SiftToday() {
           <button
             type="button"
             onClick={() => load({ force: true })}
-            disabled={loading}
+            disabled={loading || refreshing}
             className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[12px] font-medium text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white hover:bg-black/[0.04] dark:hover:bg-white/[0.04] transition-colors disabled:opacity-40 flex-shrink-0"
             title="Refresh"
           >
-            {loading ? (
+            {loading || refreshing ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
             ) : (
               <RefreshCw className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-500" />
             )}
-            <span className="hidden sm:inline">{servingCached && lastUpdated ? `cached · ${lastUpdated} ago` : lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
+            <span className="hidden sm:inline">{refreshing ? 'Refreshing…' : servingCached && lastUpdated ? `cached · ${lastUpdated} ago` : lastUpdated ? `${lastUpdated} ago` : 'Refresh'}</span>
           </button>
         </div>
 
