@@ -530,8 +530,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // to recall them from the bottom of a long system prompt. Tone/length
   // override the prompt's voice defaults; binding rules override everything.
   const activeRulesHint = (() => {
-    // Fixed voice — warm + detailed, not user-switchable.
-    const parts: string[] = ['tone:warm', 'length:detailed'];
+    // Fixed voice — personal-employee texting: short by default, casual,
+    // outcome-first; expand only when the substance earns it.
+    const parts: string[] = ['tone:casual-texting (lowercase ok, mirror the user, ~no emojis)', 'length:short-by-default (bold key facts; go long only when substance earns it)'];
     if (userInstructions && userInstructions.trim()) {
       const compact = userInstructions.replace(/\s+/g, ' ').trim().slice(0, 200);
       parts.push(`rules:${compact}${userInstructions.length > 200 ? '…' : ''}`);
@@ -690,6 +691,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     async start(controller) {
       let sentUserFacing = false;
       let anyToolRan = false;
+      // The "on it" opener: the model's first pre-tool text is emitted ONCE as
+      // an `ack` event — the client renders it as a permanent chat line above
+      // the execution steps (it never gets replaced by the final report).
+      let ackEmitted = false;
       let sentTextMessage = false;   // a real prose message (not just a canvas/card) reached the user
       let draftCanvasCount = 0;      // # of email_draft canvases emitted — drives the draft-aware close message
       const emit = (type: string, data: unknown) => {
@@ -736,7 +741,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           } else if (!sentUserFacing && anyToolRan) {
             try {
               controller.enqueue(encode(sseEvent('message', {
-                content: "I worked through that, but couldn't pull it into a clean summary this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll lay out exactly what I found.",
+                content: "did the work, but couldn't pull it into a clean summary this time. if i was drafting, it's saved in your gmail drafts. ask again and i'll lay out exactly what i found.",
               })));
             } catch { /* closed */ }
             sentUserFacing = true;
@@ -763,8 +768,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             // not a task, so it should render with zero processing UI.
             emit('conversational', {});
             const convSystem =
-              `You are Arcus — the user's AI chief of staff. You run their inbox across Gmail, Calendar, Notion and Slack so email stops being their job. ` +
-              `Right now this is casual conversation, NOT a task. Talk like a brilliant, warm colleague texting back — real energy, genuinely glad to be working with them, and keep it moving. Keep it to 1-3 sentences. ` +
+              `You are Arcus — the user's personal dude who runs their inbox across Gmail, Calendar, Notion and Slack so email stops being their job. ` +
+              `Right now this is casual conversation, NOT a task. Text back like a sharp friend — lowercase-casual is fine, mirror their energy, keep it to 1-2 short sentences, almost no emojis. ` +
               `Never call tools. Never describe "processing" or steps. Never open with "I'd be happy to" / "Certainly" / "How can I assist you today". Just be a person.\n\n` +
               intentSystemHint(detectedIntent);
             const convo = await callLLM(
@@ -840,7 +845,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 const preambleRaw = sanitizeModelText(getRawText(clarifyRes.content) || '').trim();
                 const preamble = preambleRaw && preambleRaw.length >= 10 && preambleRaw.length <= 400
                   ? preambleRaw
-                  : 'Before I draft this plan, I need to nail down a couple of things:';
+                  : 'before i draft this plan, quick — a couple things to nail down:';
                 emit('message', { content: preamble });
                 emit('question', { questions, runId });
                 closeStream(0);
@@ -1516,7 +1521,26 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             // see (no isIntentText gate here; that only matters when NO tool ran).
             const reflection = (textContent?.trim() || thinkingText?.trim() || '');
             if (reflection.length >= 12 && !isStepListingResponse(reflection, true)) {
-              emit('narrative', { text: reflection.slice(0, 6000), iteration });
+              if (!ackEmitted && !isBackgroundAgent) {
+                // First pre-tool text of the run = the "on it" ack. Rendered as
+                // a permanent chat line above the executor box, so it goes out
+                // as its own event, not as a boxed narrative.
+                ackEmitted = true;
+                emit('ack', { text: reflection.slice(0, 800) });
+              } else {
+                emit('narrative', { text: reflection.slice(0, 6000), iteration });
+              }
+            }
+            // Fallback: some models go straight to tools with zero text. The
+            // first call's model-written narration is still its own first-person
+            // line ("scanning your inbox for unanswered threads") — use it so
+            // the run never starts silent.
+            if (!ackEmitted && !isBackgroundAgent) {
+              const firstNarration = (toolCalls[0] as any)?.narration;
+              if (typeof firstNarration === 'string' && firstNarration.trim().length >= 8) {
+                ackEmitted = true;
+                emit('ack', { text: firstNarration.trim() });
+              }
             }
 
             const toolResults: Array<{ type: 'tool_result'; tool_use_id: string; content: string }> = [];

@@ -710,6 +710,10 @@ interface AgentMessage {
     actionHistory?: any[];
     taskList?: TaskList;
     planText?: string;
+    /** The "on it…" opener — the model's first pre-tool line. Renders as a
+     *  permanent chat line ABOVE the executor box; never replaced by the
+     *  final report. */
+    ackText?: string;
     agentSteps?: AgentStep[];
     agentNarratives?: AgentNarrative[];
     agentRunId?: string;
@@ -3653,6 +3657,20 @@ export default function ChatInterface({
               break;
             }
 
+            case 'ack': {
+              // The "on it…" opener — the model's first pre-tool line. Lands as
+              // a PERMANENT chat line above the executor box (the transcript
+              // reads: ack → steps → final report, like a person texting
+              // "on it" and then delivering). Never cleared by done/message.
+              if (data.text?.trim()) {
+                setMessages(msgs => msgs.map(m => {
+                  if (m.id !== assistantMsgId || m.type !== 'agent') return m;
+                  return { ...m, meta: { ...(m.meta || {}), ackText: data.text.trim() } };
+                }));
+              }
+              break;
+            }
+
             case 'narrative': {
               // Intermediate narrative text emitted between tool call groups
               if (data.text?.trim()) {
@@ -4024,7 +4042,7 @@ export default function ChatInterface({
                 finalProcessedText = questionBubbleText;
               } else if (!finalProcessedText) {
                 finalProcessedText = ranTools
-                  ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
+                  ? "did the work, but the summary didn't make it back this time. if i was drafting, it's saved in your gmail drafts. ask again and i'll lay out what i found."
                   : '';
               }
 
@@ -4096,9 +4114,9 @@ export default function ChatInterface({
           : hadPlanEvent
             ? ''
             : finalContent.trim() || (streamedDraftCount > 0
-                ? `I drafted ${streamedDraftCount} repl${streamedDraftCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`
+                ? `drafted ${streamedDraftCount} repl${streamedDraftCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`
                 : currentAgentSteps.length > 0
-                  ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
+                  ? "the connection dropped before my summary came back — the work itself ran. if i was drafting, it's in your gmail drafts. ask again and i'll lay out what i found."
                   : '');
 
         setMessages(msgs => msgs.map(m => {
@@ -5996,7 +6014,16 @@ export default function ChatInterface({
                                       </div>
                                     )}
 
-                                    {/* Executor box FIRST — the collapsible steps card leads the reply */}
+                                    {/* The "on it…" ack — the model's opener, a PERMANENT chat line
+                                        above the executor box. The turn reads: ack → steps → report. */}
+                                    {msg.role === 'assistant' && (msg as AgentMessage).meta?.ackText && (
+                                      <MessageContent
+                                        content={(msg as AgentMessage).meta!.ackText!}
+                                        isUser={false}
+                                      />
+                                    )}
+
+                                    {/* Executor box — the collapsible steps card, under the ack */}
                                     {msg.role === 'assistant' && (msg as AgentMessage).meta?.agentSteps && !(msg as AgentMessage).meta?.limitReached && ((msg as AgentMessage).meta!.agentSteps!).length > 0 && (
                                        <CollapsibleSteps
                                          steps={(msg as AgentMessage).meta!.agentSteps!}
