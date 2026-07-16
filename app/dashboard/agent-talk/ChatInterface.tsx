@@ -1,6 +1,6 @@
 "use client";
 
-import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot, Globe, MessageSquare, Shield } from 'lucide-react';
+import { Send, Mail, Upload, User, User2, MessageCircle, DoorOpen, Bell, Mail as EmailIcon, MoreHorizontal, LogOut, Settings, ChevronRight, ChevronLeft, ChevronDown, CheckCircle2, Circle, Edit, History, LayoutGrid, Zap, Volume2, Sparkles, FileText, Calendar, BarChart3, PenTool, BrainCircuit, Search, Check, X, PanelLeft, Menu, Compass, Terminal, Share2, Bot, Globe, MessageSquare, Shield } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { signOut } from 'next-auth/react';
@@ -905,6 +905,23 @@ interface AgentMessage {
   };
 }
 
+interface UserMessageAttachment {
+  name: string;
+  url: string;
+  type: string;
+  size: number;
+}
+
+// One edited branch of a user turn: the prompt the user sent AND the assistant
+// reply it produced. Editing + resending appends a version; the arrows on the
+// user pill page between them, swapping BOTH the prompt and its answer.
+interface UserMessageVersion {
+  content: string;
+  attachments?: UserMessageAttachment[];
+  /** The assistant reply this prompt produced. Serializable AgentMessage. */
+  reply?: AgentMessage | null;
+}
+
 interface UserMessage {
   id: number;
   type: 'user';
@@ -912,12 +929,11 @@ interface UserMessage {
   notes?: any[];
   content: string;
   time: string;
-  attachments?: {
-    name: string;
-    url: string;
-    type: string;
-    size: number;
-  }[];
+  attachments?: UserMessageAttachment[];
+  /** Edit history. Index 0 is the original. Absent = never edited. */
+  versions?: UserMessageVersion[];
+  /** Which version is currently shown (index into versions). */
+  activeVersion?: number;
 }
 
 type Message = AgentMessage | UserMessage;
@@ -1765,34 +1781,157 @@ function ProceedConfirmButtons({ onProceed, onDismiss }: { onProceed: () => void
 }
 
 // --- Premium Components for Action Buttons ---
-const UserMessageCopyButton = ({ msg }: { msg: Message }) => {
+// A long user prompt collapses past this many characters (roughly the 6-7
+// lines the pill shows before it feels like a wall). Below it, no toggle.
+const USER_MSG_COLLAPSE_CHARS = 320;
+
+/**
+ * UserMessageBlock — the user's turn as a bubble with:
+ *   • Show more / Show less for long prompts (collapsed by default)
+ *   • an action row UNDER the bubble: version arrows (‹ 2/2 ›) · Copy · Edit
+ * Edit resends the prompt as a new version; the arrows page between versions,
+ * swapping both the prompt shown and the assistant reply below it.
+ */
+const UserMessageBlock = ({
+  msg,
+  isLoading,
+  isLatestUser,
+  onEdit,
+  onSelectVersion,
+}: {
+  msg: UserMessage;
+  isLoading: boolean;
+  isLatestUser: boolean;
+  onEdit: (msg: UserMessage) => void;
+  onSelectVersion: (msgId: number, versionIndex: number) => void;
+}) => {
   const [isCopied, setIsCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
+
+  const text = typeof msg.content === 'string' ? msg.content : '';
+  const isLong = text.length > USER_MSG_COLLAPSE_CHARS;
+
+  const versionCount = msg.versions?.length ?? 1;
+  const activeVersion = msg.activeVersion ?? (versionCount - 1);
+  const hasVersions = versionCount > 1;
+
   const handleCopy = () => {
-    const text = typeof msg.content === 'string' ? msg.content : msg.content.text;
     navigator.clipboard.writeText(text);
     setIsCopied(true);
-    toast.success("Message copied to clipboard");
+    toast.success('Message copied to clipboard');
     setTimeout(() => setIsCopied(false), 2000);
   };
 
   return (
-    <button
-      onClick={handleCopy}
-      className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-arcus-elevated border border-black/5 dark:border-arcus-border text-black/40 dark:text-arcus-fg-tertiary hover:text-black dark:hover:text-arcus-fg hover:bg-black/5 dark:hover:bg-arcus-surface opacity-0 group-hover/msg:opacity-100 transition-all shadow-sm dark:shadow-lg backdrop-blur-md"
-      title="Copy message"
-    >
-      <AnimatePresence mode="wait">
-        {isCopied ? (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="check">
-            <Check className="w-3.5 h-3.5 text-green-400" />
-          </motion.div>
-        ) : (
-          <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} key="copy">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-          </motion.div>
+    <div className="flex flex-col items-end w-full">
+      <div className="relative overflow-hidden arcus-glass-pill px-5 py-3 rounded-[22px] text-black dark:text-white max-w-full">
+        {isLoading && isLatestUser && (
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
+            animate={{ x: ['-100%', '100%'] }}
+            transition={{ repeat: Infinity, duration: 2, ease: 'linear' }}
+          />
         )}
-      </AnimatePresence>
-    </button>
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.06] via-transparent to-transparent pointer-events-none"
+          animate={{ opacity: [0.3, 0.6, 0.3] }}
+          transition={{ repeat: Infinity, duration: 4, ease: 'easeInOut' }}
+        />
+
+        {/* Prompt text — collapsed to ~6 lines when long and not expanded */}
+        <div
+          className={cn(
+            'relative z-[1] whitespace-pre-wrap break-words leading-relaxed text-[15px]',
+            isLong && !expanded && 'line-clamp-6',
+          )}
+        >
+          {text}
+        </div>
+
+        {isLong && (
+          <button
+            onClick={() => setExpanded(v => !v)}
+            className="relative z-[1] mt-1.5 flex items-center gap-1 text-[13px] font-semibold text-black/55 dark:text-white/55 hover:text-black dark:hover:text-white transition-colors"
+          >
+            {expanded ? 'Show less' : 'Show more'}
+            <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
+          </button>
+        )}
+
+        {/* Attachments */}
+        {msg.attachments && msg.attachments.length > 0 && (
+          <div className="relative z-[1] mt-3 flex flex-wrap gap-2 pt-3 border-t border-black/10 dark:border-white/10">
+            {msg.attachments.map((file, idx) => (
+              <div key={idx} className="flex items-center gap-2 p-2 bg-black/5 dark:bg-white/5 rounded-lg border border-black/10 dark:border-white/10 max-w-[200px]">
+                {file.type.startsWith('image/') ? (
+                  <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
+                    <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
+                  </div>
+                ) : (
+                  <div className="w-8 h-8 rounded-md bg-black/5 dark:bg-white/10 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-4 h-4 text-black/40 dark:text-white/40" />
+                  </div>
+                )}
+                <div className="flex flex-col overflow-hidden">
+                  <span className="text-[11px] text-black dark:text-white font-medium truncate">{file.name}</span>
+                  <span className="text-[9px] text-black/40 dark:text-white/40">{(file.size / 1024).toFixed(0)} KB</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Action row UNDER the bubble. Subtle by default (readable on touch,
+          where there's no hover), brightening on hover. */}
+      <div className="flex items-center gap-1 mt-1.5 pr-1 opacity-60 group-hover/msg:opacity-100 focus-within:opacity-100 transition-opacity">
+        {/* Version arrows — only once there's an edit history */}
+        {hasVersions && (
+          <div className="flex items-center gap-0.5 mr-1 text-black/50 dark:text-white/50">
+            <button
+              onClick={() => onSelectVersion(msg.id, activeVersion - 1)}
+              disabled={activeVersion <= 0}
+              className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Previous version"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <span className="text-[12px] font-medium tabular-nums select-none">
+              {activeVersion + 1}/{versionCount}
+            </span>
+            <button
+              onClick={() => onSelectVersion(msg.id, activeVersion + 1)}
+              disabled={activeVersion >= versionCount - 1}
+              className="w-6 h-6 flex items-center justify-center rounded-md hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              title="Next version"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        <button
+          onClick={handleCopy}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 transition-colors"
+          title="Copy"
+        >
+          {isCopied ? (
+            <Check className="w-3.5 h-3.5 text-green-500 dark:text-green-400" />
+          ) : (
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+          )}
+        </button>
+
+        <button
+          onClick={() => onEdit(msg)}
+          disabled={isLoading}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-black/45 dark:text-white/45 hover:text-black dark:hover:text-white hover:bg-black/5 dark:hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          title="Edit"
+        >
+          <Edit className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
   );
 };
 
@@ -2022,6 +2161,9 @@ export default function ChatInterface({
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [newMessageIds, setNewMessageIds] = useState<Set<number>>(new Set());
   const [regenerateModal, setRegenerateModal] = useState<{ isOpen: boolean, msgId: number | null }>({ isOpen: false, msgId: null });
+  // Edit-a-prompt modal. Editing resends and appends a new version to that
+  // user turn; the arrows on the pill page between versions.
+  const [editModal, setEditModal] = useState<{ isOpen: boolean; msgId: number | null; text: string }>({ isOpen: false, msgId: null, text: '' });
   const [isInitialMode, setIsInitialMode] = useState<boolean>(!initialConversationId);
   const [showHistory, setShowHistory] = useState<boolean>(false);
   const [historyRefreshKey, setHistoryRefreshKey] = useState<number>(0);
@@ -2445,6 +2587,158 @@ export default function ChatInterface({
     processAIMessage(messageText, currentConversationId as string, false, attachments);
   };
 
+  // ── Edit a prompt + resend, with per-turn version history ───────────────────
+  // Persist the current messages array to localStorage — shared by the edit and
+  // version-switch flows so the branch state survives reload.
+  const persistMessages = (msgs: Message[]) => {
+    if (!currentConversationId) return;
+    try {
+      const raw = localStorage.getItem(`conversation_${currentConversationId}`);
+      const data = raw ? JSON.parse(raw) : { id: currentConversationId, messages: [], title: chatTitle || '' };
+      data.messages = msgs;
+      data.lastUpdated = new Date().toISOString();
+      localStorage.setItem(`conversation_${currentConversationId}`, JSON.stringify(data));
+    } catch (e) {
+      console.error('Error persisting messages:', e);
+    }
+  };
+
+  const handleEditClick = (msg: UserMessage) => {
+    setEditModal({ isOpen: true, msgId: msg.id, text: msg.content });
+  };
+
+  const handleEditSubmit = () => {
+    const { msgId, text } = editModal;
+    if (msgId === null) return;
+    if (isLoading || isAgentLoopActive) { toast.error('Wait for the current reply to finish.'); return; }
+    const edited = text.trim();
+    if (!edited) { toast.error("Message can't be empty."); return; }
+
+    const userIndex = messages.findIndex(m => m.id === msgId);
+    if (userIndex === -1 || messages[userIndex].role !== 'user') {
+      setEditModal({ isOpen: false, msgId: null, text: '' });
+      return;
+    }
+    const userMsg = messages[userIndex] as UserMessage;
+    if (edited === userMsg.content) { setEditModal({ isOpen: false, msgId: null, text: '' }); return; }
+
+    // The assistant reply that immediately follows this user turn (if any).
+    const replyMsg = (messages[userIndex + 1] && messages[userIndex + 1].role === 'assistant')
+      ? (messages[userIndex + 1] as AgentMessage)
+      : null;
+
+    // Seed the version history from the original turn on first edit. Build it
+    // immutably — never mutate the version objects held in React state.
+    const baseVersions: UserMessageVersion[] = userMsg.versions
+      ? userMsg.versions
+      : [{ content: userMsg.content, attachments: userMsg.attachments, reply: replyMsg }];
+    // Keep the current active version's reply fresh before branching away.
+    const curActive = userMsg.activeVersion ?? (baseVersions.length - 1);
+    const existingVersions: UserMessageVersion[] = baseVersions.map((v, i) =>
+      i === curActive ? { ...v, reply: replyMsg } : v,
+    );
+
+    existingVersions.push({ content: edited, attachments: userMsg.attachments, reply: null });
+    const newActive = existingVersions.length - 1;
+
+    const updatedUserMsg: UserMessage = {
+      ...userMsg,
+      content: edited,
+      versions: existingVersions,
+      activeVersion: newActive,
+    };
+
+    // Drop this turn's old assistant reply; the resend appends a fresh one.
+    const truncated = messages.slice(0, userIndex);
+    const withEditedUser = [...truncated, updatedUserMsg];
+    setMessages(withEditedUser);
+    persistMessages(withEditedUser);
+
+    setEditModal({ isOpen: false, msgId: null, text: '' });
+    // Resend — the completing reply lands as the newest assistant message and
+    // is captured into this version the next time we switch or persist.
+    // truncateFromId drops this turn's stale pre-edit prompt/reply from history.
+    processAIMessage(edited, currentConversationId as string, false, userMsg.attachments, { truncateFromId: msgId });
+  };
+
+  const handleSelectVersion = (msgId: number, versionIndex: number) => {
+    setMessages(prev => {
+      const userIndex = prev.findIndex(m => m.id === msgId);
+      if (userIndex === -1 || prev[userIndex].role !== 'user') return prev;
+      const userMsg = prev[userIndex] as UserMessage;
+      const versions = userMsg.versions;
+      if (!versions || versionIndex < 0 || versionIndex >= versions.length) return prev;
+
+      const curActive = userMsg.activeVersion ?? (versions.length - 1);
+      if (versionIndex === curActive) return prev;
+
+      // The assistant reply currently shown for this turn (live state — may be
+      // fresher than the stored snapshot, e.g. just-streamed).
+      const liveReply = (prev[userIndex + 1] && prev[userIndex + 1].role === 'assistant')
+        ? (prev[userIndex + 1] as AgentMessage)
+        : null;
+
+      const nextVersions = versions.map((v, i) =>
+        i === curActive ? { ...v, reply: liveReply } : v,
+      );
+      const target = nextVersions[versionIndex];
+
+      const updatedUserMsg: UserMessage = {
+        ...userMsg,
+        content: target.content,
+        attachments: target.attachments,
+        versions: nextVersions,
+        activeVersion: versionIndex,
+      };
+
+      // Rebuild: everything before the user turn, the swapped user message,
+      // the target version's reply (if any), then everything AFTER this turn's
+      // old reply (later turns are preserved).
+      const before = prev.slice(0, userIndex);
+      const hadReply = liveReply ? 1 : 0;
+      const after = prev.slice(userIndex + 1 + hadReply);
+      const rebuilt: Message[] = [
+        ...before,
+        updatedUserMsg,
+        ...(target.reply ? [target.reply] : []),
+        ...after,
+      ];
+      persistMessages(rebuilt);
+      return rebuilt;
+    });
+  };
+
+  // After an edit-resend finishes, capture the fresh assistant reply into the
+  // active version so it survives reload and can be paged back to. Runs only
+  // when idle (a completed reply) to avoid snapshotting a half-streamed one.
+  useEffect(() => {
+    if (isLoading || isAgentLoopActive) return;
+    let changed = false;
+    const next = messages.map((m, i) => {
+      if (m.role !== 'user') return m;
+      const u = m as UserMessage;
+      if (!u.versions || u.versions.length < 2) return m;
+      const active = u.activeVersion ?? (u.versions.length - 1);
+      const reply = (messages[i + 1] && messages[i + 1].role === 'assistant')
+        ? (messages[i + 1] as AgentMessage)
+        : null;
+      const stored = u.versions[active]?.reply ?? null;
+      // Only write when the live reply is a real, finished message that differs
+      // from what's stored (by id) — avoids an update loop.
+      if (reply && !(reply as AgentMessage).meta?.isStreaming && stored?.id !== reply.id) {
+        const versions = u.versions.map((v, vi) => vi === active ? { ...v, reply } : v);
+        changed = true;
+        return { ...u, versions };
+      }
+      return m;
+    });
+    if (changed) {
+      setMessages(next);
+      persistMessages(next);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, isAgentLoopActive, messages]);
+
   const refreshArcusCredits = useCallback(async (showToast = false) => {
     try {
       const res = await fetch('/api/subscription/usage', {
@@ -2814,7 +3108,15 @@ export default function ChatInterface({
     // G4 — Wider context: keep the last 40 turns instead of 20 so long
     // threads, multi-step approvals, and earlier instructions stay in scope.
     // 40 × ~200 tokens = ~8k of conversation history — well within budget.
-    const history = messages
+    // On an edit-resend, the closure `messages` is stale (still holds the old
+    // prompt + its old reply for this turn). truncateFromId drops that turn and
+    // everything after it so the model doesn't see the pre-edit version as
+    // history — the edited prompt is passed separately as messageText.
+    const truncIdx = options.truncateFromId != null
+      ? messages.findIndex(m => m.id === options.truncateFromId)
+      : -1;
+    const historySource = truncIdx >= 0 ? messages.slice(0, truncIdx) : messages;
+    const history = historySource
       .filter(m => m.id !== assistantMsgId && (m.role === 'user' || m.role === 'assistant'))
       .slice(-40)
       .map(m => ({
@@ -5676,22 +5978,16 @@ export default function ChatInterface({
                                   </div>
                                 )}
                                 <div className="flex flex-col max-w-[95%] group/msg">
-                                  <div className={`transition-all relative overflow-hidden ${msg.role === 'user' ? 'arcus-glass-pill px-5 py-3 rounded-[22px] text-black dark:text-white' : 'text-black dark:text-white px-0 py-1'}`}>
-                                    {msg.role === 'user' && isLoading && msg.id === messages.filter(m => m.role === 'user').pop()?.id && (
-                                      <motion.div 
-                                        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent w-[200%] pointer-events-none"
-                                        animate={{ x: ['-100%', '100%'] }}
-                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                                      />
-                                    )}
-                                    {msg.role === 'user' && (
-                                      <motion.div 
-                                        className="absolute inset-0 bg-gradient-to-br from-blue-500/[0.06] via-transparent to-transparent pointer-events-none"
-                                        animate={{ opacity: [0.3, 0.6, 0.3] }}
-                                        transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
-                                      />
-                                    )}
-                                    {msg.role === 'user' && <UserMessageCopyButton msg={msg} />}
+                                  {msg.role === 'user' && (
+                                    <UserMessageBlock
+                                      msg={msg as UserMessage}
+                                      isLoading={isLoading}
+                                      isLatestUser={msg.id === messages.filter(m => m.role === 'user').pop()?.id}
+                                      onEdit={handleEditClick}
+                                      onSelectVersion={handleSelectVersion}
+                                    />
+                                  )}
+                                  <div className={`transition-all relative overflow-hidden text-black dark:text-white px-0 py-1 ${msg.role === 'user' ? 'hidden' : ''}`}>
                                     {msg.role === 'assistant' && msg.meta?.limitReached && (
                                       <div className="flex items-center gap-2 mb-3 opacity-60">
                                         <ArcusLogo size={16} />
@@ -5727,7 +6023,9 @@ export default function ChatInterface({
                                        </p>
                                      )}
 
-                                     {!((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && !(
+                                     {/* User prompts render in UserMessageBlock above — only assistant
+                                         content flows through MessageContent here. */}
+                                     {msg.role === 'assistant' && !((msg as AgentMessage).meta?.hasError) && ((msg as AgentMessage).meta?.isStreaming !== true || (typeof msg.content === 'string' ? msg.content : msg.content.text).length > 0 || isAgentLoopActive) && !(
                                        // Suppress skeleton bars while the thinking card is showing with no real content yet
                                        (msg as AgentMessage).meta?.liveThinking &&
                                        !(msg as AgentMessage).meta?.thinkingComplete &&
@@ -5735,10 +6033,10 @@ export default function ChatInterface({
                                      ) && (
                                        <MessageContent
                                          content={msg.content}
-                                         isUser={msg.role === 'user'}
-                                         isTyping={isLoading && msg.role === 'assistant' && msg.id === messages[messages.length - 1].id}
-                                         isNewResponse={msg.role === 'assistant' && msg.id === messages[messages.length - 1].id && !isLoading}
-                                         hideLinks={msg.role === 'assistant' && (msg as AgentMessage).meta?.limitReached}
+                                         isUser={false}
+                                         isTyping={isLoading && msg.id === messages[messages.length - 1].id}
+                                         isNewResponse={msg.id === messages[messages.length - 1].id && !isLoading}
+                                         hideLinks={(msg as AgentMessage).meta?.limitReached}
                                        />
                                      )}
 
@@ -5772,27 +6070,7 @@ export default function ChatInterface({
                                        />
                                      )}
 
-                                    {msg.role === 'user' && (msg as UserMessage).attachments && (msg as UserMessage).attachments!.length > 0 && (
-                                      <div className="mt-3 flex flex-wrap gap-2 pt-3 border-t border-arcus-border">
-                                        {(msg as UserMessage).attachments!.map((file, idx) => (
-                                          <div key={idx} className="flex items-center gap-2 p-2 bg-arcus-elevated rounded-lg border border-arcus-border max-w-[200px]">
-                                            {file.type.startsWith('image/') ? (
-                                              <div className="w-8 h-8 rounded-md overflow-hidden flex-shrink-0">
-                                                <img src={file.url} alt={file.name} className="w-full h-full object-cover" />
-                                              </div>
-                                            ) : (
-                                              <div className="w-8 h-8 rounded-md bg-black/5 flex items-center justify-center flex-shrink-0">
-                                                <HugeiconsIcon icon={WorkHistoryIcon} size={16} className="text-black/40" />
-                                              </div>
-                                            )}
-                                            <div className="flex flex-col overflow-hidden">
-                                              <span className="text-[11px] text-black dark:text-white font-medium truncate">{file.name}</span>
-                                              <span className="text-[9px] text-black/40 dark:text-white/40">{(file.size / 1024).toFixed(0)} KB</span>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    )}
+                                    {/* User attachments now render inside UserMessageBlock above. */}
                                     {msg.role === 'assistant' && msg.notes && msg.notes.length > 0 && (
                                       <div className="mt-4 space-y-3 pt-4 border-t border-graphite-border/50">
                                         <div className="grid grid-cols-1 gap-3">
@@ -6927,6 +7205,61 @@ export default function ChatInterface({
                 <div className="px-6 py-4 bg-arcus-elevated border-t border-arcus-border flex items-center gap-3">
                   <button onClick={() => setRegenerateModal({ isOpen: false, msgId: null })} className="flex-1 px-4 py-2.5 text-arcus-fg-secondary hover:text-arcus-fg text-[13px] font-bold transition-colors bg-arcus-bg hover:bg-arcus-surface-hover border border-arcus-border rounded-xl">Cancel</button>
                   <button onClick={handleConfirmRegenerate} className="flex-1 px-4 py-2.5 bg-arcus-fg text-arcus-bg text-[13px] font-bold rounded-xl hover:opacity-90 transition-opacity">Regenerate</button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
+        {/* Edit Prompt Modal — edit the message and resend as a new version */}
+        <AnimatePresence>
+          {editModal.isOpen && (
+            <div
+              className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+              onClick={() => setEditModal({ isOpen: false, msgId: null, text: '' })}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 10 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-arcus-surface border border-arcus-border rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl"
+              >
+                <div className="px-5 pt-5 pb-3 flex items-center gap-2">
+                  <Edit className="w-4 h-4 text-arcus-fg-tertiary" />
+                  <span className="text-[12px] font-bold text-arcus-fg-secondary uppercase tracking-widest">Edit message</span>
+                </div>
+                <div className="px-5 pb-2">
+                  <textarea
+                    autoFocus
+                    value={editModal.text}
+                    onChange={(e) => setEditModal(prev => ({ ...prev, text: e.target.value }))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); handleEditSubmit(); }
+                      if (e.key === 'Escape') setEditModal({ isOpen: false, msgId: null, text: '' });
+                    }}
+                    rows={Math.min(14, Math.max(3, editModal.text.split('\n').length + 1))}
+                    className="w-full bg-arcus-bg border border-arcus-border rounded-xl p-4 text-arcus-fg text-[15px] leading-relaxed placeholder:text-arcus-fg-muted focus:outline-none focus:border-arcus-divider resize-none max-h-[50vh]"
+                    placeholder="Edit your message…"
+                  />
+                </div>
+                <div className="px-5 py-4 flex items-center justify-between gap-3">
+                  <span className="text-[11px] text-arcus-fg-muted">Sending replaces the reply and keeps both versions.</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditModal({ isOpen: false, msgId: null, text: '' })}
+                      className="px-5 py-2.5 rounded-full text-[13px] font-bold text-arcus-fg-secondary hover:text-arcus-fg bg-arcus-elevated hover:bg-arcus-surface-hover border border-arcus-border transition-all"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleEditSubmit}
+                      disabled={!editModal.text.trim()}
+                      className="px-6 py-2.5 rounded-full text-[13px] font-bold text-arcus-bg bg-arcus-fg hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                    >
+                      Send
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </div>

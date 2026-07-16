@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'New',
+        title: 'Edit and re-send your messages — and flip between answers',
+        points: [
+          'Every message you send now has an Edit button. Change the wording and send — Arcus answers the new version, and you can slide between the old and new answers with the ‹ › arrows, just like the big AI chats.',
+          'A Copy button sits right under each message.',
+          'Long messages collapse to a few lines with a "Show more" toggle, so a big paste doesn\'t take over the screen — tap to expand, tap again for "Show less".',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: 'The home-screen Refresh button now shows it\'s working',
         points: [
