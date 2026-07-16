@@ -84,6 +84,7 @@ export const TOOL_INTEGRATION_MAP: Record<string, string | null> = {
   fetch_notion_schema: 'notion',
   create_notion_page: 'notion',
   notion_read_page: 'notion',
+  notion_read_database: 'notion',
   notion_create_task: 'notion',
   notion_get_calendar_events: 'notion',
   notion_auto_create_contact_profiles: 'notion',
@@ -257,6 +258,7 @@ export const TOOL_VA_OWNERSHIP: Record<string, ArcusVA[]> = {
   // 📝 CRM VA (Notion)
   search_notion: ['crm'],
   notion_read_page: ['crm'],
+  notion_read_database: ['crm', 'research'], // leads/CRM rows reader — used by outreach intake
   fetch_notion_schema: ['crm'],
   notion_get_calendar_events: ['crm', 'calendar'], // Notion calendar straddles two VAs
   create_notion_page: ['crm'],

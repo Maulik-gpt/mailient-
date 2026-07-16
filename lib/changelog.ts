@@ -26,8 +26,18 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
-    date: 'July 15, 2026',
+    date: 'July 16, 2026',
     entries: [
+      {
+        tag: 'Improved',
+        title: 'Outreach that finds your leads, sounds human, and shows its work',
+        points: [
+          'Point Arcus at your contacts wherever they live: attach a CSV, paste a list, or just say "email everyone in my Leads database in Notion" and it reads the real rows itself. If it can\'t find valid addresses, it tells you exactly where it looked instead of guessing.',
+          'Every email now reads like a real person typed it: no em-dashes, no "I hope this email finds you well", no AI throat-clearing. Plain, direct, in your voice.',
+          'Before it asks for your approval, Arcus opens a live tracker you can watch: every lead with its research hook, status, and send time, updating as the batch moves from drafted to queued to sent.',
+          'One request does the whole job. Arcus plans and executes in the same turn: pulls the leads, researches each person, drafts, opens the tracker, asks once, and schedules the send. Ask for a watcher and it deploys a background agent that keeps working at a safe ~40 emails a day.',
+        ],
+      },
       {
         tag: 'Fixed',
         title: 'Cal.com connects cleanly',

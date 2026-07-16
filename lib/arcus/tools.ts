@@ -166,7 +166,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       properties: {
         to: { type: 'string', description: 'Recipient email address.' },
         subject: { type: 'string', description: 'Subject line — make it concrete and short.' },
-        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice. Open with a hook, close with one explicit ask.' },
+        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice. Open with a hook, close with one explicit ask. Sound like a real person typing: use periods and commas, contractions, one idea per sentence. NEVER use em-dashes (—) or en-dashes; they are the biggest tell that a machine wrote it. Skip AI throat-clearing ("I hope this finds you well", "I wanted to reach out").' },
         recipientName: { type: 'string', description: 'Display name for the draft card.' },
         purpose: { type: 'string', description: 'One sentence describing what the email is meant to achieve — improves the appropriate_tone and clear_cta critique scores.' },
       },
@@ -205,7 +205,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         threadId: { type: 'string', description: 'Gmail thread id from read_email.' },
         to: { type: 'string', description: 'Recipient email address.' },
         subject: { type: 'string', description: 'Subject line (usually "Re: original subject").' },
-        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice. Include Meet link if a meeting was scheduled.' },
+        body: { type: 'string', description: 'Plain-text email body written in the user\'s voice, sounding like a real person (no em-dashes, no AI throat-clearing). Include Meet link if a meeting was scheduled.' },
         inReplyToMessageId: { type: 'string', description: 'RFC Message-ID from read_email for proper threading.' },
         recipientName: { type: 'string', description: 'Display name for the draft card.' },
       },
@@ -1812,6 +1812,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     },
   },
   {
+    name: 'notion_read_database',
+    description:
+      'Read the ROWS of a Notion database as structured records — use this to pull a lead/contact list, a CRM, or any table out of Notion. ' +
+      'Resolves the database by name hint (or exact id), reads its schema, then returns up to `limit` rows with every property flattened to plain text (title, email, phone, url, select, status, people, rich_text, number, checkbox, date). ' +
+      'This is the tool for "email everyone in my Leads database" — read the rows, then map the email + name/company columns yourself. ' +
+      'Output: plain text — the resolved database name + a numbered list of rows, each showing its property name/value pairs and page URL. ' +
+      'Errors (success:false): notion_not_connected, notion_db_not_found, upstream_notion. Empty database returns success:true with a "0 rows" note.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        database: { type: 'string', description: 'Database name hint, e.g. "Leads", "Contacts", "CRM". Matched by title against the workspace.' },
+        databaseId: { type: 'string', description: 'Exact Notion database id if you already have one (from fetch_notion_schema) — skips the name search.' },
+        limit: { type: 'number', description: 'Max rows to return (1-100, default 50).' },
+      },
+    },
+  },
+  {
     name: 'notion_create_task',
     description:
       'Create a task in the user\'s tasks database — convenience wrapper over create_notion_page with task-specific fields. ' +
@@ -2336,6 +2353,7 @@ export async function executeTool(
       case 'fetch_notion_schema': result = await fetchNotionSchemaForAgent(userId, input); break;
       case 'create_notion_page': result = await createNotionPage(userId, input, context); break;
       case 'notion_read_page':   result = await notionReadPage(userId, input); break;
+      case 'notion_read_database': result = await notionReadDatabase(userId, input); break;
       case 'notion_create_task': result = await notionCreateTask(userId, input, context); break;
       case 'notion_get_calendar_events': result = await notionGetCalendarEvents(userId, input); break;
       case 'open_canvas':           result = await openCanvas(input, userId, context); break;
@@ -5070,6 +5088,107 @@ async function notionGetCalendarEvents(userId: string, input: any): Promise<Tool
 
   return {
     output: `${rows.length} Notion entr${rows.length === 1 ? 'y' : 'ies'} in "${resolvedTitle}" (date property: ${dateProp.name}):\n\n${lines.join('\n\n')}`,
+  };
+}
+
+// Flatten one Notion property value to plain text. Covers the property types a
+// lead/CRM database actually uses; unknown types fall through to ''.
+function notionPropValueToString(prop: any): string {
+  if (!prop || typeof prop !== 'object') return '';
+  switch (prop.type) {
+    case 'title':        return richTextToString(prop.title || []);
+    case 'rich_text':    return richTextToString(prop.rich_text || []);
+    case 'email':        return prop.email || '';
+    case 'phone_number': return prop.phone_number || '';
+    case 'url':          return prop.url || '';
+    case 'number':       return prop.number != null ? String(prop.number) : '';
+    case 'checkbox':     return prop.checkbox ? 'true' : 'false';
+    case 'select':       return prop.select?.name || '';
+    case 'status':       return prop.status?.name || '';
+    case 'multi_select': return (prop.multi_select || []).map((o: any) => o.name).join(', ');
+    case 'date':         return prop.date?.end ? `${prop.date.start} → ${prop.date.end}` : (prop.date?.start || '');
+    case 'people':       return (prop.people || []).map((p: any) => p.name || p.id).join(', ');
+    case 'created_time': return prop.created_time || '';
+    case 'formula':      return prop.formula?.string ?? (prop.formula?.number != null ? String(prop.formula.number) : (prop.formula?.date?.start || ''));
+    case 'rollup':       return Array.isArray(prop.rollup?.array) ? prop.rollup.array.map((x: any) => notionPropValueToString(x)).filter(Boolean).join(', ') : '';
+    default:             return '';
+  }
+}
+
+// Read the rows of a Notion database as flattened records. This is the general
+// "read my table out of Notion" primitive — the leads/CRM reader the outreach
+// intake needs. Same DB-resolution and query machinery as notionGetCalendarEvents,
+// minus the date filter (reads every row up to `limit`).
+async function notionReadDatabase(userId: string, input: any): Promise<ToolResult> {
+  const token = await getNotionToken(userId);
+  if (!token) return failureResult('Notion is not connected.', 'notion_not_connected');
+
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+
+  const limit = Math.min(Math.max(Number(input.limit) || 50, 1), 100);
+  let dbId = (input.databaseId || '').trim();
+  const dbHint = (input.database || '').trim();
+  let resolvedTitle = dbHint || 'Notion database';
+
+  // Resolve the database by title hint when no explicit id was given.
+  if (!dbId) {
+    if (!dbHint) return failureResult('Provide a database name (e.g. "Leads") or an exact databaseId.', 'validation_error');
+    try {
+      const res = await fetch('https://api.notion.com/v1/search', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query: dbHint, filter: { value: 'database', property: 'object' }, page_size: 20 }),
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const titleOf = (r: any) => (r.title?.[0]?.plain_text ?? '').toLowerCase();
+        const hintLower = dbHint.toLowerCase();
+        const best = (data.results || [])
+          .map((r: any) => ({ r, score: titleOf(r) === hintLower ? 2 : titleOf(r).includes(hintLower) ? 1 : 0 }))
+          .sort((a: any, b: any) => b.score - a.score)[0];
+        if (best && best.score > 0) { dbId = best.r.id; resolvedTitle = best.r.title?.[0]?.plain_text || dbHint; }
+      }
+    } catch { /* fall through to not-found */ }
+  }
+  if (!dbId) return failureResult(`No Notion database found matching "${dbHint}". Check the name, or open the database and share it with the Mailient integration.`, 'notion_db_not_found');
+
+  const schema = await fetchNotionDbSchema(headers, dbId);
+  if (!schema) return failureResult(`Couldn't read the schema for "${resolvedTitle}". Make sure the database is shared with the Mailient Notion integration.`, 'upstream_notion');
+
+  // Query rows (no filter — read the whole table up to limit).
+  const qRes = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ page_size: limit }),
+    signal: AbortSignal.timeout(12000),
+  });
+  if (!qRes.ok) {
+    const err = await qRes.text().catch(() => '');
+    return failureResult(`Notion query failed (${qRes.status}): ${err.slice(0, 200)}`, 'upstream_notion');
+  }
+  const qData = await qRes.json();
+  const rows: any[] = qData.results || [];
+  if (!rows.length) return { output: `"${resolvedTitle}" has 0 rows.` };
+
+  const propNames = schema.map(p => p.name);
+  const lines = rows.map((row: any, i: number) => {
+    const pairs = propNames
+      .map(name => {
+        const val = notionPropValueToString(row.properties?.[name]);
+        return val ? `${name}: ${val}` : null;
+      })
+      .filter(Boolean);
+    return `${i + 1}. ${pairs.join(' · ')}\n   URL: ${row.url}`;
+  });
+
+  const more = qData.has_more ? `\n\n(${resolvedTitle} has more than ${limit} rows — raise limit to read the rest.)` : '';
+  return {
+    output: `${rows.length} row${rows.length === 1 ? '' : 's'} from "${resolvedTitle}":\n\n${lines.join('\n\n')}${more}`,
   };
 }
 
