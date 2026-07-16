@@ -2878,6 +2878,7 @@ export default function ChatInterface({
       let currentIntegrationRequired: IntegrationRequiredData | null = null; // populated by canvas integration_required
       let currentActionResult: any = null;            // populated by canvas notion_page / calendar_event
       let currentDraftReply: any = null;              // populated by canvas email_draft
+      let streamedDraftCount = 0;                     // # of email_draft canvases seen this turn (for the cut-off fallback)
 
       // Stall guard — if the stream goes silent for 90s (hung model call,
       // dead connection the browser never surfaces), stop reading and let
@@ -3203,7 +3204,7 @@ export default function ChatInterface({
                         voiceCritique: (cv.draftMeta as any).voiceCritique,
                       }
                     : undefined;
-                  if (draftReply) currentDraftReply = draftReply;
+                  if (draftReply) { currentDraftReply = draftReply; streamedDraftCount++; }
 
                   // PART 8 #5 — accumulate every draft this turn into draftReplies
                   // so the render block can swap to the gallery layout at 2+.
@@ -3785,13 +3786,18 @@ export default function ChatInterface({
           s.status === 'active' ? { ...s, status: 'completed' as const, completedAt: Date.now() } : s
         );
 
+        // If drafts already streamed in this turn, the gallery is rendering
+        // below — point the user at the cards instead of the misleading "saved
+        // to Gmail Drafts / ask again" line.
         const fallbackText = hadQuestionEvent
           ? questionBubbleText
           : hadPlanEvent
             ? ''
-            : finalContent.trim() || (currentAgentSteps.length > 0
-                ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
-                : '');
+            : finalContent.trim() || (streamedDraftCount > 0
+                ? `I drafted ${streamedDraftCount} repl${streamedDraftCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`
+                : currentAgentSteps.length > 0
+                  ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
+                  : '');
 
         setMessages(msgs => msgs.map(m => {
           if (m.id !== assistantMsgId || m.type !== 'agent') return m;

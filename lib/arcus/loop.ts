@@ -668,14 +668,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
     async start(controller) {
       let sentUserFacing = false;
       let anyToolRan = false;
+      let sentTextMessage = false;   // a real prose message (not just a canvas/card) reached the user
+      let draftCanvasCount = 0;      // # of email_draft canvases emitted — drives the draft-aware close message
       const emit = (type: string, data: unknown) => {
         if (type === 'tool_call') {
           anyToolRan = true;
         } else if (type === 'question' || type === 'plan' || type === 'approval_required' || type === 'canvas' || type === 'mode_switch') {
           sentUserFacing = true;
+          if (type === 'canvas' && (data as any)?.type === 'email_draft') draftCanvasCount++;
         } else if (type === 'message') {
           const c = (data as any)?.content;
-          if ((typeof c === 'string' && c.trim()) || (data as any)?.canvasContent) sentUserFacing = true;
+          if ((typeof c === 'string' && c.trim()) || (data as any)?.canvasContent) { sentUserFacing = true; sentTextMessage = true; }
         }
         try { controller.enqueue(encode(sseEvent(type, data))); } catch { /* closed */ }
       };
@@ -698,7 +701,17 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           // Backstop: never close a run that did real work without giving the
           // user something readable. Covers EVERY terminal path (mustStop,
           // error branches, deadline) regardless of client behaviour.
-          if (!sentUserFacing && anyToolRan) {
+          // If draft cards streamed but no prose summary landed (deadline hit
+          // right after batch drafting), confirm the drafts and point at the
+          // cards — NOT the misleading "saved to Gmail Drafts, ask again" line.
+          if (!sentTextMessage && draftCanvasCount > 0) {
+            try {
+              controller.enqueue(encode(sseEvent('message', {
+                content: `I drafted ${draftCanvasCount} repl${draftCanvasCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`,
+              })));
+            } catch { /* closed */ }
+            sentUserFacing = true;
+          } else if (!sentUserFacing && anyToolRan) {
             try {
               controller.enqueue(encode(sseEvent('message', {
                 content: "I worked through that, but couldn't pull it into a clean summary this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll lay out exactly what I found.",
@@ -1849,6 +1862,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     canvasContent = result.canvasData;
                   }
                   emit('canvas', result.canvasData);
+                }
+
+                // Batch tools (gmail_batch_draft_replies) return N canvases in
+                // one call — emit each so the client accumulates them into the
+                // draft gallery. One card per draft, one fast tool call.
+                if (Array.isArray(result.canvasList) && result.canvasList.length) {
+                  for (const cv of result.canvasList) emit('canvas', cv);
                 }
 
                 if (result.requiresConfirmation) {

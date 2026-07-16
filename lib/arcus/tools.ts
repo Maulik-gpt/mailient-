@@ -750,21 +750,27 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'gmail_batch_draft_replies',
     description:
-      'Generate up to 50 reply drafts in parallel. Each item specifies a threadId and an instruction (e.g. "warm follow-up", "decline politely", "send our standard pricing"). Drafts are saved to Gmail; nothing is sent. ' +
-      'Output: per-item draft status summary. Errors: validation_error.',
+      'Save up to 50 reply drafts in ONE call and render them as review cards in the chat (a gallery the user can edit and send from directly). ' +
+      'USE THIS instead of calling draft_reply N times when the user asks to draft replies to several emails ("draft replies to the 5 emails waiting on me") — N sequential draft_reply calls time out; this one call does not. ' +
+      'YOU compose every reply body first (read the threads with gmail_bulk_read_threads / read_email, ground each reply in that thread, write it in the user\'s voice, no em-dashes), then pass the finished { threadId, to, subject, body } for each. Nothing is sent — each draft appears as its own card the user reviews and sends. ' +
+      'Output: per-item draft status; the drafts render as gallery cards automatically. Errors: validation_error.',
     input_schema: {
       type: 'object',
       properties: {
         items: {
           type: 'array',
-          description: 'Up to 50 draft requests.',
+          description: 'Up to 50 finished reply drafts. Compose each body yourself before calling.',
           items: {
             type: 'object',
             properties: {
-              threadId: { type: 'string' },
-              instruction: { type: 'string', description: 'Per-thread tone/content instruction.' },
+              threadId: { type: 'string', description: 'Gmail thread id being replied to (from read_email / gmail_bulk_read_threads).' },
+              to: { type: 'string', description: 'Recipient email address.' },
+              subject: { type: 'string', description: 'Subject line, usually "Re: <original subject>".' },
+              body: { type: 'string', description: 'The FULL reply body, written in the user\'s voice, grounded in the thread. Plain text, no em-dashes, no AI throat-clearing.' },
+              recipientName: { type: 'string', description: 'Display name for the draft card.' },
+              inReplyToMessageId: { type: 'string', description: 'Optional RFC Message-ID for correct threading.' },
             },
-            required: ['threadId'],
+            required: ['threadId', 'to', 'body'],
           },
         },
       },
@@ -8514,21 +8520,50 @@ async function gmailBatchDraftReplies(userId: string, input: any, context: ToolC
   if (!items.length) return failureResult('items is required (non-empty array of { threadId, instruction }).', 'validation_error');
 
   const slice = items.slice(0, 50);
+  // The reply BODIES are composed by the model in ONE turn and passed in here,
+  // then we save all N Gmail drafts in parallel. This is the fast path: no
+  // per-reply LLM tool-call round-trips, so 5+ drafts finish inside the chat
+  // deadline. Each draftReply returns its own email_draft canvasData; we harvest
+  // those into canvasList so the loop emits one draft card per reply and the
+  // client renders the review gallery.
   const results = await Promise.all(slice.map(async (item, idx) => {
+    const body = (item.body || '').trim();
+    if (!item.threadId || !item.to || !body) {
+      return { idx, threadId: item.threadId, ok: false, summary: 'skipped: needs threadId, to, and body', canvasData: undefined as ToolResult['canvasData'] };
+    }
     try {
       const r = await draftReply(userId, {
         threadId: item.threadId,
-        toneInstruction: item.instruction || item.toneInstruction || 'Reply in the user voice.',
-        skipVoiceCritique: true,
+        to: item.to,
+        subject: item.subject,
+        body,
+        recipientName: item.recipientName,
+        inReplyToMessageId: item.inReplyToMessageId,
       }, context);
-      return { idx, threadId: item.threadId, ok: r.success !== false, summary: r.output.slice(0, 200) };
+      return { idx, threadId: item.threadId, ok: r.success !== false, summary: r.output.slice(0, 160), canvasData: r.canvasData };
     } catch (err: any) {
-      return { idx, threadId: item.threadId, ok: false, summary: `error: ${err.message}` };
+      return { idx, threadId: item.threadId, ok: false, summary: `error: ${err.message}`, canvasData: undefined as ToolResult['canvasData'] };
     }
   }));
+
+  const canvasList = results
+    .filter(r => r.ok && r.canvasData && r.canvasData.type === 'email_draft')
+    .map(r => r.canvasData!) as NonNullable<ToolResult['canvasData']>[];
+
   const ok = results.filter(r => r.ok).length;
+  const failed = results.filter(r => !r.ok);
   const summary = results.map(r => `${r.idx + 1}. [thread ${r.threadId}] ${r.ok ? 'drafted' : 'failed'} — ${r.summary}`).join('\n');
-  return { output: `Drafted ${ok}/${results.length} replies.\n\n${summary}` };
+
+  // Tell the model to present the gallery and NOT to re-draft or dump bodies.
+  const guidance = ok > 0
+    ? `\n\n${ok} draft${ok === 1 ? '' : 's'} are now shown to the user as review cards — each can be edited and sent directly from the chat. In your reply, confirm you drafted ${ok} repl${ok === 1 ? 'y' : 'ies'} and tell them to review and send from the cards. Do NOT paste the email bodies. Do NOT call send_email or draft_reply again for these.`
+    : '';
+  const failNote = failed.length ? `\n\n${failed.length} could not be drafted (see list above).` : '';
+
+  return {
+    output: `Drafted ${ok}/${results.length} replies.\n\n${summary}${guidance}${failNote}`,
+    canvasList,
+  };
 }
 
 async function gmailBatchSendEmails(userId: string, input: any, context: ToolContext = {}): Promise<ToolResult> {

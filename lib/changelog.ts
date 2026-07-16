@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'Drafting replies to several emails no longer times out',
+        points: [
+          'Asking Arcus to "draft replies to the 5 emails waiting on me" used to grind past the time limit and come back with an apology and nothing to show. Now it reads all the threads together, writes every reply in one pass, and shows them instantly.',
+          'Each reply lands as its own card in the chat: recipient, subject, and a voice-match score. Click one to open it, tweak the wording, and send. Five emails means five cards you can work through in seconds.',
+          'Send goes straight to the recipient in the right thread, not just to your Drafts folder. Anything you don\'t send stays saved as a draft.',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'Outreach that finds your leads, sounds human, and shows its work',
         points: [

@@ -52,6 +52,14 @@ export interface ToolResult {
     pageMeta?: { url?: string; pageId?: string; contentPreview?: string; meetLink?: string; startTime?: string; attendees?: string[]; [key: string]: any };
     isUpdate?: boolean;
   };
+  /**
+   * Multiple canvases from a SINGLE tool call. Used by batch tools that produce
+   * several draft cards at once (gmail_batch_draft_replies) so the loop can emit
+   * one `canvas` event per draft — the client accumulates them into the draft
+   * gallery. Each entry has the same shape as `canvasData`. When present, the
+   * loop emits every entry; `canvasData` (if also set) is emitted too.
+   */
+  canvasList?: NonNullable<ToolResult['canvasData']>[];
 }
 
 export interface ToolHistoryEntry {
