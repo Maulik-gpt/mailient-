@@ -27,6 +27,7 @@ import {
   Search,
   ShieldCheck,
   Eye,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { MorningBriefing } from './MorningBriefing';
@@ -136,27 +137,51 @@ function ConversationalStarter({
 }
 
 // ============================================================================
-// OUTREACH ANNOUNCEMENT — "New!" pill + explainer sheet
+// OUTREACH ANNOUNCEMENT — "New!" pill + live flow-walkthrough card
 // ============================================================================
 //
 // Outreach is a CAPABILITY, not a tab (founder doctrine: no separate feature
 // surface). That makes it undiscoverable — this pill is the announcement +
-// onboarding. Click → an explainer sheet (what it does · what happens · that
-// it just shipped) → the CTA seeds the composer with a ready outreach prompt so
-// the user reviews and sends. It never auto-fires a send (the approval law).
+// onboarding. Click → an ANIMATED walkthrough card that auto-plays the outreach
+// flow (Intake → Research → Draft → Approve → Send) step by step, then a Start
+// button. Start SENDS a short kickoff message; the intent classifier routes it
+// to `outreach_kickoff` (tools suppressed) so Arcus instantly ASKS for the list
+// + pitch in one fast conversational turn — no 40s tool spin, no timeout, and
+// nothing sends until the user later approves (the approval law).
 
-const OUTREACH_SEED_PROMPT =
-  "I want to run cold outreach. I'll give you a list of people (I can paste it, attach a CSV, or point you at my Notion leads database) and tell you what to pitch. Research each person, write every email individually in my voice, show me a few samples, then send them paced like a human after I approve. Let's start — ask me for the list and the pitch.";
+// Phrased so classifyUserIntent() → 'outreach_kickoff' (no list present yet).
+const OUTREACH_KICKOFF_MESSAGE =
+  "I want to run cold outreach. Ask me for the list and the pitch to get started.";
 
 const OUTREACH_PILL_DISMISS_KEY = 'arcus_outreach_pill_dismissed_v1';
 
-function OutreachExplainerSheet({
+// The steps the walkthrough animates through. Kept in sync with the outreach
+// playbook in system-prompt.ts (intake → research → draft → approve → send).
+const OUTREACH_FLOW_STEPS: Array<{ icon: typeof Users; title: string; caption: string }> = [
+  { icon: Users, title: 'Intake', caption: 'Reads your list — paste, CSV, or your Notion leads DB.' },
+  { icon: Search, title: 'Research', caption: 'Finds a real hook for each person, not a template.' },
+  { icon: PenTool, title: 'Draft', caption: 'Writes every email individually, in your voice.' },
+  { icon: Eye, title: 'Review', caption: 'Shows samples + a live tracker of the whole batch.' },
+  { icon: ShieldCheck, title: 'Approve', caption: 'Nothing sends until you say yes.' },
+  { icon: Send, title: 'Send', caption: 'Goes out paced like a human, so you stay trusted.' },
+];
+
+function OutreachWalkthroughCard({
   onStart,
   onClose,
 }: {
   onStart: () => void;
   onClose: () => void;
 }) {
+  // Auto-advance the highlighted step; loop so the card feels alive.
+  const [active, setActive] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setActive((i) => (i + 1) % OUTREACH_FLOW_STEPS.length), 1400);
+    return () => clearInterval(t);
+  }, []);
+
+  const progress = ((active + 1) / OUTREACH_FLOW_STEPS.length) * 100;
+
   return (
     <motion.div
       className="fixed inset-0 z-[120] flex items-center justify-center p-4"
@@ -165,13 +190,8 @@ function OutreachExplainerSheet({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18 }}
     >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm"
-        onClick={onClose}
-      />
+      <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
-      {/* Sheet */}
       <motion.div
         role="dialog"
         aria-modal="true"
@@ -179,24 +199,22 @@ function OutreachExplainerSheet({
         initial={{ opacity: 0, y: 16, scale: 0.98 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.98 }}
-        transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
         className="relative w-full max-w-md rounded-3xl overflow-hidden arcus-glass-card shadow-2xl"
       >
         {/* Header */}
-        <div className="px-6 pt-6 pb-5 border-b border-black/[0.06] dark:border-white/[0.08]">
+        <div className="px-6 pt-6 pb-4 border-b border-black/[0.06] dark:border-white/[0.08]">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-center gap-2.5">
-              <span className="inline-flex items-center justify-center w-9 h-9 rounded-2xl bg-purple-500/12 dark:bg-purple-400/15">
-                <Send className="w-4 h-4 text-purple-600 dark:text-purple-300" />
+            <div>
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-500/12 dark:bg-purple-400/15 text-purple-700 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider">
+                <Sparkles className="w-3 h-3" /> Just shipped
               </span>
-              <div>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-purple-500/12 dark:bg-purple-400/15 text-purple-700 dark:text-purple-300 text-[10px] font-bold uppercase tracking-wider">
-                  <Sparkles className="w-3 h-3" /> Just shipped
-                </span>
-                <h2 className="mt-1.5 text-[17px] font-bold text-black/90 dark:text-white/90 tracking-tight">
-                  Arcus runs your outreach
-                </h2>
-              </div>
+              <h2 className="mt-2 text-[18px] font-bold text-black/90 dark:text-white/90 tracking-tight">
+                Arcus runs your outreach
+              </h2>
+              <p className="mt-1.5 text-[12.5px] leading-relaxed text-black/55 dark:text-white/55">
+                Hand it a list and a pitch. It emails everyone, each one personalized, in your voice.
+              </p>
             </div>
             <button
               type="button"
@@ -207,39 +225,88 @@ function OutreachExplainerSheet({
               <X className="w-4 h-4" />
             </button>
           </div>
-          <p className="mt-3 text-[13px] leading-relaxed text-black/55 dark:text-white/55">
-            Hand Arcus a list of people and a pitch. It emails them all — each one
-            personalized, in your voice — without you writing a single message twice.
-          </p>
         </div>
 
-        {/* What happens */}
-        <div className="px-6 py-5 space-y-3.5">
-          <p className="text-[10.5px] font-bold uppercase tracking-widest text-black/35 dark:text-white/35">
-            What happens when you start
-          </p>
-          {[
-            { icon: Users, text: 'You give it the list — paste it, attach a CSV, or point it at your Notion leads database.' },
-            { icon: Search, text: 'It researches each person and writes every email individually, sounding like you, never a template.' },
-            { icon: Eye, text: 'It shows you a few samples and a live tracker of the whole batch before anything goes out.' },
-            { icon: ShieldCheck, text: 'Nothing sends until you approve. Then it paces the emails like a human so your inbox stays trusted.' },
-          ].map((row, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <span className="mt-0.5 inline-flex items-center justify-center w-6 h-6 rounded-lg bg-black/[0.04] dark:bg-white/[0.05] flex-shrink-0">
-                <row.icon className="w-3.5 h-3.5 text-black/55 dark:text-white/55" />
-              </span>
-              <p className="text-[12.5px] leading-relaxed text-black/70 dark:text-white/70">{row.text}</p>
-            </div>
-          ))}
+        {/* Animated flow */}
+        <div className="px-6 py-5">
+          {/* Progress rail */}
+          <div className="h-1 w-full rounded-full bg-black/[0.06] dark:bg-white/[0.08] overflow-hidden mb-5">
+            <motion.div
+              className="h-full rounded-full bg-purple-500 dark:bg-purple-400"
+              animate={{ width: `${progress}%` }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+            />
+          </div>
+
+          {/* Step chips row */}
+          <div className="flex items-center gap-1.5 mb-5">
+            {OUTREACH_FLOW_STEPS.map((s, i) => {
+              const done = i < active;
+              const now = i === active;
+              const StepIcon = s.icon;
+              return (
+                <React.Fragment key={s.title}>
+                  <motion.div
+                    className={cn(
+                      'relative flex items-center justify-center w-9 h-9 rounded-xl flex-shrink-0 transition-colors',
+                      now
+                        ? 'bg-purple-500/15 dark:bg-purple-400/20'
+                        : done
+                          ? 'bg-emerald-500/12 dark:bg-emerald-400/15'
+                          : 'bg-black/[0.04] dark:bg-white/[0.05]',
+                    )}
+                    animate={now ? { scale: [1, 1.08, 1] } : { scale: 1 }}
+                    transition={{ duration: 0.6, ease: 'easeInOut' }}
+                  >
+                    {done ? (
+                      <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} />
+                    ) : (
+                      <StepIcon className={cn('w-4 h-4', now ? 'text-purple-600 dark:text-purple-300' : 'text-black/40 dark:text-white/35')} />
+                    )}
+                    {now && (
+                      <motion.span
+                        className="absolute inset-0 rounded-xl ring-2 ring-purple-500/40 dark:ring-purple-400/40"
+                        initial={{ opacity: 0.8, scale: 1 }}
+                        animate={{ opacity: 0, scale: 1.35 }}
+                        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+                      />
+                    )}
+                  </motion.div>
+                  {i < OUTREACH_FLOW_STEPS.length - 1 && (
+                    <div className={cn('h-px flex-1 transition-colors', i < active ? 'bg-emerald-500/40 dark:bg-emerald-400/40' : 'bg-black/[0.08] dark:bg-white/[0.10]')} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+
+          {/* Active step title + caption (crossfades) */}
+          <div className="min-h-[52px]">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={active}
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -6 }}
+                transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <p className="text-[13.5px] font-bold text-black/85 dark:text-white/85">
+                  {active + 1}. {OUTREACH_FLOW_STEPS[active].title}
+                </p>
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-black/55 dark:text-white/55">
+                  {OUTREACH_FLOW_STEPS[active].caption}
+                </p>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
         {/* How to use it later */}
         <div className="px-6 pb-1">
           <div className="rounded-xl bg-black/[0.03] dark:bg-white/[0.04] px-3.5 py-2.5">
             <p className="text-[11.5px] leading-relaxed text-black/50 dark:text-white/50">
-              <span className="font-semibold text-black/70 dark:text-white/70">Anytime after this:</span> just
-              tell Arcus in chat to "email these people about …" — no menu, no setup. It's the same chat you
-              already use.
+              <span className="font-semibold text-black/70 dark:text-white/70">Anytime after this:</span> just tell
+              Arcus to "email these people about …" in the chat. No menu, no setup.
             </p>
           </div>
         </div>
@@ -266,9 +333,9 @@ function OutreachExplainerSheet({
   );
 }
 
-function OutreachPill({ onSeed }: { onSeed: (text: string) => void }) {
+function OutreachPill({ onStart }: { onStart: (text: string) => void }) {
   const [dismissed, setDismissed] = useState(false);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [cardOpen, setCardOpen] = useState(false);
 
   useEffect(() => {
     try {
@@ -282,9 +349,9 @@ function OutreachPill({ onSeed }: { onSeed: (text: string) => void }) {
   };
 
   const start = () => {
-    onSeed(OUTREACH_SEED_PROMPT);
-    setSheetOpen(false);
+    setCardOpen(false);
     dismiss(); // they've seen and started it — don't show the pill again
+    onStart(OUTREACH_KICKOFF_MESSAGE); // sends the kickoff → Arcus asks for list + pitch
   };
 
   if (dismissed) return null;
@@ -299,7 +366,7 @@ function OutreachPill({ onSeed }: { onSeed: (text: string) => void }) {
       >
         <button
           type="button"
-          onClick={() => setSheetOpen(true)}
+          onClick={() => setCardOpen(true)}
           className={cn(
             'inline-flex items-center gap-2 pl-2.5 pr-3 py-1.5 rounded-full',
             'bg-purple-500/[0.10] dark:bg-purple-400/[0.12] border border-purple-500/20 dark:border-purple-400/20',
@@ -326,8 +393,8 @@ function OutreachPill({ onSeed }: { onSeed: (text: string) => void }) {
       </motion.div>
 
       <AnimatePresence>
-        {sheetOpen && (
-          <OutreachExplainerSheet onStart={start} onClose={() => setSheetOpen(false)} />
+        {cardOpen && (
+          <OutreachWalkthroughCard onStart={start} onClose={() => setCardOpen(false)} />
         )}
       </AnimatePresence>
     </>
@@ -411,7 +478,7 @@ export function ArcusDashboard({
                 {/* Center prompt box */}
                 <div className="w-full max-w-2xl mx-auto px-4 mt-8 mb-4">
                   <div className="flex justify-center mb-4">
-                    <OutreachPill onSeed={handleQuickAction} />
+                    <OutreachPill onStart={onSendMessage} />
                   </div>
                   {children}
                 </div>
@@ -433,7 +500,7 @@ export function ArcusDashboard({
                     Arcus reads your inbox, drafts replies in your tone, books meetings, and manages everything — so you don't have to.
                   </p>
                   <div className="flex justify-center mt-6">
-                    <OutreachPill onSeed={handleQuickAction} />
+                    <OutreachPill onStart={onSendMessage} />
                   </div>
                 </div>
 

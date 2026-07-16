@@ -32,9 +32,9 @@ export const CHANGELOG: ChangelogGroup[] = [
         tag: 'New',
         title: 'Meet the outreach capability — right from the chat',
         points: [
-          'A "New" pill now sits on the Arcus home screen introducing cold outreach. Tap it for a quick walkthrough of what Arcus does, what happens step by step, and a one-tap "Start outreach" that drops a ready request into the chat for you to send.',
-          'There\'s no new tab or setup to hunt for. Outreach lives inside the same chat and agents you already use — the pill just shows you how to reach it.',
-          'Seen it already? Dismiss the pill and it won\'t come back.',
+          'A "New" pill on the Arcus home screen introduces cold outreach. Tap it for a short animated walkthrough of the whole flow — intake, research, drafting, your approval, and the paced send — then one tap on "Start outreach".',
+          'Starting now drops you straight into the flow: Arcus immediately asks for your list and your pitch, in a fast, friendly reply. (The earlier version could stall here; that\'s fixed — it answers in a second and never times out.)',
+          'There\'s no new tab or setup to hunt for. Outreach lives inside the same chat and agents you already use. Seen it already? Dismiss the pill and it won\'t come back.',
         ],
       },
       {

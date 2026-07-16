@@ -21,7 +21,8 @@ export type Intent =
   | 'query'
   | 'command'
   | 'agent_creation'
-  | 'follow_up';
+  | 'follow_up'
+  | 'outreach_kickoff';
 
 const IDENTITY_PATTERNS: RegExp[] = [
   /^\s*who\s+(?:are|r)\s+(?:you|u)\s*\??\s*$/i,
@@ -49,6 +50,18 @@ const CAPABILITY_PATTERNS: RegExp[] = [
   /\b(?:can|could)\s+you\s+(?:also|even)?\s*(?:do|handle|manage)\b.{0,40}\?/i,
   /\bdo\s+you\s+(?:support|integrate\s+with|have\s+access\s+to)\b/i,
   /\bwhat\s+are\s+your\s+(?:capabilities|features|skills)\b/i,
+];
+
+// Outreach kickoff: the user wants to START a cold-outreach job but has NOT
+// yet given the list or the pitch. Arcus must respond by ASKING for them — a
+// fast conversational turn, zero tools (there's nothing to act on yet). This
+// exists so the "Start outreach" pill can't trigger a full tool loop that
+// spins for 40s on an empty job and dies on the deadline. The marker phrase is
+// deterministic (emitted only by the pill), plus a couple of natural forms.
+const OUTREACH_KICKOFF_PATTERNS: RegExp[] = [
+  /\[?outreach[_\s-]?kickoff\]?/i,
+  /\b(?:help\s+me\s+)?(?:run|start|do|set\s*up)\s+(?:some\s+)?(?:cold\s+)?outreach\b(?![^.?!]*\b(?:list|csv|these|attached|following|below|pasted)\b)/i,
+  /\bi\s+want\s+to\s+(?:run|do|start)\s+(?:cold\s+)?outreach\b/i,
 ];
 
 const AGENT_CREATION_PATTERNS: RegExp[] = [
@@ -96,6 +109,10 @@ export function classifyUserIntent(message: string, hasOpenConfirmation = false)
 
   if (IDENTITY_PATTERNS.some(re => re.test(trimmed))) return 'identity';
   if (CAPABILITY_PATTERNS.some(re => re.test(trimmed))) return 'capability';
+  // Outreach kickoff BEFORE agent_creation/command — "start outreach" with no
+  // list yet must ask, not act. If a list/CSV/"these people" is present, the
+  // negative lookahead lets it fall through to command (real work to do).
+  if (OUTREACH_KICKOFF_PATTERNS.some(re => re.test(trimmed))) return 'outreach_kickoff';
   if (AGENT_CREATION_PATTERNS.some(re => re.test(trimmed))) return 'agent_creation';
   if (SMALLTALK_PATTERNS.some(re => re.test(trimmed))) return 'smalltalk';
   if (FOLLOW_UP_PATTERNS.some(re => re.test(trimmed)) && trimmed.length < 60) return 'follow_up';
@@ -111,7 +128,7 @@ export function classifyUserIntent(message: string, hasOpenConfirmation = false)
  * triggering a calendar tool call.
  */
 export function shouldSuppressTools(intent: Intent): boolean {
-  return intent === 'smalltalk' || intent === 'identity' || intent === 'capability';
+  return intent === 'smalltalk' || intent === 'identity' || intent === 'capability' || intent === 'outreach_kickoff';
 }
 
 /**
@@ -127,6 +144,7 @@ export function intentSystemHint(intent: Intent): string {
     command: 'User gave a direct order. Execute it directly with the right tool. Do NOT ask "should I proceed?" — they already told you to.',
     agent_creation: 'User wants to create a scheduled/background agent. Use the create_scheduled_agent two-stage flow. Do NOT execute the agent\'s work yourself.',
     follow_up: 'User is replying to your previous turn — likely confirming, cancelling, or adding detail. Read the prior context before acting.',
+    outreach_kickoff: 'User wants to START cold outreach but has NOT given the list or the pitch yet. Do NOT call any tools — there is nothing to act on. Respond in 2-3 warm, confident sentences that (1) say you\'ll run the whole thing end to end, (2) ask them to give you the list (paste it, attach a CSV, or name their Notion leads database) AND tell you the pitch (what to offer, why these people, what a good reply looks like), and (3) reassure them nothing sends until they approve. Keep it human, no bullet dump. Once they reply with the list + pitch, THAT turn is when you actually run intake/research/draft per the outreach playbook.',
   };
   return `[INTENT: ${intent}] ${hints[intent]}`;
 }
