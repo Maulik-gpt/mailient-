@@ -63,8 +63,39 @@ try {
     }
   }
 
-  // 2. Masking check — initiate + read back would be the true test, but that
-  //    needs a live browser consent. Instead we surface the reminder loudly:
+  // 2. LIVE END-TO-END: pass a real connected-account id as the 1st CLI arg
+  //    (node scripts/composio-selftest.mjs <accountId>) after connecting one
+  //    Google account through the app. This resolves the token EXACTLY as the
+  //    Arcus tool layer does, then hits Google's tokeninfo to PROVE the token
+  //    is a real, unmasked, Gmail-scoped bearer Google accepts. This is the
+  //    definitive "does Arcus reach the user's Gmail via Composio" check.
+  const testAccountId = process.argv[2];
+  if (testAccountId) {
+    try {
+      const account = await composio.connectedAccounts.get(testAccountId);
+      console.log(ok(`Connected account status: ${account.status}`));
+      const tok = account?.state?.val?.access_token;
+      if (!tok) fail('No access_token in state.val — is the auth scheme OAUTH2 and the account ACTIVE?');
+      else if (tok.length < 20 || tok.includes('...')) fail('access_token is MASKED — turn OFF "Mask Connected Account Secrets" in the dashboard.');
+      else {
+        const info = await fetch(`https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(tok)}`);
+        const j = await info.json();
+        if (!info.ok || j.error) fail(`Google rejected the token: ${j.error_description || j.error || info.status}`);
+        else {
+          const scopes = String(j.scope || '');
+          const hasGmail = /mail\.google\.com|gmail\./.test(scopes);
+          console.log(ok(`Google ACCEPTS the token. Scopes: ${scopes}`));
+          console.log(hasGmail ? ok('Gmail scope present — Arcus tools will work against this account.')
+                               : warn('No Gmail scope on this token — check the auth config scopes.'));
+        }
+      }
+    } catch (e) {
+      fail(`Live account test failed: ${e?.message || e}`);
+    }
+  } else {
+    console.log(warn('Tip: after connecting one Google account, re-run with its id — `node scripts/composio-selftest.mjs <accountId>` — to PROVE Google accepts the token end-to-end.'));
+  }
+
   console.log(warn('Manual check: Composio dashboard → Settings → Project Configuration → "Mask Connected Account Secrets" must be OFF, or tokens come back masked and every connection fails.'));
 } catch (e) {
   fail(`SDK error: ${e?.message || e}`);
