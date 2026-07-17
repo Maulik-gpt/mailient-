@@ -342,6 +342,23 @@ export function ConnectorsModal({
           window.history.replaceState({}, '', window.location.pathname);
         }
       }
+
+      // Surface connection FAILURES too (previously silent — a denied consent
+      // just bounced back with nothing shown). Covers the Composio callback
+      // codes and the legacy own-client ones.
+      const err = params.get('error');
+      if (err) {
+        const messages: Record<string, string> = {
+          composio_denied: 'Connection was cancelled. Try again and approve access to continue.',
+          composio_pending: 'The connection is still finishing on Google\'s side. Give it a moment and check again.',
+          composio_no_pending: 'That connection attempt expired. Please start it again.',
+          composio_callback: 'Something went wrong finishing the connection. Please try again.',
+          token_exchange: 'Google sign-in didn\'t complete. Please try again.',
+          db_store: 'We couldn\'t save the connection. Please try again.',
+        };
+        toast.error(messages[err] || 'That connection didn\'t complete. Please try again.');
+        window.history.replaceState({}, '', window.location.pathname);
+      }
     }
   }, []);
 

@@ -32,6 +32,13 @@ const FIRST = 1;
 const LAST = 15;
 type Step = number; // 1..15
 
+// When Composio carries the Gmail grant, step 2 logs the user in with
+// identity-only scopes (no cap) and connects Gmail via a Composio popup.
+// Client-readable public mirror of COMPOSIO_GMAIL_AUTH_CONFIG_ID — set
+// NEXT_PUBLIC_COMPOSIO_GMAIL=1 in the same envs. Absent = legacy single
+// signIn flow, unchanged.
+const COMPOSIO_GMAIL_ONBOARDING = process.env.NEXT_PUBLIC_COMPOSIO_GMAIL === '1';
+
 const POLAR_CHECKOUT_URLS: Record<'monthly' | 'annual' | 'lifetime', string> = {
   monthly:  'https://buy.polar.sh/polar_cl_iFCJ2Mq7UbVBQTIiMGwI3STQZTvGfT1EBLyiM1HM5ca',
   annual:   'https://buy.polar.sh/polar_cl_I2DWGQPxxX0lvNGzbAeSRbkdCP6TgU9Ybsy7O3pkReC',
@@ -306,6 +313,17 @@ export default function SiftOnboardingPage() {
 
       (async () => {
         try {
+          // gmail/gcal are DIRECT-redirect routes (they 302 to Google/Composio
+          // consent), not {url}-returning /auth endpoints. Point the popup
+          // straight at them; everything else returns a { url } to load.
+          const directRoutes: Record<string, string> = {
+            gmail: '/api/arcus/v3/oauth/gmail',
+            google_calendar: '/api/arcus/v3/oauth/gcal',
+          };
+          if (directRoutes[provider]) {
+            popup.location.href = directRoutes[provider];
+            return;
+          }
           const res = await fetch(`/api/integrations/${provider}/auth`);
           if (!res.ok) throw new Error('start failed');
           const { url } = await res.json();
@@ -374,7 +392,20 @@ export default function SiftOnboardingPage() {
           <AnimatePresence mode="wait">
             <motion.div key={step} {...fade}>
               {step === 1  && <S1Welcome onBegin={() => go(2)} />}
-              {step === 2  && <S2Gmail isConnected={isConnected('gmail')} onConnect={() => signIn('google', { callbackUrl: `${window.location.pathname}?step=2`, redirect: true })} onContinue={() => next()} />}
+              {step === 2  && <S2Gmail isConnected={isConnected('gmail')} onConnect={() => {
+                // Composio flow: log in with identity-only scopes first (no cap),
+                // then connect Gmail via Composio's verified client in a popup.
+                // Legacy flow: a single signIn that grants Gmail on our client.
+                if (COMPOSIO_GMAIL_ONBOARDING) {
+                  if (!session?.user?.email) {
+                    signIn('google', { callbackUrl: `${window.location.pathname}?step=2`, redirect: true });
+                  } else {
+                    connectViaPopup('gmail');
+                  }
+                } else {
+                  signIn('google', { callbackUrl: `${window.location.pathname}?step=2`, redirect: true });
+                }
+              }} onContinue={() => next()} />}
               {step === 3  && <S3Calendar connected={isConnected('gcal') || isConnected('google_calendar')} onConnect={() => connectViaPopup('google_calendar')} onContinue={() => next()} onSkip={() => next()} />}
               {step === 4  && <S4Scan scan={scan} setScan={setScan} onDone={(s) => next({ scan: s })} onSkip={() => next()} reduce={!!reduce} />}
               {step === 5  && <S5ScanResults scan={scan} onContinue={() => next()} />}

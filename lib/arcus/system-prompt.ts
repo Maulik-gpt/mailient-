@@ -1087,7 +1087,14 @@ export async function getConnectedIntegrations(userId: string): Promise<string[]
       return [p];
     });
 
-    const googleLoginProviders: string[] = userTokensRes.data ? ['gmail', 'gcal'] : [];
+    // The Google LOGIN token only implies gmail/gcal access when login itself
+    // carries those scopes. When Composio carries Gmail (login is identity-only),
+    // a bare user_tokens row does NOT mean Gmail is connected — the Composio
+    // connection (an arcus_integrations row) is the real signal, already
+    // captured in arcusProviders above.
+    const loginHasGoogleScopes = !process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID;
+    const googleLoginProviders: string[] =
+      userTokensRes.data && loginHasGoogleScopes ? ['gmail', 'gcal'] : [];
 
     return [...new Set([...arcusProviders, ...legacyProviders, ...googleLoginProviders])];
   } catch {

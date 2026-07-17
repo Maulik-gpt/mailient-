@@ -93,7 +93,9 @@ export async function POST(request) {
         let aiSuggestion = '';
         let recentTopics = [];
 
-        const openRouterKey = process.env.OPENROUTERAPI_KEY2;
+        // Was OPENROUTERAPI_KEY2 (missing underscore) — a var that is never
+        // set, so this analysis silently no-op'd. Use the canonical keys.
+        const openRouterKey = process.env.OPENROUTER_API_KEY2 || process.env.OPENROUTER_API_KEY;
 
         if (openRouterKey && emailContents.length > 0) {
             try {

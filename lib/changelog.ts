@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 17, 2026',
     entries: [
       {
+        tag: 'Improved',
+        title: 'Connecting Google is smoother and ready to scale',
+        points: [
+          'Signing in now asks only for your name and email; Gmail access is a separate, clearly-scoped step — so the permission screen is smaller and easier to trust.',
+          'Connection problems finally speak up: if a Google connect is cancelled or doesn\'t finish, you get a clear message instead of a silent bounce-back.',
+          'Behind the scenes, the Google connection can now run through a verified provider, which removes the old signup ceiling — the app is ready to onboard far more people without hitting a wall.',
+        ],
+      },
+      {
         tag: 'New',
         title: 'Big tasks never get cut off anymore',
         points: [
