@@ -15,6 +15,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { auth } from '../../../../../../lib/auth.js';
 import { logEvent } from "@/lib/logsso";
+import { composioEnabled, initiateComposioConnection } from '../../../../../../lib/arcus/composio';
 
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar.events',
@@ -31,11 +32,33 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
+    // Determine callback URL based on environment
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
+    // ── Composio-managed path ────────────────────────────────────────────────
+    // Consent on Composio's verified Google client (no test-mode user cap).
+    // Mirrors the Gmail route; failures fall through to the own-client flow.
+    if (composioEnabled('gcal')) {
+      try {
+        const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gcal`;
+        const { accountId, redirectUrl } = await initiateComposioConnection(session.user.email, 'gcal', cb);
+        const response = NextResponse.redirect(redirectUrl);
+        response.cookies.set('composio_conn_gcal', accountId, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          maxAge: 900,
+          path: '/',
+        });
+        return response;
+      } catch (err) {
+        console.error('[Composio] GCal initiate failed — falling back to own OAuth client:', (err as Error).message);
+      }
+    }
+
     // Generate state token for CSRF protection
     const state = crypto.randomBytes(32).toString('hex');
 
-    // Determine callback URL based on environment
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
     const redirectUri = `${baseUrl}/api/arcus/v3/oauth/gcal/callback`;
 
     // Build Google OAuth URL

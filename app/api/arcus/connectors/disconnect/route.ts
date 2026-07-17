@@ -19,6 +19,8 @@ import { NextRequest, NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth as nextAuth } from '../../../../../lib/auth.js';
 import { getSupabaseAdmin } from '../../../../../lib/supabase.js';
+// @ts-ignore — JS module
+import { decrypt } from '../../../../../lib/crypto.js';
 import { logEvent } from "@/lib/logsso";
 
 // @ts-ignore
@@ -98,6 +100,31 @@ export async function POST(request: NextRequest) {
     integration_credentials: 0,
     user_tokens: 0,
   };
+
+  // 0. If this row is Composio-managed, revoke the connected account on
+  //    Composio's side too — otherwise a stale connection lingers there and
+  //    the user can never truly disconnect. Best-effort; the local delete
+  //    below is what makes the app forget it regardless.
+  try {
+    for (const key of arcusKeys) {
+      for (const uk of userKeyList) {
+        const { data: row } = await supabase
+          .from('arcus_integrations')
+          .select('access_token')
+          .eq('user_id', uk)
+          .eq('provider', key)
+          .maybeSingle();
+        let marker = '';
+        try { marker = row?.access_token ? decrypt(row.access_token) : ''; } catch { marker = ''; }
+        if (marker.startsWith('composio:')) {
+          const { deleteComposioConnection } = await import('../../../../../lib/arcus/composio');
+          await deleteComposioConnection(marker.slice('composio:'.length));
+        }
+      }
+    }
+  } catch (err: any) {
+    console.warn('[Disconnect] Composio revoke failed (non-fatal):', err.message);
+  }
 
   // 1. arcus_integrations (newer) — delete by every resolved key shape.
   try {

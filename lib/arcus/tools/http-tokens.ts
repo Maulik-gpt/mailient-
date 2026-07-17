@@ -18,6 +18,19 @@ import { decrypt, encrypt } from '../../crypto.js';
 import { normalizeUserId } from '../user-id';
 import { failureResult, type ToolResult } from './types';
 
+// Composio-managed connections store `composio:<accountId>` (encrypted) in
+// arcus_integrations.access_token — the live Google token lives on Composio's
+// verified client and is resolved on demand. Kept as a local literal (not
+// imported) so this hot token path never loads the Composio SDK unless a
+// row actually uses it. There is deliberately NO local refresh for these
+// rows: Composio refreshes server-side and the bridge's short token cache
+// is the recovery window (see lib/arcus/composio.ts).
+const COMPOSIO_PREFIX = 'composio:';
+async function resolveComposioToken(marker: string, force = false): Promise<string | null> {
+  const { getComposioAccessToken } = await import('../composio');
+  return getComposioAccessToken(marker.slice(COMPOSIO_PREFIX.length), { force });
+}
+
 /**
  * Refresh a Google access token using the stored refresh token.
  * Stores the new access token back wherever the credentials currently live
@@ -28,6 +41,22 @@ export async function refreshGoogleToken(userId: string): Promise<string | null>
   try {
     const supabase = getSupabaseAdmin();
     const uid = normalizeUserId(userId);
+
+    // 0. Composio-managed rows have no local refresh_token — Composio refreshes
+    // on its side. A "refresh" here means: bust the bridge cache and re-fetch
+    // the live token (used by the caller's 401-retry path). This must run
+    // BEFORE the own-client branches so a Composio row never falls through to
+    // a Google refresh it can't do.
+    const { data: composioRow } = await supabase
+      .from('arcus_integrations')
+      .select('access_token')
+      .eq('user_id', uid)
+      .in('provider', ['gcal', 'gmail'])
+      .maybeSingle();
+    if (composioRow?.access_token) {
+      const dec = decrypt(composioRow.access_token);
+      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec, true);
+    }
 
     // 1. Try to find in arcus_integrations (V3)
     const { data: v3 } = await supabase
@@ -161,13 +190,16 @@ export async function getGmailToken(userId: string): Promise<string | null> {
       .eq('provider', 'gmail')
       .maybeSingle();
     if (v3?.access_token) {
+      const dec = decrypt(v3.access_token);
+      // Composio-managed row — resolve the live Google token from Composio.
+      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec);
       if (isExpiredOrExpiring(v3.expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
         // Refresh failed but we still have a token — return it; the caller's
         // 401-retry path + markIntegrationNeedsReauth handle a truly-dead grant.
       }
-      return decrypt(v3.access_token);
+      return dec;
     }
 
     // 2. integration_credentials (legacy OAuth flow)
@@ -222,11 +254,14 @@ export async function getGcalToken(userId: string): Promise<string | null> {
       .eq('provider', 'gcal')
       .maybeSingle();
     if (v3?.access_token) {
+      const dec = decrypt(v3.access_token);
+      // Composio-managed row — resolve the live Google token from Composio.
+      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec);
       if (isExpiredOrExpiring(v3.expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
       }
-      return decrypt(v3.access_token);
+      return dec;
     }
 
     // 2. integration_credentials (legacy OAuth flow)

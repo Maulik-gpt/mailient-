@@ -63,8 +63,16 @@ export async function verifyGmailScopes(userId: string): Promise<ScopeCheckResul
       return { ok: true };
     }
 
-    // 3) Probe /profile
+    // 3) Probe /profile. A Composio-managed row stores `composio:<accountId>`,
+    //    not a bearer token — resolve the live Google token from Composio
+    //    first, or the probe 403s and we'd falsely report scope_missing.
     let token = decrypt(data.access_token);
+    if (token.startsWith('composio:')) {
+      const { getComposioAccessToken } = await import('./composio');
+      const live = await getComposioAccessToken(token.slice('composio:'.length));
+      if (!live) return { ok: false, reason: 'not_connected' };
+      token = live;
+    }
     const probe = async () =>
       fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
         headers: { Authorization: `Bearer ${token}` },
@@ -150,6 +158,9 @@ async function refreshGmailAccessToken(userId: string): Promise<string | null> {
     if (!data?.refresh_token) return null;
 
     const refresh = decrypt(data.refresh_token);
+    // Composio rows carry no local refresh token; never attempt a Google
+    // refresh for them (the marker isn't a real refresh_token).
+    if (refresh.startsWith('composio:')) return null;
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
     if (!clientId || !clientSecret) return null;
