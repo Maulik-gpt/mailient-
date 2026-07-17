@@ -530,9 +530,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // to recall them from the bottom of a long system prompt. Tone/length
   // override the prompt's voice defaults; binding rules override everything.
   const activeRulesHint = (() => {
-    // Fixed voice — personal-employee texting: short by default, casual,
-    // outcome-first; expand only when the substance earns it.
-    const parts: string[] = ['tone:casual-texting (lowercase ok, mirror the user, ~no emojis)', 'length:short-by-default (bold key facts; go long only when substance earns it)'];
+    // Fixed voice — warm + detailed, not user-switchable.
+    const parts: string[] = ['tone:warm', 'length:detailed'];
     if (userInstructions && userInstructions.trim()) {
       const compact = userInstructions.replace(/\s+/g, ' ').trim().slice(0, 200);
       parts.push(`rules:${compact}${userInstructions.length > 200 ? '…' : ''}`);
@@ -741,7 +740,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
           } else if (!sentUserFacing && anyToolRan) {
             try {
               controller.enqueue(encode(sseEvent('message', {
-                content: "did the work, but couldn't pull it into a clean summary this time. if i was drafting, it's saved in your gmail drafts. ask again and i'll lay out exactly what i found.",
+                content: "I worked through that, but couldn't pull it into a clean summary this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll lay out exactly what I found.",
               })));
             } catch { /* closed */ }
             sentUserFacing = true;
@@ -768,8 +767,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             // not a task, so it should render with zero processing UI.
             emit('conversational', {});
             const convSystem =
-              `You are Arcus — the user's personal dude who runs their inbox across Gmail, Calendar, Notion and Slack so email stops being their job. ` +
-              `Right now this is casual conversation, NOT a task. Text back like a sharp friend — lowercase-casual is fine, mirror their energy, keep it to 1-2 short sentences, almost no emojis. ` +
+              `You are Arcus — the user's AI chief of staff. You run their inbox across Gmail, Calendar, Notion and Slack so email stops being their job. ` +
+              `Right now this is casual conversation, NOT a task. Talk like a brilliant, warm colleague texting back — real energy, genuinely glad to be working with them, and keep it moving. Keep it to 1-3 sentences. ` +
               `Never call tools. Never describe "processing" or steps. Never open with "I'd be happy to" / "Certainly" / "How can I assist you today". Just be a person.\n\n` +
               intentSystemHint(detectedIntent);
             const convo = await callLLM(
@@ -845,7 +844,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 const preambleRaw = sanitizeModelText(getRawText(clarifyRes.content) || '').trim();
                 const preamble = preambleRaw && preambleRaw.length >= 10 && preambleRaw.length <= 400
                   ? preambleRaw
-                  : 'before i draft this plan, quick — a couple things to nail down:';
+                  : 'Before I draft this plan, I need to nail down a couple of things:';
                 emit('message', { content: preamble });
                 emit('question', { questions, runId });
                 closeStream(0);
@@ -1522,11 +1521,13 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             const reflection = (textContent?.trim() || thinkingText?.trim() || '');
             if (reflection.length >= 12 && !isStepListingResponse(reflection, true)) {
               if (!ackEmitted && !isBackgroundAgent) {
-                // First pre-tool text of the run = the "on it" ack. Rendered as
-                // a permanent chat line above the executor box, so it goes out
-                // as its own event, not as a boxed narrative.
+                // First pre-tool text of the run = the opener ("On it — here's
+                // how I'll handle this: …"). Rendered as a permanent chat
+                // message above the executor box, so it goes out as its own
+                // event, not as a boxed narrative. Cap is generous — the
+                // doctrine asks for a full 2-5 sentence opener.
                 ackEmitted = true;
-                emit('ack', { text: reflection.slice(0, 800) });
+                emit('ack', { text: reflection.slice(0, 1500) });
               } else {
                 emit('narrative', { text: reflection.slice(0, 6000), iteration });
               }

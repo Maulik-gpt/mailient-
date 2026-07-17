@@ -1298,7 +1298,7 @@ function CollapsibleSteps({
     : `${totalCount} step${totalCount !== 1 ? 's' : ''} completed`;
 
   return (
-    <div className={cn('mb-3 arcus-glass rounded-2xl px-3.5 transition-all w-[640px] max-w-full', collapsed ? 'py-2' : 'py-2.5')}>
+    <div className={cn('mt-1 mb-4 arcus-glass rounded-2xl px-3.5 transition-all w-[640px] max-w-full', collapsed ? 'py-2' : 'py-2.5')}>
       {/* Toggle row */}
       <button
         onClick={() => {
@@ -1886,9 +1886,11 @@ const UserMessageBlock = ({
         )}
       </div>
 
-      {/* Action row UNDER the bubble. Subtle by default (readable on touch,
-          where there's no hover), brightening on hover. */}
-      <div className="flex items-center gap-1 mt-1.5 pr-1 opacity-60 group-hover/msg:opacity-100 focus-within:opacity-100 transition-opacity">
+      {/* Action row UNDER the bubble, pinned to its bottom-RIGHT edge.
+          w-full + justify-end makes the alignment explicit — it can't drift
+          left on any flex intrinsic-sizing quirk. Subtle by default
+          (readable on touch, where there's no hover), brightening on hover. */}
+      <div className="w-full flex items-center justify-end gap-1 mt-1.5 pr-1 opacity-60 group-hover/msg:opacity-100 focus-within:opacity-100 transition-opacity">
         {/* Version arrows — only once there's an edit history */}
         {hasVersions && (
           <div className="flex items-center gap-0.5 mr-1 text-black/50 dark:text-white/50">
@@ -4042,7 +4044,7 @@ export default function ChatInterface({
                 finalProcessedText = questionBubbleText;
               } else if (!finalProcessedText) {
                 finalProcessedText = ranTools
-                  ? "did the work, but the summary didn't make it back this time. if i was drafting, it's saved in your gmail drafts. ask again and i'll lay out what i found."
+                  ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
                   : '';
               }
 
@@ -4114,9 +4116,9 @@ export default function ChatInterface({
           : hadPlanEvent
             ? ''
             : finalContent.trim() || (streamedDraftCount > 0
-                ? `drafted ${streamedDraftCount} repl${streamedDraftCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`
+                ? `I drafted ${streamedDraftCount} repl${streamedDraftCount === 1 ? 'y' : 'ies'} — review and send each from the cards below.`
                 : currentAgentSteps.length > 0
-                  ? "the connection dropped before my summary came back — the work itself ran. if i was drafting, it's in your gmail drafts. ask again and i'll lay out what i found."
+                  ? "I worked through that, but the response got cut off before the summary came back. If I was drafting a reply, it's saved in your Gmail Drafts. Ask me again and I'll lay out what I found."
                   : '');
 
         setMessages(msgs => msgs.map(m => {
