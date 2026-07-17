@@ -7,6 +7,10 @@ import { Check, X, Play, Loader2, FileText, Download, Maximize2, MoreHorizontal 
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import {
+  ArcusSteps, parseArcusSteps, type ArcusStepsData,
+  ArcusTable, parseArcusTable,
+} from './CanvasBlocks';
 
 export interface PlanCardData {
   title: string;
@@ -31,6 +35,7 @@ function stripEmojis(str: string): string {
 /** Extract readable plain text from markdown for the card preview */
 function extractPreview(markdown: string, maxLen = 260): string {
   const text = markdown
+    .replace(/```[\s\S]*?```/g, '')         // drop fenced blocks (steps JSON etc.)
     .replace(/#{1,6}\s+/g, '')              // strip heading markers (inline too)
     .replace(/^---+$/gm, '')                // hr on own line
     .replace(/---+/g, '')                   // inline --- remnants
@@ -285,6 +290,60 @@ export function ChatPlanCard({ plan, onExecute, onCancel }: ChatPlanCardProps) {
   );
 }
 
+// ─── Steps recovery + renderer ────────────────────────────────────────────────
+
+/**
+ * Last-resort recovery for a malformed/truncated steps JSON blob: pull
+ * "label"/"description" pairs out with a regex so the user sees real steps
+ * instead of raw JSON. Only fires when the text clearly IS a steps payload.
+ */
+function parseStepsLenient(raw: string): ArcusStepsData | null {
+  if (!/"label"\s*:/.test(raw)) return null;
+  const steps: ArcusStepsData['steps'] = [];
+  const re = /\{\s*"label"\s*:\s*"((?:[^"\\]|\\.)*)"\s*(?:,\s*"description"\s*:\s*"((?:[^"\\]|\\.)*)")?/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(raw)) !== null && steps.length < 30) {
+    const unescape = (s: string) => s.replace(/\\"/g, '"').replace(/\\n/g, ' ');
+    steps.push({ label: unescape(m[1]), description: m[2] ? unescape(m[2]) : undefined });
+  }
+  return steps.length > 0 ? { steps } : null;
+}
+
+/**
+ * Plan-document steps — numbered consulting-doc rows (01, 02, …) with a
+ * connector line. Distinct from the canvas ArcusSteps (status dots): a plan
+ * hasn't run yet, so numbers read better than pending-state circles.
+ */
+function PlanSteps({ data }: { data: ArcusStepsData }) {
+  return (
+    <div className="my-6">
+      {data.title && (
+        <div className="text-[10.5px] font-bold text-arcus-fg-tertiary uppercase tracking-wider mb-4">{data.title}</div>
+      )}
+      <ol className="list-none pl-0 space-y-0">
+        {data.steps.map((step, i) => (
+          <li key={i} className="relative flex gap-4 pb-6 last:pb-0">
+            {/* Connector */}
+            {i < data.steps.length - 1 && (
+              <span className="absolute left-[15px] top-9 bottom-0 w-px bg-gradient-to-b from-black/15 dark:from-white/15 to-black/5 dark:to-white/5" />
+            )}
+            {/* Number chip */}
+            <span className="relative z-10 flex-shrink-0 w-8 h-8 rounded-full bg-arcus-surface border border-arcus-divider flex items-center justify-center text-[12px] font-bold text-zinc-900 dark:text-white tabular-nums">
+              {String(i + 1).padStart(2, '0')}
+            </span>
+            <div className="flex-1 min-w-0 pt-[3px]">
+              <div className="text-[15px] font-semibold text-zinc-900 dark:text-white leading-snug">{step.label}</div>
+              {step.description && (
+                <div className="text-[13.5px] text-arcus-fg-secondary mt-1.5 leading-[1.7]">{step.description}</div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 // ─── Markdown pre-processor ───────────────────────────────────────────────────
 // Fixes AI output where ## and --- appear inline rather than on their own lines
 
@@ -373,19 +432,43 @@ function PlanMarkdown({ markdown }: { markdown: string }) {
           em: ({ children }) => (
             <em className="italic text-arcus-fg-secondary">{children}</em>
           ),
-          pre: ({ children }) => (
-            <pre className="bg-arcus-elevated border border-arcus-border rounded-xl p-4 overflow-x-auto my-5 text-[13px]">
-              {children}
-            </pre>
-          ),
-          code: ({ children, className }) => (
-            <code className={className
-              ? 'text-[13px] text-arcus-fg-secondary font-mono'
-              : 'bg-arcus-surface border border-arcus-border rounded-md px-1.5 py-0.5 text-[13px] text-zinc-800 dark:text-white font-mono'
-            }>
-              {children}
-            </code>
-          ),
+          // The code override below decides how a block renders (rich Arcus
+          // block vs styled code box), so pre must not add its own box on top.
+          pre: ({ children }) => <>{children}</>,
+          code: ({ inline, children, className }: any) => {
+            const raw = String(children);
+            const lang = className || '';
+            const isBlock = !inline && (!!lang || raw.includes('\n'));
+
+            if (isBlock) {
+              // ── Rich plan blocks — same renderers as the canvas ─────────
+              if (lang.includes('arcus-steps')) {
+                const parsed = parseArcusSteps(raw) ?? parseStepsLenient(raw);
+                if (parsed) return <PlanSteps data={parsed} />;
+              }
+              if (lang.includes('arcus-table')) {
+                const parsed = parseArcusTable(raw);
+                if (parsed) return <ArcusTable data={parsed} />;
+              }
+              // Defensive: models sometimes emit the steps JSON in a plain /
+              // untagged fence. A `{ "steps": [...] }` blob is NEVER something
+              // the user should read as code — recover it into real steps.
+              const rescued = parseArcusSteps(raw) ?? parseStepsLenient(raw);
+              if (rescued) return <PlanSteps data={rescued} />;
+
+              return (
+                <pre className="bg-arcus-elevated border border-arcus-border rounded-xl p-4 overflow-x-auto my-5 text-[13px]">
+                  <code className="text-[13px] text-arcus-fg-secondary font-mono">{children}</code>
+                </pre>
+              );
+            }
+
+            return (
+              <code className="bg-arcus-surface border border-arcus-border rounded-md px-1.5 py-0.5 text-[13px] text-zinc-800 dark:text-white font-mono">
+                {children}
+              </code>
+            );
+          },
           blockquote: ({ children }) => (
             <blockquote className="border-l-[2px] border-black/10 dark:border-white/20 pl-5 my-5 text-arcus-fg-secondary italic text-[15px] leading-[1.8]">
               {children}

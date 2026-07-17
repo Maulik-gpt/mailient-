@@ -125,6 +125,18 @@ function normalizePlanMarkdown(raw: string): string {
     ].join('\n');
   }
 
+  // 1b. Retag steps-JSON fences the model left untagged (``` or ```json
+  // instead of ```arcus-steps). The plan renderer only rich-renders the
+  // arcus-steps language tag — untagged blobs displayed as raw JSON code,
+  // which is exactly the "gibberish steps" bug. Meaning unchanged.
+  s = s.replace(/```(?:json|javascript|js)?[ \t]*\n(\s*\{\s*"(?:title"\s*:\s*"[^"\n]*"\s*,\s*")?steps"\s*:)/g, '```arcus-steps\n$1');
+
+  // 1c. Fence a completely bare steps-JSON blob (no ``` at all) so it reaches
+  // the arcus-steps renderer instead of being mangled as markdown prose.
+  if (!/```arcus-steps/.test(s)) {
+    s = s.replace(/(^|\n)(\{\s*"steps"\s*:\s*\[[\s\S]*?\]\s*\})(\n|$)/, '$1```arcus-steps\n$2\n```$3');
+  }
+
   // 2. Split inline-numbered list items. Pattern: "1. Foo. 2. Bar. 3. Baz"
   // becomes one numbered item per line. Only fire when the digit is preceded
   // by sentence-end punctuation or 2+ spaces — never break legitimate prose.
