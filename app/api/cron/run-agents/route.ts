@@ -49,13 +49,13 @@ const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'Arcus AI <arcus@mailient.x
 const STALE_LOCK_MIN = 60;
 
 export const dynamic = 'force-dynamic';
-// The hard function time limit. Vercel HOBBY caps at 60s; PRO allows up to 300s.
-// Heavy agents (a full autonomous inbox sweep) can't finish in 60s and get killed
-// mid-run — the cause of "Morning Sweep never completed / stuck Running…".
-// Next.js requires this to be a STATIC literal, so it can't be read from env.
-// ON VERCEL PRO: change this one number to 300 — the working budget below derives
-// from it and scales automatically. cron-job.org's request timeout must be ≥ this.
-export const maxDuration = 60;
+// The hard function time limit. 300s is Vercel's max with Fluid Compute (the
+// default runtime since 2025, available on Hobby). The whole working budget
+// below derives from this number and scales automatically. If a deploy ever
+// rejects it with a max-duration error, enable Fluid Compute in Vercel →
+// Project Settings → Functions (or drop back to 60). NOTE: cron-job.org's
+// request timeout must be ≥ this value or it aborts the tick early.
+export const maxDuration = 300;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Cron entry
@@ -361,10 +361,10 @@ export async function GET(request: NextRequest) {
   // Per-agent tool-call ceiling: derived from per-agent share of remaining
   // wall-clock time. Two agents running in parallel each get ~half the calls
   // a single agent would get, because they're competing for the same LLM
-  // throughput. Sized for the 60s/Hobby budget: floor 8, cap 30 (batch tools
-  // do the heavy lifting in few calls). (On Pro: floor 20, cap 80.)
+  // throughput. Scales with the 300s window: floor 10, cap 80 (batch tools
+  // do the heavy lifting in few calls; MAX_TOOL_CALLS_BACKGROUND caps at 100).
   const perAgentSlice = sharedBudget / readyToRun.length;
-  const perAgentToolCalls = Math.min(30, Math.max(8, Math.floor(perAgentSlice / 2500)));
+  const perAgentToolCalls = Math.min(80, Math.max(10, Math.floor(perAgentSlice / 2500)));
 
   // F3.1 — Mark 'running' AND set last_run_at = now in ONE write up front.
   //

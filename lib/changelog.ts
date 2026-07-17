@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 17, 2026',
     entries: [
       {
+        tag: 'New',
+        title: 'Big tasks never get cut off anymore',
+        points: [
+          'Arcus now gets a 5-minute working window per pass (up from ~1 minute) — and when a task genuinely needs more, it automatically continues in a fresh pass, carrying over everything it already did. No more "the response got cut off before the summary came back."',
+          'You see it happen naturally in the chat: the first pass shows its steps and says it\'s continuing, the next pass picks up exactly where it stopped and delivers the complete answer. Small tasks are exactly as fast as before.',
+          'Scheduled agents get the same 5-minute window, so deep inbox sweeps can actually finish and deliver their reports.',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: 'Scheduled agents finish their runs again',
         points: [

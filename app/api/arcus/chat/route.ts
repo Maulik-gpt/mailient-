@@ -26,14 +26,16 @@ import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription
 import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
 import { logEvent } from "@/lib/logsso";
 
-// Vercel HOBBY (free) plan hard-caps serverless functions at 60s — 300 would be
-// rejected/ignored and the loop would think it had time it doesn't, getting
-// killed mid-task. So we cap at 60 and give the loop a 52s deadline: it
-// self-terminates ~8s before Vercel pulls the plug, stops scheduling new tools,
-// and writes its final briefing of everything done so far — a big run finishes
-// gracefully instead of erroring partway. (When you upgrade to Pro, raise both
-// maxDuration->300 and the deadline below to ~280_000.)
-export const maxDuration = 60;
+// The function ceiling. 300s is Vercel's max with Fluid Compute (the default
+// runtime since 2025 — available on Hobby too). The loop's deadline derives
+// from this below, so big tasks get the full window and still self-terminate
+// ~12s before the platform pulls the plug to write + deliver their briefing.
+// If a deploy ever rejects this with a max-duration error, enable Fluid
+// Compute in Vercel → Project Settings → Functions (or drop this to 60 and
+// the budget scales back down automatically).
+// The client ALSO auto-continues a run that exhausts this window (a fresh
+// invocation resumes from the tool trace), so total task time is unbounded.
+export const maxDuration = 300;
 
 function buildPlanSystemPrompt(userName: string, connectedIntegrations: string[]): string {
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -547,15 +549,14 @@ export async function POST(request: NextRequest) {
       // at the bottom of the system prompt and got forgotten by free models.
       communicationStyle: stylePrefs.communicationStyle,
       verbosity: stylePrefs.verbosity,
-      // Mega-agent budget, sized for the Vercel Hobby 60s cap: a 52s deadline
-      // (8s margin for the final message + SSE flush before Vercel kills the
-      // function) and a 26 tool-call ceiling — about what fits in 52s at ~2s
-      // per call. The loop self-terminates at the deadline and delivers its
-      // briefing, so a big multi-task run finishes gracefully. Batch tools (one
-      // call for many drafts/sends/labels) are how big jobs still complete a lot
-      // of work inside this window. (On Pro: raise to 280_000 / 60.)
-      deadlineMs: 52_000,
-      maxToolCalls: 26,
+      // Budget derives from the function ceiling: the loop gets everything
+      // except a 12s margin for the final message + SSE flush + persistence
+      // before the platform kills the function. It still self-terminates at
+      // the deadline and delivers its briefing — and if the task NEEDS more,
+      // the client auto-continues it in a fresh invocation, so quality is
+      // never cut for time. Tool ceiling = the loop's interactive hard cap.
+      deadlineMs: maxDuration * 1000 - 12_000,
+      maxToolCalls: 40,
     });
   } catch (e: any) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });

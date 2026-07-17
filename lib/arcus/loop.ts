@@ -712,6 +712,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
       // an `ack` event — the client renders it as a permanent chat line above
       // the execution steps (it never gets replaced by the final report).
       let ackEmitted = false;
+      // True when the run wrapped up because TIME or TOOL BUDGET ran out with
+      // work potentially unfinished. Sent on the done event as `deadlineHit`
+      // so the client can auto-continue the task in a fresh invocation.
+      let ranOutOfBudget = false;
       let sentTextMessage = false;   // a real prose message (not just a canvas/card) reached the user
       let draftCanvasCount = 0;      // # of email_draft canvases emitted — drives the draft-aware close message
       const emit = (type: string, data: unknown) => {
@@ -726,6 +730,15 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
         }
         try { controller.enqueue(encode(sseEvent(type, data))); } catch { /* closed */ }
       };
+
+      // Heartbeat — one tiny `ping` every 10s so the CLIENT's stall guard
+      // (90s of SSE silence = dead connection) never fires on a healthy long
+      // run. A single LLM attempt can be silent for 32s, and a stalling-
+      // provider day chains several of those; the ping proves liveness
+      // without adding any UI. Cleared in closeStream.
+      const heartbeat = setInterval(() => {
+        try { controller.enqueue(encode(sseEvent('ping', { t: Date.now() }))); } catch { /* closed */ }
+      }, 10_000);
 
       /**
        * F1.2 — Single canonical close path. Every controller.close() in this
@@ -764,8 +777,11 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
             sentUserFacing = true;
           }
           alreadyDone = true;
-          try { controller.enqueue(encode(sseEvent('done', { runId, durationMs: Date.now() - startedAt, totalSteps }))); } catch { /* closed */ }
+          // deadlineHit → the client auto-continues this task in a fresh
+          // invocation (question/plan turns never set it — they end on purpose).
+          try { controller.enqueue(encode(sseEvent('done', { runId, durationMs: Date.now() - startedAt, totalSteps, deadlineHit: ranOutOfBudget }))); } catch { /* closed */ }
         }
+        clearInterval(heartbeat);
         try { controller.close(); } catch { /* already closed */ }
       };
 
@@ -1628,6 +1644,10 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               slotsLeft < 3; // only cut early when truly tight
 
             if (overDeadline || slotsLeft <= 0 || budgetTooTight) {
+              // Work remains but time/tool budget is gone — flag it so the
+              // client can auto-continue in a fresh invocation. Only for
+              // interactive runs; background agents retry on their schedule.
+              if (!isBackgroundAgent) ranOutOfBudget = true;
               const reason = overDeadline
                 ? 'Time budget reached — finalising the report…'
                 : budgetTooTight

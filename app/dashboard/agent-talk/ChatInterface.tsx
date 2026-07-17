@@ -3176,6 +3176,7 @@ export default function ChatInterface({
       let hadQuestionEvent = false;
       let questionBubbleText = '';   // question text shown as the assistant reply
       let switchedToPlanMode = false; // AI called switch_to_plan_mode — re-run in plan mode
+      let runDeadlineHit = false;     // loop ran out of time/tool budget mid-task → auto-continue
       let hadPlanEvent = false;
       let currentAgentSteps: AgentStep[] = [initThinkingStep]; // seed with the thinking pill
       let currentAgentNarratives: AgentNarrative[] = []; // populated by narrative events
@@ -4031,6 +4032,15 @@ export default function ChatInterface({
             case 'done':
               streamFinishedNormally = true;
               finalProcessedText = finalContent.trim();
+              // The loop ran out of time/tool budget with work unfinished —
+              // the client continues the task in a fresh invocation (up to 2
+              // extra passes), so big tasks are never cut off. Question/plan
+              // turns end on purpose and never set deadlineHit server-side.
+              runDeadlineHit =
+                data?.deadlineHit === true &&
+                !hadQuestionEvent &&
+                !hadPlanEvent &&
+                (options.autoContinueDepth || 0) < 2;
               // A run that called NO tools is just a reply — drop the processing
               // card entirely so simple answers read like a person responding,
               // not software finishing a job. The trace is for real work only.
@@ -4043,9 +4053,11 @@ export default function ChatInterface({
               } else if (hadQuestionEvent) {
                 finalProcessedText = questionBubbleText;
               } else if (!finalProcessedText) {
-                finalProcessedText = ranTools
-                  ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
-                  : '';
+                finalProcessedText = runDeadlineHit
+                  ? 'This one is big — I used up this pass and I\'m continuing in a fresh one right now. Progress so far is in the steps above.'
+                  : ranTools
+                    ? "I worked through that, but the written summary didn't make it back this time. If I was drafting a reply, it's saved in your Gmail Drafts — open Drafts to review and send. Ask me again and I'll walk you through exactly what I found."
+                    : '';
               }
 
               // Detect vague-instruction planning pass response — ends with "Should I proceed?"
@@ -4098,6 +4110,37 @@ export default function ChatInterface({
           processAgentLoopMessage(messageText, conversationIdToUse, isNew, { ...options, isPlanMode: true }, attachments);
         }, 0);
         return;
+      }
+
+      // ── Auto-continuation ─────────────────────────────────────────────────
+      // The loop exhausted its time/tool budget mid-task. Start a FRESH
+      // invocation that picks up exactly where this one stopped — the tool
+      // trace + partial summary ride along in the prompt, since a new function
+      // can't share the dead one's memory. Capped at 2 extra passes per turn.
+      // displayText = the original prompt so persistence never adds a
+      // duplicate user bubble; the transcript just shows the agent continuing.
+      if (runDeadlineHit) {
+        const depth = (options.autoContinueDepth || 0) + 1;
+        const toolTrace = currentAgentSteps
+          .filter(s => s.type === 'tool_call' && s.status !== 'error')
+          .map(s => `- ${s.label}${s.summary ? `: ${String(s.summary).replace(/\s+/g, ' ').slice(0, 180)}` : ''}`)
+          .join('\n')
+          .slice(0, 3500);
+        const partial = finalContent.trim().slice(0, 800);
+        const contPrompt =
+          `[CONTINUE — pass ${depth + 1} of the SAME task] The previous pass ran out of its execution window mid-task. ` +
+          `Original request: "${messageText.slice(0, 600)}"\n\n` +
+          `Work ALREADY COMPLETED in the previous pass (do NOT redo any of it — its results are real):\n${toolTrace || '- (no tool work completed yet)'}\n\n` +
+          (partial ? `Partial notes from the previous pass:\n${partial}\n\n` : '') +
+          `Pick up exactly where it left off: finish ONLY the remaining work with tools, then deliver ONE complete final answer covering the ENTIRE task.`;
+        setTimeout(() => {
+          processAgentLoopMessage(contPrompt, conversationIdToUse, false, {
+            ...options,
+            autoContinueDepth: depth,
+            displayText: displayedUserText,
+          }, attachments);
+        }, 400);
+        // No return — fall through so this pass's partial message persists.
       }
 
       // Check if the stream closed without a 'done' event (e.g. timeout or sudden disconnect)
