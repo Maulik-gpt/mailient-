@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 16, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'The website finally behaves on your phone',
+        points: [
+          'The homepage on mobile had real problems: the partner-logo strip was a blurry smear, the product demo clips were cropped down to an unreadable sliver, and sections floated in long stretches of empty black. All fixed — logos focus as they pass the center of your screen, demo videos show the full frame, and the page flows section to section without the dead space.',
+          'Also fixed a hidden bug that made every visit load the page twice — the site now paints once, faster, on every device.',
+          'And the headline says what we mean: "You run your company, We run your inbox."',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'The website is dramatically faster and smoother',
         points: [

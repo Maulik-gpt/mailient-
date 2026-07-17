@@ -75,6 +75,14 @@ export function PerspectiveMarquee({
     let lastNow: number | null = null;
     let distance = 0;
 
+    // Depth focus follows the real container center — a hardcoded desktop
+    // center leaves every item blurred on narrow (mobile) viewports.
+    let center = container.clientWidth / 2 || 640;
+    const onResize = () => {
+      center = container.clientWidth / 2 || 640;
+    };
+    window.addEventListener("resize", onResize);
+
     const tick = (now: number) => {
       rafId = requestAnimationFrame(tick);
       if (lastNow === null) {
@@ -89,7 +97,7 @@ export function PerspectiveMarquee({
 
       for (let i = 0; i < spans.length; i++) {
         const itemCenter = i * slot + slot / 2 + offset;
-        const norm = (itemCenter - 640) / 640;
+        const norm = (itemCenter - center) / center;
         const dist = Math.min(1, Math.abs(norm));
         const blurStep = Math.round(dist * 6);
         if (blurStep !== lastBlurStep[i]) {
@@ -122,6 +130,7 @@ export function PerspectiveMarquee({
     return () => {
       stop();
       observer.disconnect();
+      window.removeEventListener("resize", onResize);
     };
   }, [items, approxItemWidth, pixelsPerFrame, speed]);
 

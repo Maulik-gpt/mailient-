@@ -153,10 +153,6 @@ export default function RootLayout({ children }) {
           data-domain="mailient.xyz"
           src="https://datafa.st/js/script.js"
         />
-        {/* Launchit Badge for SEO Authority */}
-        <a href="https://www.launchit.site/project/mailient" target="_blank" className="hidden" aria-hidden="true">
-          <img src="/badges/featured-dark.svg" alt="Launched on Launchit" width="1" height="1" />
-        </a>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,400,300,200,100&display=swap" rel="stylesheet" />
@@ -164,6 +160,12 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Strichpunkt+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans antialiased satoshi-app bg-background text-foreground" data-new-gr-c-s-check-loaded="14.1258.0" data-gr-ext-installed="">
+        {/* Launchit Badge for SEO Authority — must live in <body>: an <a> inside
+            <head> is invalid HTML, gets hoisted by the browser, and the resulting
+            hydration mismatch made React re-render the whole page on every load */}
+        <a href="https://www.launchit.site/project/mailient" target="_blank" className="hidden" aria-hidden="true">
+          <img src="/badges/featured-dark.svg" alt="Launched on Launchit" width="1" height="1" />
+        </a>
         <Providers>
           {children}
           <Analytics />

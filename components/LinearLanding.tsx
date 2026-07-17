@@ -404,9 +404,9 @@ export function LinearLanding() {
           {/* Headline & Subtitle */}
           <BlurFade delay={0.1} duration={0.8} inView>
             <h1 className="text-4xl md:text-[60px] font-medium tracking-[-0.035em] leading-[1.08] max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent pb-2">
-              Run your company.
+              You run your company,
               <br />
-              Mailient runs your inbox.
+              We run your inbox.
             </h1>
           </BlurFade>
 
@@ -440,10 +440,10 @@ export function LinearLanding() {
       </div>
 
       {/* Clear Separation Line at the bottom of the Metallic Hero */}
-      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent relative z-25 mt-24" />
+      <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent relative z-25 mt-16 md:mt-24" />
 
       {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE SECTION ON PURE BLACK */}
-      <div className="w-full bg-[#000000] py-16 relative z-10">
+      <div className="w-full bg-[#000000] py-8 md:py-16 relative z-10">
         <div className="w-full relative h-28 overflow-hidden bg-[#000000]">
           <PerspectiveMarquee 
             fontSize={26} 
@@ -460,7 +460,7 @@ export function LinearLanding() {
     </section>
 
       {/* 1.5 THE PROBLEM — WHY MAILIENT MANIFESTO (moved up: problem right after hero, per positioning spec) */}
-      <section className="py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
+      <section className="py-16 md:py-32 px-6 w-full max-w-4xl mx-auto border-t border-white/[0.06] z-10 relative flex flex-col items-center text-left">
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="w-full space-y-12">
           
@@ -556,8 +556,8 @@ export function LinearLanding() {
       </section>
 
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
-      <section ref={threeThingsRef} className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
+      <section ref={threeThingsRef} className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           
           {/* Left panel: Vertical connected capability selectors */}
           <BlurFade delay={0.1} duration={0.8} inView className="lg:col-span-5 w-full">
@@ -683,7 +683,7 @@ export function LinearLanding() {
 
           {/* Right panel: dynamic high-contrast visual display */}
           <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-7 w-full h-[500px]">
-            <div className="bg-[#050505] border border-white/[0.08] rounded-[24px] p-8 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
+            <div className="bg-[#050505] border border-white/[0.08] rounded-[24px] p-5 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
             {/* Custom Dither Dot Grid Overlay */}
             <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none opacity-[0.08] mix-blend-screen select-none"
                  style={{
@@ -768,7 +768,7 @@ export function LinearLanding() {
                     preload="auto"
                     onEnded={() => setActiveStep((prev) => (prev + 1) % 3)}
                     aria-label="Mailient drafting an email reply in your voice"
-                    className="w-full h-full object-cover"
+                    className="w-full h-full object-contain lg:object-cover"
                   />
                 </motion.div>
               )}
@@ -805,9 +805,9 @@ export function LinearLanding() {
     </section>
 
       {/* 3.5 HOW MAILIENT WORKS — three steps, no jargon */}
-      <section className="py-24 px-6 w-full max-w-5xl mx-auto border-t border-white/[0.06] z-10 relative">
+      <section className="py-16 md:py-24 px-6 w-full max-w-5xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="text-center mb-16">
+          <div className="text-center mb-10 md:mb-16">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">HOW IT WORKS</span>
             <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Three steps. Then it&apos;s handled.
@@ -841,10 +841,10 @@ export function LinearLanding() {
       </section>
 
       {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
-      <section className="py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+      <section className="py-20 md:py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.9} inView>
-          <div 
-            className="w-full linear-grid-card p-8 md:p-16 flex flex-col lg:flex-row gap-16 items-center relative group"
+          <div
+            className="w-full linear-grid-card p-6 md:p-16 flex flex-col lg:flex-row gap-10 lg:gap-16 items-center relative group"
             onMouseMove={handleMouseMove}
           >
             {/* Card Cursor Lighting Glow spotlight */}
@@ -911,7 +911,7 @@ export function LinearLanding() {
       </section>
 
       {/* 3. RADAR CIRCULAR APP ORBITS INTEGRATIONS */}
-      <section id="connectors" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center overflow-hidden">
+      <section id="connectors" className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-center flex flex-col items-center overflow-hidden">
         
         {/* Graphite and White glassmorphism styles */}
         <style dangerouslySetInnerHTML={{ __html: `
@@ -1038,12 +1038,12 @@ export function LinearLanding() {
           }
         ` }} />
 
-        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl mb-20 font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl mb-10 md:mb-20 font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
           Integrated directly with <br />your favourite platforms.
         </h2>
 
         {/* Structured Network Map Display Box with White/Graphite Palette */}
-        <div className="relative w-full max-w-[600px] h-[520px] flex items-center justify-center mb-6 scale-90 md:scale-100 select-none">
+        <div className="relative w-full max-w-[600px] h-[400px] md:h-[520px] flex items-center justify-center mb-6 scale-75 sm:scale-90 md:scale-100 select-none">
           
           {/* Subtle large silver radial backdrop glow */}
           <div className="absolute w-[450px] h-[450px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.015)_0%,transparent_70%)] pointer-events-none z-0" />
@@ -1178,9 +1178,9 @@ export function LinearLanding() {
       </section>
 
       {/* 5. THE MORNING SIDE-BY-SIDE: Chaos vs Overnight Clarity */}
-      <section id="sample-brief" className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+      <section id="sample-brief" className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="text-center flex flex-col items-center mb-24">
+          <div className="text-center flex flex-col items-center mb-12 md:mb-24">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
             <h2 className="text-4xl md:text-[56px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Chaos vs Overnight Clarity.
@@ -1196,7 +1196,7 @@ export function LinearLanding() {
           </div>
 
           {/* 246 → 3: the transformation in one stark moment, before the detail panels. */}
-          <div className="flex flex-col items-center text-center mb-20 select-none">
+          <div className="flex flex-col items-center text-center mb-10 md:mb-20 select-none">
             <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-neutral-600 mb-2">Yesterday</span>
             <span className="text-4xl md:text-6xl font-medium tracking-tight text-neutral-600 line-through decoration-red-500/60 decoration-2">246 unread</span>
             <span className="text-neutral-700 text-2xl my-4 font-light">↓</span>
@@ -1288,14 +1288,14 @@ export function LinearLanding() {
       </section>
 
       {/* 6. SOCIAL PROOF, STAT ROW, SECURITY STRIP */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+      <section className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="max-w-5xl mx-auto">
           
           {/* Founder-time row — what the founder gets BACK, not what the machine
               does. "2h 14m" mirrors the illustrative Receipt in the hero; swap
               both for real usage medians once live briefs exist. */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-24 text-left">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 md:mb-24 text-left">
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every morning</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
@@ -1327,7 +1327,7 @@ export function LinearLanding() {
           </div>
 
           {/* Built-for-founders strip (honest pre-launch — no fabricated testimonials) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-24">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-12 md:mb-24">
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
               <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
               <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
@@ -1346,14 +1346,14 @@ export function LinearLanding() {
           </div>
 
           {/* Security Strip */}
-          <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(16,185,129,0.06)] hover:border-white/[0.1] transition-all duration-300 flex items-center justify-between text-left cursor-pointer">
+          <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(16,185,129,0.06)] hover:border-white/[0.1] transition-all duration-300 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 text-left cursor-pointer">
             <div className="flex items-center gap-3">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span className="text-[11px] text-neutral-400 font-sans">
                 Your emails are encrypted in your browser before they leave it. Personal data is stripped before any AI sees it.
               </span>
             </div>
-            <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1">
+            <Link href="/security" className="text-[10px] text-white font-semibold hover:underline flex items-center gap-1 shrink-0 whitespace-nowrap">
               Read Security Standard
               <ChevronRight className="w-3.5 h-3.5" />
             </Link>
@@ -1366,9 +1366,9 @@ export function LinearLanding() {
 
 
       {/* 8. FAQ ACCORDION SECTION */}
-      <section className="py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
+      <section className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           
           <div className="lg:col-span-4 space-y-4 text-left">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>

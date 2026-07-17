@@ -5,5 +5,5 @@ export const contentType = "image/png";
 export const alt = "Mailient — runs your inbox while you build your company";
 
 export default function Image() {
-  return ogImage("Run your company. Mailient runs your inbox.", "It reads, prioritizes, drafts in your voice, books meetings, and follows up — you wake up to one morning briefing instead of an inbox.");
+  return ogImage("You run your company, We run your inbox.", "It reads, prioritizes, drafts in your voice, books meetings, and follows up — you wake up to one morning briefing instead of an inbox.");
 }
