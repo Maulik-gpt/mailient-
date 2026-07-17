@@ -26,6 +26,26 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 17, 2026',
+    entries: [
+      {
+        tag: 'Improved',
+        title: 'Plan documents look like real strategy docs now',
+        points: [
+          'Asking Arcus to plan something big used to produce a thin page whose Steps section could show raw code instead of steps. Fixed at every layer: steps now render as numbered rows with descriptions, timelines and success metrics lay out as proper tables, and even a malformed plan gets repaired into readable steps instead of showing JSON.',
+          'Plans are also held to a much higher bar: objective, where things stand, 6–12 concrete steps, timeline, measurable success metrics, risks with mitigations, and the expected output — grounded in what you actually said, never invented numbers.',
+        ],
+      },
+      {
+        tag: 'Fixed',
+        title: 'FAQ answers show up again',
+        points: [
+          'Opening a question on the homepage FAQ could leave the answer area blank — the words were there, just stuck invisible mid-reveal. Answers now always appear the moment a question opens.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 16, 2026',
     entries: [
       {

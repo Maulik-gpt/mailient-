@@ -104,9 +104,15 @@ export const WordBlurStream: React.FC<WordBlurStreamProps> = ({
       }
     };
 
+    // Only LOOPING instances are gated by visibility — they run forever, so
+    // pausing them offscreen is the whole perf win. One-shot reveals
+    // (loop=false: FAQ answers, chat messages) must start unconditionally:
+    // they often mount inside a still-collapsed/animating container where
+    // IntersectionObserver timing is unreliable, and a missed observation
+    // left the text permanently invisible. They finish in ~1-2s on their own.
     const container = containerRef.current;
     let observer: IntersectionObserver | null = null;
-    if (container) {
+    if (loop && container) {
       observer = new IntersectionObserver(([entry]) => {
         if (entry.isIntersecting) start();
         else stop();
