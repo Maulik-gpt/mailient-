@@ -34,6 +34,7 @@ export const CHANGELOG: ChangelogGroup[] = [
         points: [
           'Signing in now asks only for your name and email; Gmail access is a separate, clearly-scoped step — so the permission screen is smaller and easier to trust.',
           'Connection problems finally speak up: if a Google connect is cancelled or doesn\'t finish, you get a clear message instead of a silent bounce-back.',
+          'If a Google connection ever expires, the app now knows the moment it happens and shows you a clear "reconnect" prompt — instead of quietly failing the next time Arcus tries to act.',
           'Behind the scenes, the Google connection can now run through a verified provider, which removes the old signup ceiling — the app is ready to onboard far more people without hitting a wall.',
         ],
       },
