@@ -685,8 +685,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // user sees; otherwise mint a throwaway id (interactive chat has no run row).
   const runId = agentRunId || crypto.randomUUID();
   const startedAt = Date.now();
+  // deadlineMs === 0 means the caller's budget is ALREADY exhausted — treat it
+  // as expired-now (finalize immediately with whatever exists), never as
+  // "no deadline". The old `> 0 ? … : Infinity` turned an out-of-budget cron
+  // agent into an UNBOUNDED run inside a nearly-dead function.
   const deadlineAt =
-    typeof deadlineMs === 'number' && deadlineMs > 0 ? startedAt + deadlineMs : Infinity;
+    typeof deadlineMs === 'number'
+      ? (deadlineMs > 0 ? startedAt + deadlineMs : startedAt)
+      : Infinity;
   // The report-writing call runs AFTER the tool deadline, so it gets a bit more
   // rope (the cron's delivery reserve) — still bounded so it can never overshoot
   // the function limit and get the run killed mid-finalize.
@@ -839,7 +845,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 { role: 'user', content: userMessage },
               ],
               [ASK_USER_SCHEMA],
-              { maxTokens: 350, temperature: 0.1 },
+              { maxTokens: 350, temperature: 0.1, deadlineAt },
             );
 
             const clarifyToolCalls = getToolCalls(clarifyRes.content);
@@ -888,7 +894,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
               { role: 'user', content: userMessage },
             ],
             [], // no tools — this is a planning pass only
-            { maxTokens: 300, temperature: 0.2 },
+            { maxTokens: 300, temperature: 0.2, deadlineAt },
           );
 
           const planText = sanitizeModelText(getText(vagueRes.content));
@@ -961,7 +967,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 { role: 'user', content: userMessage },
               ],
               [createAgentSchema],
-              { forceToolCall: true, maxTokens: 4000, temperature: 0.2 },
+              { forceToolCall: true, maxTokens: 4000, temperature: 0.2, deadlineAt },
             );
 
             const interceptToolCalls = getToolCalls(intercept.content);
@@ -2224,6 +2230,9 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   },
                 ],
                 finalTools,
+                // Bounded by the report deadline — an unbounded summary call on a
+                // stalling-provider day was another way past the function limit.
+                { deadlineAt: reportDeadlineAt },
               );
               const summaryToolCalls = getToolCalls(summaryRes.content);
               const summaryCanvasCall = summaryToolCalls.find(tc => tc.name === 'open_canvas');
@@ -2533,7 +2542,7 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                   'If you saved a draft, say it is saved in my Gmail Drafts and give the subject and link you already have. ' +
                   'If you proposed a time, restate it. Be specific and concrete — never blank, never "let me know if you want a summary".',
               });
-              const forced = await callLLM(messages, [], { temperature: 0.4, maxTokens: 4000 });
+              const forced = await callLLM(messages, [], { temperature: 0.4, maxTokens: 4000, deadlineAt: reportDeadlineAt });
               rescue = sanitizeModelText(getRawText(forced.content)).trim();
               if (isStepListingResponse(rescue, true) || isIntentText(rescue)) rescue = '';
             } catch { rescue = ''; }

@@ -469,13 +469,20 @@ export async function callLLM(
     log('info', 'Engine', `Trying`, { model, keys: active.length });
 
     for (let i = 0; i < active.length; i++) {
-      // Out of wall-clock budget — stop before opening another key's attempt.
-      if (timeoutMs <= 0) return null;
+      // Re-derive the budget before EVERY key attempt. timeoutMs was computed
+      // once before key 1 — with several keys and a HANGING provider, the
+      // stale value let a single model burn keys × 32s, blowing straight
+      // through a background run's wall-clock deadline. Vercel then killed
+      // the function mid-run and the reaper wrote the daily "Run was cut
+      // short by the serverless time limit" errors. The deadline must bound
+      // the SUM of attempts, not each one independently.
+      const perAttempt = Math.min(timeoutMs, effectiveTimeout());
+      if (perAttempt <= 0) return null;
       // Small jitter before retrying on the NEXT key so concurrent callers don't
       // all stampede the same key at the same ms. No delay on the first attempt.
       if (i > 0) await sleep(jitter(150));
 
-      const r = await tryOne(active[i], model, body, timeoutMs);
+      const r = await tryOne(active[i], model, body, perAttempt);
       if (r) return r;
 
       // A per-day quota wall (or a cooldown set by a parallel caller) applies to

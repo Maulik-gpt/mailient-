@@ -29,6 +29,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 17, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'Scheduled agents finish their runs again',
+        points: [
+          'Daily agents had been dying mid-run for days with "cut short by the serverless time limit" — every morning, the same error. Root cause found: on slow AI-provider days, one stalled model could quietly eat several times its time budget, so the run got killed before it could finish and deliver.',
+          'Every AI call inside a scheduled run is now hard-capped by the actual time remaining, so runs wrap up cleanly — they do the work that fits, write the report, and deliver it, instead of dying silently.',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'Plan documents look like real strategy docs now',
         points: [
