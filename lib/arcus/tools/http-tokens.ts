@@ -32,6 +32,35 @@ async function resolveComposioToken(marker: string, force = false): Promise<stri
 }
 
 /**
+ * When COMPOSIO_TOOLS=1 AND this user's gmail/gcal is Composio-managed, return
+ * the Composio connected-account id so the executor can run the action THROUGH
+ * Composio (real token server-side, masking-proof). Returns null otherwise —
+ * the caller then uses its normal direct-token path.
+ */
+export async function composioAccountFor(
+  userId: string,
+  provider: 'gmail' | 'gcal',
+): Promise<string | null> {
+  const { composioToolsEnabled } = await import('../composio');
+  if (!composioToolsEnabled()) return null;
+  try {
+    const supabase = getSupabaseAdmin();
+    const uid = normalizeUserId(userId);
+    const { data } = await supabase
+      .from('arcus_integrations')
+      .select('access_token')
+      .eq('user_id', uid)
+      .eq('provider', provider)
+      .maybeSingle();
+    if (!data?.access_token) return null;
+    const dec = decrypt(data.access_token);
+    return dec.startsWith(COMPOSIO_PREFIX) ? dec.slice(COMPOSIO_PREFIX.length) : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Refresh a Google access token using the stored refresh token.
  * Stores the new access token back wherever the credentials currently live
  * (arcus_integrations → integration_credentials → user_tokens, in priority order).

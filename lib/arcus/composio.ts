@@ -154,19 +154,70 @@ export async function getComposioIdentity(accountId: string): Promise<(ComposioI
   }
 }
 
+// ── Tool execution bridge ────────────────────────────────────────────────────
+// Run a Composio-managed tool (e.g. GMAIL_FETCH_EMAILS) using the connection's
+// REAL token server-side — works with secret masking ON, so Arcus never needs
+// the raw token. Keyed by the account id our marker row stores. Cached userId
+// lookups keep an inbox sweep from re-resolving on every call.
+
+const accountUserIdCache = new Map<string, string>();
+
+export interface ComposioExecResult {
+  ok: boolean;
+  data: any;
+  error?: string;
+}
+
+/**
+ * Execute a Composio tool for the given connected account. Resolves the
+ * account's userId (required by the executor), runs the tool with the real
+ * token, and returns { ok, data }.
+ */
+export async function composioExecute(
+  accountId: string,
+  slug: string,
+  args: Record<string, any> = {},
+): Promise<ComposioExecResult> {
+  const userId = await userIdForAccount(accountId);
+  if (!userId) return { ok: false, data: null, error: 'no_userid_for_account' };
+  try {
+    const res: any = await client().tools.execute(slug, {
+      userId,
+      arguments: args,
+      version: 'latest',
+      dangerouslySkipVersionCheck: true,
+    } as any);
+    if (!res?.successful) {
+      return { ok: false, data: res?.data ?? null, error: JSON.stringify(res?.error ?? '').slice(0, 200) };
+    }
+    return { ok: true, data: res.data ?? {} };
+  } catch (err: any) {
+    return { ok: false, data: null, error: (err?.message || String(err)).slice(0, 200) };
+  }
+}
+
+/** True when Gmail/GCal tools should run THROUGH Composio execution (masking-proof). */
+export function composioToolsEnabled(): boolean {
+  return !!(process.env.COMPOSIO_API_KEY && process.env.COMPOSIO_TOOLS === '1');
+}
+
 /** The userId a connected account belongs to (needed to execute tools on it). */
 async function userIdForAccount(accountId: string): Promise<string | null> {
+  const cached = accountUserIdCache.get(accountId);
+  if (cached) return cached;
   try {
     const acct: any = await client().connectedAccounts.get(accountId);
     // SDK may not surface it; fall back to the raw v3 endpoint which does.
-    if (acct?.userId) return acct.userId;
-    const res = await fetch(`https://backend.composio.dev/api/v3/connected_accounts/${accountId}`, {
-      headers: { 'x-api-key': process.env.COMPOSIO_API_KEY || '' },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) return null;
-    const j: any = await res.json();
-    return j?.user_id || null;
+    let uid: string | null = acct?.userId || null;
+    if (!uid) {
+      const res = await fetch(`https://backend.composio.dev/api/v3/connected_accounts/${accountId}`, {
+        headers: { 'x-api-key': process.env.COMPOSIO_API_KEY || '' },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) uid = (await res.json())?.user_id || null;
+    }
+    if (uid) accountUserIdCache.set(accountId, uid);
+    return uid;
   } catch {
     return null;
   }
