@@ -1,0 +1,74 @@
+"use client";
+
+import React from "react";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+/**
+ * The landing page's one and only section header.
+ *
+ * WHY THIS EXISTS: every section used to invent its own header. There were
+ * four different label treatments (emerald ping-dot pill, bare mono caps,
+ * bordered pill, none), three alignments (left / centered / inside a grid
+ * column), and two sections — the demo switcher and the integrations orbit —
+ * that had no label at all, one of them with no heading whatsoever. Each
+ * section was fine on its own; together they read as several different pages.
+ *
+ * The regularity IS the design. Sections vary in what sits BELOW the header
+ * (card grid, tab switcher, orbit, accordion, pricing table) and never in the
+ * header itself. Always centered, always the same three parts:
+ *
+ *     [ pill ]      icon + uppercase mono label
+ *     Heading       44px, white -> neutral-500 gradient
+ *     subtitle      one grey sentence — keep it to ONE
+ *
+ * Deliberately has no `align` prop. Being unable to opt out is the point; an
+ * escape hatch here is how the page drifted apart the first time.
+ */
+
+interface SectionHeaderProps {
+  /** Uppercase mono label in the pill, e.g. "HOW IT WORKS". */
+  pill: string;
+  /** Small icon rendered inside the pill, left of the label. */
+  icon?: LucideIcon;
+  heading: React.ReactNode;
+  /** One sentence. If it needs two, it belongs in the section body. */
+  subtitle?: React.ReactNode;
+  className?: string;
+}
+
+export function SectionHeader({
+  pill,
+  icon: Icon,
+  heading,
+  subtitle,
+  className,
+}: SectionHeaderProps) {
+  return (
+    <div
+      className={cn(
+        "w-full flex flex-col items-center text-center mb-10 md:mb-16",
+        className,
+      )}
+    >
+      <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1.5 backdrop-blur-sm">
+        {Icon ? (
+          <Icon className="w-3 h-3 text-neutral-500 shrink-0" aria-hidden="true" />
+        ) : null}
+        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-400">
+          {pill}
+        </span>
+      </span>
+
+      <h2 className="mt-6 text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+        {heading}
+      </h2>
+
+      {subtitle ? (
+        <p className="mt-4 text-sm md:text-base text-[#8a8f98] font-light leading-relaxed font-sans max-w-xl">
+          {subtitle}
+        </p>
+      ) : null}
+    </div>
+  );
+}

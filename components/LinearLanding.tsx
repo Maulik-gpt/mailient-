@@ -49,6 +49,7 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
 import { EtheralShadow } from "@/components/ui/etheral-shadow";
 import { CircleExpandButton } from "@/components/CircleExpandButton";
+import { SectionHeader } from "@/components/ui/section-header";
 import { landingFaqs } from "@/lib/landing-faqs";
 
 function ActiveCounter({ target = 1420 }: { target?: number }) {
@@ -459,42 +460,30 @@ export function LinearLanding() {
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="w-full space-y-12">
           
-          <div className="space-y-4">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-4 py-1.5 text-xs font-mono tracking-wider text-emerald-400 uppercase backdrop-blur-sm">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
-              </span>
-              Why Mailient?
-            </div>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight font-sans">
-              <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Email was supposed to be a tool.
-              </span>
-              <br />
-              <span className="text-neutral-500">For most founders, it became the job.</span>
-            </h2>
-          </div>
+          <SectionHeader
+            pill="Why Mailient"
+            icon={AlertCircle}
+            heading="Email was supposed to be a tool. For most founders, it became the job."
+            subtitle="Every founder has lost money to an email they saw too late. You have too — you just can't name which one."
+          />
 
           <div className="space-y-8 text-neutral-400 font-sans font-light leading-relaxed text-base md:text-lg">
-            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug">
-              Every founder has lost money to an email they saw too late. You have too — you just can't name which one.
-            </p>
-
+            {/* Pain-point cards moved onto the shared .linear-grid-card-inner
+                treatment — they had their own one-off fill and radius. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+              <div className="linear-grid-card-inner p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 01</span>
                 <p className="text-sm text-neutral-200">The email that sat in your inbox for three days while you meant to reply.</p>
               </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+              <div className="linear-grid-card-inner p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 02</span>
                 <p className="text-sm text-neutral-200">The client who went cold because you got buried in other threads.</p>
               </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+              <div className="linear-grid-card-inner p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 03</span>
                 <p className="text-sm text-neutral-200">The meeting that never got booked because the scheduling back-and-forth took a week.</p>
               </div>
-              <div className="border border-white/[0.04] bg-white/[0.01] rounded-2xl p-6 space-y-2">
+              <div className="linear-grid-card-inner p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 04</span>
                 <p className="text-sm text-neutral-200">The Sunday night dread of opening Gmail and seeing 200 unread messages staring back.</p>
               </div>
@@ -534,6 +523,18 @@ export function LinearLanding() {
 
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
       <section id="demos" ref={threeThingsRef} className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
+        {/* This section previously had NO heading at all — it opened straight
+            into the tab list, so a scroller hit three product demos with no
+            statement of what they were demonstrating. */}
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <SectionHeader
+            pill="What it does"
+            icon={Sparkles}
+            heading="Three things, running without you."
+            subtitle="Watch each one on a real inbox — no mockups."
+          />
+        </BlurFade>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           
           {/* Left panel: Vertical connected capability selectors */}
@@ -783,12 +784,12 @@ export function LinearLanding() {
       {/* 3.5 HOW MAILIENT WORKS — three steps, no jargon */}
       <section className="py-16 md:py-24 px-6 w-full max-w-5xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="text-center mb-10 md:mb-16">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold block mb-4">HOW IT WORKS</span>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-              Three steps. Then it&apos;s handled.
-            </h2>
-          </div>
+          <SectionHeader
+            pill="How it works"
+            icon={Layers}
+            heading="Three steps. Then it's handled."
+            subtitle="Connect once, and stop thinking about your inbox."
+          />
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-left">
             <div className="space-y-3">
@@ -816,9 +817,17 @@ export function LinearLanding() {
         </BlurFade>
       </section>
 
-      {/* 4. FLAGSHIP MEET ARCUS SECTION (Sized Larger Than The Rest) */}
+      {/* 4. FLAGSHIP MEET ARCUS SECTION */}
       <section className="py-20 md:py-36 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.9} inView>
+          <SectionHeader
+            pill="Meet Arcus"
+            icon={Bot}
+            heading="Meet your new employee."
+            subtitle="We named it Arcus. You'll just say: handled."
+          />
+        </BlurFade>
+        <BlurFade delay={0.2} duration={0.9} inView>
           <div
             className="w-full linear-grid-card p-6 md:p-16 flex flex-col lg:flex-row gap-10 lg:gap-16 items-center relative group"
             onMouseMove={handleMouseMove}
@@ -831,21 +840,11 @@ export function LinearLanding() {
               }}
             />
 
+            {/* Heading and pill lifted out to the SectionHeader above; this
+                column keeps only the body copy and the CTA. */}
             <div className="flex-1 space-y-6 text-left relative z-10">
-              <span className="px-3.5 py-1 rounded-full bg-neutral-900 border border-white/[0.08] text-[9px] font-mono tracking-[0.15em] text-[#8a8f98] uppercase">
-                THE AI RUNNING YOUR INBOX
-              </span>
-
-              <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-                Meet your new employee.
-              </h2>
-
               <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Tell it "clear my inbox and prep tomorrow." It triages the flood, drafts replies in your voice, books the calls, and chases follow-ups across Gmail, Calendar, Notion, and Slack — then shows you the few things that still need you.
-              </p>
-
-              <p className="text-sm text-neutral-500 leading-relaxed font-light font-sans max-w-xl">
-                We named it Arcus. You'll just say: <span className="text-white">handled</span>.
+                Tell it &ldquo;clear my inbox and prep tomorrow.&rdquo; It triages the flood, drafts replies in your voice, books the calls, and chases follow-ups across Gmail, Calendar, Notion, and Slack — then shows you the few things that still need you.
               </p>
 
               <div className="pt-6">
@@ -860,7 +859,7 @@ export function LinearLanding() {
             </div>
 
             {/* Glass dashboard preview right side */}
-            <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
+            <div className="flex-1 w-full linear-grid-card-inner p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
               {/* Sample output, not a live feed. The pulsing "live" dot has been
@@ -1018,9 +1017,13 @@ export function LinearLanding() {
           }
         ` }} />
 
-        <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl mb-10 md:mb-20 font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-          Integrated directly with <br />your favourite platforms.
-        </h2>
+        {/* Had a bare heading and no label — now on the shared header. */}
+        <SectionHeader
+          pill="Connectors"
+          icon={Globe}
+          heading="Integrated directly with your favourite platforms."
+          subtitle="Gmail, Calendar, Meet, Notion, Slack and Cal.com — connected, not copied."
+        />
 
         {/* Structured Network Map Display Box with White/Graphite Palette */}
         <div className="relative w-full max-w-[600px] h-[400px] md:h-[520px] flex items-center justify-center mb-6 scale-75 sm:scale-90 md:scale-100 select-none">
@@ -1160,20 +1163,21 @@ export function LinearLanding() {
       {/* 5. THE MORNING SIDE-BY-SIDE: Chaos vs Overnight Clarity */}
       <section id="sample-brief" className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="text-center flex flex-col items-center mb-12 md:mb-24">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-              Chaos vs Overnight Clarity.
-            </h2>
-            <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
-              <WordBlurStream
-                text="Most mornings you wake up already behind. Mailient clears it overnight — so you start on top of it, not buried."
-                msPerWord={80}
-                startupMs={300}
-                holdMs={5000}
-              />
-            </p>
-          </div>
+          <SectionHeader
+            pill="The morning transition"
+            icon={Clock}
+            heading="Chaos vs overnight clarity."
+            subtitle={
+              <span className="block min-h-[2.5rem]">
+                <WordBlurStream
+                  text="Most mornings you wake up already behind. Mailient clears it overnight — so you start on top of it, not buried."
+                  msPerWord={80}
+                  startupMs={300}
+                  holdMs={5000}
+                />
+              </span>
+            }
+          />
 
           {/* 246 → 3: the transformation in one stark moment, before the detail panels. */}
           <div className="flex flex-col items-center text-center mb-10 md:mb-20 select-none">
@@ -1186,7 +1190,9 @@ export function LinearLanding() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
             {/* Left panel: Chaos */}
-            <div className="p-8 rounded-[28px] border border-red-950/20 bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] hover:shadow-[0_25px_60px_rgba(239,68,68,0.06)] transition-all duration-300 relative overflow-hidden text-left h-[460px] flex flex-col justify-between group">
+            {/* Shared .linear-grid-card base; the red is a semantic tint layered
+                on top, not a separate card treatment. Same for the green panel. */}
+            <div className="linear-grid-card !border-red-950/30 p-8 transition-all duration-300 relative text-left h-[460px] flex flex-col justify-between group">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.025),transparent_60%)] pointer-events-none" />
               
               <div>
@@ -1201,14 +1207,14 @@ export function LinearLanding() {
 
                 {/* Stress rows with beautiful high-fidelity styling */}
                 <div className="space-y-3 font-mono text-[11px]">
-                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between">
+                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                       <span className="text-neutral-300 font-semibold">Thread: Pitch deck update (Venture Partner)</span>
                     </div>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-red-950/40 border border-red-900/50 text-red-400">14h Drag</span>
                   </div>
-                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between">
+                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
                       <span className="text-neutral-300 font-semibold">Meeting request: slots needed today</span>
@@ -1227,7 +1233,7 @@ export function LinearLanding() {
             </div>
 
             {/* Right panel: Overnight Clarity */}
-            <div className="p-8 rounded-[28px] border border-emerald-950/20 bg-[#0c0d12]/30 shadow-[0_20px_50px_rgba(0,0,0,0.8)] hover:shadow-[0_25px_60px_rgba(16,185,129,0.06)] transition-all duration-300 relative overflow-hidden text-left h-[460px] flex flex-col justify-between group shadow-2xl">
+            <div className="linear-grid-card !border-emerald-950/30 p-8 transition-all duration-300 relative text-left h-[460px] flex flex-col justify-between group">
               <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.025),transparent_60%)] pointer-events-none" />
               
               <div>
@@ -1242,14 +1248,14 @@ export function LinearLanding() {
 
                 {/* Clarity rows with premium detailed cards */}
                 <div className="space-y-3 font-mono text-[11px]">
-                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between">
+                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
                       <span className="text-neutral-200">Venture partner pitch reply drafted & queued</span>
                     </div>
                     <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 font-sans">TONE SIGNED</span>
                   </div>
-                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between">
+                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
                       <span className="text-neutral-200">Venture round alignment sync booked automatically</span>
@@ -1278,10 +1284,13 @@ export function LinearLanding() {
               measured medians — we have no usage data yet. They are labeled as
               such on screen; swap in real medians once live briefs exist and
               then drop the "what a handled morning looks like" framing. */}
-          <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase block mb-6">
-            What a handled morning looks like
-          </span>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-6 text-left">
+          <SectionHeader
+            pill="What you get back"
+            icon={Clock}
+            heading="What a handled morning looks like."
+            subtitle="Illustrative of a typical morning — not averaged usage data."
+          />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 md:mb-24 text-left">
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every morning</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
@@ -1312,9 +1321,6 @@ export function LinearLanding() {
             </div>
           </div>
 
-          <p className="text-[10px] text-neutral-600 font-sans mb-12 md:mb-24">
-            Illustrative of a typical handled morning — not averaged usage data.
-          </p>
 
           {/* Product statement cards. These were previously styled as pull-quotes
               (serif open-quote glyph + em-dash attribution), which reads as a
@@ -1384,19 +1390,18 @@ export function LinearLanding() {
       {/* FAQ ACCORDION SECTION — objection handling, directly after the price */}
       <section className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
-          
-          <div className="lg:col-span-4 space-y-4 text-left">
-            <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>
-            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-              Frequently asked questions.
-            </h2>
-            <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
-              The short version: Mailient removes email from your to-do list entirely. Everything else is below — or ask us directly.
-            </p>
-          </div>
+          {/* Was a 4/8 split with the header stranded in the left column. Now
+              the shared centered header over a single measured column, which
+              is also easier to read — accordion rows no longer run 8 columns
+              wide on desktop. */}
+          <SectionHeader
+            pill="Common questions"
+            icon={MessageSquare}
+            heading="Frequently asked questions."
+            subtitle="The short version: Mailient removes email from your to-do list entirely."
+          />
 
-          <div className="lg:col-span-8 flex flex-col space-y-4 w-full">
+          <div className="flex flex-col space-y-4 w-full max-w-3xl mx-auto">
             {landingFaqs.map((faq, index) => (
               <div key={index} className="border-b border-white/[0.06] pb-4 text-left">
                 {/* Real <button> with aria-expanded/aria-controls — this was a
@@ -1439,8 +1444,6 @@ export function LinearLanding() {
               </div>
             ))}
           </div>
-
-        </div>
         </BlurFade>
       </section>
 

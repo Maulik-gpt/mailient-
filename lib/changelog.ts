@@ -29,6 +29,16 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 18, 2026',
     entries: [
       {
+        tag: 'Improved',
+        title: 'Every section of the site now looks like it belongs to the same site',
+        points: [
+          'Each section used to introduce itself differently — four label styles, three alignments, and two sections with no heading at all. They now share one header: a small labelled pill, the heading, and a single line underneath.',
+          'The demo switcher and the integrations map finally have headings, so you know what you are looking at before you look at it.',
+          'Every card on the page — pain points, statements, the before/after panels, the pricing tiers — now uses the same fill, corner radius and edge treatment.',
+          'Pricing has moved to a centred layout that matches the rest of the site, on both the homepage and the pricing page.',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: 'The homepage no longer implies customers we do not have',
         points: [

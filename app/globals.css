@@ -4196,6 +4196,25 @@ html {
   z-index: 0;
 }
 
+/* Nested card — for cards that sit INSIDE a .linear-grid-card or inside a
+   section that already carries the grid texture. Same family (rim highlight,
+   top-lit fill) at a smaller radius and without the heavy drop shadow, which
+   only reads as depth at the outermost level.
+
+   On a pure-black canvas a drop shadow is invisible, so depth here comes from
+   the 1px inset rim highlight plus the top-lit radial — not from shadow. This
+   is the dark-mode equivalent of the soft diffuse shadow a light UI would use.
+
+   Every card on the landing page is now either .linear-grid-card or this. */
+.linear-grid-card-inner {
+  position: relative;
+  background: radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.03) 0%, transparent 70%), rgba(255, 255, 255, 0.012);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.03);
+  border-radius: 16px;
+  overflow: hidden;
+}
+
 .linear-cta {
   position: relative;
   background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%), #181922;

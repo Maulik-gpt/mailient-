@@ -8,6 +8,7 @@ import NumberFlow from "@number-flow/react";
 import { Check, Crown, Sparkles, Lock, ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { CircleExpandButton } from "@/components/CircleExpandButton";
+import { SectionHeader } from "@/components/ui/section-header";
 
 interface PricingProps {
   isLoading?: boolean;
@@ -158,46 +159,38 @@ export default function PricingSection3({
         <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[700px] h-[500px] rounded-full bg-white/[0.015] blur-[120px]" />
       </div>
 
-      <article className="flex md:flex-row flex-col pb-16 md:items-center items-start justify-between border-b border-white/[0.04] mb-16 gap-6">
-        <div className="text-left max-w-2xl">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/[0.02] border border-white/[0.06] rounded-full text-[9px] font-bold tracking-widest uppercase text-neutral-300 mb-4 shadow-xl">
-            <Sparkles className="w-3 h-3 text-neutral-300" />
-            The Hiring Decision
-          </div>
-
-          <h2 className="text-3xl md:text-5xl font-light tracking-[-0.03em] leading-tight text-white mb-4">
-            <VerticalCutReveal
-              splitBy="words"
-              staggerDuration={0.12}
-              staggerFrom="first"
-              reverse={true}
-              containerClassName="justify-start"
-            >
-              Your next hire costs $29 a month.
-            </VerticalCutReveal>
-          </h2>
-
-          <TimelineContent
-            as="p"
-            animationNum={0}
-            timelineRef={pricingRef}
-            customVariants={revealVariants}
-            className="text-neutral-400 text-sm leading-relaxed"
+      {/* Centered header + centered billing toggle, matching every other
+          section. This was a left-aligned two-column article with the heading
+          on one side and the toggle on the other, at 5xl/font-light — a size
+          and weight that appeared nowhere else on the site. The heading now
+          uses the shared 44px ramp; the VerticalCutReveal animation is kept by
+          passing it through as the heading node. */}
+      <SectionHeader
+        pill="The hiring decision"
+        icon={Sparkles}
+        heading={
+          <VerticalCutReveal
+            splitBy="words"
+            staggerDuration={0.12}
+            staggerFrom="first"
+            reverse={true}
+            containerClassName="justify-center"
           >
-            Mailient removes email from your to-do list entirely. One plan, everything included — you just pick how you pay.
-          </TimelineContent>
-        </div>
+            Your next hire costs $29 a month.
+          </VerticalCutReveal>
+        }
+        subtitle="One plan, everything included — you just pick how you pay."
+      />
 
-        <TimelineContent
-          as="div"
-          animationNum={1}
-          timelineRef={pricingRef}
-          customVariants={revealVariants}
-          className="shrink-0"
-        >
-          <PricingSwitch onSwitch={togglePricingPeriod} className="shrink-0" />
-        </TimelineContent>
-      </article>
+      <TimelineContent
+        as="div"
+        animationNum={1}
+        timelineRef={pricingRef}
+        customVariants={revealVariants}
+        className="flex justify-center pb-16 mb-16 border-b border-white/[0.04]"
+      >
+        <PricingSwitch onSwitch={togglePricingPeriod} className="shrink-0" />
+      </TimelineContent>
 
       <TimelineContent
         as="div"

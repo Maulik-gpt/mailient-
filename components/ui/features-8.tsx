@@ -1,6 +1,7 @@
 import React from "react"
 import { Card, CardContent } from "@/components/ui/card"
-import { Shield, Users, ArrowUpRight } from "lucide-react"
+import { Shield, Users, ArrowUpRight, Zap } from "lucide-react"
+import { SectionHeader } from "@/components/ui/section-header"
 
 export function Features8() {
   return (
@@ -12,16 +13,17 @@ export function Features8() {
 
       <div className="mx-auto max-w-3xl lg:max-w-5xl px-6 relative z-10">
         
-        {/* Headings */}
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase font-bold">AUTOMATION AT IT'S PEAK</span>
-          <h2 className="text-3xl md:text-[44px] font-medium tracking-tight text-white leading-tight">
-            Engineered for absolute accuracy.
-          </h2>
-          <p className="text-xs md:text-sm text-neutral-400 font-sans max-w-xl mx-auto font-light leading-relaxed">
-            Mailient's multi-agent autonomous framework connects directly with your tools to execute deep intake triage, conflict-free scheduling, and tone-matched drafting out of the box.
-          </p>
-        </div>
+        {/* On the shared SectionHeader like every other landing section. The
+            old header had a borderless label, a flat white heading (no
+            gradient) and a 12px subtitle — three small divergences that added
+            up to this section not looking like it belonged to the page.
+            Also fixes "IT'S" -> "ITS". */}
+        <SectionHeader
+          pill="Automation at its peak"
+          icon={Zap}
+          heading="Engineered for absolute accuracy."
+          subtitle="A multi-agent framework that connects to your tools and handles triage, scheduling, and tone-matched drafting out of the box."
+        />
 
         <div className="relative">
           <div className="relative z-10 grid grid-cols-6 gap-4">
