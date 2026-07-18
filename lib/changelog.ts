@@ -30,6 +30,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Improved',
+        title: 'Cards and buttons have real depth now',
+        points: [
+          'Cards catch the light along their top edge and fade into the page, so they read as surfaces rather than flat outlines.',
+          'The three setup steps are now proper cards with lit icon tiles, and they lift as your cursor passes over them.',
+          'Section labels are genuinely translucent where there is something glowing behind them to pick up.',
+        ],
+      },
+      {
+        tag: 'Improved',
         title: 'Every section of the site now looks like it belongs to the same site',
         points: [
           'Each section used to introduce itself differently — four label styles, three alignments, and two sections with no heading at all. They now share one header: a small labelled pill, the heading, and a single line underneath.',

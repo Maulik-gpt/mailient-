@@ -51,11 +51,15 @@ export function SectionHeader({
         className,
       )}
     >
-      <span className="inline-flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.03] px-4 py-1.5 backdrop-blur-sm">
+      {/* .gradient-pill is real glass, not decorative blur: section headers sit
+          over the page's atmospheric radial glows, so there is something behind
+          these to refract. Cards elsewhere use gradient instead — blurring flat
+          black just produces black. */}
+      <span className="gradient-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5">
         {Icon ? (
-          <Icon className="w-3 h-3 text-neutral-500 shrink-0" aria-hidden="true" />
+          <Icon className="w-3 h-3 text-neutral-400 shrink-0" aria-hidden="true" />
         ) : null}
-        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-400">
+        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-300">
           {pill}
         </span>
       </span>

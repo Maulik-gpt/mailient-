@@ -4215,6 +4215,105 @@ html {
   overflow: hidden;
 }
 
+/* ===== DEPTH ON A BLACK CANVAS =====================================
+   Why this is not neumorphism, and could not be:
+
+   Neumorphism reads as "extruded from the surface" because the element casts
+   a LIGHT shadow on one side and a DARKER-THAN-BACKGROUND shadow on the other.
+   On #000 there is nothing darker than the background — you can only render
+   the light half, which is just a rim highlight. Same reason the soft pillowy
+   look in light UIs (OrbAI, Framer templates) does not survive being ported to
+   a dark page: it is built on shadow, and shadow is invisible here.
+
+   Glassmorphism has the sibling problem: backdrop-filter blurs what is BEHIND
+   the element, and behind these cards is flat black. Blurred black is black.
+   Glass is therefore applied ONLY where content actually sits underneath —
+   the nav, pills over the atmospheric glows, overlays on video.
+
+   So depth here is carried by GRADIENT, in three layers:
+     1. a top-lit surface fill        (implies a light source above)
+     2. a gradient edge that is bright at the top and fades out by the bottom
+        (implies the same light catching the rim — this is the single biggest
+        "expensive" cue available on dark UI)
+     3. a rim highlight on the top edge only
+   ------------------------------------------------------------------ */
+
+/* Gradient edge. Painted as a masked 1px ring so it sits ON the border rather
+   than inside the padding box, and so it follows border-radius: inherit.
+   ::before is already taken by the grid texture, so this uses ::after. */
+.linear-grid-card::after,
+.linear-grid-card-inner::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.04) 35%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Optional lift. Opt-in rather than baked into the card, because the pricing
+   tiers and the before/after panels should not move under the cursor. */
+.linear-grid-card-lift {
+  transition:
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.linear-grid-card-lift:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.9),
+    inset 0 1px 1px rgba(255, 255, 255, 0.06);
+}
+
+/* Gradient icon tile. The dark-canvas inversion of the black squircles those
+   light templates use for feature icons: there the tile is dark on a light
+   page, here it is light on a dark one. Same job — a small, dense, lit object
+   that anchors the top of a card. */
+.gradient-tile {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.05) 45%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.14),
+    0 10px 24px rgba(0, 0, 0, 0.65);
+}
+
+/* Glass pill. Genuinely glassy — section headers sit over the atmospheric
+   radial glows, so there IS something behind these to refract. */
+.gradient-pill {
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.09) 0%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  backdrop-filter: blur(14px) saturate(160%);
+  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 6px 20px -10px rgba(0, 0, 0, 0.7);
+}
+
 .linear-cta {
   position: relative;
   background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%), #181922;

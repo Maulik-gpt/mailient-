@@ -471,19 +471,19 @@ export function LinearLanding() {
             {/* Pain-point cards moved onto the shared .linear-grid-card-inner
                 treatment — they had their own one-off fill and radius. */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-10">
-              <div className="linear-grid-card-inner p-6 space-y-2">
+              <div className="linear-grid-card-inner linear-grid-card-lift p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 01</span>
                 <p className="text-sm text-neutral-200">The email that sat in your inbox for three days while you meant to reply.</p>
               </div>
-              <div className="linear-grid-card-inner p-6 space-y-2">
+              <div className="linear-grid-card-inner linear-grid-card-lift p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 02</span>
                 <p className="text-sm text-neutral-200">The client who went cold because you got buried in other threads.</p>
               </div>
-              <div className="linear-grid-card-inner p-6 space-y-2">
+              <div className="linear-grid-card-inner linear-grid-card-lift p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 03</span>
                 <p className="text-sm text-neutral-200">The meeting that never got booked because the scheduling back-and-forth took a week.</p>
               </div>
-              <div className="linear-grid-card-inner p-6 space-y-2">
+              <div className="linear-grid-card-inner linear-grid-card-lift p-6 space-y-2">
                 <span className="text-xs font-mono text-neutral-500">PAIN POINT 04</span>
                 <p className="text-sm text-neutral-200">The Sunday night dread of opening Gmail and seeing 200 unread messages staring back.</p>
               </div>
@@ -791,25 +791,37 @@ export function LinearLanding() {
             subtitle="Connect once, and stop thinking about your inbox."
           />
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 text-left">
-            <div className="space-y-3">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 1</span>
-              <h3 className="text-lg font-semibold text-white">Connect Gmail.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+          {/* Each step is now a card with a lit gradient tile, rather than three
+              columns of bare text. The tile is the dark-canvas inversion of the
+              black icon squircle those light templates use. */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            <div className="linear-grid-card linear-grid-card-lift p-8 space-y-4">
+              <span className="gradient-tile w-12 h-12 relative z-10">
+                <Mail className="w-5 h-5 text-white" />
+              </span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 1</span>
+              <h3 className="text-lg font-semibold text-white relative z-10">Connect Gmail.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
                 Two minutes, secure Google sign-in. Your email stays in Gmail — nothing moves, nothing to configure.
               </p>
             </div>
-            <div className="space-y-3">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 2</span>
-              <h3 className="text-lg font-semibold text-white">It learns how you write.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+            <div className="linear-grid-card linear-grid-card-lift p-8 space-y-4">
+              <span className="gradient-tile w-12 h-12 relative z-10">
+                <Eye className="w-5 h-5 text-white" />
+              </span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 2</span>
+              <h3 className="text-lg font-semibold text-white relative z-10">It learns how you write.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
                 From your last 90 days of sent mail: your greetings, your rhythm, your sign-offs. Drafts start sounding like you, not like AI.
               </p>
             </div>
-            <div className="space-y-3">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold">STEP 3</span>
-              <h3 className="text-lg font-semibold text-white">Mornings arrive organized.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans">
+            <div className="linear-grid-card linear-grid-card-lift p-8 space-y-4">
+              <span className="gradient-tile w-12 h-12 relative z-10">
+                <Inbox className="w-5 h-5 text-white" />
+              </span>
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 3</span>
+              <h3 className="text-lg font-semibold text-white relative z-10">Mornings arrive organized.</h3>
+              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
                 Overnight it reads everything, drafts the replies, books the meetings, chases the silence — and leaves you one briefing. Nothing sends without your approval.
               </p>
             </div>
@@ -1329,8 +1341,8 @@ export function LinearLanding() {
               the quote styling is removed entirely and these are now plainly
               labeled product claims. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-12 md:mb-24">
-            <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4">
+            <div className="linear-grid-card linear-grid-card-lift p-8 relative text-left">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4 relative z-10">
                 What mornings become
               </span>
               <p className="text-sm text-neutral-300 font-light leading-relaxed font-sans relative z-10">
@@ -1338,8 +1350,8 @@ export function LinearLanding() {
               </p>
             </div>
 
-            <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4">
+            <div className="linear-grid-card linear-grid-card-lift p-8 relative text-left">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4 relative z-10">
                 Why it&apos;s different
               </span>
               <p className="text-sm text-neutral-300 font-light leading-relaxed font-sans relative z-10">
