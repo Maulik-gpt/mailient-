@@ -118,7 +118,7 @@ export interface ComposioIdentity {
  * Resolve the verified Google identity behind a connected account. Returns null
  * if the account isn't ACTIVE, the token is masked, or Google rejects it.
  */
-export async function getComposioIdentity(accountId: string): Promise<ComposioIdentity | null> {
+export async function getComposioIdentity(accountId: string): Promise<(ComposioIdentity & { _reason?: string }) | null> {
   // Resolve identity WITHOUT reading the raw token — so it works even with
   // "Mask Connected Account Secrets" ON. Masking only hides tokens from GET
   // responses; it does NOT affect tool EXECUTION (Composio uses the real
@@ -126,29 +126,31 @@ export async function getComposioIdentity(accountId: string): Promise<ComposioId
   // returns the account's emailAddress. The connection was created with a
   // userId we control (the pending_ id in the login cookie), which the
   // executor requires to locate the connection.
+  const bail = (reason: string) => {
+    console.error('[Composio] identity fail:', reason, 'account:', accountId);
+    return { email: '', _reason: reason } as any;
+  };
   try {
     const userId = await userIdForAccount(accountId);
-    if (!userId) {
-      console.error('[Composio] getComposioIdentity: could not resolve userId for account', accountId);
-      return null;
+    if (!userId) return bail('no_userid_for_account');
+    let res: any;
+    try {
+      res = await client().tools.execute('GMAIL_GET_PROFILE', {
+        userId,
+        arguments: {},
+        version: 'latest',
+        dangerouslySkipVersionCheck: true,
+      } as any);
+    } catch (e: any) {
+      return bail(`execute_threw:${(e?.message || e).toString().slice(0, 80)}`);
     }
-    const res: any = await client().tools.execute('GMAIL_GET_PROFILE', {
-      userId,
-      arguments: {},
-      version: 'latest',
-      dangerouslySkipVersionCheck: true,
-    } as any);
-    if (!res?.successful) {
-      console.error('[Composio] GMAIL_GET_PROFILE failed:', res?.error || 'unknown');
-      return null;
-    }
+    if (!res?.successful) return bail(`execute_unsuccessful:${JSON.stringify(res?.error || res?.data || '').slice(0, 80)}`);
     const d = res.data || {};
     const email: string | undefined = d.emailAddress || d.email || d.response_data?.emailAddress;
-    if (!email) return null;
+    if (!email) return bail(`no_email_in_result:${JSON.stringify(d).slice(0, 80)}`);
     return { email: String(email).toLowerCase() };
   } catch (err: any) {
-    console.warn('[Composio] identity (tool-exec) failed:', err?.message);
-    return null;
+    return bail(`outer:${(err?.message || err).toString().slice(0, 80)}`);
   }
 }
 

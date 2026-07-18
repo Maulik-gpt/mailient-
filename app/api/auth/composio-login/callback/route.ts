@@ -49,7 +49,13 @@ export async function GET(request: NextRequest) {
 
     // 2. Verified identity from the connection.
     const identity = await getComposioIdentity(accountId);
-    if (!identity?.email) return fail('composio_login_no_identity');
+    if (!identity?.email) {
+      // Surface WHY (the resolver stashes a reason) so a prod failure is
+      // diagnosable from the URL instead of a bare code.
+      const why = (identity as any)?._reason || 'unknown';
+      console.error('[Composio login] no identity — reason:', why, 'account:', accountId);
+      return NextResponse.redirect(new URL(`/auth/signin?error=composio_login_no_identity&detail=${encodeURIComponent(String(why).slice(0, 150))}`, baseUrl));
+    }
     const email = identity.email;
 
     // 3. Persist the Gmail marker row under the real email, so Arcus can use
