@@ -279,8 +279,12 @@ function HeroVideoPlayer() {
 // Autoplay "Three Things" cycle. The video steps (1 & 2) advance on the
 // video's onEnded so the FULL clip always plays regardless of load time;
 // these durations are generous FALLBACKS that only fire if a video fails to
-// load/play (so the carousel never freezes). Step 0 (no video) is timer-driven.
-const STEP_DURATIONS = [10000, 20000, 30000]; // ms — [Home Feed (timer), Voice demo (fallback), Scheduling demo (fallback)]
+// load/play (so the carousel never freezes). ALL THREE steps are videos now, so
+// every entry here must stay comfortably LONGER than its clip — step 0 was a
+// 10s timer for the old static mockup, and leaving it there would have yanked
+// the 22s home-feed clip away mid-play.
+// Clip lengths: home-feed 22.1s · voice 11.8s · agent 20.3s.
+const STEP_DURATIONS = [30000, 20000, 30000]; // ms — all FALLBACKS [Home feed, Voice demo, Scheduling demo]
 
 export function LinearLanding() {
   const router = useRouter();
@@ -702,50 +706,22 @@ export function LinearLanding() {
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.98 }}
                   transition={{ duration: 0.4 }}
-                  className="flex-1 flex flex-col justify-between font-mono h-full"
+                  className="absolute inset-0 z-10 bg-[#050505]"
                 >
-                  <div className="flex items-center justify-between border-b border-white/[0.04] pb-4">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500/85" />
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-500/85" />
-                      <span className="text-[10px] text-neutral-500 ml-4 font-mono">home-feed</span>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 text-[9px] font-bold">2 NEED YOU</span>
-                  </div>
-
-                  <div className="space-y-3 my-6">
-                    {/* Decision card 1 — meeting to confirm */}
-                    <div className="bg-black/40 border border-white/[0.06] p-4 rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between text-[10px] text-neutral-500">
-                        <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" /> MEETING REQUEST · SARAH CHEN</span>
-                        <span className="text-amber-400">DECIDE</span>
-                      </div>
-                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">&ldquo;Can we sync Thursday or Friday afternoon?&rdquo; — Mailient is holding 2:00 PM Thu, conflict-free.</p>
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1 text-center text-[10px] font-bold text-black bg-white rounded-lg py-1.5">Confirm 2:00 PM</span>
-                        <span className="flex-1 text-center text-[10px] font-medium text-neutral-300 bg-white/[0.05] border border-white/10 rounded-lg py-1.5">Propose another</span>
-                      </div>
-                    </div>
-
-                    {/* Decision card 2 — VIP reply ready */}
-                    <div className="bg-black/40 border border-white/[0.06] p-4 rounded-2xl space-y-3">
-                      <div className="flex items-center justify-between text-[10px] text-neutral-500">
-                        <span className="flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> VIP · ACME CAPITAL</span>
-                        <span className="text-emerald-400">DRAFT READY</span>
-                      </div>
-                      <p className="text-xs text-neutral-300 font-sans leading-relaxed">Reply drafted in your voice. Review &amp; send, or let it go out.</p>
-                      <div className="flex items-center gap-2">
-                        <span className="flex-1 text-center text-[10px] font-bold text-black bg-white rounded-lg py-1.5">Review &amp; send</span>
-                        <span className="flex-1 text-center text-[10px] font-medium text-neutral-300 bg-white/[0.05] border border-white/10 rounded-lg py-1.5">Open thread</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-4 border-t border-white/[0.04] text-[10px] text-neutral-500">
-                    <span>41 ARCHIVED · 6 LOGGED</span>
-                    <span>ONLY WHAT NEEDS YOU</span>
-                  </div>
+                  {/* Live demo — the real Today feed on a real inbox. Replaced a
+                      hand-built mockup: this section claims "only what needs you",
+                      and a fabricated screenshot is the one thing that can't prove it. */}
+                  <video
+                    src="/demos/home-feed-demo.mp4"
+                    poster="/demos/home-feed-demo.jpg"
+                    autoPlay
+                    muted
+                    playsInline
+                    preload="auto"
+                    onEnded={() => setActiveStep((prev) => (prev + 1) % 3)}
+                    aria-label="The Mailient home feed showing only the emails that need a decision"
+                    className="w-full h-full object-cover"
+                  />
                 </motion.div>
               )}
 
