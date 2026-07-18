@@ -72,7 +72,11 @@ export async function initiateComposioConnection(
 ): Promise<{ accountId: string; redirectUrl: string }> {
   const authConfigId = composioAuthConfigId(toolkit);
   if (!authConfigId) throw new Error(`Composio auth config for ${toolkit} is not configured`);
-  const req = await client().connectedAccounts.initiate(
+  // Composio deprecated `.initiate()` for MANAGED-OAuth auth configs (returns
+  // HTTP 400 "no longer supported. Use POST /api/v3/connected_accounts/link").
+  // `.link()` is the current method — same (userId, authConfigId, {callbackUrl})
+  // signature and same { id, redirectUrl } result.
+  const req = await client().connectedAccounts.link(
     userEmail.toLowerCase(),
     authConfigId,
     { callbackUrl },
