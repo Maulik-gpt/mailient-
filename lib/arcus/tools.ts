@@ -3758,21 +3758,19 @@ async function scheduleMeeting(userId: string, input: any, context: ToolContext 
   const calUrl = 'https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1&sendUpdates=all';
   const eventBodyStr = JSON.stringify(event);
 
-  let res = await fetch(calUrl, {
+  let res = await googleFetch(userId, 'gcal', calUrl, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: eventBodyStr,
-    signal: AbortSignal.timeout(12000),
   });
   if (res.status === 401 || res.status === 403) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch(calUrl, {
+      res = await googleFetch(userId, 'gcal', calUrl, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: eventBodyStr,
-        signal: AbortSignal.timeout(12000),
       });
     }
   }
@@ -3829,10 +3827,10 @@ async function getCalendarEvents(userId: string, input: any): Promise<ToolResult
   });
 
   const calEventsUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
-  let res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
+  let res = await googleFetch(userId, 'gcal', calEventsUrl, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401 || res.status === 403) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; res = await fetch(calEventsUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
+    if (newToken) { token = newToken; res = await googleFetch(userId, 'gcal', calEventsUrl, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) {
     const cal403 = await gcal403Failure(res);
@@ -3880,21 +3878,19 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
     timeZone: tz,
     items: [{ id: 'primary' }],
   });
-  let fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+  let fbRes = await googleFetch(userId, 'gcal', 'https://www.googleapis.com/calendar/v3/freeBusy', {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body: fbBody,
-    signal: AbortSignal.timeout(10000),
   });
   if (fbRes.status === 401 || fbRes.status === 403) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      fbRes = await fetch('https://www.googleapis.com/calendar/v3/freeBusy', {
+      fbRes = await googleFetch(userId, 'gcal', 'https://www.googleapis.com/calendar/v3/freeBusy', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: fbBody,
-        signal: AbortSignal.timeout(10000),
       });
     }
   }
@@ -3916,9 +3912,9 @@ async function calendarGetAvailability(userId: string, input: any): Promise<Tool
       orderBy: 'startTime',
       maxResults: '50',
     });
-    const evRes = await fetch(
+    const evRes = await googleFetch(userId, 'gcal',
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     if (evRes.ok) {
       const data = await evRes.json();
@@ -4253,9 +4249,9 @@ async function calendarCancelEvent(userId: string, input: any, context: ToolCont
   // Fetch attendee count first (best-effort) so the success message is informative.
   let attendeeCount = 0;
   try {
-    const evRes = await fetch(
+    const evRes = await googleFetch(userId, 'gcal',
       `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
     if (evRes.ok) {
       const ev = await evRes.json();
@@ -4264,19 +4260,17 @@ async function calendarCancelEvent(userId: string, input: any, context: ToolCont
   } catch { /* non-fatal */ }
 
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${encodeURIComponent(eventId)}?sendUpdates=all`;
-  let res = await fetch(url, {
+  let res = await googleFetch(userId, 'gcal', url, {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(10000),
   });
   if (res.status === 401 || res.status === 403) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch(url, {
+      res = await googleFetch(userId, 'gcal', url, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(10000),
       });
     }
   }
@@ -5361,12 +5355,15 @@ async function getRecipientContext(userId: string, input: any): Promise<ToolResu
 
   // 1. Google Calendar — upcoming events with this person
   try {
-    const calToken = await getGmailToken(userId); // same Google OAuth token
+    // Was getGmailToken ("same Google OAuth token") — true for our own OAuth
+    // client, but under Composio Gmail and Calendar are SEPARATE connected
+    // accounts, so a calendar call must resolve the calendar one.
+    const calToken = await getGcalToken(userId);
     if (calToken) {
       const now = new Date().toISOString();
       const future = new Date(Date.now() + 30 * 86400000).toISOString();
       const calUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${encodeURIComponent(now)}&timeMax=${encodeURIComponent(future)}&q=${encodeURIComponent(recipientEmail)}&maxResults=5&singleEvents=true&orderBy=startTime`;
-      const calRes = await fetch(calUrl, { headers: { Authorization: `Bearer ${calToken}` }, signal: AbortSignal.timeout(8000) });
+      const calRes = await googleFetch(userId, 'gcal', calUrl, { headers: { Authorization: `Bearer ${calToken}` } });
       if (calRes.ok) {
         const calData = await calRes.json();
         const events: any[] = calData.items || [];
@@ -8823,10 +8820,10 @@ async function calendarUnlimitedScan(userId: string, input: any): Promise<ToolRe
     maxResults: String(Math.min(250, max)),
   });
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`;
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let res = await googleFetch(userId, 'gcal', url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401 || res.status === 403) {
     const nt = await refreshGoogleToken(userId);
-    if (nt) { token = nt; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (nt) { token = nt; res = await googleFetch(userId, 'gcal', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
   const data = await res.json();
@@ -9025,17 +9022,16 @@ async function calendarAutoDeclineLowPriority(userId: string, input: any): Promi
     try {
       const patchUrl = `https://www.googleapis.com/calendar/v3/calendars/primary/events/${c.id}?sendUpdates=externalOnly`;
       // Need to set attendees[self].responseStatus = 'declined'
-      const getRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${c.id}`, {
-        headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+      const getRes = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events/${c.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (!getRes.ok) { failed++; continue; }
       const ev = await getRes.json();
       const attendees = (ev.attendees || []).map((a: any) => a.self ? { ...a, responseStatus: 'declined' } : a);
-      const patchRes = await fetch(patchUrl, {
+      const patchRes = await googleFetch(userId, 'gcal', patchUrl, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ attendees }),
-        signal: AbortSignal.timeout(8000),
       });
       if (patchRes.ok) declined++; else failed++;
     } catch { failed++; }
@@ -9124,8 +9120,8 @@ async function calendarMeetingPrepAutomation(userId: string, input: any, context
   // Determine target events: either the named one, or all in lookahead window
   let targets: any[] = [];
   if (eventId) {
-    const getRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+    const getRes = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (!getRes.ok) return failureResult(`Calendar event fetch failed (${getRes.status}).`, 'upstream_gcal');
     targets = [await getRes.json()];
@@ -9139,8 +9135,8 @@ async function calendarMeetingPrepAutomation(userId: string, input: any, context
       orderBy: 'startTime',
       maxResults: '20',
     });
-    const res = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
-      headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000),
+    const res = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
     if (!res.ok) return failureResult(`Calendar fetch failed (${res.status}).`, 'upstream_gcal');
     const data = await res.json();
@@ -9235,12 +9231,12 @@ async function calendarAutoGenerateMeetLinks(userId: string, input: any): Promis
     orderBy: 'startTime',
     maxResults: '100',
   });
-  let listRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
-    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000),
+  let listRes = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (listRes.status === 401) {
     const nt = await refreshGoogleToken(userId);
-    if (nt) { token = nt; listRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (nt) { token = nt; listRes = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!listRes.ok) return failureResult(`Calendar fetch failed (${listRes.status}).`, 'upstream_gcal');
   const data = await listRes.json();
@@ -9259,7 +9255,7 @@ async function calendarAutoGenerateMeetLinks(userId: string, input: any): Promis
   let failed = 0;
   for (const ev of candidates) {
     try {
-      const patchRes = await fetch(
+      const patchRes = await googleFetch(userId, 'gcal',
         `https://www.googleapis.com/calendar/v3/calendars/primary/events/${ev.id}?conferenceDataVersion=1&sendUpdates=all`,
         {
           method: 'PATCH',
@@ -9272,7 +9268,6 @@ async function calendarAutoGenerateMeetLinks(userId: string, input: any): Promis
               },
             },
           }),
-          signal: AbortSignal.timeout(10000),
         },
       );
       if (patchRes.ok) added++; else failed++;
@@ -9569,8 +9564,8 @@ async function notionAutoGenerateMeetingNotes(userId: string, input: any, contex
   let token: string | null = await getGcalToken(userId);
   if (!token) return failureResult('Google Calendar is not connected.', 'gcal_not_connected');
 
-  const evRes = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
-    headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000),
+  const evRes = await googleFetch(userId, 'gcal', `https://www.googleapis.com/calendar/v3/calendars/primary/events/${eventId}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
   if (!evRes.ok) return failureResult(`Calendar event fetch failed (${evRes.status}).`, 'upstream_gcal');
   const ev = await evRes.json();

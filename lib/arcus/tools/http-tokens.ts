@@ -118,9 +118,15 @@ export async function composioFetchByAccount(
   try {
     const r = await composioProxy(accountId, toolkit, endpoint, method, body, extra);
     // Rebuild a real Response so callers' .ok/.json()/.text() just work.
+    const status = r.status || 502;
     const payload = r.data == null ? '' : (typeof r.data === 'string' ? r.data : JSON.stringify(r.data));
-    return new Response(payload, {
-      status: r.status || 502,
+    // 204/205/304 are null-body statuses — the Response constructor THROWS if you
+    // hand them any body, even ''. DELETEs (Gmail drafts, Calendar events) return
+    // 204, so without this a successful delete would throw into the catch below
+    // and surface as a fabricated 502.
+    const nullBody = status === 204 || status === 205 || status === 304;
+    return new Response(nullBody ? null : payload, {
+      status,
       headers: { 'content-type': 'application/json' },
     });
   } catch (e: any) {

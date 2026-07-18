@@ -8,6 +8,7 @@
 
 import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
+import { googleFetch } from '../arcus/tools/http-tokens';
 import crypto from 'crypto';
 
 /**
@@ -42,7 +43,7 @@ export async function renewExpiredChannels(): Promise<{ renewed: number; failed:
       // 1. Stop the old channel first (best effort)
       if (integration.channel_id) {
         try {
-          await fetch('https://www.googleapis.com/calendar/v3/channels/stop', {
+          await googleFetch(integration.user_id, 'gcal', 'https://www.googleapis.com/calendar/v3/channels/stop', {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -52,7 +53,6 @@ export async function renewExpiredChannels(): Promise<{ renewed: number; failed:
               id: integration.channel_id,
               resourceId: integration.channel_id,
             }),
-            signal: AbortSignal.timeout(5000),
           });
         } catch {
           // Old channel may already be expired — continue
@@ -63,7 +63,7 @@ export async function renewExpiredChannels(): Promise<{ renewed: number; failed:
       const newChannelId = crypto.randomUUID();
       const newToken = crypto.randomBytes(32).toString('hex');
 
-      const watchResponse = await fetch(
+      const watchResponse = await googleFetch(integration.user_id, 'gcal',
         'https://www.googleapis.com/calendar/v3/calendars/primary/events/watch',
         {
           method: 'POST',
@@ -78,7 +78,6 @@ export async function renewExpiredChannels(): Promise<{ renewed: number; failed:
             token: newToken,
             params: { ttl: String(7 * 24 * 60 * 60) },
           }),
-          signal: AbortSignal.timeout(10000),
         }
       );
 

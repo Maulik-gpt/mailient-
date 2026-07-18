@@ -57,7 +57,7 @@ export async function buildContext(
   const eventWindow = mode === 'plan_mode' ? 7 : 2; // days
   const [upcomingEvents, recentMessages, notionEvents, recentEmails] = await Promise.all([
     gcalIntegration
-      ? fetchGCalEvents(gcalIntegration, eventWindow)
+      ? fetchGCalEvents(userId, gcalIntegration, eventWindow)
       : Promise.resolve([]),
     slackIntegration
       ? fetchSlackMessages(slackIntegration)
@@ -89,6 +89,7 @@ export async function buildContext(
  * Fetch upcoming Google Calendar events.
  */
 async function fetchGCalEvents(
+  userId: string,
   integration: Record<string, unknown>,
   daysAhead: number
 ): Promise<ArcusEvent[]> {
@@ -110,11 +111,10 @@ async function fetchGCalEvents(
       maxResults: '50',
     });
 
-    const response = await fetch(
+    const response = await googleFetch(userId, 'gcal',
       `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
       {
         headers: { Authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(10000),
       }
     );
 
@@ -124,11 +124,10 @@ async function fetchGCalEvents(
         const newToken = await refreshGCalToken(refreshToken);
         if (newToken) {
           // Retry with new token
-          const retryResponse = await fetch(
+          const retryResponse = await googleFetch(userId, 'gcal',
             `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
             {
               headers: { Authorization: `Bearer ${newToken}` },
-              signal: AbortSignal.timeout(10000),
             }
           );
           if (retryResponse.ok) {

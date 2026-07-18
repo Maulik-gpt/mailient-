@@ -377,7 +377,7 @@ async function gatherCalendarPrep(userEmail: string): Promise<RawSignal[]> {
   const now = new Date();
   const end = new Date(now.getTime() + 2 * 86_400_000);
   const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${now.toISOString()}&timeMax=${end.toISOString()}&singleEvents=true&orderBy=startTime&maxResults=12`;
-  const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  const res = await googleFetch(userEmail, 'gcal', url, { headers: { Authorization: `Bearer ${token}` } });
   if (!res.ok) return [];
   const data = await res.json();
   const out: RawSignal[] = [];

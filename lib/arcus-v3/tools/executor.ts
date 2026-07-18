@@ -610,6 +610,7 @@ export async function createNotionTask(
 // ── Calendar helpers ──────────────────────────────────────────────────────────
 
 async function listGcalEvents(
+  userId: string,
   accessToken: string,
   rangeStart: string,
   rangeEnd: string
@@ -621,9 +622,9 @@ async function listGcalEvents(
     orderBy: 'startTime',
     maxResults: '50',
   });
-  const res = await fetch(
+  const res = await googleFetch(userId, 'gcal',
     `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
-    { headers: { Authorization: `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000) }
+    { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   if (!res.ok) return [];
   const data = await res.json();
@@ -700,7 +701,7 @@ export async function readCombinedCalendar(
 
   const [gcalEvents, notionEvents] = await Promise.all([
     gcalTokens
-      ? listGcalEvents(gcalTokens.accessToken, input.rangeStart, input.rangeEnd).catch(() => [])
+      ? listGcalEvents(userId, gcalTokens.accessToken, input.rangeStart, input.rangeEnd).catch(() => [])
       : Promise.resolve([]),
     notionToken
       ? listNotionCalendarEvents(notionToken, input.rangeStart, input.rangeEnd).catch(() => [])
