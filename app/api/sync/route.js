@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { auth } from "@/lib/auth.js";
 import { DatabaseService } from "@/lib/supabase.js";
 import { decrypt, encrypt } from "@/lib/crypto.js";
 import { logEvent } from "@/lib/logsso";
@@ -43,11 +44,24 @@ async function getValidAccess(row) {
 
 export async function GET(req) {
   try {
+    // AUTH REQUIRED. This route used to take ?email= as its ONLY identity input,
+    // with no session check — so anyone could sync (and persist) another user's
+    // entire mailbox by guessing their address. Identity now comes from the
+    // session; ?email= is accepted only when it matches the caller's own.
+    const session = await auth();
+    const sessionEmail = session?.user?.email;
+    if (!sessionEmail) {
+      return NextResponse.json({ error: "Authentication required" }, { status: 401 });
+    }
+
     const url = new URL(req.url);
-    const email = url.searchParams.get("email");
+    const requested = url.searchParams.get("email");
+    if (requested && requested.toLowerCase() !== sessionEmail.toLowerCase()) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    const email = sessionEmail;
     const max = Number(url.searchParams.get("max") || "100"); // Increased default
     const fetchAll = url.searchParams.get("all") === "true"; // New parameter to fetch all emails
-    if (!email) return NextResponse.json({ error: "missing email" }, { status: 400 });
 
     const { data: row } = await supabase.from("user_tokens").select("*").eq("google_email", email).maybeSingle();
     if (!row) return NextResponse.json({ error: "no_tokens" }, { status: 404 });

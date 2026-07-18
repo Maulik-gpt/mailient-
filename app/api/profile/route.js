@@ -244,16 +244,10 @@ export async function GET(req) {
       // Continue without email param
     }
 
-    if (email) {
-      return await getGmailProfile(email);
-    }
-
-    // Validate environment variables
-    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      console.error("Missing Supabase environment variables");
-      throw new Error("Server configuration error: Missing database credentials");
-    }
-
+    // AUTH FIRST — the legacy `?email=` branch below used to run BEFORE any
+    // session check, so anyone could read any user's Gmail profile just by
+    // guessing their address. Authenticate, then only ever act on the session's
+    // own identity.
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ error: "Authentication required" }, { status: 401 });
@@ -264,7 +258,23 @@ export async function GET(req) {
       return NextResponse.json({ error: "Invalid session: missing email" }, { status: 401 });
     }
 
-    const user = { email: session.user.email };
+    const sessionEmail = session.user.email;
+
+    if (email) {
+      // A caller may still pass ?email=, but only for their OWN address.
+      if (email.toLowerCase() !== sessionEmail.toLowerCase()) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+      return await getGmailProfile(sessionEmail);
+    }
+
+    // Validate environment variables
+    if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error("Missing Supabase environment variables");
+      throw new Error("Server configuration error: Missing database credentials");
+    }
+
+    const user = { email: sessionEmail };
 
     // If force_refresh, clear existing activity to force full rebackfill
     if (forceRefresh) {
