@@ -26,6 +26,35 @@ export async function POST(request) {
 
     const userEmail = session.user.email.toLowerCase();
 
+    // COMPOSIO-MANAGED: send via Proxy Execute (masking-proof) and return early.
+    // Must be checked BEFORE user_tokens — a Composio user's user_tokens holds
+    // the identity-only login token (no Gmail scope), which would fail here.
+    try {
+      const { composioAccountFor, googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+      const composioAcct = await composioAccountFor(userEmail, 'gmail');
+      if (composioAcct) {
+        const lines = [`To: ${to}`, `Subject: ${subject}`, `Content-Type: text/${isHtml ? 'html' : 'plain'}; charset=UTF-8`, '', emailBody];
+        const raw = Buffer.from(lines.join('\r\n')).toString('base64url');
+        const res = await googleFetch(userEmail, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer composio', 'Content-Type': 'application/json' },
+          body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
+        });
+        if (!res.ok) {
+          const t = await res.text().catch(() => '');
+          console.error('[send-email v2] Composio send failed', res.status, t.slice(0, 200));
+          return NextResponse.json({ error: 'Failed to send email' }, { status: 502 });
+        }
+        const sent = await res.json();
+        if (gmailDraftId) {
+          try { await googleFetch(userEmail, 'gmail', `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${gmailDraftId}`, { method: 'DELETE', headers: { Authorization: 'Bearer composio' } }); } catch { /* non-fatal */ }
+        }
+        return NextResponse.json({ success: true, message: 'Email sent successfully', result: sent });
+      }
+    } catch (e) {
+      console.warn('[send-email v2] Composio path error, falling back:', e?.message);
+    }
+
     // Try user_tokens first (Google sign-in flow)
     let accessToken = null;
     let refreshToken = '';

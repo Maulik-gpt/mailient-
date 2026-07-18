@@ -19,6 +19,7 @@ import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
 const auth: any = nextAuth;
 import { getSupabaseAdmin } from '../../../../lib/supabase.js';
 import { decrypt } from '../../../../lib/crypto.js';
+import { googleFetch } from '../../../../lib/arcus/tools/http-tokens';
 import { logEvent } from "@/lib/logsso";
 
 export const maxDuration = 55;
@@ -114,9 +115,9 @@ export async function POST(req: NextRequest) {
 
     // ── 1. Fetch recent unread inbox ──────────────────────────────────────────
     const query = `in:inbox is:unread newer_than:${since}`;
-    const listRes = await fetch(
+    const listRes = await googleFetch(userEmail, 'gmail',
       `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(query)}&maxResults=20`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!listRes.ok) return NextResponse.json({ error: 'Gmail fetch failed' }, { status: 500 });
 
@@ -135,9 +136,9 @@ export async function POST(req: NextRequest) {
     // ── 2. Fetch metadata for each message ────────────────────────────────────
     const details = await Promise.all(messages.slice(0, 20).map(async ({ id }: any) => {
       try {
-        const r = await fetch(
+        const r = await googleFetch(userEmail, 'gmail',
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!r.ok) return null;
         const m = await r.json();
@@ -166,9 +167,9 @@ export async function POST(req: NextRequest) {
     urgent.sort((a, b) => b.urgencyScore - a.urgencyScore);
 
     // ── 4. Follow-ups (sent emails awaiting reply) ────────────────────────────
-    const sentRes = await fetch(
+    const sentRes = await googleFetch(userEmail, 'gmail',
       `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent('in:sent newer_than:7d')}&maxResults=10`,
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     const followups: any[] = [];
 
@@ -179,9 +180,9 @@ export async function POST(req: NextRequest) {
 
       for (const { id } of sentMsgs) {
         try {
-          const sentMsgRes = await fetch(
+          const sentMsgRes = await googleFetch(userEmail, 'gmail',
             `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000) }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           if (!sentMsgRes.ok) continue;
           const msg = await sentMsgRes.json();
@@ -196,9 +197,9 @@ export async function POST(req: NextRequest) {
           const daysWaiting = Math.round((Date.now() - sentMs) / 86400000);
           if (daysWaiting < 1) continue;
 
-          const threadRes = await fetch(
+          const threadRes = await googleFetch(userEmail, 'gmail',
             `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=metadata&metadataHeaders=From`,
-            { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(6000) }
+            { headers: { Authorization: `Bearer ${token}` } }
           );
           if (!threadRes.ok) continue;
           const thread = await threadRes.json();

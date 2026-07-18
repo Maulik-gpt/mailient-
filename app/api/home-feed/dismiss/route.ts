@@ -22,15 +22,15 @@ export const dynamic = 'force-dynamic';
 async function modifyThreadInbox(userId: string, threadId: string, archive: boolean): Promise<void> {
   if (!threadId) return;
   try {
-    const { getGmailToken, refreshGoogleToken } = await import('@/lib/arcus/tools/http-tokens');
+    const { getGmailToken, refreshGoogleToken, googleFetch } = await import('@/lib/arcus/tools/http-tokens');
     let token = await getGmailToken(userId);
     if (!token) return;
     const body = JSON.stringify(archive ? { removeLabelIds: ['INBOX'] } : { addLabelIds: ['INBOX'] });
     const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}/modify`;
-    let res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(8000) });
+    let res = await googleFetch(userId, 'gmail', url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body });
     if (res.status === 401) {
       const fresh = await refreshGoogleToken(userId);
-      if (fresh) res = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${fresh}`, 'Content-Type': 'application/json' }, body, signal: AbortSignal.timeout(8000) });
+      if (fresh) res = await googleFetch(userId, 'gmail', url, { method: 'POST', headers: { Authorization: `Bearer ${fresh}`, 'Content-Type': 'application/json' }, body });
     }
     if (!res.ok) console.warn('[home-feed/dismiss] thread modify failed:', res.status);
   } catch (e: any) {

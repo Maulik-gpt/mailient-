@@ -43,11 +43,13 @@ async function testGmail(userId: string): Promise<TestResult> {
 
   // @ts-ignore
   const { decrypt } = await import('../../../../../lib/crypto.js');
+  const { googleFetch } = await import('../../../../../lib/arcus/tools/http-tokens');
   const token = decrypt(data.access_token);
   try {
-    const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+    // googleFetch proxies through Composio for managed users (the stored token
+    // is a composio: marker, not a bearer) or does the direct probe for legacy.
+    const res = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/profile', {
       headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(6000),
     });
     if (res.status === 401 || res.status === 403) {
       return { ok: false, reason: 'Token expired or missing scopes. Click Reconfigure.' };

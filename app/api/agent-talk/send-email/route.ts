@@ -130,15 +130,19 @@ export async function POST(req: NextRequest) {
 
     const raw = encodeRfc822(to, subject, body, threadId);
 
-    const gmailRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        'Content-Type': 'application/json',
+    // googleFetch routes through Composio Proxy Execute for Composio-managed
+    // users (masking-proof — the stored token is a composio: marker, not a
+    // usable bearer) and does a direct authed fetch for legacy users.
+    const { googleFetch } = await import('../../../../lib/arcus/tools/http-tokens');
+    const gmailRes = await googleFetch(
+      userId, 'gmail',
+      'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+      {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
       },
-      body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
-      signal: AbortSignal.timeout(12000),
-    });
+    );
 
     if (!gmailRes.ok) {
       const errText = await gmailRes.text().catch(() => '');

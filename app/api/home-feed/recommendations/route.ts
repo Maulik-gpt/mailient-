@@ -17,7 +17,7 @@
 import { NextResponse } from 'next/server';
 // @ts-ignore — JS module
 import { auth } from '@/lib/auth.js';
-import { getGmailToken, getGcalToken, getNotionToken, getSlackToken } from '@/lib/arcus/tools/http-tokens';
+import { getGmailToken, getGcalToken, getNotionToken, getSlackToken, googleFetch } from '@/lib/arcus/tools/http-tokens';
 // @ts-ignore — JS module
 import { getSupabaseAdmin } from '@/lib/supabase.js';
 // @ts-ignore — JS module
@@ -346,13 +346,13 @@ async function gatherGmailBounces(userEmail: string): Promise<RawSignal[]> {
   if (!token) return [];
   const auth = { Authorization: `Bearer ${token}` };
   const q = encodeURIComponent('(from:mailer-daemon OR subject:"Delivery Status Notification" OR subject:"Undelivered") newer_than:5d');
-  const listRes = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=4`, { headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+  const listRes = await googleFetch(userEmail, 'gmail', `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${q}&maxResults=4`, { headers: auth });
   if (!listRes.ok) return [];
   const list = await listRes.json();
   const ids: string[] = (list.messages || []).map((m: any) => m.id).slice(0, 3);
   const msgs = await Promise.all(ids.map(async (id) => {
     try {
-      const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject`, { headers: auth, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+      const r = await googleFetch(userEmail, 'gmail', `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=Subject`, { headers: auth });
       if (!r.ok) return null;
       return await r.json();
     } catch {
