@@ -4,17 +4,22 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { 
-  Home, 
-  LayoutList, 
-  HelpCircle, 
-  Scale, 
-  FileText 
+import {
+  Home,
+  LayoutList,
+  HelpCircle,
+  Scale,
+  FileText,
+  Gift
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { id: "home", label: "Home", icon: Home, href: "/home-feed" },
+  // Second position on purpose. A referral page nobody can find is the whole
+  // reason the old system never got used — it has to sit where the eye already
+  // goes, not buried in settings.
+  { id: "referrals", label: "Give a month", icon: Gift, href: "/referrals" },
   { id: "changelog", label: "Changelog", icon: LayoutList, href: "/changelog" },
   { id: "support", label: "Support", icon: HelpCircle, href: "/contact" },
   { id: "terms", label: "Terms", icon: Scale, href: "/terms-of-service" },

@@ -29,6 +29,16 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 18, 2026',
     entries: [
       {
+        tag: 'New',
+        title: 'Give a friend a free month — and get one back',
+        points: [
+          'Anyone you invite now gets a full free month of Mailient instead of the 3-day trial. When they stay on as a customer, a free month is added to your account automatically — nothing to claim.',
+          'There is a share screen at "Give a month" in the menu: your link, a pre-written message, and one tap to WhatsApp, email, X or LinkedIn. On a phone it opens your normal share sheet.',
+          'You can see how many friends have joined and how many months you have earned.',
+          'Previously invites paid out in credits, which nothing in the product could spend — so the reward was worth nothing. It is real subscription time now.',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'Cards and buttons have real depth now',
         points: [
