@@ -13,11 +13,11 @@
 
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight, ArrowLeft, Check, Loader2, Lock,
-  Mail, Clock,
+  Mail, Clock, LogOut,
   Sparkles, PenLine, ChevronRight, Inbox, Activity, Cpu,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -391,6 +391,20 @@ export default function SiftOnboardingPage() {
           <div className="max-w-xl mx-auto flex items-center gap-4">
             <span className="text-[13px] font-medium tracking-tight text-[#0A0A0A]/80 shrink-0">Mailient</span>
             <ProgressCapsule step={step} />
+            {/* Onboarding is otherwise a one-way corridor — without this, a user
+                who signed in with the wrong Google account has no way out but
+                the back button. Progress is persisted per-step, so signing out
+                and back in resumes where they left off. */}
+            <button
+              type="button"
+              onClick={() => signOut({ callbackUrl: '/' })}
+              aria-label="Sign out"
+              title="Sign out"
+              className="lg-ghost lg-focus shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-medium"
+            >
+              <LogOut className="w-3.5 h-3.5" strokeWidth={2} />
+              <span className="hidden sm:inline">Sign out</span>
+            </button>
           </div>
         </header>
       )}
