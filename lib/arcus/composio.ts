@@ -95,6 +95,56 @@ export async function deleteComposioConnection(accountId: string): Promise<void>
   await client().connectedAccounts.delete(accountId);
 }
 
+// ── Composio-as-login: identity from a connected Google account ───────────────
+// When Composio is the SOLE Google touchpoint, the account connection (which
+// includes the openid/email/profile identity scopes) IS the login. We read the
+// live access token and call Google's userinfo endpoint to get the verified
+// identity. We use userinfo (not the id_token) because Composio's id_token has
+// Composio's client as its `aud`, which we can't verify against our own client —
+// userinfo works regardless of which OAuth client minted the token.
+
+export interface ComposioIdentity {
+  email: string;
+  name?: string;
+  picture?: string;
+  sub?: string;
+}
+
+/**
+ * Resolve the verified Google identity behind a connected account. Returns null
+ * if the account isn't ACTIVE, the token is masked, or Google rejects it.
+ */
+export async function getComposioIdentity(accountId: string): Promise<ComposioIdentity | null> {
+  const token = await getComposioAccessToken(accountId, { force: true });
+  if (!token) return null;
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) {
+      console.error(`[Composio] userinfo failed (${res.status}) — token invalid or missing openid/email scope`);
+      return null;
+    }
+    const j: any = await res.json();
+    if (!j?.email) return null;
+    return {
+      email: String(j.email).toLowerCase(),
+      name: j.name || undefined,
+      picture: j.picture || undefined,
+      sub: j.sub || undefined,
+    };
+  } catch (err: any) {
+    console.warn('[Composio] identity fetch failed:', err?.message);
+    return null;
+  }
+}
+
+/** True when Composio should be the SOLE Google touchpoint (login included). */
+export function composioLoginEnabled(): boolean {
+  return !!(process.env.COMPOSIO_API_KEY && process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID && process.env.COMPOSIO_LOGIN === '1');
+}
+
 // ── Live token resolution ────────────────────────────────────────────────────
 // Composio refreshes the Google token on their side; we fetch it on demand
 // and cache briefly so tool bursts (an inbox sweep is dozens of Gmail calls)

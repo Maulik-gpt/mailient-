@@ -30,6 +30,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Improved',
+        title: 'One-step Google sign-in and connect',
+        points: [
+          'Signing up now signs you in and connects your Gmail in a single Google approval, through a verified provider — no separate login-then-connect, and no signup ceiling.',
+          'You go from the homepage straight into onboarding with Gmail already connected, ready to work.',
+        ],
+      },
+      {
+        tag: 'Improved',
         title: 'Connecting Google is smoother and ready to scale',
         points: [
           'Signing in now asks only for your name and email; Gmail access is a separate, clearly-scoped step — so the permission screen is smaller and easier to trust.',

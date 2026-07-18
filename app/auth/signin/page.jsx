@@ -95,6 +95,13 @@ function SignInContent() {
     setIsLoading(true);
     setError(null);
     try {
+      // COMPOSIO-AS-LOGIN: authenticate on Composio's verified client; our own
+      // Google OAuth client never fires. Returning users re-consent-or-resume
+      // through the same path (Composio recognizes an existing connection).
+      if (process.env.NEXT_PUBLIC_COMPOSIO_LOGIN === '1') {
+        window.location.href = '/api/auth/composio-login/start';
+        return;
+      }
       const result = await signIn('google', {
         callbackUrl: '/onboarding',
         login_hint: email.trim().toLowerCase()
