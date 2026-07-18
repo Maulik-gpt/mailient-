@@ -43,8 +43,14 @@ export async function GET(request: NextRequest) {
       path: '/',
     });
     return response;
-  } catch (err) {
-    console.error('[Composio login] initiate failed:', (err as Error).message);
-    return NextResponse.redirect(new URL('/auth/signin?error=composio_login_start', baseUrl));
+  } catch (err: any) {
+    // Surface the REAL Composio error (message + any nested HTTP body) so a
+    // prod failure is debuggable from the logs instead of a bare wrapper.
+    const detail = err?.message || String(err);
+    const nested = err?.cause ? ` | cause: ${typeof err.cause === 'object' ? JSON.stringify(err.cause).slice(0, 400) : err.cause}` : '';
+    console.error('[Composio login] link() failed:', detail + nested);
+    // Also pass a short reason to the URL so it's visible without log access.
+    const reason = encodeURIComponent(detail.slice(0, 120));
+    return NextResponse.redirect(new URL(`/auth/signin?error=composio_login_start&detail=${reason}`, baseUrl));
   }
 }
