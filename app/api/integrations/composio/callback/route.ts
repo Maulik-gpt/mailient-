@@ -60,6 +60,8 @@ export async function GET(request: NextRequest) {
     if (status !== 'ACTIVE') return fail('composio_pending');
 
     const supabase = getSupabaseAdmin();
+    // arcus_integrations has NO `status` column — writing it fails the upsert
+    // (PGRST204). A row existing = connected.
     const { error: dbError } = await supabase.from('arcus_integrations').upsert({
       user_id: userId,
       provider: toolkit,
@@ -67,7 +69,6 @@ export async function GET(request: NextRequest) {
       refresh_token: null,
       scopes: [],
       expires_at: null,
-      status: 'connected',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' });
     if (dbError) {

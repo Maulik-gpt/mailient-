@@ -61,6 +61,8 @@ export async function GET(request: NextRequest) {
     // 3. Persist the Gmail marker row under the real email, so Arcus can use
     //    Gmail from the first turn (no second connect step).
     const supabase = getSupabaseAdmin();
+    // NOTE: arcus_integrations has NO `status` column — writing it makes the
+    // whole upsert fail with PGRST204. A row's mere existence = connected.
     const { error: dbError } = await supabase.from('arcus_integrations').upsert({
       user_id: email,
       provider: 'gmail',
@@ -68,12 +70,12 @@ export async function GET(request: NextRequest) {
       refresh_token: null,
       scopes: [],
       expires_at: null,
-      status: 'connected',
       updated_at: new Date().toISOString(),
     }, { onConflict: 'user_id,provider' });
     if (dbError) {
-      console.error('[Composio login] marker store failed:', dbError.message);
-      return fail('composio_login_store');
+      console.error('[Composio login] marker store failed:', dbError.message, '| code:', (dbError as any).code, '| details:', (dbError as any).details, '| hint:', (dbError as any).hint);
+      const d = `${(dbError as any).code || ''}:${dbError.message}`.slice(0, 150);
+      return NextResponse.redirect(new URL(`/auth/signin?error=composio_login_store&detail=${encodeURIComponent(d)}`, baseUrl));
     }
 
     // 4. Hand off to the client completer, which triggers the NextAuth
