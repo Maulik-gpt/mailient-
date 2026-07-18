@@ -2487,11 +2487,15 @@ export async function executeTool(
  * transient cases with backoff (honoring Retry-After); does NOT retry 4xx like
  * 401/403 (handled by the caller's refresh) or 400.
  */
-async function gmailGetWithRetry(url: string, token: string, timeoutMs = 12000, attempts = 3): Promise<Response> {
+async function gmailGetWithRetry(url: string, token: string, timeoutMs = 12000, attempts = 3, userId?: string): Promise<Response> {
   let lastErr: any;
   for (let i = 0; i < attempts; i++) {
     try {
-      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });
+      // Route through googleFetch when a userId is given so Composio-managed
+      // users go through Proxy Execute (masking-proof); else direct.
+      const res = userId
+        ? await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } })
+        : await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(timeoutMs) });
       if ((res.status === 429 || res.status >= 500) && i < attempts - 1) {
         const ra = Number(res.headers.get('retry-after'));
         const wait = ra > 0 ? Math.min(ra * 1000, 5000) : 600 * (i + 1) * (i + 1);
@@ -3202,22 +3206,14 @@ async function draftReply(userId: string, input: any, context: ToolContext = {})
   const raw = buildRaw(input.to, subject, input.body, input.threadId, input.inReplyToMessageId);
   const draftBody = JSON.stringify({ message: { raw, threadId: input.threadId } });
 
-  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: draftBody,
-    signal: AbortSignal.timeout(12000),
-  });
+  const draftUrl = 'https://gmail.googleapis.com/gmail/v1/users/me/drafts';
+  const draftInit = { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: draftBody };
+  let res = await googleFetch(userId, 'gmail', draftUrl, draftInit);
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: draftBody,
-        signal: AbortSignal.timeout(12000),
-      });
+      res = await googleFetch(userId, 'gmail', draftUrl, { ...draftInit, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -3310,22 +3306,14 @@ async function draftColdEmail(userId: string, input: any): Promise<ToolResult> {
   const raw = buildRaw(to, subject, body);
   const draftBodyJson = JSON.stringify({ message: { raw } });
 
-  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: draftBodyJson,
-    signal: AbortSignal.timeout(12000),
-  });
+  const coldDraftUrl = 'https://gmail.googleapis.com/gmail/v1/users/me/drafts';
+  const coldDraftInit = { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: draftBodyJson };
+  let res = await googleFetch(userId, 'gmail', coldDraftUrl, coldDraftInit);
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: draftBodyJson,
-        signal: AbortSignal.timeout(12000),
-      });
+      res = await googleFetch(userId, 'gmail', coldDraftUrl, { ...coldDraftInit, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
     }
   }
   if (!res.ok) {
@@ -8434,13 +8422,13 @@ async function gmailUnlimitedSearch(userId: string, input: any): Promise<ToolRes
     const pageUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
     let res: Response;
     try {
-      res = await gmailGetWithRetry(pageUrl, token, 15000);
+      res = await gmailGetWithRetry(pageUrl, token, 15000, 3, userId);
     } catch { break; } // transient timeout after retries — stop paginating, keep what we have
     if (res.status === 401) {
       const nt = await refreshGoogleToken(userId);
       if (nt) {
         token = nt;
-        try { res = await gmailGetWithRetry(pageUrl, token, 15000); } catch { break; }
+        try { res = await gmailGetWithRetry(pageUrl, token, 15000, 3, userId); } catch { break; }
       }
     }
     if (!res.ok) break;
