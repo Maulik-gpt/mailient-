@@ -208,7 +208,15 @@ export default function SiftOnboardingPage() {
   }, []);
 
   const isConnected = useCallback((provider: string) => {
-    if (provider === 'gmail') return !!session || integrations.some((s: any) => s.provider === 'gmail' && s.connected);
+    if (provider === 'gmail') {
+      // With Composio carrying Gmail, a session means the user is LOGGED IN
+      // (identity-only) but has NOT yet connected Gmail — that grant is a
+      // separate Composio consent. So Gmail is "connected" only when the
+      // status endpoint says so. In the legacy flow, login IS the Gmail grant,
+      // so a session is sufficient.
+      const byStatus = integrations.some((s: any) => s.provider === 'gmail' && s.connected);
+      return COMPOSIO_GMAIL_ONBOARDING ? byStatus : (!!session || byStatus);
+    }
     return integrations.some((s: any) => s.provider === provider && s.connected);
   }, [integrations, session]);
 

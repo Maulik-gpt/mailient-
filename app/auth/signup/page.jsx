@@ -65,8 +65,12 @@ function SignUpContent() {
     setIsLoading(true);
     setError(null);
     try {
+      // With Composio carrying Gmail, login is identity-only and the Gmail
+      // grant is the next action — land straight on the connect step so it
+      // feels like one continuous "connect Gmail" from the landing CTA.
+      const composioGmail = process.env.NEXT_PUBLIC_COMPOSIO_GMAIL === '1';
       const result = await signIn('google', {
-        callbackUrl: '/onboarding',
+        callbackUrl: composioGmail ? '/onboarding?step=2' : '/onboarding',
         login_hint: email.trim().toLowerCase()
       });
       if (result?.error) {
