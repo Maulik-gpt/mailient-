@@ -58,6 +58,13 @@ import {
   gcal403Failure,
 } from './tools/http-tokens';
 import {
+  meetCreateLink,
+  meetListMeetings,
+  meetGetTranscript,
+  meetGetRecording,
+  meetAttendance,
+} from './tools/meet';
+import {
   b64decode,
   getHeader,
   extractBody,
@@ -313,6 +320,89 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
         description: { type: 'string', description: 'Agenda or notes shown in the event description.' },
       },
       required: ['title', 'startTime', 'endTime'],
+    },
+  },
+  // ── Google Meet ────────────────────────────────────────────────────────────
+  // A SEPARATE connection from Calendar. Meet links on scheduled events still
+  // come from schedule_meeting above; these reach the Meet API v2 for instant
+  // spaces and for what a meeting leaves behind. There is deliberately NO
+  // delete tool — Google's Meet API has no delete-space method.
+  {
+    name: 'meet_create_link',
+    description:
+      'Create a STANDALONE Google Meet link with no calendar event — for "send me a Meet link", "start a call now". ' +
+      'DO NOT use for a meeting that has a time or attendees: schedule_meeting already attaches a Meet link to the calendar event and sends invites. ' +
+      'Output: the joinable meeting URL. ' +
+      'Errors (success:false): gmeet_not_connected, upstream_gmeet.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        accessType: {
+          type: 'string',
+          enum: ['OPEN', 'TRUSTED', 'RESTRICTED'],
+          description: 'OPEN = anyone with the link may join · TRUSTED = same organization · RESTRICTED = invited people only. Omit for the account default.',
+        },
+      },
+    },
+  },
+  {
+    name: 'meet_list_meetings',
+    description:
+      'List PAST Google Meet conferences. Call this FIRST to obtain the conferenceRecordId that meet_get_transcript, meet_get_recording and meet_attendance all require. ' +
+      'This is Meet history, NOT the calendar — use get_calendar_events for upcoming meetings. ' +
+      'Output: numbered list of conferences with their conferenceRecords/... names and times. ' +
+      'Errors (success:false): gmeet_not_connected, upstream_gmeet.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        limit: { type: 'number', description: 'How many recent conferences to return (1-50, default 10).' },
+      },
+    },
+  },
+  {
+    name: 'meet_get_transcript',
+    description:
+      'Fetch the transcript of a past Google Meet call — use to summarize what was said, extract decisions, or pull action items. ' +
+      'Requires a conferenceRecordId from meet_list_meetings. ' +
+      'A meeting only has a transcript if transcription was ON during the call; an empty result means it was off, not that the call is missing. ' +
+      'Output: transcript entries with their export links. ' +
+      'Errors (success:false): validation_error, gmeet_not_connected, upstream_gmeet.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        conferenceRecordId: { type: 'string', description: 'The conferenceRecords/... name from meet_list_meetings.' },
+      },
+      required: ['conferenceRecordId'],
+    },
+  },
+  {
+    name: 'meet_get_recording',
+    description:
+      'Fetch the recording of a past Google Meet call. Requires a conferenceRecordId from meet_list_meetings. ' +
+      'A meeting only has a recording if recording was started during the call; an empty result means it was not. ' +
+      'Output: recordings with their Drive export links. ' +
+      'Errors (success:false): validation_error, gmeet_not_connected, upstream_gmeet.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        conferenceRecordId: { type: 'string', description: 'The conferenceRecords/... name from meet_list_meetings.' },
+      },
+      required: ['conferenceRecordId'],
+    },
+  },
+  {
+    name: 'meet_attendance',
+    description:
+      'Who actually attended a past Google Meet call and for how long — use for "did X join?", "who missed standup", "how long was everyone on". ' +
+      'Requires a conferenceRecordId from meet_list_meetings. Repeat joins by the same person are collapsed into one row with total minutes. ' +
+      'Output: attendees sorted by time in the call. ' +
+      'Errors (success:false): validation_error, gmeet_not_connected, upstream_gmeet.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        conferenceRecordId: { type: 'string', description: 'The conferenceRecords/... name from meet_list_meetings.' },
+      },
+      required: ['conferenceRecordId'],
     },
   },
   {
@@ -2342,6 +2432,12 @@ export async function executeTool(
       case 'request_confirmation': result = await requestConfirmation(input, userId, context); break;
       case 'schedule_meeting':  result = await scheduleMeeting(userId, input, context); break;
       case 'get_calendar_events': result = await getCalendarEvents(userId, input); break;
+      // Google Meet (separate connection from Calendar — Meet REST API v2)
+      case 'meet_create_link':    result = await meetCreateLink(userId, input); break;
+      case 'meet_list_meetings':  result = await meetListMeetings(userId, input); break;
+      case 'meet_get_transcript': result = await meetGetTranscript(userId, input); break;
+      case 'meet_get_recording':  result = await meetGetRecording(userId, input); break;
+      case 'meet_attendance':     result = await meetAttendance(userId, input); break;
       case 'calendar_get_availability': result = await calendarGetAvailability(userId, input); break;
       case 'calendar_cancel_event': result = await calendarCancelEvent(userId, input, context); break;
       // Cal.com scheduling

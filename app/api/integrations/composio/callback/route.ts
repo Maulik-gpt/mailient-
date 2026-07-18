@@ -29,9 +29,16 @@ const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 export async function GET(request: NextRequest) {
   const url = new URL(request.url);
-  const toolkit = url.searchParams.get('toolkit') === 'gcal' ? 'gcal' : 'gmail';
+  // Whitelist the toolkit explicitly. This used to be `=== 'gcal' ? 'gcal' :
+  // 'gmail'`, which silently funnelled ANY other value into 'gmail' — so adding
+  // a third toolkit would have stored its connection over the user's Gmail row
+  // (same user_id, same provider, upsert on conflict) and severed their inbox.
+  const raw = url.searchParams.get('toolkit');
+  const toolkit: 'gmail' | 'gcal' | 'gmeet' =
+    raw === 'gcal' ? 'gcal' : raw === 'gmeet' ? 'gmeet' : 'gmail';
   // The provider name the connectors UI uses for success toasts/status.
-  const uiProvider = toolkit === 'gcal' ? 'google_calendar' : 'gmail';
+  const uiProvider =
+    toolkit === 'gcal' ? 'google_calendar' : toolkit === 'gmeet' ? 'google_meet' : 'gmail';
   const fail = (code: string) =>
     NextResponse.redirect(new URL(`/dashboard/agent-talk?error=${code}&provider=${uiProvider}`, request.url));
 

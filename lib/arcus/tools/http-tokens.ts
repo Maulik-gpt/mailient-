@@ -41,7 +41,7 @@ const composioAcctCache = new Map<string, { id: string | null; at: number }>();
 const ACCT_CACHE_TTL = 5 * 60 * 1000;
 export async function composioAccountFor(
   userId: string,
-  provider: 'gmail' | 'gcal',
+  provider: 'gmail' | 'gcal' | 'gmeet',
 ): Promise<string | null> {
   const { composioToolsEnabled } = await import('../composio');
   if (!composioToolsEnabled()) return null;

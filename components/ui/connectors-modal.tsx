@@ -192,9 +192,9 @@ export const SUPPORTED_APPS = [
     website: 'https://meet.google.com',
     documentation: 'https://developers.google.com/meet',
     privacyPolicy: 'https://policies.google.com/privacy',
-    description: 'Google Meet MCP lets you automate video conferencing links and manage collaborative calls straight from Arcus workspace.',
-    details: 'Link Google Meet to auto-generate meeting rooms, manage call recordings, and integrate video links into your calendar events.',
-    smartPrompt: "Create a Google Meet link for a quick 15-min sync with my team tomorrow at 11 AM."
+    description: 'Google Meet gives Arcus what happens after a call — transcripts, recordings, and who actually attended — plus instant meeting links on request.',
+    details: 'Connect Google Meet to let Arcus summarize a call from its transcript, pull the recording, check attendance, and spin up an instant meeting link. Scheduled meetings already get a Meet link from Google Calendar — this is the separate Meet connection that reaches everything a call leaves behind.',
+    smartPrompt: "Summarize my last Google Meet call and list the action items."
   },
   { 
     id: 'notion', 
@@ -263,6 +263,10 @@ export const SUPPORTED_APPS = [
 export const V3_DIRECT_ROUTES: Record<string, string> = {
   gmail:            '/api/arcus/v3/oauth/gmail',
   google_calendar:  '/api/arcus/v3/oauth/gcal',
+  // Meet is its OWN connection, not derived from Calendar. Calendar still puts
+  // Meet links on scheduled events; this grants the Meet API v2 (transcripts,
+  // recordings, attendance, standalone spaces).
+  google_meet:      '/api/arcus/v3/oauth/gmeet',
   slack:            '/api/arcus/v3/oauth/slack',
   notion:           '/api/arcus/v3/oauth/notion',
   notion_calendar:  '/api/arcus/v3/oauth/notion', // shares Notion OAuth

@@ -45,7 +45,10 @@ export async function GET(request) {
     const connected = new Set([
       ...(legacyRows || []).map(r => r.provider),
       // Map V3 provider names to UI names
-      ...(v3Rows || []).map(r => r.provider === 'gcal' ? 'google_calendar' : r.provider),
+      ...(v3Rows || []).map(r =>
+        r.provider === 'gcal' ? 'google_calendar'
+        : r.provider === 'gmeet' ? 'google_meet'
+        : r.provider),
     ]);
 
     // Gmail (and Calendar) are connected via the primary Google sign-in, whose
@@ -64,7 +67,13 @@ export async function GET(request) {
 
     // Derived connections
     if (connected.has('notion')) connected.add('notion_calendar');
-    if (connected.has('google_calendar')) connected.add('google_meet');
+    // Google Meet is NO LONGER derived from Calendar. It used to be, because the
+    // only "Meet" feature was a link on a calendar event (Calendar's own
+    // conferenceData — still true, still works via schedule_meeting). Meet now
+    // has its OWN connection for the Meet API v2 (transcripts, recordings,
+    // attendance), so deriving it here would show a green badge while every
+    // meet_* tool returns gmeet_not_connected — the exact connected-but-broken
+    // state we hit before with Gmail.
 
     const PROVIDERS = ['gmail', 'google_calendar', 'google_meet', 'notion', 'notion_calendar', 'slack', 'cal_com'];
     const integrations = PROVIDERS.map(provider => ({

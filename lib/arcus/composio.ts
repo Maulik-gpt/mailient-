@@ -37,7 +37,12 @@
 
 import { Composio } from '@composio/core';
 
-export type ComposioToolkit = 'gmail' | 'gcal';
+// 'gmeet' is a SEPARATE connection from 'gcal' on purpose. Putting a Meet link
+// on a calendar event is Calendar's job (conferenceData) and still runs through
+// schedule_meeting. This toolkit is the Meet REST API v2 — standalone spaces,
+// plus the post-meeting artifacts Calendar cannot see: transcripts, recordings
+// and attendance.
+export type ComposioToolkit = 'gmail' | 'gcal' | 'gmeet';
 
 let _client: Composio | null = null;
 function client(): Composio {
@@ -48,9 +53,9 @@ function client(): Composio {
 }
 
 export function composioAuthConfigId(toolkit: ComposioToolkit): string | undefined {
-  return toolkit === 'gmail'
-    ? process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID
-    : process.env.COMPOSIO_GCAL_AUTH_CONFIG_ID;
+  if (toolkit === 'gmail') return process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID;
+  if (toolkit === 'gmeet') return process.env.COMPOSIO_MEET_AUTH_CONFIG_ID;
+  return process.env.COMPOSIO_GCAL_AUTH_CONFIG_ID;
 }
 
 /** True when this toolkit should connect through Composio instead of our own Google client. */
