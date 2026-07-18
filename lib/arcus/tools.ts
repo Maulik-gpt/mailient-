@@ -7939,9 +7939,8 @@ async function reportSendGmail(userId: string, input: any): Promise<ToolResult> 
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   // Resolve recipient = the authed user themselves
-  const profRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+  const profRes = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/profile', {
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(6000),
   });
   if (!profRes.ok) return failureResult(`Could not resolve own email (${profRes.status}).`, 'upstream_gmail');
   const profile = await profRes.json();
@@ -8005,22 +8004,14 @@ async function reportSendGmail(userId: string, input: any): Promise<ToolResult> 
   ].join('\r\n');
   const raw = Buffer.from(mime).toString('base64url');
 
-  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ raw }),
-    signal: AbortSignal.timeout(12000),
-  });
+  const rsgUrl = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+  const rsgInit = { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ raw }) };
+  let res = await googleFetch(userId, 'gmail', rsgUrl, rsgInit);
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ raw }),
-        signal: AbortSignal.timeout(12000),
-      });
+      res = await googleFetch(userId, 'gmail', rsgUrl, { ...rsgInit, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
     }
   }
 
@@ -8595,17 +8586,15 @@ async function gmailAutoLabelThreads(userId: string, input: any): Promise<ToolRe
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   // List labels and check
-  let listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+  let listRes = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/labels', {
     headers: { Authorization: `Bearer ${token}` },
-    signal: AbortSignal.timeout(8000),
   });
   if (listRes.status === 401) {
     const nt = await refreshGoogleToken(userId);
     if (nt) {
       token = nt;
-      listRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+      listRes = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/labels', {
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(8000),
       });
     }
   }
@@ -8615,11 +8604,10 @@ async function gmailAutoLabelThreads(userId: string, input: any): Promise<ToolRe
     existed = (data.labels || []).some((l: any) => l.name?.toLowerCase() === labelName.toLowerCase());
   }
   if (!existed) {
-    const createRes = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/labels', {
+    const createRes = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/labels', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: labelName, labelListVisibility: 'labelShow', messageListVisibility: 'show' }),
-      signal: AbortSignal.timeout(8000),
     });
     if (!createRes.ok && createRes.status !== 409) {
       return failureResult(`Could not create label "${labelName}" (${createRes.status}).`, 'upstream_gmail');
