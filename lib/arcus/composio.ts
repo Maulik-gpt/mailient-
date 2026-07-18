@@ -201,6 +201,50 @@ export function composioToolsEnabled(): boolean {
   return !!(process.env.COMPOSIO_API_KEY && process.env.COMPOSIO_TOOLS === '1');
 }
 
+// ── Proxy Execute: raw provider request with server-side token injection ──────
+// Composio's proxyExecute sends a normal Google API request and injects the
+// connected account's token server-side, returning the RAW Google response —
+// identical to calling Google directly. This is the masking-proof way to keep
+// the entire existing tool layer's Google URL-building + response parsing
+// UNCHANGED: executors just route their fetch() through here. Support's
+// recommended path (docs/extending-sessions/proxy-execute) after they removed
+// the ability to disable secret masking.
+
+export interface ProxyResult {
+  status: number;
+  data: any;
+  ok: boolean;
+}
+
+/**
+ * Make a raw Google API request through Composio for a connected account.
+ * `endpoint` is the Google path AFTER the host (e.g.
+ * '/gmail/v1/users/me/messages?q=...'). NEVER include the host or an
+ * Authorization header — Composio injects the credential.
+ */
+export async function composioProxy(
+  accountId: string,
+  toolkit: 'gmail' | 'googlecalendar',
+  endpoint: string,
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' = 'GET',
+  body?: any,
+  extraHeaders?: Array<{ name: string; value: string }>,
+): Promise<ProxyResult> {
+  const userId = await userIdForAccount(accountId);
+  if (!userId) return { status: 0, data: null, ok: false };
+  const session = await client().create(userId);
+  const parameters = (extraHeaders || []).map(h => ({ name: h.name, value: h.value, in: 'header' as const }));
+  const res: any = await (session as any).proxyExecute({
+    toolkit,
+    endpoint,
+    method,
+    ...(body !== undefined ? { body } : {}),
+    ...(parameters.length ? { parameters } : {}),
+  });
+  const status = typeof res?.status === 'number' ? res.status : 0;
+  return { status, data: res?.data ?? null, ok: status >= 200 && status < 300 };
+}
+
 /** The userId a connected account belongs to (needed to execute tools on it). */
 async function userIdForAccount(accountId: string): Promise<string | null> {
   const cached = accountUserIdCache.get(accountId);

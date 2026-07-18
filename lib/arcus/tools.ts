@@ -51,6 +51,7 @@ import {
   getNotionToken,
   getSlackToken,
   composioAccountFor,
+  googleFetch,
   GMAIL_SCOPE_MESSAGE,
   classifyGoogle403,
   gmailHttpFailure,
@@ -2508,44 +2509,18 @@ async function gmailGetWithRetry(url: string, token: string, timeoutMs = 12000, 
 }
 
 async function searchGmail(userId: string, input: any): Promise<ToolResult> {
-  const max = Math.min(input.maxResults || 12, 40);
-
-  // ── Composio execution path (masking-proof) ─────────────────────────────────
-  // When COMPOSIO_TOOLS=1 and this user's Gmail is Composio-managed, run the
-  // search THROUGH Composio (real token server-side) instead of calling Google
-  // directly — so it works even with secret masking on. GMAIL_FETCH_EMAILS
-  // returns sender/subject/timestamp/preview/threadId in ONE call (no N+1).
-  const composioAcct = await composioAccountFor(userId, 'gmail');
-  if (composioAcct) {
-    const { composioExecute } = await import('./composio');
-    const r = await composioExecute(composioAcct, 'GMAIL_FETCH_EMAILS', {
-      query: input.query,
-      max_results: max,
-    });
-    if (r.ok) {
-      const msgs: any[] = r.data?.messages || [];
-      if (!msgs.length) return { output: 'No emails found matching that query.' };
-      const lines = msgs.slice(0, max).map((m: any, i: number) => {
-        const preview = (m.preview?.body || m.preview || m.snippet || '').toString().slice(0, 320);
-        return `${i + 1}. [ID: ${m.messageId}] [Thread: ${m.threadId}]\n   From: ${m.sender || ''}\n   Subject: ${m.subject || '(no subject)'}\n   Date: ${m.messageTimestamp || ''}\n   Preview: ${preview}`;
-      });
-      const rawOutput = `Found ${msgs.length} email(s) for query "${input.query}":\n\n${lines.join('\n\n')}`;
-      return { output: annotateSearchResultsWithSignals(rawOutput) };
-    }
-    // Composio path failed — fall through to the direct-token path below
-    // (covers a transient Composio blip; direct call still needs an unmasked
-    // token, so it only helps non-Composio users, but the fall-through is safe).
-  }
-
   let token = await getGmailToken(userId);
   if (!token) return failureResult('Gmail is not connected. Ask the user to connect Gmail in Settings → Integrations.', 'gmail_not_connected');
 
+  const max = Math.min(input.maxResults || 12, 40);
   const params = new URLSearchParams({ q: input.query, maxResults: String(max) });
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`;
 
+  // googleFetch transparently proxies through Composio for managed users
+  // (masking-proof, raw Google response) or does the direct authed call.
   let listRes: Response;
   try {
-    listRes = await gmailGetWithRetry(url, token);
+    listRes = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   } catch {
     return failureResult('Gmail search timed out after retries.', 'upstream_gmail');
   }
@@ -2553,7 +2528,7 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      try { listRes = await gmailGetWithRetry(url, token); } catch { return failureResult('Gmail search timed out after retries.', 'upstream_gmail'); }
+      try { listRes = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); } catch { return failureResult('Gmail search timed out after retries.', 'upstream_gmail'); }
     }
   }
   if (!listRes.ok) return gmailHttpFailure(listRes, 'Gmail search failed');
@@ -2564,9 +2539,10 @@ async function searchGmail(userId: string, input: any): Promise<ToolResult> {
 
   const details = await Promise.all(messages.slice(0, max).map(async ({ id }: any) => {
     try {
-      const r = await fetch(
+      const r = await googleFetch(
+        userId, 'gmail',
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date&metadataHeaders=Message-ID`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!r.ok) return null;
       const m = await r.json();
@@ -2593,10 +2569,10 @@ async function readEmail(userId: string, input: any): Promise<ToolResult> {
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${input.messageId}?format=full`;
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (newToken) { token = newToken; res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) return gmailHttpFailure(res, 'Could not read email');
 
@@ -3455,22 +3431,14 @@ async function sendEmail(userId: string, input: any, context: ToolContext = {}):
   if (input.threadId) reqBody.threadId = input.threadId;
   const sendBodyStr = JSON.stringify(reqBody);
 
-  let res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-    body: sendBodyStr,
-    signal: AbortSignal.timeout(12000),
-  });
+  const sendUrl = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
+  const sendInit = { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: sendBodyStr };
+  let res = await googleFetch(userId, 'gmail', sendUrl, sendInit);
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: sendBodyStr,
-        signal: AbortSignal.timeout(12000),
-      });
+      res = await googleFetch(userId, 'gmail', sendUrl, { ...sendInit, headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
     }
   }
 

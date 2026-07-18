@@ -33,31 +33,86 @@ async function resolveComposioToken(marker: string, force = false): Promise<stri
 
 /**
  * When COMPOSIO_TOOLS=1 AND this user's gmail/gcal is Composio-managed, return
- * the Composio connected-account id so the executor can run the action THROUGH
- * Composio (real token server-side, masking-proof). Returns null otherwise —
- * the caller then uses its normal direct-token path.
+ * the Composio connected-account id. Null otherwise — caller uses its direct
+ * path. Cached per (uid,provider) to avoid a DB hit on every Google call in a
+ * burst.
  */
+const composioAcctCache = new Map<string, { id: string | null; at: number }>();
+const ACCT_CACHE_TTL = 5 * 60 * 1000;
 export async function composioAccountFor(
   userId: string,
   provider: 'gmail' | 'gcal',
 ): Promise<string | null> {
   const { composioToolsEnabled } = await import('../composio');
   if (!composioToolsEnabled()) return null;
+  const uid = normalizeUserId(userId);
+  const key = `${uid}|${provider}`;
+  const c = composioAcctCache.get(key);
+  if (c && Date.now() - c.at < ACCT_CACHE_TTL) return c.id;
+  let id: string | null = null;
   try {
     const supabase = getSupabaseAdmin();
-    const uid = normalizeUserId(userId);
     const { data } = await supabase
       .from('arcus_integrations')
       .select('access_token')
       .eq('user_id', uid)
       .eq('provider', provider)
       .maybeSingle();
-    if (!data?.access_token) return null;
-    const dec = decrypt(data.access_token);
-    return dec.startsWith(COMPOSIO_PREFIX) ? dec.slice(COMPOSIO_PREFIX.length) : null;
-  } catch {
-    return null;
+    if (data?.access_token) {
+      const dec = decrypt(data.access_token);
+      if (dec.startsWith(COMPOSIO_PREFIX)) id = dec.slice(COMPOSIO_PREFIX.length);
+    }
+  } catch { /* null */ }
+  composioAcctCache.set(key, { id, at: Date.now() });
+  return id;
+}
+
+/**
+ * fetch()-compatible Google request that TRANSPARENTLY routes through Composio
+ * Proxy Execute for Composio-managed users (masking-proof: Composio injects the
+ * token server-side and returns the RAW Google response), or does a direct
+ * authenticated fetch for legacy users. Returns a real Response so every
+ * executor's existing `.ok` / `.status` / `.json()` / `.text()` code is
+ * UNCHANGED. This is the one seam that makes all ~38 Gmail/GCal executors
+ * masking-proof without rewriting their parsing.
+ *
+ * `url` is the FULL Google URL (as the executors already build). For the proxy
+ * path we strip the host to the path+query Composio expects.
+ */
+export async function googleFetch(
+  userId: string,
+  provider: 'gmail' | 'gcal',
+  url: string,
+  init?: { method?: string; headers?: Record<string, string>; body?: string },
+): Promise<Response> {
+  const accountId = await composioAccountFor(userId, provider);
+  if (accountId) {
+    const { composioProxy } = await import('../composio');
+    // Strip host → '/gmail/v1/...' or '/calendar/v3/...'
+    const u = new URL(url);
+    const endpoint = u.pathname + u.search;
+    const toolkit = provider === 'gmail' ? 'gmail' : 'googlecalendar';
+    const method = (init?.method || 'GET').toUpperCase() as any;
+    let body: any = undefined;
+    if (init?.body) { try { body = JSON.parse(init.body); } catch { body = init.body; } }
+    // Carry through non-auth headers (e.g. Content-Type) — never Authorization.
+    const extra = Object.entries(init?.headers || {})
+      .filter(([k]) => k.toLowerCase() !== 'authorization')
+      .map(([name, value]) => ({ name, value: String(value) }));
+    try {
+      const r = await composioProxy(accountId, toolkit, endpoint, method, body, extra);
+      // Rebuild a real Response so callers' .ok/.json()/.text() just work.
+      const payload = r.data == null ? '' : (typeof r.data === 'string' ? r.data : JSON.stringify(r.data));
+      return new Response(payload, {
+        status: r.status || 502,
+        headers: { 'content-type': 'application/json' },
+      });
+    } catch (e: any) {
+      return new Response(JSON.stringify({ error: { message: e?.message || 'proxy failed' } }), { status: 502, headers: { 'content-type': 'application/json' } });
+    }
   }
+  // Legacy direct path — unchanged behavior.
+  return fetch(url, init as any);
 }
 
 /**
