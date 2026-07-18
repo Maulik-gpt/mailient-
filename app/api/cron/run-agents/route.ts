@@ -34,6 +34,8 @@ import { hasPendingActions } from '../../../../lib/arcus/agent-approvals';
 import { scoreReportSignal, decideDelivery } from '../../../../lib/arcus/signal-density';
 import { checkEventAgents, mergeProcessedIds } from '../../../../lib/arcus/triggers/reactive-poll';
 import { enqueueChainHandoff, drainChainQueue } from '../../../../lib/arcus/triggers/chain';
+// @ts-ignore — JS module, no .d.ts
+import { EmailUI } from '../../../../lib/email-design.js';
 import { drainScheduledEmails } from '../../../../lib/arcus/scheduled-send';
 import { drainAutonomyActions } from '../../../../lib/arcus/autonomy-drain';
 import { reconcileLedger } from '../../../../lib/arcus/super/ledger';
@@ -1060,83 +1062,47 @@ function markdownToHtml(markdown: string): string {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function buildReportHtml(agentName: string, date: string, report: string, hasPending: boolean = false): string {
+  const UI = EmailUI;
   const body = markdownToHtml(report);
-  const trackingId = Math.random().toString(36).substring(7).toUpperCase();
 
-  const ctaButton = hasPending
-    ? `<div style="text-align: center; margin-top: 35px;">
-          <a href="https://mailient.xyz/dashboard?tab=agents&approve=pending" 
-             style="background: #f59e0b; color: #000; text-decoration: none; padding: 14px 28px; border-radius: 12px; font-weight: 800; font-size: 14px; display: inline-block; letter-spacing: -0.01em;">
-              ⚡ Approve Queued Actions
-          </a>
-          <div style="margin-top: 10px;">
-            <a href="https://mailient.xyz/dashboard" 
-               style="color: #888; text-decoration: underline; font-size: 12px;">
-                or view dashboard
-            </a>
-          </div>
-      </div>`
-    : `<div style="text-align: center; margin-top: 35px;">
-          <a href="https://mailient.xyz/dashboard" 
-             style="background: #000; color: #fff; text-decoration: none; padding: 12px 25px; border-radius: 12px; font-weight: 700; font-size: 13px; display: inline-block;">
-              View Dashboard
-          </a>
-      </div>`;
-
+  // The pending-approval state is the ONLY thing in this email that is urgent,
+  // so it is the only thing allowed to break the monochrome. It sits at the top
+  // as a bordered panel rather than a coloured alert box — the old amber banner
+  // read as a browser warning, not as a briefing from an employee.
   const pendingBanner = hasPending
-    ? `<div style="background: #fffbeb; border: 1px solid #f59e0b; border-radius: 12px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; color: #92400e;">
-          ⏳ <strong>Actions awaiting your approval</strong> — This agent queued write actions (emails, meetings, etc.) that need your review before they execute.
-      </div>`
+    ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+         style="background-color:#F7F7F7; background-image:linear-gradient(180deg,#FFFFFF 0%,#F4F4F4 100%); border:1px solid #E2E2E2; border-left:3px solid ${UI.C.ink}; border-radius:12px; margin:0 0 22px;">
+         <tr><td style="padding:16px 18px;">
+           <p style="margin:0 0 4px; font-family:${UI.FONT}; font-size:13px; font-weight:600; color:${UI.C.text};">Waiting on your approval</p>
+           <p style="margin:0; font-family:${UI.FONT}; font-size:13px; line-height:1.6; color:${UI.C.textMuted};">This run queued actions that send on your behalf. Nothing goes out until you approve it.</p>
+         </td></tr>
+       </table>`
     : '';
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>${agentName} — Arcus Report</title>
-</head>
-<body style="margin:0;padding:40px 16px;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,sans-serif">
-  <div style="font-family: 'Satoshi', sans-serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; color: #111; background: #fff; border-radius: 24px; border: 1px solid #f0f0f0; box-shadow: 0 4px 24px rgba(0,0,0,0.02);">
-      <div style="text-align: center; margin-bottom: 30px;">
-          <img src="https://mailient.xyz/mailient-logo-premium.png" alt="Mailient Logo" style="width: 48px; height: 48px; border-radius: 12px; border: 1px solid #f0f0f0;" />
-      </div>
-      
-      <h2 style="font-size: 22px; font-weight: 800; border-bottom: 2px solid #000; padding-bottom: 15px; margin-bottom: 30px; letter-spacing: -0.03em; text-align: center; color: #000;">
-          Arcus AI Report
-      </h2>
-      
-      ${pendingBanner}
+  const cta = hasPending
+    ? UI.button('Review queued actions', 'https://mailient.xyz/dashboard?tab=agents&approve=pending')
+    : UI.button('Open dashboard', 'https://mailient.xyz/dashboard');
 
-      <div style="margin-bottom: 25px; background: #fcfcfc; padding: 20px; border-radius: 16px; border: 1px solid #f5f5f5;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-              <tr>
-                  <td style="padding: 6px 0; color: #666; font-weight: 500; width: 120px;">Agent:</td>
-                  <td style="padding: 6px 0; color: #000; font-weight: 700; text-transform: uppercase; font-size: 12px; letter-spacing: 0.05em;">
-                      ${agentName}
-                  </td>
-              </tr>
-              <tr>
-                  <td style="padding: 6px 0; color: #666; font-weight: 500;">Date:</td>
-                  <td style="padding: 6px 0; color: #000; font-weight: 700;">
-                      ${date}
-                  </td>
-              </tr>
-          </table>
-      </div>
+  const content = `
+    ${pendingBanner}
+    ${UI.panel(`${UI.row('Agent', UI.esc(agentName))}${UI.row('Run', UI.esc(date))}`)}
+    <div style="font-family:${UI.FONT}; font-size:15px; line-height:1.7; color:${UI.C.text};">
+      ${body}
+    </div>
+    ${UI.divider()}
+    ${cta}
+  `;
 
-      <div style="margin-bottom: 25px; font-size: 14px; line-height: 1.6; color: #333;">
-          ${body}
-      </div>
-
-      ${ctaButton}
-
-      <div style="border-top: 1px solid #eee; padding-top: 25px; margin-top: 40px; font-size: 10px; color: #aaa; text-align: center; font-family: monospace; letter-spacing: 0.05em;">
-          ARCUS AUTONOMOUS REPORT // AGENT: ${agentName.toUpperCase()} // ID: ${trackingId} // SECURE
-      </div>
-  </div>
-</body>
-</html>`;
+  return UI.shell({
+    // The agent's name is the headline — this is a report FROM a named
+    // employee, not from a system. The old "ARCUS AUTONOMOUS REPORT // ID //
+    // SECURE" monospace footer was theatre; it made a briefing look like a
+    // machine log, so it is gone.
+    title: agentName,
+    eyebrow: date,
+    content,
+    footerNote: hasPending ? 'Actions are waiting for your approval.' : 'Your briefing from Arcus.',
+  });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1257,13 +1223,16 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
     remaining = remaining.slice(cutAt).trimStart();
   }
 
+  // Slack has no CSS, so "premium" here is restraint: one accent, real
+  // hierarchy, and no emoji confetti. The approval prompt is the only urgent
+  // thing in the message, so it keeps the single button and the only emoji.
   const pendingBlock = hasPending ? [
     {
       type: 'section',
-      text: { type: 'mrkdwn', text: ':hourglass_flowing_sand: *Actions awaiting your approval* — This agent queued write actions that need your review.' },
+      text: { type: 'mrkdwn', text: '*Waiting on your approval*\nThis run queued actions that send on your behalf. Nothing goes out until you approve it.' },
       accessory: {
         type: 'button',
-        text: { type: 'plain_text', text: '⚡ Approve Actions', emoji: true },
+        text: { type: 'plain_text', text: 'Review', emoji: false },
         url: 'https://mailient.xyz/dashboard?tab=agents&approve=pending',
         style: 'primary',
       },
@@ -1283,7 +1252,7 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
     },
     {
       type: 'context',
-      elements: [{ type: 'mrkdwn', text: `🤖 *Arcus AI Report* · 📅 ${date}` }],
+      elements: [{ type: 'mrkdwn', text: `Arcus · ${date}` }],
     },
     { type: 'divider' },
     ...pendingBlock,
@@ -1294,7 +1263,7 @@ function buildSlackBlocks(agentName: string, date: string, report: string, hasPe
     {
       type: 'context',
       elements: [
-        { type: 'mrkdwn', text: `⚡ Sent by *Arcus* for <https://mailient.xyz|Mailient> — mailient.xyz · ${new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}` },
+        { type: 'mrkdwn', text: `<https://mailient.xyz/dashboard|Open dashboard> · ${new Date().toLocaleString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}` },
       ],
     },
   ];

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { subscriptionService, PLANS } from '@/lib/subscription-service';
-import { sendPlanEmail, sendReceiptEmail } from '@/lib/email-service';
+import { sendPlanEmail, sendReceiptEmail, sendTrialWelcomeEmail } from '@/lib/email-service';
 import { getPolarInvoiceUrl, formatPolarAmount } from '@/lib/polar-invoice';
 import crypto from 'crypto';
 import { logEvent } from "@/lib/logsso";
@@ -240,10 +240,29 @@ export async function POST(request) {
                 const isRenewal = eventType === 'subscription.updated';
                 if (activated && !isRenewal && (planType === 'starter' || planType === 'pro')) {
                     const customerName = data.customer?.name || data.user?.name || null;
-                    sendPlanEmail({ toEmail: userEmail, toName: customerName, plan: planType })
+
+                    // A TRIAL is a different moment from a paid subscription, so it
+                    // gets its own email. The paid welcome congratulates a purchase;
+                    // a trialist has paid nothing and needs one thing instead — to
+                    // know the first briefing lands tomorrow morning. Without that,
+                    // day two feels like nothing happened and they churn.
+                    const send = polarDates.isTrialing
+                        ? sendTrialWelcomeEmail({
+                            toEmail: userEmail,
+                            toName: customerName,
+                            details: {
+                                trialEndsLabel: polarDates.validUntil
+                                    ? new Date(polarDates.validUntil * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+                                    : null,
+                            },
+                          })
+                        : sendPlanEmail({ toEmail: userEmail, toName: customerName, plan: planType });
+
+                    const label = polarDates.isTrialing ? 'trial welcome' : `${planType} welcome`;
+                    send
                         .then(result => {
-                            if (result.success) console.log(`📧 Welcome email sent for ${planType} plan → ${userEmail}`);
-                            else console.warn(`⚠️ Welcome email failed for ${userEmail}:`, result.error);
+                            if (result.success) console.log(`📧 ${label} email sent → ${userEmail}`);
+                            else console.warn(`⚠️ ${label} email failed for ${userEmail}:`, result.error);
                         })
                         .catch(err => console.error('❌ Email send threw unexpectedly:', err));
                 }
