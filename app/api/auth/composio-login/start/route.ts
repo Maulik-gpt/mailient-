@@ -28,6 +28,15 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Env fingerprint (never the secret) — so the Vercel function log proves
+    // WHICH key/config the prod build is actually using vs. local. If key len
+    // is 0 or the fingerprint differs from local, the Vercel env is the bug.
+    const k = process.env.COMPOSIO_API_KEY || '';
+    console.log('[Composio login] env check:', {
+      keyFingerprint: k ? `${k.slice(0, 4)}…${k.slice(-4)}(${k.length})` : 'MISSING',
+      gmailCfg: process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID || 'MISSING',
+      nextauthUrl: process.env.NEXTAUTH_URL || 'MISSING',
+    });
     // No identity yet — key the pending connection to a random handle. The
     // callback rebinds it to the real email once userinfo resolves.
     const tempUser = `pending_${crypto.randomBytes(12).toString('hex')}`;
