@@ -37,10 +37,8 @@ import {
 import { Navbar } from "@/components/Navbar";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { PerspectiveMarquee } from "@/components/ui/remocn-perspective-marquee";
 import PricingSection3 from "@/components/ui/pricing-section-3";
 import { useRouter } from "next/navigation";
-import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { ProgressiveBlur } from "@/components/ui/progressive-blur";
 import { Features8 } from "@/components/ui/features-8";
 import { CTASection } from "@/components/ui/hero-dithering-card";
@@ -188,7 +186,7 @@ function HeroVideoPlayer() {
     <div
       onClick={(e) => togglePlay(e)}
       className={cn(
-        "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[24px] mt-20 relative z-20 overflow-hidden group cursor-pointer transition-shadow duration-500",
+        "w-full max-w-4xl aspect-[16/9] bg-[#050505] border border-white/[0.08] rounded-[28px] mt-20 relative z-20 overflow-hidden group cursor-pointer transition-shadow duration-500",
         isPlaying ? "shadow-none" : "shadow-[0_50px_100px_rgba(0,0,0,0.85)]"
       )}
     >
@@ -427,10 +425,10 @@ export function LinearLanding() {
                 Get started free
               </CircleExpandButton>
 
-              <CircleExpandButton
-                href="#sample-brief"
-                className="bg-transparent border border-white/10 hover:bg-white/5"
-              >
+              {/* Points at #demos (the real product-demo videos), not
+                  #sample-brief — that anchor is the illustrative before/after
+                  panel, so the old link promised footage and delivered a mockup. */}
+              <CircleExpandButton href="#demos" variant="secondary">
                 Watch Mailient handle a real inbox
               </CircleExpandButton>
             </div>
@@ -446,21 +444,14 @@ export function LinearLanding() {
       {/* Clear Separation Line at the bottom of the Metallic Hero */}
       <div className="w-full h-px bg-gradient-to-r from-transparent via-white/[0.12] to-transparent relative z-25 mt-16 md:mt-24" />
 
-      {/* 1.5 TRUSTED BY COMPANIES PERSPECTIVE MARQUEE SECTION ON PURE BLACK */}
-      <div className="w-full bg-[#000000] py-8 md:py-16 relative z-10">
-        <div className="w-full relative h-28 overflow-hidden bg-[#000000]">
-          <PerspectiveMarquee 
-            fontSize={26} 
-            color="#a3a3a3" 
-            rotateY={-14} 
-            rotateX={5} 
-            perspective={1100} 
-            fadeColor="#000000" 
-            background="#000000"
-            className="w-full h-full"
-          />
-        </div>
-      </div>
+      {/* NOTE: a PerspectiveMarquee sat here as a "trusted by" wall. It was
+          mounted with no `items` prop, so it fell through to that component's
+          DEFAULT_ITEMS placeholder and scrolled Vercel / Linear / Stripe /
+          Figma / Notion / Raycast / Arc / Cursor — none of whom are customers.
+          Removed outright rather than relabeled: the integrations story is
+          already told properly by the #connectors orbit section below, and
+          pre-launch we have no customer logos to show. Nothing beats fake
+          social proof except no social proof. */}
     </section>
 
       {/* 1.5 THE PROBLEM — WHY MAILIENT MANIFESTO (moved up: problem right after hero, per positioning spec) */}
@@ -476,7 +467,7 @@ export function LinearLanding() {
               </span>
               Why Mailient?
             </div>
-            <h2 className="text-4xl md:text-6xl font-medium tracking-tight leading-tight font-sans">
+            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight font-sans">
               <span className="bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
                 Email was supposed to be a tool.
               </span>
@@ -509,44 +500,26 @@ export function LinearLanding() {
               </div>
             </div>
 
+            {/* Compressed from ~700 words / 12 paragraphs to the four beats that
+                actually carry the argument: the cost, the gap no other tool
+                covers, the reframe, the price. The long-form version was the
+                second thing on the page — a wall of essay copy in the highest
+                bounce region. The lines kept here are the strongest ones from
+                it, verbatim; the connective tissue is gone. */}
             <p>
-              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And unlike every other part of your business, the inbox does not scale. The more successful you get, the worse it becomes. More clients. More threads. More opportunities buried under newsletters you never asked for.
+              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And it does not scale: the more successful you get, the worse it gets.
             </p>
 
             <p>
-              Gmail sorts the mail you read. Superhuman makes you faster at the mail you read. ChatGPT drafts a reply when you remember to ask. Filters file things away quietly — including, sometimes, the deal. Every one of these tools works on the email you are looking at. <span className="text-white">None of them watch the email you never opened. That is where the money leaks.</span>
+              Gmail sorts the mail you read. Superhuman makes you faster at the mail you read. ChatGPT drafts a reply when you remember to ask. Every one of these works on the email you are looking at. <span className="text-white">None of them watch the email you never opened. That is where the money leaks.</span>
             </p>
 
             <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
               Mailient does not make you faster at email. It removes email from your to-do list entirely.
             </p>
 
-            <p>
-              When a client emails you at midnight, Mailient reads it. When you wake up, a draft is already waiting in your voice. When someone asks to meet, your calendar has already been checked and a slot has been held. When your inbox fills up overnight, an agent has already swept it, handled the routine, and left you a clean briefing of the three things that actually need your eyes.
-            </p>
-
-            <p>
-              You do not configure this. You do not prompt it every morning. You connect your Gmail, spend two minutes letting it learn your voice, and then you stop thinking about your inbox.
-            </p>
-
-            <div className="border-l-2 border-white/20 pl-6 my-8 py-2 italic text-neutral-300 text-lg">
-              "That is the product. That is why it exists."
-            </div>
-
-            <p>
-              There are smarter email tools. There are faster email tools. There is no other tool that simply takes the inbox off your hands — that wakes up before you do, does the work, and gets out of your way.
-            </p>
-
             <p className="text-white font-medium">
-              Mailient is not a feature. It is a hire.
-            </p>
-
-            <p className="text-white font-normal text-2xl md:text-3xl tracking-tight leading-snug pt-2">
-              Your first employee shouldn't cost $80,000 a year.
-            </p>
-
-            <p>
-              This one costs $29 a month. Never sleeps, never misses a message, never forgets a follow-up. The most reliable employee you will ever bring on board.
+              Mailient is not a feature. It is a hire — and your first employee shouldn&apos;t cost $80,000 a year. This one costs $29 a month, never sleeps, and never forgets a follow-up.
             </p>
 
             <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
@@ -560,16 +533,27 @@ export function LinearLanding() {
       </section>
 
       {/* 2. THREE THINGS IT DOES INTERACTIVE SECTION */}
-      <section ref={threeThingsRef} className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
+      <section id="demos" ref={threeThingsRef} className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative text-left">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
           
           {/* Left panel: Vertical connected capability selectors */}
           <BlurFade delay={0.1} duration={0.8} inView className="lg:col-span-5 w-full">
-            <div className="space-y-12">
+            <div className="space-y-12" role="tablist" aria-label="Product demos">
               {/* Step 1 */}
-              <div 
+              {/* Tab semantics: these three selectors drive the demo panel on
+                  the right, so they are a tablist, not decorative divs. They
+                  were div+onClick — keyboard users could not switch demos at
+                  all. NOTE the button wraps only the label+heading: the expanded
+                  body contains a CircleExpandButton, which renders an <a>, and
+                  an anchor nested inside a button is invalid HTML. */}
+              <div className="text-left">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeStep === 0}
+                aria-controls="demo-panel"
                 onClick={() => setActiveStep(0)}
-                className="group cursor-pointer select-none text-left"
+                className="group cursor-pointer select-none text-left w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-lg"
               >
               <span className={cn(
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
@@ -580,11 +564,12 @@ export function LinearLanding() {
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 0
-                  ? "text-4xl md:text-[48px] text-white"
-                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-2xl md:text-[34px] text-white"
+                  : "text-xl md:text-2xl text-neutral-600 group-hover:text-neutral-400"
               )}>
                 Only the emails that deserve your attention.
               </h3>
+              </button>
               {activeStep === 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -597,6 +582,7 @@ export function LinearLanding() {
                   </p>
                   <CircleExpandButton
                     href="/product/sift"
+                    variant="secondary"
                     className="text-xs md:text-sm"
                   >
                     See what mornings look like
@@ -606,10 +592,15 @@ export function LinearLanding() {
             </div>
 
             {/* Step 2 */}
-            <div 
-              onClick={() => setActiveStep(1)}
-              className="group cursor-pointer select-none text-left"
-            >
+            <div className="text-left">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeStep === 1}
+                aria-controls="demo-panel"
+                onClick={() => setActiveStep(1)}
+                className="group cursor-pointer select-none text-left w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-lg"
+              >
               <span className={cn(
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 1 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
@@ -619,11 +610,12 @@ export function LinearLanding() {
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 1
-                  ? "text-4xl md:text-[48px] text-white"
-                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-2xl md:text-[34px] text-white"
+                  : "text-xl md:text-2xl text-neutral-600 group-hover:text-neutral-400"
               )}>
                 Replies that sound like you.
               </h3>
+              </button>
               {activeStep === 1 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -636,6 +628,7 @@ export function LinearLanding() {
                   </p>
                   <CircleExpandButton
                     href="/product/drafts"
+                    variant="secondary"
                     className="text-xs md:text-sm"
                   >
                     See a draft in your voice
@@ -645,10 +638,15 @@ export function LinearLanding() {
             </div>
 
             {/* Step 3 */}
-            <div 
-              onClick={() => setActiveStep(2)}
-              className="group cursor-pointer select-none text-left"
-            >
+            <div className="text-left">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeStep === 2}
+                aria-controls="demo-panel"
+                onClick={() => setActiveStep(2)}
+                className="group cursor-pointer select-none text-left w-full focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-lg"
+              >
               <span className={cn(
                 "font-mono text-[10px] tracking-[0.2em] font-medium block transition-all duration-300",
                 activeStep === 2 ? "text-[#8a8f98] mb-3" : "text-neutral-700 group-hover:text-neutral-500 mb-1"
@@ -658,11 +656,12 @@ export function LinearLanding() {
               <h3 className={cn(
                 "font-medium tracking-tight leading-tight transition-all duration-500",
                 activeStep === 2
-                  ? "text-4xl md:text-[48px] text-white"
-                  : "text-2xl md:text-3xl text-neutral-600 hover:text-neutral-400"
+                  ? "text-2xl md:text-[34px] text-white"
+                  : "text-xl md:text-2xl text-neutral-600 group-hover:text-neutral-400"
               )}>
                 Repetitive work happens while you sleep.
               </h3>
+              </button>
               {activeStep === 2 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -675,6 +674,7 @@ export function LinearLanding() {
                   </p>
                   <CircleExpandButton
                     href="#pricing"
+                    variant="secondary"
                     className="text-xs md:text-sm"
                   >
                     Put work on autopilot
@@ -687,7 +687,7 @@ export function LinearLanding() {
 
           {/* Right panel: dynamic high-contrast visual display */}
           <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-7 w-full h-[500px]">
-            <div className="bg-[#050505] border border-white/[0.08] rounded-[24px] p-5 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
+            <div id="demo-panel" role="tabpanel" className="bg-[#050505] border border-white/[0.08] rounded-[28px] p-5 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
             {/* Custom Dither Dot Grid Overlay */}
             <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none opacity-[0.08] mix-blend-screen select-none"
                  style={{
@@ -836,7 +836,7 @@ export function LinearLanding() {
                 THE AI RUNNING YOUR INBOX
               </span>
 
-              <h2 className="text-5xl md:text-[66px] font-medium tracking-[-0.03em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+              <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight font-sans bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
                 Meet your new employee.
               </h2>
 
@@ -863,9 +863,13 @@ export function LinearLanding() {
             <div className="flex-1 w-full linear-grid-card !rounded-2xl p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
 
+              {/* Sample output, not a live feed. The pulsing "live" dot has been
+                  dropped and the header says EXAMPLE — the numbers below are
+                  representative of a real sweep, but they are not telemetry and
+                  must not be presented as if they were. */}
               <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
                 <span>MAILIENT · MORNING INBOX SWEEP</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-neutral-600 tracking-wider">EXAMPLE</span>
               </div>
 
               <div className="space-y-2.5">
@@ -1158,7 +1162,7 @@ export function LinearLanding() {
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="text-center flex flex-col items-center mb-12 md:mb-24">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold mb-6">THE MORNING TRANSITION</span>
-            <h2 className="text-4xl md:text-[56px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-2xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Chaos vs Overnight Clarity.
             </h2>
             <p className="text-sm md:text-base text-[#8a8f98] leading-relaxed font-light max-w-xl mt-4 font-sans min-h-[2.5rem]">
@@ -1192,7 +1196,7 @@ export function LinearLanding() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Buried before 9am</h3>
                 <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  45 unread, meetings piling up, replies you owe — all on you.
+                  246 unread, meetings piling up, replies you owe — all on you.
                 </p>
 
                 {/* Stress rows with beautiful high-fidelity styling */}
@@ -1214,9 +1218,11 @@ export function LinearLanding() {
                 </div>
               </div>
 
-              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
-                <span>STATUS // RED ZONE INBOX ACCUMULATION</span>
-                <span className="text-red-400 font-semibold">FATIGUE: 100%</span>
+              {/* Fake gauge chrome removed — "FATIGUE: 100%" / "RED ZONE
+                  ACCUMULATION" read as instrument output from a system that
+                  measures no such thing. */}
+              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] font-mono">
+                <span>Every one of these is still on you</span>
               </div>
             </div>
 
@@ -1253,9 +1259,8 @@ export function LinearLanding() {
                 </div>
               </div>
 
-              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] flex items-center justify-between font-mono">
-                <span>STATUS // CLEAR. BRIEFING DELIVERED</span>
-                <span className="text-emerald-400 font-semibold">GO BUILD.</span>
+              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] font-mono">
+                <span>Briefing delivered. Go build.</span>
               </div>
             </div>
 
@@ -1269,9 +1274,14 @@ export function LinearLanding() {
           <div className="max-w-5xl mx-auto">
           
           {/* Founder-time row — what the founder gets BACK, not what the machine
-              does. "2h 14m" mirrors the illustrative Receipt in the hero; swap
-              both for real usage medians once live briefs exist. */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 md:mb-24 text-left">
+              does. These figures are ILLUSTRATIVE (a target morning), not
+              measured medians — we have no usage data yet. They are labeled as
+              such on screen; swap in real medians once live briefs exist and
+              then drop the "what a handled morning looks like" framing. */}
+          <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 uppercase block mb-6">
+            What a handled morning looks like
+          </span>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-6 text-left">
             <div className="flex flex-col space-y-1">
               <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every morning</span>
               <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
@@ -1302,27 +1312,38 @@ export function LinearLanding() {
             </div>
           </div>
 
-          {/* Built-for-founders strip (honest pre-launch — no fabricated testimonials) */}
+          <p className="text-[10px] text-neutral-600 font-sans mb-12 md:mb-24">
+            Illustrative of a typical handled morning — not averaged usage data.
+          </p>
+
+          {/* Product statement cards. These were previously styled as pull-quotes
+              (serif open-quote glyph + em-dash attribution), which reads as a
+              customer testimonial at a glance even though the attribution line
+              was a label, not a person. Pre-launch we have no testimonials, so
+              the quote styling is removed entirely and these are now plainly
+              labeled product claims. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left mb-12 md:mb-24">
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
-              <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
-              <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                You open Mailient in the morning and there are only two emails left to think about. The other two hundred? Read, sorted, answered, or archived — with a note explaining what happened to each.
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4">
+                What mornings become
+              </span>
+              <p className="text-sm text-neutral-300 font-light leading-relaxed font-sans relative z-10">
+                You open Mailient and there are only two emails left to think about. The other two hundred are read, sorted, answered, or archived — each with a note explaining what happened to it.
               </p>
-              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; What mornings become</span>
             </div>
 
             <div className="linear-grid-card p-8 transition-all duration-300 relative text-left">
-              <span className="text-4xl text-neutral-700 font-serif absolute top-4 left-4 select-none">“</span>
-              <p className="text-xs text-neutral-300 font-light leading-relaxed font-sans relative z-10 pl-4 mb-6">
-                It learns who you are — your VIPs, your voice, what's strategic versus routine — and gets sharper every single run. You're not operating software. You hired someone.
+              <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-500 uppercase block mb-4">
+                Why it&apos;s different
+              </span>
+              <p className="text-sm text-neutral-300 font-light leading-relaxed font-sans relative z-10">
+                It learns who you are — your VIPs, your voice, what&apos;s strategic versus routine — and gets sharper every run. You&apos;re not operating software. You hired someone.
               </p>
-              <span className="text-[10px] font-semibold text-white pl-4 font-mono block">&mdash; Why it's different</span>
             </div>
           </div>
 
           {/* Security Strip */}
-          <div className="w-full linear-grid-card !rounded-[20px] py-4 px-6 hover:shadow-[0_20px_40px_rgba(16,185,129,0.06)] hover:border-white/[0.1] transition-all duration-300 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 text-left cursor-pointer">
+          <div className="w-full linear-grid-card !rounded-2xl py-4 px-6 hover:shadow-[0_20px_40px_rgba(16,185,129,0.06)] hover:border-white/[0.1] transition-all duration-300 flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 text-left">
             <div className="flex items-center gap-3">
               <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
               <span className="text-[11px] text-neutral-400 font-sans">
@@ -1341,14 +1362,33 @@ export function LinearLanding() {
 
 
 
-      {/* 8. FAQ ACCORDION SECTION */}
+      {/* Core capability grid — moved ABOVE pricing. It previously rendered
+          after the pricing section, so the last substantive argument for the
+          product sat below the ask, where nobody still deciding would reach it.
+          Order is now: capabilities → price → objections (FAQ) → CTA. */}
+      <BlurFade delay={0.1} duration={0.8} inView>
+        <Features8 />
+      </BlurFade>
+
+      {/* MODULAR PRICING SECTION — id is load-bearing: in-page CTAs target #pricing */}
+      <section id="pricing" className="w-full border-t border-white/[0.06] z-10 relative">
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <PricingSection3
+            handleSelectPlan={(planId) => {
+              router.push("/pricing");
+            }}
+          />
+        </BlurFade>
+      </section>
+
+      {/* FAQ ACCORDION SECTION — objection handling, directly after the price */}
       <section className="py-16 md:py-32 px-6 w-full max-w-7xl mx-auto border-t border-white/[0.06] z-10 relative">
         <BlurFade delay={0.1} duration={0.8} inView>
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           
           <div className="lg:col-span-4 space-y-4 text-left">
             <span className="font-mono text-[10px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">COMMON QUESTIONS</span>
-            <h2 className="text-3xl md:text-[40px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+            <h2 className="text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Frequently asked questions.
             </h2>
             <p className="text-xs text-[#8a8f98] leading-relaxed font-light font-sans max-w-sm">
@@ -1359,16 +1399,26 @@ export function LinearLanding() {
           <div className="lg:col-span-8 flex flex-col space-y-4 w-full">
             {landingFaqs.map((faq, index) => (
               <div key={index} className="border-b border-white/[0.06] pb-4 text-left">
-                <div 
+                {/* Real <button> with aria-expanded/aria-controls — this was a
+                    div+onClick, so the entire FAQ was unreachable by keyboard
+                    and invisible to screen readers. */}
+                <button
+                  type="button"
                   onClick={() => setActiveAccordion(activeAccordion === index ? null : index)}
-                  className="flex items-center justify-between py-4 cursor-pointer text-sm font-semibold text-white hover:text-neutral-300 transition-colors"
+                  aria-expanded={activeAccordion === index}
+                  aria-controls={`faq-panel-${index}`}
+                  id={`faq-trigger-${index}`}
+                  className="w-full flex items-center justify-between gap-4 py-4 cursor-pointer text-sm font-semibold text-white text-left hover:text-neutral-300 transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40 rounded-sm"
                 >
                   <span>{faq.q}</span>
-                  <span className="text-xs text-neutral-500 font-mono">{activeAccordion === index ? "[-]" : "[+]"}</span>
-                </div>
+                  <span aria-hidden="true" className="text-xs text-neutral-500 font-mono shrink-0">{activeAccordion === index ? "[-]" : "[+]"}</span>
+                </button>
                 <AnimatePresence>
                   {activeAccordion === index && (
                     <motion.div
+                      id={`faq-panel-${index}`}
+                      role="region"
+                      aria-labelledby={`faq-trigger-${index}`}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: "auto", opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
@@ -1394,22 +1444,6 @@ export function LinearLanding() {
         </BlurFade>
       </section>
 
-      {/* 8.5 MODULAR PRICING SECTION */}
-      <section className="w-full border-t border-white/[0.06] z-10 relative">
-        <BlurFade delay={0.1} duration={0.8} inView>
-          <PricingSection3 
-            handleSelectPlan={(planId) => {
-              router.push("/pricing");
-            }} 
-          />
-        </BlurFade>
-      </section>
-
-      {/* Core Capability Grid */}
-      <BlurFade delay={0.1} duration={0.8} inView>
-        <Features8 />
-      </BlurFade>
-
       {/* Premium Dithered CTA Section */}
       <BlurFade delay={0.1} duration={0.8} inView>
         <CTASection />
@@ -1417,12 +1451,17 @@ export function LinearLanding() {
 
       <Footer />
 
-      {/* Premium Progressive Blurs for Top/Bottom edges */}
-      <ProgressiveBlur position="top" backgroundColor="#000000" height="120px" blurAmount="10px" className="fixed z-40" />
-      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="80px" blurAmount="10px" className="fixed z-40" />
+      {/* Top edge blur only, and shorter (120px → 72px): just enough to soften
+          content passing under the fixed Navbar.
 
-      {/* Premium Liquid Glass Floating Navigation Overlay */}
-      <FloatingNavbar />
+          The bottom blur and the FloatingNavbar are both gone from the landing
+          page. Together they occupied ~200px of permanent viewport on a page
+          whose only job is to sell, and the floating bar's links (Changelog,
+          Support, Terms, Privacy) are footer-tier destinations that do not
+          deserve persistent chrome in front of a first-time visitor. The
+          Footer already carries all four. FloatingNavbar still renders on the
+          in-app routes that mount it. */}
+      <ProgressiveBlur position="top" backgroundColor="#000000" height="72px" blurAmount="10px" className="fixed z-40" />
     </div>
   );
 }

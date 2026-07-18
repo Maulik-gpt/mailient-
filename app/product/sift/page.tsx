@@ -111,7 +111,7 @@ export default function SiftProductPage() {
 
             <CircleExpandButton
               href="#sift-showcase"
-              className="bg-transparent border border-white/10 hover:bg-white/5"
+              variant="secondary"
             >
               Watch Sift work
             </CircleExpandButton>

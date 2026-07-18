@@ -29,6 +29,26 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 18, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'The homepage no longer implies customers we do not have',
+        points: [
+          'A scrolling row of company names sat near the top of the homepage in a "trusted by" position. Those companies were placeholder text from the design component, not customers, and the row has been removed.',
+          'Numbers that were only ever illustrative — the morning time-savings figures and the sample inbox sweep — now say so on screen instead of reading like measured results.',
+          'Two cards styled as customer quotes are now plainly labelled as product claims, because we have no customer quotes yet.',
+        ],
+      },
+      {
+        tag: 'Improved',
+        title: 'A faster, clearer homepage',
+        points: [
+          'What Mailient actually does now comes before the price instead of after it, and the opening argument is a quarter of its old length.',
+          'Buttons that went nowhere now work: "Put work on autopilot" reaches pricing, and "Watch Mailient handle a real inbox" reaches the demos.',
+          'Headings follow one consistent size scale, so the page no longer shouts louder at the bottom than at the top.',
+          'The floating bottom toolbar is gone from the homepage, giving the page back the screen space it was covering.',
+          'The FAQ and the demo switcher can now be operated by keyboard and read by screen readers.',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'Mailient is open — no more access requests',
         points: [

@@ -51,7 +51,11 @@ export function CTASection() {
           <div className="relative z-10 px-6 max-w-4xl mx-auto text-center flex flex-col items-center">
             
             {/* Premium Linear Gradient Headline */}
-            <h2 className="text-4xl md:text-6xl lg:text-[76px] font-medium tracking-[-0.035em] mb-6 leading-[1.08] max-w-3xl font-sans select-none bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+            {/* Capped at 56px. This was 76px — larger than the hero h1 (60px),
+                which made the loudest type on the page the closing CTA and
+                inverted the hierarchy. 56px keeps it emphatic as the final
+                beat while staying below the hero. */}
+            <h2 className="text-4xl md:text-5xl lg:text-[56px] font-medium tracking-[-0.035em] mb-6 leading-[1.08] max-w-3xl font-sans select-none bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
               Go ship. Go sell. Go build. <br />
               We&apos;ll handle the inbox.
             </h2>
@@ -64,10 +68,7 @@ export function CTASection() {
             {/* Buttons row matching the screenshot */}
             <div className="flex flex-wrap items-center justify-center gap-4">
               {/* Left Button: Obsidian Pill */}
-              <CircleExpandButton
-                href="/auth/signup"
-                className="bg-[#121316] border border-white/[0.08] hover:border-white/20"
-              >
+              <CircleExpandButton href="/auth/signup" variant="primary">
                 Get started free
               </CircleExpandButton>
 
@@ -76,7 +77,7 @@ export function CTASection() {
                 href="https://x.com/maulik_5"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-black border border-white/[0.06] hover:border-white/[0.12]"
+                variant="secondary"
               >
                 Talk to Founder
               </CircleExpandButton>

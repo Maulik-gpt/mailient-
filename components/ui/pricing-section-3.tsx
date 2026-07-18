@@ -308,13 +308,12 @@ export default function PricingSection3({
                       }
                     }}
                     disabled={isLoading || isCurrentPlanActive}
+                    // One white button per pricing table: the popular tier is
+                    // the primary action, the rest stay in the grey ramp.
+                    variant={plan.popular ? "primary" : "secondary"}
                     className={cn(
                       "w-full",
-                      isCurrentPlanActive
-                        ? "opacity-50 cursor-not-allowed"
-                        : plan.popular
-                          ? ""
-                          : "bg-[#121316] border-white/[0.08] hover:bg-[#1c1d22] hover:border-white/25"
+                      isCurrentPlanActive && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     {isLoading ? (

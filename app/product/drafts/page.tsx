@@ -109,7 +109,7 @@ export default function DraftsProductPage() {
 
             <CircleExpandButton
               href="#drafts-showcase"
-              className="bg-transparent border border-white/10 hover:bg-white/5"
+              variant="secondary"
             >
               Watch Drafts work
             </CircleExpandButton>
