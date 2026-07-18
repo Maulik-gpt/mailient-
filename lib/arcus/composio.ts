@@ -120,7 +120,14 @@ export interface ComposioIdentity {
  */
 export async function getComposioIdentity(accountId: string): Promise<ComposioIdentity | null> {
   const token = await getComposioAccessToken(accountId, { force: true });
-  if (!token) return null;
+  if (!token) {
+    // getComposioAccessToken already logs the specific reason (masked token,
+    // non-ACTIVE, missing). The #1 cause is "Mask Connected Account Secrets"
+    // still ON in the Composio dashboard — surface it once more, loudly, since
+    // it manifests as a confusing "no identity" at login.
+    console.error('[Composio] getComposioIdentity: no usable token. If login fails with composio_login_no_identity, turn OFF "Mask Connected Account Secrets" in Composio → Settings → Project Configuration.');
+    return null;
+  }
   try {
     const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
       headers: { Authorization: `Bearer ${token}` },
