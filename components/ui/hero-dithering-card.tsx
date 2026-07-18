@@ -24,17 +24,36 @@ export function CTASection() {
   }, [])
 
   return (
-    <section ref={sectionRef} className="py-24 w-full flex justify-center items-center px-4 md:px-6 bg-black relative z-10">
-      <div 
-        className="w-full max-w-7xl relative"
+    /* Full-bleed. This was an inset card — section px-4/md:px-6, a max-w-7xl
+       wrapper, and rounded-[48px] + overflow-hidden on the panel — so the
+       dithering shader was clipped into a rounded rectangle floating in black
+       with visible margins on all four sides. All three constraints are gone;
+       the shader now runs edge to edge.
+
+       The rounded card is replaced by a top hairline, which is how every other
+       section on the page separates itself. */
+    <section ref={sectionRef} className="py-24 w-full flex justify-center items-center bg-black relative z-10 border-t border-white/[0.06]">
+      <div
+        className="w-full relative"
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-        <div className="relative overflow-hidden rounded-[48px] border border-white/[0.08] bg-neutral-950/40 shadow-2xl min-h-[520px] flex flex-col items-center justify-center duration-500">
-          
+        <div className="relative overflow-hidden bg-neutral-950/40 min-h-[520px] flex flex-col items-center justify-center duration-500">
+
           {shaderActive && (
             <Suspense fallback={<div className="absolute inset-0 bg-neutral-900/10 pointer-events-none" />}>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[250%] md:w-[150%] h-[250%] md:h-[150%] z-0 pointer-events-none opacity-50 dark:opacity-40 mix-blend-multiply dark:mix-blend-screen">
+              {/* Oversized past 100% so the warp never shows its own edge, and
+                  masked vertically so a full-bleed shader melts into the black
+                  sections above and below instead of hard-banding against them. */}
+              <div
+                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[160%] md:w-[130%] h-[250%] md:h-[180%] z-0 pointer-events-none opacity-50 dark:opacity-40 mix-blend-multiply dark:mix-blend-screen"
+                style={{
+                  maskImage:
+                    "linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%)",
+                  WebkitMaskImage:
+                    "linear-gradient(to bottom, transparent 0%, #000 22%, #000 78%, transparent 100%)",
+                }}
+              >
                 <Dithering
                   colorBack="#00000000" // Transparent
                   colorFront="#4a4a4a"  // Lighter gray instead of ultra-dark metallic gray
