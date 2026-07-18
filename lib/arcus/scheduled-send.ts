@@ -15,7 +15,7 @@
  *   buildRaw                            → lib/arcus/tools/encoding-helpers
  */
 
-import { getGmailToken, refreshGoogleToken } from './tools/http-tokens';
+import { getGmailToken, refreshGoogleToken, googleFetch } from './tools/http-tokens';
 import { buildRaw } from './tools/encoding-helpers';
 
 const GMAIL_SEND_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send';
@@ -167,21 +167,22 @@ async function sendOneScheduled(supabase: any, row: any): Promise<SendOutcome> {
     if (row.thread_id) reqBody.threadId = row.thread_id;
     const sendBody = JSON.stringify(reqBody);
 
-    let res = await fetch(GMAIL_SEND_URL, {
+    // googleFetch proxies through Composio for managed users (token is a composio:
+    // marker) or does the direct authed send for legacy Google sign-in. The 401
+    // refresh-retry below is a legacy-token concern; Composio refreshes server-side.
+    let res = await googleFetch(row.user_id, 'gmail', GMAIL_SEND_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: sendBody,
-      signal: AbortSignal.timeout(12000),
     });
     if (res.status === 401) {
       const fresh = await refreshGoogleToken(row.user_id);
       if (fresh) {
         token = fresh;
-        res = await fetch(GMAIL_SEND_URL, {
+        res = await googleFetch(row.user_id, 'gmail', GMAIL_SEND_URL, {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
           body: sendBody,
-          signal: AbortSignal.timeout(12000),
         });
       }
     }

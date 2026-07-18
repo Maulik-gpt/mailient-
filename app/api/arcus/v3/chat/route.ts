@@ -139,9 +139,12 @@ async function getRecentEmailSummary(userId: string): Promise<string> {
     if (!data?.access_token) return '';
     const token = decrypt(data.access_token);
 
-    const res = await fetch(
+    // googleFetch proxies through Composio for managed users (access_token is a
+    // composio: marker, not a bearer) or does the direct authed call for legacy.
+    const { googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+    const res = await googleFetch(userId, 'gmail',
       'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10&labelIds=INBOX&q=is:unread',
-      { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+      { headers: { Authorization: `Bearer ${token}` } }
     );
     if (!res.ok) return '';
     const listData = await res.json();

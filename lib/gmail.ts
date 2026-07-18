@@ -4,6 +4,13 @@
  * Handles authentication, rate limiting, and all Gmail operations
  * JavaScript version for compatibility with JS route files
  */
+import {
+  googleFetch,
+  composioFetchByAccount,
+  isComposioMarker,
+  composioAccountIdFromMarker,
+} from './arcus/tools/http-tokens';
+
 export class GmailService {
   constructor(accessToken, refreshToken = '') {
     this.accessToken = accessToken;
@@ -139,6 +146,34 @@ export class GmailService {
   }
 
   /**
+   * Transport for every Gmail call — the single seam that makes the whole class
+   * masking-proof. Composio-managed accounts can never use a raw bearer token
+   * (Composio masks it), so those calls must go through Proxy Execute, which
+   * injects the token server-side and returns the raw Google response.
+   *
+   * Resolution order:
+   *  1. accessToken is a `composio:<accountId>` marker — a caller decrypted the
+   *     integration row straight from the DB. Address the proxy by account id;
+   *     needs no user identity, so every existing caller works unchanged.
+   *  2. setUserEmail() was called — resolve the account from the user id.
+   *  3. Neither — legacy direct fetch, byte-identical to the old behavior.
+   */
+  async _transport(url, fetchOptions) {
+    if (isComposioMarker(this.accessToken)) {
+      return composioFetchByAccount(
+        composioAccountIdFromMarker(this.accessToken),
+        'gmail',
+        url,
+        fetchOptions,
+      );
+    }
+    if (this.userEmail) {
+      return googleFetch(this.userEmail, 'gmail', url, fetchOptions);
+    }
+    return fetch(url, fetchOptions);
+  }
+
+  /**
    * Make authenticated request to Gmail API with enhanced error handling
    */
   async makeRequest(url, options = {}) {
@@ -172,7 +207,7 @@ export class GmailService {
     this.requestCount++;
 
     try {
-      const response = await fetch(url, {
+      const response = await this._transport(url, {
         ...options,
         headers: {
           'Authorization': `Bearer ${this.accessToken}`,
@@ -219,7 +254,7 @@ export class GmailService {
             console.log('DEBUG: Token refresh successful, retrying request...');
 
             // Retry the request with the new token
-            const retryResponse = await fetch(url, {
+            const retryResponse = await this._transport(url, {
               ...options,
               headers: {
                 'Authorization': `Bearer ${newAccessToken}`,

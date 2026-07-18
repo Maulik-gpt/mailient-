@@ -24,6 +24,7 @@ import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
 
 import { normalizeUserId } from './user-id';
+import { googleFetch } from './tools/http-tokens';
 
 const TABLE = 'arcus_integrations';
 const TTL_MS = 60 * 60 * 1000; // 1 hour — Gmail scope changes are rare
@@ -64,27 +65,24 @@ export async function verifyGmailScopes(userId: string): Promise<ScopeCheckResul
     }
 
     // 3) Probe /profile. A Composio-managed row stores `composio:<accountId>`,
-    //    not a bearer token — resolve the live Google token from Composio
-    //    first, or the probe 403s and we'd falsely report scope_missing.
+    //    not a bearer token — its live Google token is masked and can't be used
+    //    directly, so route the probe through googleFetch, which proxies via
+    //    Composio's Execute path (masking-proof) for managed users and does the
+    //    direct authed call for legacy Google sign-in.
     let token = decrypt(data.access_token);
-    if (token.startsWith('composio:')) {
-      const { getComposioAccessToken } = await import('./composio');
-      const live = await getComposioAccessToken(token.slice('composio:'.length));
-      if (!live) return { ok: false, reason: 'not_connected' };
-      token = live;
-    }
+    const isComposio = token.startsWith('composio:');
     const probe = async () =>
-      fetch('https://gmail.googleapis.com/gmail/v1/users/me/profile', {
+      googleFetch(uid, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/profile', {
         headers: { Authorization: `Bearer ${token}` },
-        signal: AbortSignal.timeout(6000),
       });
 
     let res = await probe();
 
     // 4) On 401 try a refresh before declaring scope-missing. 401 here means
     //    the access token expired; the refresh token may still be valid and
-    //    carry the same scopes. If refresh succeeds, retry once.
-    if (res.status === 401) {
+    //    carry the same scopes. If refresh succeeds, retry once. (Legacy only —
+    //    Composio refreshes server-side, so its proxy never 401s on expiry.)
+    if (res.status === 401 && !isComposio) {
       const refreshed = await refreshGmailAccessToken(uid);
       if (refreshed) {
         token = refreshed;
@@ -102,7 +100,10 @@ export async function verifyGmailScopes(userId: string): Promise<ScopeCheckResul
       return { ok: true };
     }
 
-    if (res.status === 403) {
+    // A Composio-managed account gets a fixed, verified scope set from Composio's
+    // OAuth client — there's no user-side reconsent to expand scopes, so a non-200
+    // is never actionable as 'scope_missing'. Treat it as transient and don't nag.
+    if (res.status === 403 && !isComposio) {
       // Scopes are missing — clear cache so the next turn re-checks if the
       // user has reconnected by then.
       await supabase

@@ -7,12 +7,9 @@
  * Allowed actions: draft_reply, send_email, archive_email, label_email, get_thread
  */
 
-const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
-const TIMEOUT_MS = 8000;
+import { googleFetch } from '../../arcus/tools/http-tokens';
 
-function abort() {
-  return AbortSignal.timeout(TIMEOUT_MS);
-}
+const GMAIL_API = 'https://gmail.googleapis.com/gmail/v1/users/me';
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
@@ -46,6 +43,7 @@ function toBase64Url(text: string): string {
 // ── Action: draft_reply ────────────────────────────────────────────────────────
 
 export async function draftReply(
+  userId: string,
   accessToken: string,
   params: { threadId: string; to: string; subject: string; body: string; messageId?: string }
 ): Promise<Record<string, unknown>> {
@@ -60,7 +58,7 @@ export async function draftReply(
     references: messageId,
   });
 
-  const response = await fetch(`${GMAIL_API}/drafts`, {
+  const response = await googleFetch(userId, 'gmail', `${GMAIL_API}/drafts`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -72,7 +70,6 @@ export async function draftReply(
         threadId,
       },
     }),
-    signal: abort(),
   });
 
   if (!response.ok) {
@@ -87,6 +84,7 @@ export async function draftReply(
 // ── Action: send_email ─────────────────────────────────────────────────────────
 
 export async function sendEmail(
+  userId: string,
   accessToken: string,
   params: { to: string; subject: string; body: string; threadId?: string; messageId?: string }
 ): Promise<Record<string, unknown>> {
@@ -98,14 +96,13 @@ export async function sendEmail(
   const payload: Record<string, unknown> = { raw: toBase64Url(rawMessage) };
   if (threadId) payload.threadId = threadId;
 
-  const response = await fetch(`${GMAIL_API}/messages/send`, {
+  const response = await googleFetch(userId, 'gmail', `${GMAIL_API}/messages/send`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(payload),
-    signal: abort(),
   });
 
   if (!response.ok) {
@@ -120,20 +117,20 @@ export async function sendEmail(
 // ── Action: archive_email ──────────────────────────────────────────────────────
 
 export async function archiveEmail(
+  userId: string,
   accessToken: string,
   params: { messageId: string }
 ): Promise<Record<string, unknown>> {
   const { messageId } = params;
   if (!messageId) throw new Error('archive_email: messageId is required');
 
-  const response = await fetch(`${GMAIL_API}/messages/${messageId}/modify`, {
+  const response = await googleFetch(userId, 'gmail', `${GMAIL_API}/messages/${messageId}/modify`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({ removeLabelIds: ['INBOX'] }),
-    signal: abort(),
   });
 
   if (!response.ok) {
@@ -147,13 +144,14 @@ export async function archiveEmail(
 // ── Action: label_email ────────────────────────────────────────────────────────
 
 export async function labelEmail(
+  userId: string,
   accessToken: string,
   params: { messageId: string; addLabels?: string[]; removeLabels?: string[] }
 ): Promise<Record<string, unknown>> {
   const { messageId, addLabels = [], removeLabels = [] } = params;
   if (!messageId) throw new Error('label_email: messageId is required');
 
-  const response = await fetch(`${GMAIL_API}/messages/${messageId}/modify`, {
+  const response = await googleFetch(userId, 'gmail', `${GMAIL_API}/messages/${messageId}/modify`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${accessToken}`,
@@ -163,7 +161,6 @@ export async function labelEmail(
       addLabelIds: addLabels,
       removeLabelIds: removeLabels,
     }),
-    signal: abort(),
   });
 
   if (!response.ok) {
@@ -177,15 +174,15 @@ export async function labelEmail(
 // ── Action: get_thread ─────────────────────────────────────────────────────────
 
 export async function getThread(
+  userId: string,
   accessToken: string,
   params: { threadId: string }
 ): Promise<Record<string, unknown>> {
   const { threadId } = params;
   if (!threadId) throw new Error('get_thread: threadId is required');
 
-  const response = await fetch(`${GMAIL_API}/threads/${threadId}?format=metadata`, {
+  const response = await googleFetch(userId, 'gmail', `${GMAIL_API}/threads/${threadId}?format=metadata`, {
     headers: { Authorization: `Bearer ${accessToken}` },
-    signal: abort(),
   });
 
   if (!response.ok) {
@@ -204,16 +201,17 @@ export async function getThread(
 // ── Main dispatch ──────────────────────────────────────────────────────────────
 
 export async function executeGmailAction(
+  userId: string,
   accessToken: string,
   action: string,
   params: Record<string, unknown>
 ): Promise<Record<string, unknown>> {
   switch (action) {
-    case 'draft_reply':    return draftReply(accessToken, params as any);
-    case 'send_email':     return sendEmail(accessToken, params as any);
-    case 'archive_email':  return archiveEmail(accessToken, params as any);
-    case 'label_email':    return labelEmail(accessToken, params as any);
-    case 'get_thread':     return getThread(accessToken, params as any);
+    case 'draft_reply':    return draftReply(userId, accessToken, params as any);
+    case 'send_email':     return sendEmail(userId, accessToken, params as any);
+    case 'archive_email':  return archiveEmail(userId, accessToken, params as any);
+    case 'label_email':    return labelEmail(userId, accessToken, params as any);
+    case 'get_thread':     return getThread(userId, accessToken, params as any);
     default:
       throw new Error(`gmail: unknown action "${action}"`);
   }

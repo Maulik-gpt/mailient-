@@ -15,7 +15,7 @@
  */
 
 import { getSupabaseAdmin } from '../supabase.js';
-import { getGmailToken } from '../arcus/tools/http-tokens';
+import { getGmailToken, googleFetch } from '../arcus/tools/http-tokens';
 
 const GMAIL_WATCH_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/watch';
 const GMAIL_STOP_URL = 'https://gmail.googleapis.com/gmail/v1/users/me/stop';
@@ -44,7 +44,7 @@ export async function startGmailWatch(userId: string): Promise<WatchOutcome> {
 
   let res: Response;
   try {
-    res = await fetch(GMAIL_WATCH_URL, {
+    res = await googleFetch(userId, 'gmail', GMAIL_WATCH_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -52,7 +52,6 @@ export async function startGmailWatch(userId: string): Promise<WatchOutcome> {
         labelIds: ['INBOX'],
         labelFilterBehavior: 'INCLUDE',
       }),
-      signal: AbortSignal.timeout(10000),
     });
   } catch (e: any) {
     return { ok: false, error: e?.message || 'watch request failed' };
@@ -96,10 +95,9 @@ export async function stopGmailWatch(userId: string): Promise<boolean> {
   const token = await getGmailToken(userId);
   if (!token) return false;
   try {
-    const res = await fetch(GMAIL_STOP_URL, {
+    const res = await googleFetch(userId, 'gmail', GMAIL_STOP_URL, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(5000),
     });
     return res.ok || res.status === 404;
   } catch {

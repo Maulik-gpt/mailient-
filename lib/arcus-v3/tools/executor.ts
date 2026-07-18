@@ -14,6 +14,7 @@ import { getSupabaseAdmin } from '../../supabase.js';
 import { SupermemoryClient } from '../../supermemory-client.js';
 import { isMemoryEnabled, extractAndSaveEmailInsights } from '../../arcus/memory';
 import { getToken, getTokenPair } from '../integrations';
+import { googleFetch } from '../../arcus/tools/http-tokens';
 
 // ── Gmail helpers ──────────────────────────────────────────────────────────────
 
@@ -82,9 +83,9 @@ export async function searchGmail(
     labelIds: 'INBOX',
   });
 
-  const res = await fetch(
+  const res = await googleFetch(userId, 'gmail',
     `https://gmail.googleapis.com/gmail/v1/users/me/messages?${params}`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
 
   if (!res.ok) return `Gmail search failed (${res.status}). Token may be expired.`;
@@ -96,9 +97,9 @@ export async function searchGmail(
   const details = await Promise.all(
     messages.slice(0, max).map(async ({ id }: { id: string }) => {
       try {
-        const msgRes = await fetch(
+        const msgRes = await googleFetch(userId, 'gmail',
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+          { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!msgRes.ok) return null;
         const msg = await msgRes.json();
@@ -134,9 +135,9 @@ export async function readEmail(
   const token = await getToken(userId, 'gmail');
   if (!token) return 'Gmail is not connected. Please connect Gmail in Integrations.';
 
-  const res = await fetch(
+  const res = await googleFetch(userId, 'gmail',
     `https://gmail.googleapis.com/gmail/v1/users/me/messages/${input.messageId}?format=full`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
 
   if (!res.ok) return `Could not read email (${res.status}).`;
@@ -180,9 +181,9 @@ export async function readThread(
   const token = await getToken(userId, 'gmail');
   if (!token) return 'Gmail is not connected.';
 
-  const res = await fetch(
+  const res = await googleFetch(userId, 'gmail',
     `https://gmail.googleapis.com/gmail/v1/users/me/threads/${input.threadId}?format=full`,
-    { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }
+    { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!res.ok) return `Could not read thread (${res.status}).`;
 
@@ -224,7 +225,7 @@ export async function draftReply(
   const subject = input.subject || 'Re: (no subject)';
   const raw = encodeRfc822(input.to, subject, input.body, input.threadId, input.inReplyToMessageId);
 
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
+  const res = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/drafts', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -236,7 +237,6 @@ export async function draftReply(
         threadId: input.threadId,
       },
     }),
-    signal: AbortSignal.timeout(10000),
   });
 
   if (!res.ok) {
@@ -265,14 +265,13 @@ export async function sendEmail(
 
   const raw = encodeRfc822(input.to, input.subject, input.body, input.threadId, input.inReplyToMessageId);
 
-  const res = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
+  const res = await googleFetch(userId, 'gmail', 'https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify(input.threadId ? { raw, threadId: input.threadId } : { raw }),
-    signal: AbortSignal.timeout(12000),
   });
 
   if (!res.ok) {

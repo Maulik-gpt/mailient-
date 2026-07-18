@@ -11,6 +11,7 @@ import type { ArcusContext, ArcusEvent, ArcusJob, ArcusUserContext } from './typ
 import { getSupabaseAdmin } from '../supabase.js';
 import { decrypt } from '../crypto.js';
 import { getV3Integrations } from './integrations';
+import { googleFetch } from '../arcus/tools/http-tokens';
 import { normalizeGCalEvents } from './normalizers/gcal';
 import { normalizeSlackHistory } from './normalizers/slack';
 import { normalizeGmailMessages } from './normalizers/gmail';
@@ -65,7 +66,7 @@ export async function buildContext(
       ? fetchNotionEvents(notionIntegration, eventWindow)
       : Promise.resolve([]),
     gmailIntegration
-      ? fetchGmailEmails(gmailIntegration)
+      ? fetchGmailEmails(userId, gmailIntegration)
       : Promise.resolve([]),
   ]);
 
@@ -299,17 +300,19 @@ async function fetchNotionEvents(
  * Uses gmail.readonly scope — only reads, never writes.
  */
 async function fetchGmailEmails(
+  userId: string,
   integration: Record<string, unknown>
 ): Promise<ArcusEvent[]> {
   try {
     const accessToken = decrypt(integration.access_token as string);
 
-    // 1. List inbox message IDs (last 50)
-    const listRes = await fetch(
+    // 1. List inbox message IDs (last 50). googleFetch proxies through Composio for
+    // managed users (access_token is a composio: marker, not a bearer) or does the
+    // direct authed call for legacy Google sign-in.
+    const listRes = await googleFetch(userId, 'gmail',
       'https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=50&labelIds=INBOX&q=newer_than:2d',
       {
         headers: { Authorization: `Bearer ${accessToken}` },
-        signal: AbortSignal.timeout(10000),
       }
     );
 
@@ -326,11 +329,10 @@ async function fetchGmailEmails(
     const fetched = await Promise.all(
       messageIds.slice(0, 20).map(async (id) => {
         try {
-          const res = await fetch(
+          const res = await googleFetch(userId, 'gmail',
             `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
             {
               headers: { Authorization: `Bearer ${accessToken}` },
-              signal: AbortSignal.timeout(8000),
             }
           );
           if (!res.ok) return null;

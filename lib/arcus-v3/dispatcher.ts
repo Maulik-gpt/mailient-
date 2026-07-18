@@ -40,7 +40,7 @@ export async function executeStep(
     case 'calcom':
       return calcomHandler(tokens.accessToken, step.action, step.params);
     case 'gmail':
-      return executeGmailAction(tokens.accessToken, step.action, step.params) as any;
+      return executeGmailAction(userId, tokens.accessToken, step.action, step.params) as any;
     default:
       throw new Error(`Unknown app: ${step.app}`);
   }

@@ -86,33 +86,56 @@ export async function googleFetch(
   init?: { method?: string; headers?: Record<string, string>; body?: string },
 ): Promise<Response> {
   const accountId = await composioAccountFor(userId, provider);
-  if (accountId) {
-    const { composioProxy } = await import('../composio');
-    // Strip host → '/gmail/v1/...' or '/calendar/v3/...'
-    const u = new URL(url);
-    const endpoint = u.pathname + u.search;
-    const toolkit = provider === 'gmail' ? 'gmail' : 'googlecalendar';
-    const method = (init?.method || 'GET').toUpperCase() as any;
-    let body: any = undefined;
-    if (init?.body) { try { body = JSON.parse(init.body); } catch { body = init.body; } }
-    // Carry through non-auth headers (e.g. Content-Type) — never Authorization.
-    const extra = Object.entries(init?.headers || {})
-      .filter(([k]) => k.toLowerCase() !== 'authorization')
-      .map(([name, value]) => ({ name, value: String(value) }));
-    try {
-      const r = await composioProxy(accountId, toolkit, endpoint, method, body, extra);
-      // Rebuild a real Response so callers' .ok/.json()/.text() just work.
-      const payload = r.data == null ? '' : (typeof r.data === 'string' ? r.data : JSON.stringify(r.data));
-      return new Response(payload, {
-        status: r.status || 502,
-        headers: { 'content-type': 'application/json' },
-      });
-    } catch (e: any) {
-      return new Response(JSON.stringify({ error: { message: e?.message || 'proxy failed' } }), { status: 502, headers: { 'content-type': 'application/json' } });
-    }
-  }
+  if (accountId) return composioFetchByAccount(accountId, provider, url, init);
   // Legacy direct path — unchanged behavior.
   return fetch(url, init as any);
+}
+
+/**
+ * The Proxy Execute half of googleFetch, addressed by Composio connected-account
+ * id instead of userId. Use when the caller already holds the account id — e.g.
+ * a `composio:<accountId>` marker read straight out of arcus_integrations — and
+ * has no user identity in scope (GmailService constructed with just a token).
+ */
+export async function composioFetchByAccount(
+  accountId: string,
+  provider: 'gmail' | 'gcal',
+  url: string,
+  init?: { method?: string; headers?: Record<string, string>; body?: string },
+): Promise<Response> {
+  const { composioProxy } = await import('../composio');
+  // Strip host → '/gmail/v1/...' or '/calendar/v3/...'
+  const u = new URL(url);
+  const endpoint = u.pathname + u.search;
+  const toolkit = provider === 'gmail' ? 'gmail' : 'googlecalendar';
+  const method = (init?.method || 'GET').toUpperCase() as any;
+  let body: any = undefined;
+  if (init?.body) { try { body = JSON.parse(init.body); } catch { body = init.body; } }
+  // Carry through non-auth headers (e.g. Content-Type) — never Authorization.
+  const extra = Object.entries(init?.headers || {})
+    .filter(([k]) => k.toLowerCase() !== 'authorization')
+    .map(([name, value]) => ({ name, value: String(value) }));
+  try {
+    const r = await composioProxy(accountId, toolkit, endpoint, method, body, extra);
+    // Rebuild a real Response so callers' .ok/.json()/.text() just work.
+    const payload = r.data == null ? '' : (typeof r.data === 'string' ? r.data : JSON.stringify(r.data));
+    return new Response(payload, {
+      status: r.status || 502,
+      headers: { 'content-type': 'application/json' },
+    });
+  } catch (e: any) {
+    return new Response(JSON.stringify({ error: { message: e?.message || 'proxy failed' } }), { status: 502, headers: { 'content-type': 'application/json' } });
+  }
+}
+
+/** True when a stored/decrypted token is a Composio marker, not a bearer token. */
+export function isComposioMarker(token: unknown): token is string {
+  return typeof token === 'string' && token.startsWith(COMPOSIO_PREFIX);
+}
+
+/** Extract the connected-account id from a `composio:<accountId>` marker. */
+export function composioAccountIdFromMarker(marker: string): string {
+  return marker.slice(COMPOSIO_PREFIX.length);
 }
 
 /**
@@ -139,7 +162,10 @@ export async function refreshGoogleToken(userId: string): Promise<string | null>
       .maybeSingle();
     if (composioRow?.access_token) {
       const dec = decrypt(composioRow.access_token);
-      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec, true);
+      // Masked secrets mean the live token is usually unreachable — hand back the
+      // marker so the caller's 401-retry re-issues through the proxy rather than
+      // treating a null as "refresh failed / needs reauth".
+      if (dec.startsWith(COMPOSIO_PREFIX)) return (await resolveComposioToken(dec, true)) || dec;
     }
 
     // 1. Try to find in arcus_integrations (V3)
@@ -275,8 +301,13 @@ export async function getGmailToken(userId: string): Promise<string | null> {
       .maybeSingle();
     if (v3?.access_token) {
       const dec = decrypt(v3.access_token);
-      // Composio-managed row — resolve the live Google token from Composio.
-      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec);
+      // Composio-managed row — try for the live Google token, but Composio masks
+      // connected-account secrets permanently, so that usually comes back null.
+      // Fall back to the marker itself: it's a truthy "Gmail IS connected" signal
+      // that callers' `if (!token)` gates accept, and both googleFetch and
+      // GmailService recognize it and route through Proxy Execute instead of
+      // sending it as a bearer. Never usable as a credential by itself.
+      if (dec.startsWith(COMPOSIO_PREFIX)) return (await resolveComposioToken(dec)) || dec;
       if (isExpiredOrExpiring(v3.expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
@@ -339,8 +370,9 @@ export async function getGcalToken(userId: string): Promise<string | null> {
       .maybeSingle();
     if (v3?.access_token) {
       const dec = decrypt(v3.access_token);
-      // Composio-managed row — resolve the live Google token from Composio.
-      if (dec.startsWith(COMPOSIO_PREFIX)) return resolveComposioToken(dec);
+      // Composio-managed row — see the note in getGmailToken: the live token is
+      // masked, so fall back to the marker, which googleFetch routes via proxy.
+      if (dec.startsWith(COMPOSIO_PREFIX)) return (await resolveComposioToken(dec)) || dec;
       if (isExpiredOrExpiring(v3.expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
