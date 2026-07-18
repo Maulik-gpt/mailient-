@@ -104,10 +104,24 @@ export async function composioFetchByAccount(
   init?: { method?: string; headers?: Record<string, string>; body?: string },
 ): Promise<Response> {
   const { composioProxy } = await import('../composio');
-  // Strip host → '/gmail/v1/...' or '/calendar/v3/...'
   const u = new URL(url);
-  const endpoint = u.pathname + u.search;
   const toolkit = provider === 'gmail' ? 'gmail' : 'googlecalendar';
+  // Strip the host, then strip whatever the toolkit's OWN base URL already
+  // carries — Composio prepends it, so anything we repeat here gets DOUBLED.
+  //
+  //   gmail          base https://gmail.googleapis.com  (no path)
+  //                  -> send '/gmail/v1/users/me/...'          as-is
+  //   googlecalendar base https://www.googleapis.com/calendar/v3
+  //                  -> send '/calendars/primary/events', NOT
+  //                     '/calendar/v3/calendars/primary/events'
+  //
+  // Getting this wrong is silent: the request still reaches Google, which
+  // answers 404 with an HTML error page, so it reads like a missing resource
+  // rather than a malformed URL. Verified live against a real connected
+  // account — '/calendars/primary/events' returns 200, the '/calendar/v3'
+  // -prefixed form returns 404.
+  let endpoint = u.pathname + u.search;
+  if (toolkit === 'googlecalendar') endpoint = endpoint.replace(/^\/calendar\/v3/, '');
   const method = (init?.method || 'GET').toUpperCase() as any;
   let body: any = undefined;
   if (init?.body) { try { body = JSON.parse(init.body); } catch { body = init.body; } }
@@ -137,6 +151,32 @@ export async function composioFetchByAccount(
 /** True when a stored/decrypted token is a Composio marker, not a bearer token. */
 export function isComposioMarker(token: unknown): token is string {
   return typeof token === 'string' && token.startsWith(COMPOSIO_PREFIX);
+}
+
+/**
+ * Does the login token in user_tokens actually carry the scope a caller needs?
+ *
+ * The `user_tokens` row is the LOGIN token. That used to be a safe fallback for
+ * Gmail and Calendar because our own OAuth client requested those scopes at
+ * sign-in. Under Composio, login requests `openid email profile` ONLY (see
+ * LOGIN_SCOPE in lib/auth.js) — so for anyone who signed up after that flag went
+ * on, the login token can NEVER satisfy Gmail or Calendar. Returning it anyway
+ * produced a truthy token that sailed past every `if (!token)` gate and then
+ * died at Google with a 403, which the UI reported as the confusing "your token
+ * has Gmail scopes but not Calendar scopes".
+ *
+ * We check the granted scope string persisted at login (auth.js stores
+ * `account.scope`) rather than the env flag, because users are MIXED: legacy
+ * accounts still hold full-scope login tokens and must keep working.
+ *
+ * Absent/empty scopes means a pre-scopes-column row — treat as permitted so we
+ * never regress an old account that would otherwise work.
+ */
+function loginTokenHasScope(scopes: unknown, need: 'gmail' | 'gcal'): boolean {
+  if (typeof scopes !== 'string' || !scopes.trim()) return true;
+  return need === 'gmail'
+    ? /mail\.google\.com|auth\/gmail\./.test(scopes)
+    : /auth\/calendar/.test(scopes);
 }
 
 /** Extract the connected-account id from a `composio:<accountId>` marker. */
@@ -344,11 +384,11 @@ export async function getGmailToken(userId: string): Promise<string | null> {
     // to fall through to "Gmail not connected" for a fully-connected account.
     const { data: ut } = await supabase
       .from('user_tokens')
-      .select('encrypted_access_token, access_token_expires_at')
+      .select('encrypted_access_token, access_token_expires_at, scopes')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
       .limit(1)
       .maybeSingle();
-    if (ut?.encrypted_access_token) {
+    if (ut?.encrypted_access_token && loginTokenHasScope(ut.scopes, 'gmail')) {
       if (isExpiredOrExpiring(ut.access_token_expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
@@ -401,16 +441,20 @@ export async function getGcalToken(userId: string): Promise<string | null> {
       return decrypt(legacy.encrypted_access_token);
     }
 
-    // 3. user_tokens (Google login covers Calendar scope too)
+    // 3. user_tokens — ONLY when that login token actually granted Calendar.
+    // It no longer does for Composio-era signups (login is identity-only), and
+    // handing back a scope-less token here is exactly what produced the bogus
+    // "reconnect Calendar — your token has Gmail scopes but not Calendar scopes"
+    // on accounts that had simply never connected Calendar at all.
     // .limit(1) guards against the multi-row .maybeSingle() error — see
     // getGmailToken for why this silently broke connected accounts.
     const { data: ut } = await supabase
       .from('user_tokens')
-      .select('encrypted_access_token, access_token_expires_at')
+      .select('encrypted_access_token, access_token_expires_at, scopes')
       .or(`user_id.ilike."${uid}",google_email.ilike."${uid}"`)
       .limit(1)
       .maybeSingle();
-    if (ut?.encrypted_access_token) {
+    if (ut?.encrypted_access_token && loginTokenHasScope(ut.scopes, 'gcal')) {
       if (isExpiredOrExpiring(ut.access_token_expires_at)) {
         const refreshed = await refreshGoogleToken(uid);
         if (refreshed) return refreshed;
