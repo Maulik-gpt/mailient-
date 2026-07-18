@@ -278,10 +278,10 @@ export function BlogLayout({ meta, children, tableOfContents = [], relatedPosts 
             Mailient handles your email while you sleep. Autonomous triage, voice-matched drafts, and encrypted privacy — all on autopilot.
           </p>
           <a
-            href="/request-access"
+            href="/auth/signup"
             className="inline-flex items-center gap-2 px-7 py-3 bg-white text-black font-bold text-sm rounded-full hover:bg-neutral-200 transition-colors relative z-10"
           >
-            Request Early Access
+            Get started free
             <ArrowRight className="w-4 h-4" />
           </a>
         </div>

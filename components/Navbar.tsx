@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Mail, Cpu, Send, Layers } from "lucide-react";
 import { useSession, signIn, signOut } from "next-auth/react";
@@ -16,7 +16,6 @@ interface NavbarProps {
 
 export function Navbar({ theme = "light" }: NavbarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { data: session, status } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -30,10 +29,6 @@ export function Navbar({ theme = "light" }: NavbarProps) {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleConnectGmail = () => {
-    router.push("/request-access");
-  };
 
   return (
     <>
@@ -321,15 +316,19 @@ export function Navbar({ theme = "light" }: NavbarProps) {
               >
                 Sign in
               </Link>
-              <LiquidButton
-                onClick={handleConnectGmail}
-                variant={isDark ? "default" : "light"}
-                size="sm"
-                className="rounded-full !h-8.5 px-4 font-bold text-[11px] tracking-tight hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-1.5"
-              >
-                <Mail className="w-3.5 h-3.5 animate-pulse" />
-                Request Access
-              </LiquidButton>
+              {/* Real anchor, not a router.push button — the primary conversion
+                  CTA must be middle-clickable, openable in a new tab, and
+                  crawlable as a link to /auth/signup. */}
+              <Link href="/auth/signup" aria-label="Get started with Mailient">
+                <LiquidButton
+                  variant={isDark ? "default" : "light"}
+                  size="sm"
+                  className="rounded-full !h-8.5 px-4 font-bold text-[11px] tracking-tight hover:shadow-[0_0_30px_rgba(255,255,255,0.15)] flex items-center gap-1.5"
+                >
+                  <Mail className="w-3.5 h-3.5" />
+                  Get started
+                </LiquidButton>
+              </Link>
             </>
           )}
         </div>

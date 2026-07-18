@@ -65,10 +65,10 @@ export function CTASection() {
             <div className="flex flex-wrap items-center justify-center gap-4">
               {/* Left Button: Obsidian Pill */}
               <CircleExpandButton
-                href="/request-access"
+                href="/auth/signup"
                 className="bg-[#121316] border border-white/[0.08] hover:border-white/20"
               >
-                Request Early Access
+                Get started free
               </CircleExpandButton>
 
               {/* Right Button: Transparent/Black Pill */}

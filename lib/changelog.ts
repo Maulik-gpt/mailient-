@@ -26,6 +26,19 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 18, 2026',
+    entries: [
+      {
+        tag: 'Improved',
+        title: 'Mailient is open — no more access requests',
+        points: [
+          'You no longer have to request access and wait for approval. Every "Get started" button takes you straight to signup, and you are in.',
+          'The old access-request form and its approval queue are gone entirely.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 17, 2026',
     entries: [
       {
