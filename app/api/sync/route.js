@@ -71,7 +71,8 @@ export async function GET(req) {
 
       console.log(`Fetching messages batch, pageToken: ${pageToken}, total so far: ${totalFetched}`);
 
-      const listRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages?${params}`, {
+      const { googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+      const listRes = await googleFetch(email, 'gmail', `https://www.googleapis.com/gmail/v1/users/me/messages?${params}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
 
@@ -107,7 +108,8 @@ export async function GET(req) {
       const emailObjects = await Promise.all(batch.map(async (m) => {
         try {
           console.log(`Processing message ${m.id}...`);
-          const msgRes = await fetch(`https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`, {
+          const { googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+          const msgRes = await googleFetch(email, 'gmail', `https://www.googleapis.com/gmail/v1/users/me/messages/${m.id}?format=full`, {
             headers: { Authorization: `Bearer ${accessToken}` },
           });
           if (!msgRes.ok) {

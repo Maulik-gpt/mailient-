@@ -2615,10 +2615,10 @@ async function gmailReadThread(userId: string, input: any): Promise<ToolResult> 
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}?format=full`;
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) });
+  let res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(15000) }); }
+    if (newToken) { token = newToken; res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) {
     return gmailHttpFailure(res, 'Could not read thread');
@@ -2680,10 +2680,10 @@ async function gmailGetLabels(userId: string): Promise<ToolResult> {
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const url = 'https://gmail.googleapis.com/gmail/v1/users/me/labels';
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) });
+  let res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(10000) }); }
+    if (newToken) { token = newToken; res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) return gmailHttpFailure(res, 'Could not list labels');
 
@@ -2709,21 +2709,19 @@ async function gmailApplyLabel(userId: string, input: any): Promise<ToolResult> 
 
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}/modify`;
   const body = JSON.stringify({ addLabelIds: labelIds });
-  let res = await fetch(url, {
+  let res = await googleFetch(userId, 'gmail', url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body,
-    signal: AbortSignal.timeout(10000),
   });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch(url, {
+      res = await googleFetch(userId, 'gmail', url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body,
-        signal: AbortSignal.timeout(10000),
       });
     }
   }
@@ -2749,21 +2747,19 @@ async function gmailArchiveThread(userId: string, input: any): Promise<ToolResul
 
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/threads/${encodeURIComponent(threadId)}/modify`;
   const body = JSON.stringify({ removeLabelIds: ['INBOX'] });
-  let res = await fetch(url, {
+  let res = await googleFetch(userId, 'gmail', url, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     body,
-    signal: AbortSignal.timeout(10000),
   });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
     if (newToken) {
       token = newToken;
-      res = await fetch(url, {
+      res = await googleFetch(userId, 'gmail', url, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body,
-        signal: AbortSignal.timeout(10000),
       });
     }
   }
@@ -2783,10 +2779,10 @@ async function gmailGetProfile(userId: string): Promise<ToolResult> {
   if (!token) return failureResult('Gmail is not connected.', 'gmail_not_connected');
 
   const url = 'https://gmail.googleapis.com/gmail/v1/users/me/profile';
-  let res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) });
+  let res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   if (res.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; res = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }); }
+    if (newToken) { token = newToken; res = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!res.ok) return gmailHttpFailure(res, 'Could not read profile');
 
@@ -2807,10 +2803,10 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
 
   const limit = Math.min(input.limit || 30, 50);
   const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=${limit}&labelIds=SENT`;
-  let listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let listRes = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } });
   if (listRes.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; listRes = await fetch(url, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (newToken) { token = newToken; listRes = await googleFetch(userId, 'gmail', url, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!listRes.ok) return gmailHttpFailure(listRes, 'Could not fetch sent emails');
 
@@ -2820,9 +2816,9 @@ async function getSentEmails(userId: string, input: any): Promise<ToolResult> {
 
   const details = await Promise.all(messages.slice(0, 15).map(async ({ id }: any) => {
     try {
-      const r = await fetch(
+      const r = await googleFetch(userId, 'gmail',
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!r.ok) return null;
       const m = await r.json();
@@ -5286,10 +5282,10 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
   const sentQuery = `in:sent newer_than:${days}d`;
   const sentUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?q=${encodeURIComponent(sentQuery)}&maxResults=${maxCheck}`;
 
-  let sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let sentRes = await googleFetch(userId, 'gmail', sentUrl, { headers: { Authorization: `Bearer ${token}` } });
   if (sentRes.status === 401) {
     const newToken = await refreshGoogleToken(userId);
-    if (newToken) { token = newToken; sentRes = await fetch(sentUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (newToken) { token = newToken; sentRes = await googleFetch(userId, 'gmail', sentUrl, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!sentRes.ok) return gmailHttpFailure(sentRes, 'Could not check sent mail');
 
@@ -5303,9 +5299,9 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
 
   for (const { id } of sentMessages.slice(0, maxCheck)) {
     try {
-      const msgRes = await fetch(
+      const msgRes = await googleFetch(userId, 'gmail',
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=To&metadataHeaders=Subject&metadataHeaders=Date`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!msgRes.ok) continue;
       const msg = await msgRes.json();
@@ -5322,9 +5318,9 @@ async function checkFollowups(userId: string, input: any): Promise<ToolResult> {
       if (daysWaiting < 1) continue;
 
       // Check if thread has any replies from external senders after our send
-      const threadRes = await fetch(
+      const threadRes = await googleFetch(userId, 'gmail',
         `https://gmail.googleapis.com/gmail/v1/users/me/threads/${threadId}?format=metadata&metadataHeaders=From`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!threadRes.ok) continue;
       const thread = await threadRes.json();
@@ -7417,10 +7413,10 @@ async function archiveMessages(userId: string, token: string, ids: string[]): Pr
   const url = 'https://gmail.googleapis.com/gmail/v1/users/me/messages/batchModify';
   const body = JSON.stringify({ ids, removeLabelIds: ['INBOX', 'UNREAD'] });
   const headers = (t: string) => ({ Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' });
-  let res = await fetch(url, { method: 'POST', headers: headers(token), body, signal: AbortSignal.timeout(12000) });
+  let res = await googleFetch(userId, 'gmail', url, { method: 'POST', headers: headers(token), body });
   if (res.status === 401) {
     const nt = await refreshGoogleToken(userId);
-    if (nt) res = await fetch(url, { method: 'POST', headers: headers(nt), body, signal: AbortSignal.timeout(12000) });
+    if (nt) res = await googleFetch(userId, 'gmail', url, { method: 'POST', headers: headers(nt), body });
   }
   return res.ok ? ids.length : 0;
 }
@@ -7479,10 +7475,10 @@ export async function runNewsletterDigest(
   // (RFC 2369) confirms a message is a bulk mailing.
   const q = `in:inbox newer_than:${daysBack}d (category:promotions OR category:updates OR category:forums)`;
   const listUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages?${new URLSearchParams({ q, maxResults: '40' })}`;
-  let listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) });
+  let listRes = await googleFetch(userId, 'gmail', listUrl, { headers: { Authorization: `Bearer ${token}` } });
   if (listRes.status === 401) {
     const nt = await refreshGoogleToken(userId);
-    if (nt) { token = nt; listRes = await fetch(listUrl, { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(12000) }); }
+    if (nt) { token = nt; listRes = await googleFetch(userId, 'gmail', listUrl, { headers: { Authorization: `Bearer ${token}` } }); }
   }
   if (!listRes.ok) throw new Error(`Gmail search failed (${listRes.status})`);
 
@@ -7491,9 +7487,9 @@ export async function runNewsletterDigest(
 
   const detail = await Promise.all(ids.slice(0, 25).map(async (id): Promise<NewsletterItem | null> => {
     try {
-      const r = await fetch(
+      const r = await googleFetch(userId, 'gmail',
         `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=full`,
-        { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       if (!r.ok) return null;
       const m = await r.json();
@@ -8437,9 +8433,9 @@ async function gmailUnlimitedSearch(userId: string, input: any): Promise<ToolRes
     const slice = collected.slice(i, i + PART1_BATCH);
     const results = await Promise.all(slice.map(async ({ id }: any) => {
       try {
-        const r = await fetch(
+        const r = await googleFetch(userId, 'gmail',
           `https://gmail.googleapis.com/gmail/v1/users/me/messages/${id}?format=metadata&metadataHeaders=From&metadataHeaders=Subject&metadataHeaders=Date`,
-          { headers: { Authorization: `Bearer ${token}` }, signal: AbortSignal.timeout(8000) },
+          { headers: { Authorization: `Bearer ${token}` } },
         );
         if (!r.ok) return null;
         const m = await r.json();

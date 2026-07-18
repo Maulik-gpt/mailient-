@@ -100,10 +100,10 @@ export async function POST(request) {
     // Clean up the Gmail draft now that the email has been sent
     if (gmailDraftId) {
       try {
-        await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/drafts/${gmailDraftId}`, {
+        const { googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+        await googleFetch(userEmail, 'gmail', `https://gmail.googleapis.com/gmail/v1/users/me/drafts/${gmailDraftId}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${accessToken}` },
-          signal: AbortSignal.timeout(8000),
         });
       } catch {
         logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" });

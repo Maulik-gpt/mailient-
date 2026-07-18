@@ -939,7 +939,8 @@ async function getGmailProfile(email) {
 
   // try fetch; on 401 try refresh once
   const profileFetch = async (token) => {
-    const r = await fetch("https://www.googleapis.com/gmail/v1/users/me/profile", {
+    const { googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+    const r = await googleFetch(email, 'gmail', "https://www.googleapis.com/gmail/v1/users/me/profile", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const text = await r.text();
