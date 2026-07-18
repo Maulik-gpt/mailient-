@@ -119,34 +119,53 @@ export interface ComposioIdentity {
  * if the account isn't ACTIVE, the token is masked, or Google rejects it.
  */
 export async function getComposioIdentity(accountId: string): Promise<ComposioIdentity | null> {
-  const token = await getComposioAccessToken(accountId, { force: true });
-  if (!token) {
-    // getComposioAccessToken already logs the specific reason (masked token,
-    // non-ACTIVE, missing). The #1 cause is "Mask Connected Account Secrets"
-    // still ON in the Composio dashboard — surface it once more, loudly, since
-    // it manifests as a confusing "no identity" at login.
-    console.error('[Composio] getComposioIdentity: no usable token. If login fails with composio_login_no_identity, turn OFF "Mask Connected Account Secrets" in Composio → Settings → Project Configuration.');
-    return null;
-  }
+  // Resolve identity WITHOUT reading the raw token — so it works even with
+  // "Mask Connected Account Secrets" ON. Masking only hides tokens from GET
+  // responses; it does NOT affect tool EXECUTION (Composio uses the real
+  // token server-side). So we ask Composio to run GMAIL_GET_PROFILE, which
+  // returns the account's emailAddress. The connection was created with a
+  // userId we control (the pending_ id in the login cookie), which the
+  // executor requires to locate the connection.
   try {
-    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (!res.ok) {
-      console.error(`[Composio] userinfo failed (${res.status}) — token invalid or missing openid/email scope`);
+    const userId = await userIdForAccount(accountId);
+    if (!userId) {
+      console.error('[Composio] getComposioIdentity: could not resolve userId for account', accountId);
       return null;
     }
-    const j: any = await res.json();
-    if (!j?.email) return null;
-    return {
-      email: String(j.email).toLowerCase(),
-      name: j.name || undefined,
-      picture: j.picture || undefined,
-      sub: j.sub || undefined,
-    };
+    const res: any = await client().tools.execute('GMAIL_GET_PROFILE', {
+      userId,
+      arguments: {},
+      version: 'latest',
+      dangerouslySkipVersionCheck: true,
+    } as any);
+    if (!res?.successful) {
+      console.error('[Composio] GMAIL_GET_PROFILE failed:', res?.error || 'unknown');
+      return null;
+    }
+    const d = res.data || {};
+    const email: string | undefined = d.emailAddress || d.email || d.response_data?.emailAddress;
+    if (!email) return null;
+    return { email: String(email).toLowerCase() };
   } catch (err: any) {
-    console.warn('[Composio] identity fetch failed:', err?.message);
+    console.warn('[Composio] identity (tool-exec) failed:', err?.message);
+    return null;
+  }
+}
+
+/** The userId a connected account belongs to (needed to execute tools on it). */
+async function userIdForAccount(accountId: string): Promise<string | null> {
+  try {
+    const acct: any = await client().connectedAccounts.get(accountId);
+    // SDK may not surface it; fall back to the raw v3 endpoint which does.
+    if (acct?.userId) return acct.userId;
+    const res = await fetch(`https://backend.composio.dev/api/v3/connected_accounts/${accountId}`, {
+      headers: { 'x-api-key': process.env.COMPOSIO_API_KEY || '' },
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return null;
+    const j: any = await res.json();
+    return j?.user_id || null;
+  } catch {
     return null;
   }
 }
