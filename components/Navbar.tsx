@@ -44,17 +44,53 @@ export function Navbar({ theme = "light" }: NavbarProps) {
       initial={{ y: -40, opacity: 0, filter: "blur(8px)" }}
       animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
       transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-      className="fixed top-4 left-0 right-0 z-50 px-4 md:px-6 pointer-events-none"
+      className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 md:px-6 pointer-events-none"
     >
-      {/* Three FREE-FLOATING elements — logo, nav pill, actions — rather than
-          one wide glass bar containing all of them. Only the nav links carry a
-          glass pill; the logo and the two CTAs sit directly on the page. This
-          is what makes the arrangement read as composed rather than as a
-          single toolbar stretched across the viewport. */}
-      <div className="mx-auto w-full max-w-7xl flex items-center justify-between gap-4">
+      <div
+        className={cn(
+          "pointer-events-auto flex items-center justify-between w-full max-w-5xl rounded-full px-6 py-2.5 transition-all duration-500 ease-out relative",
+          scrolled
+            ? "shadow-[0_25px_60px_rgba(0,0,0,0.55)]"
+            : "shadow-[0_8px_32px_rgba(0,0,0,0.35)]"
+        )}
+      >
+        {/* Glass layers clipped inside their own overflow-hidden wrapper so the
+            dropdown megamenu can escape the pill without being cut off */}
+        <div className="absolute inset-0 z-0 rounded-full overflow-hidden pointer-events-none">
+          {/* Layer 1 — backdrop + liquid distortion */}
+          <div
+            className="absolute inset-0"
+            style={{
+              backdropFilter: "blur(20px) saturate(160%)",
+              WebkitBackdropFilter: "blur(20px) saturate(160%)",
+              filter: "url(#navbar-liquid-distortion)",
+              isolation: "isolate",
+            }}
+          />
+          {/* Layer 2 — tinted fill */}
+          <div className={cn(
+            "absolute inset-0 transition-all duration-500",
+            scrolled
+              ? isDark ? "bg-[#1a1a1a]/70" : "bg-white/75"
+              : isDark ? "bg-[#0e0e0e]/50" : "bg-white/45"
+          )} />
+        </div>
 
-        {/* Logo — standalone, no container */}
-        <Link href="/" className="pointer-events-auto flex items-center gap-2.5 group relative z-10 shrink-0">
+        {/* Layer 3 — border + inset glass rim (outside clip so border renders cleanly) */}
+        <div
+          className={cn(
+            "absolute inset-0 z-[1] rounded-full border pointer-events-none",
+            isDark ? "border-white/[0.10]" : "border-white/60"
+          )}
+          style={{
+            boxShadow: isDark
+              ? "inset 2px 2px 1px 0 rgba(255,255,255,0.10), inset -1px -1px 1px 1px rgba(255,255,255,0.04)"
+              : "inset 2px 2px 1px 0 rgba(255,255,255,0.70), inset -1px -1px 1px 1px rgba(255,255,255,0.25)",
+          }}
+        />
+
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5 group relative z-10">
           <div className="relative w-7 h-7 rounded-[25%] overflow-hidden transition-all duration-500 group-hover:scale-105 border border-white/10 shadow-md bg-white">
             <img 
               src="/mailient-logo-premium.png" 
@@ -70,51 +106,14 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           </span>
         </Link>
 
-        {/* Navigation Links — the only element that keeps the glass pill */}
+        {/* Navigation Links */}
         <nav className={cn(
-          "pointer-events-auto hidden md:flex items-center gap-7 text-[12px] font-semibold transition-all duration-500 ease-out relative rounded-full px-7 py-3",
-          scrolled
-            ? "shadow-[0_25px_60px_rgba(0,0,0,0.55)]"
-            : "shadow-[0_8px_32px_rgba(0,0,0,0.35)]",
+          "hidden md:flex items-center gap-7 text-[12px] font-semibold transition-colors relative z-10",
           isDark ? "text-neutral-450" : "text-neutral-600"
         )}>
-          {/* Glass layers clipped inside their own overflow-hidden wrapper so the
-              dropdown megamenu can escape the pill without being cut off */}
-          <div className="absolute inset-0 z-0 rounded-full overflow-hidden pointer-events-none">
-            {/* Layer 1 — backdrop + liquid distortion */}
-            <div
-              className="absolute inset-0"
-              style={{
-                backdropFilter: "blur(20px) saturate(160%)",
-                WebkitBackdropFilter: "blur(20px) saturate(160%)",
-                filter: "url(#navbar-liquid-distortion)",
-                isolation: "isolate",
-              }}
-            />
-            {/* Layer 2 — tinted fill */}
-            <div className={cn(
-              "absolute inset-0 transition-all duration-500",
-              scrolled
-                ? isDark ? "bg-[#1a1a1a]/70" : "bg-white/75"
-                : isDark ? "bg-[#0e0e0e]/50" : "bg-white/45"
-            )} />
-          </div>
-
-          {/* Layer 3 — border + inset glass rim (outside clip so border renders cleanly) */}
-          <div
-            className={cn(
-              "absolute inset-0 z-[1] rounded-full border pointer-events-none",
-              isDark ? "border-white/[0.10]" : "border-white/60"
-            )}
-            style={{
-              boxShadow: isDark
-                ? "inset 2px 2px 1px 0 rgba(255,255,255,0.10), inset -1px -1px 1px 1px rgba(255,255,255,0.04)"
-                : "inset 2px 2px 1px 0 rgba(255,255,255,0.70), inset -1px -1px 1px 1px rgba(255,255,255,0.25)",
-            }}
-          />
           {/* Product Dropdown Trigger */}
           <div
-            className="relative z-10 py-1 cursor-pointer"
+            className="relative py-1 cursor-pointer"
             onMouseEnter={() => setDropdownOpen(true)}
             onMouseLeave={() => setDropdownOpen(false)}
           >
@@ -237,8 +236,8 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           <Link
             href="/product/arcus"
             className={cn(
-              "relative z-10 transition-colors",
-              isDark
+              "transition-colors",
+              isDark 
                 ? pathname === "/product/arcus" ? "text-white font-bold" : "hover:text-white"
                 : pathname === "/product/arcus" ? "text-neutral-950 font-bold" : "hover:text-neutral-950"
             )}
@@ -249,8 +248,8 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           <Link
             href="/pricing"
             className={cn(
-              "relative z-10 transition-colors",
-              isDark
+              "transition-colors",
+              isDark 
                 ? pathname === "/pricing" ? "text-white font-bold" : "hover:text-white"
                 : pathname === "/pricing" ? "text-neutral-950 font-bold" : "hover:text-neutral-950"
             )}
@@ -261,8 +260,8 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           <Link
             href="/security"
             className={cn(
-              "relative z-10 transition-colors",
-              isDark
+              "transition-colors",
+              isDark 
                 ? pathname === "/security" ? "text-white font-bold" : "hover:text-white"
                 : pathname === "/security" ? "text-neutral-950 font-bold" : "hover:text-neutral-950"
             )}
@@ -273,8 +272,8 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           <Link
             href="/changelog"
             className={cn(
-              "relative z-10 transition-colors",
-              isDark
+              "transition-colors",
+              isDark 
                 ? pathname === "/changelog" ? "text-white font-bold" : "hover:text-white"
                 : pathname === "/changelog" ? "text-neutral-950 font-bold" : "hover:text-neutral-950"
             )}
@@ -283,9 +282,8 @@ export function Navbar({ theme = "light" }: NavbarProps) {
           </Link>
         </nav>
 
-        {/* Action Buttons — separate free-floating elements, not inside a shared
-            container with the logo and nav */}
-        <div className="pointer-events-auto flex items-center gap-4 relative z-10 shrink-0">
+        {/* Action Buttons */}
+        <div className="flex items-center gap-4 relative z-10">
           {status === "authenticated" ? (
             <>
               <Link

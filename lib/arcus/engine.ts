@@ -124,9 +124,20 @@ const FAST_MODELS = [
 // Ordered cheapest → fastest → most-capable so the engine spends as little
 // as possible per turn.
 const PAID_MODELS = [
-  // gemini-2.5-flash-lite REMOVED (2026-07-16, user directive: "costing so much").
-  // It was leading this list, so it fired first on every paid-fallback call.
-  'anthropic/claude-haiku-4.5',   // primary. (Was claude-haiku-5 — a DEAD id
+  // RESTORED 2026-07-19. Removed 2026-07-16 on a report of "costing so much" —
+  // but verified against OpenRouter's live pricing (raw API, not a guess):
+  // flash-lite is $0.10/$0.40 per 1M (prompt/completion), vs claude-haiku-4.5 at
+  // $1.00/$5.00 — TEN TIMES more expensive per token. Flash-lite was the
+  // CHEAPEST of the three, not the most expensive; the visible cost was from
+  // CALL VOLUME (it led the list, so it absorbed every paid-fallback call while
+  // free models were rate-limited — the recurring root cause chased all through
+  // this codebase's history, see engine.ts's model-cooldown logic below), not
+  // its per-token price. Removing it and promoting Haiku to primary would have
+  // made the SAME volume of fallback calls cost ~10x more. Restored as primary;
+  // if paid spend is still too high, the fix is reducing how often free models
+  // get exhausted (funding/quota/reasoning-mode issues), not swapping the model.
+  'google/gemini-2.5-flash-lite', // primary — cheapest reliable, tool-capable, huge context
+  'anthropic/claude-haiku-4.5',   // reliability fallback. (Was claude-haiku-5 — a DEAD id
                                   // returning HTTP 400 "not a valid model ID"; 4.5 is the real one.)
   'google/gemini-2.5-flash',      // fallback
 ];
