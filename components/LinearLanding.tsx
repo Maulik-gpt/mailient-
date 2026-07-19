@@ -1346,7 +1346,15 @@ export function LinearLanding() {
                 <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold relative z-10">
                   {label}
                 </span>
-                <span className="text-3xl md:text-4xl font-semibold tracking-tight bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent relative z-10">
+                {/* SOLID white, not gradient text. `bg-clip-text
+                    text-transparent` rendered these blank: NumberFlow draws its
+                    digits in its own element, which does not inherit the
+                    background-clip, so it kept `color: transparent` and
+                    painted nothing. Card 1 survived only because "2h 14m" is a
+                    plain string; the three NumberFlow cards lost their values
+                    entirely (one showed a bare "h" suffix).
+                    Do not reintroduce gradient text around <NumberFlow>. */}
+                <span className="text-3xl md:text-4xl font-semibold tracking-tight text-white relative z-10">
                   {value}
                 </span>
                 <span className="text-[11px] text-neutral-500 font-light font-sans relative z-10 mt-auto">
