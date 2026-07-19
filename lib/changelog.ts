@@ -29,6 +29,22 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 19, 2026',
     entries: [
       {
+        tag: 'New',
+        title: 'See the Gmail connection before you sign up',
+        points: [
+          'The homepage now shows a real recording of connecting a Gmail account — the whole thing, start to finish, so you can see how little there is to it before you commit.',
+        ],
+      },
+      {
+        tag: 'Improved',
+        title: 'Less reading below the fold, more watching',
+        points: [
+          'The product demos are bigger and the text beside them is down to a line each — the recordings make the point better than a paragraph competing with them for attention.',
+          'The morning before-and-after is now a single stark number instead of two dense panels of example emails.',
+          'Text reveals word by word as it scrolls into view.',
+        ],
+      },
+      {
         tag: 'Improved',
         title: 'A lighter homepage that moves as you scroll',
         points: [

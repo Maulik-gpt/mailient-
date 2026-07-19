@@ -53,6 +53,7 @@ import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TestimonialsSection } from "@/components/ui/testimonials-section";
 import { WordBlurReveal } from "@/components/ui/word-blur-reveal";
+import { DemoVideo } from "@/components/ui/demo-video";
 import { landingFaqs } from "@/lib/landing-faqs";
 
 function ActiveCounter({ target = 1420 }: { target?: number }) {
@@ -831,6 +832,35 @@ export function LinearLanding() {
               <WordBlurReveal
                 text="Overnight it reads everything, drafts the replies, books the meetings, chases the silence — and leaves you one briefing. Nothing sends without your approval."
                 className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10"
+              />
+            </div>
+          </div>
+        </BlurFade>
+      </section>
+
+      {/* CONNECT GMAIL — the setup objection, answered with footage.
+          Deliberately its OWN section rather than a clip dropped into "How it
+          works": that section is three steps at equal weight, and burying a
+          27-second video inside step 1 would both unbalance it and hide the
+          clip. Here the recording is the whole point of the section.
+          Copy is one line — the video is the argument. */}
+      <section id="connect-gmail" className="py-16 md:py-32 px-6 w-full max-w-6xl mx-auto border-t border-white/[0.06] z-10 relative">
+        <BlurFade delay={0.1} duration={0.8} inView>
+          <SectionHeader
+            pill="Connect Gmail"
+            icon={Mail}
+            heading="Two minutes. One sign-in. Done."
+            subtitle="Your mail never leaves Gmail — nothing to migrate, nothing to configure."
+          />
+        </BlurFade>
+
+        <BlurFade delay={0.2} duration={0.9} inView>
+          <div className="linear-grid-card p-2 md:p-3 relative">
+            <div className="rounded-[20px] overflow-hidden aspect-[1280/708] relative z-10">
+              <DemoVideo
+                src="/demos/connect-gmail-demo.mp4"
+                poster="/demos/connect-gmail-demo.jpg"
+                label="Connecting a Gmail account to Mailient with a single Google sign-in"
               />
             </div>
           </div>
