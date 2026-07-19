@@ -1494,15 +1494,17 @@ export function LinearLanding() {
 
       <Footer />
 
-      {/* Top edge blur only, and shorter than the original 120px: just enough
-          to soften content passing under the fixed Navbar. The bottom blur
-          stays removed — it stacked with the floating bar below and the two
-          together ate ~200px of permanent viewport. */}
+      {/* Edge blurs, both shorter than the 120px/80px they started at — enough
+          to soften content passing under the fixed chrome without eating the
+          viewport. The bottom blur reads as intentional again now that the
+          floating nav is back: it gives that bar a surface to sit against
+          instead of leaving it floating on bare black. Both sit at z-40, under
+          the floating nav's z-[100]. */}
       <ProgressiveBlur position="top" backgroundColor="#000000" height="72px" blurAmount="10px" className="fixed z-40" />
+      <ProgressiveBlur position="bottom" backgroundColor="#000000" height="96px" blurAmount="10px" className="fixed z-40" />
 
       {/* Floating navigation — restored at the founder's request after being
-          pulled in 4918b3b. Keeping the bottom ProgressiveBlur off so it costs
-          one layer of chrome rather than two. */}
+          pulled in 4918b3b. */}
       <FloatingNavbar />
     </div>
   );
