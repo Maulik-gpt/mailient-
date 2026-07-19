@@ -3,6 +3,7 @@
 import React from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { BlurFade } from "@/components/ui/blur-fade";
 
 /**
  * The landing page's one and only section header.
@@ -51,27 +52,39 @@ export function SectionHeader({
         className,
       )}
     >
+      {/* Each part reveals on its own with a slight stagger, and re-reveals on
+          every scroll pass in either direction (repeat). These are small
+          subtrees — a pill, a heading, one line — which is the only grain at
+          which a repeating blur reveal is cheap enough to run everywhere. See
+          the `repeat` note in BlurFade. */}
+
       {/* .gradient-pill is real glass, not decorative blur: section headers sit
           over the page's atmospheric radial glows, so there is something behind
           these to refract. Cards elsewhere use gradient instead — blurring flat
           black just produces black. */}
-      <span className="gradient-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5">
-        {Icon ? (
-          <Icon className="w-3 h-3 text-neutral-400 shrink-0" aria-hidden="true" />
-        ) : null}
-        <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-300">
-          {pill}
+      <BlurFade inView repeat duration={0.5} blur="6px">
+        <span className="gradient-pill inline-flex items-center gap-2 rounded-full px-4 py-1.5">
+          {Icon ? (
+            <Icon className="w-3 h-3 text-neutral-400 shrink-0" aria-hidden="true" />
+          ) : null}
+          <span className="font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-300">
+            {pill}
+          </span>
         </span>
-      </span>
+      </BlurFade>
 
-      <h2 className="mt-6 text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
-        {heading}
-      </h2>
+      <BlurFade inView repeat duration={0.6} delay={0.08} blur="8px">
+        <h2 className="mt-6 text-3xl md:text-[44px] font-medium tracking-[-0.025em] leading-tight max-w-3xl bg-gradient-to-b from-white via-neutral-100 to-neutral-500 bg-clip-text text-transparent">
+          {heading}
+        </h2>
+      </BlurFade>
 
       {subtitle ? (
-        <p className="mt-4 text-sm md:text-base text-[#8a8f98] font-light leading-relaxed font-sans max-w-xl">
-          {subtitle}
-        </p>
+        <BlurFade inView repeat duration={0.6} delay={0.16} blur="6px">
+          <p className="mt-4 text-sm md:text-base text-[#8a8f98] font-light leading-relaxed font-sans max-w-xl">
+            {subtitle}
+          </p>
+        </BlurFade>
       ) : null}
     </div>
   );

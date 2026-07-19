@@ -26,6 +26,22 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 19, 2026',
+    entries: [
+      {
+        tag: 'Improved',
+        title: 'A lighter homepage that moves as you scroll',
+        points: [
+          'The top navigation is now three separate floating pieces — the logo, the links, and the two buttons — instead of one long bar stretched across the screen.',
+          'Text and cards fade in as they come into view, in both scroll directions, so the page feels alive rather than static.',
+          'The "Why Mailient" and "Meet Arcus" sections were paragraphs of solid prose. They are now a few short lines you can take in at a glance — the argument is the same, the reading is not.',
+          'The morning payoff figures are now proper cards with icons instead of loose text.',
+          'The quick-access bar is back at the bottom of the homepage.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 18, 2026',
     entries: [
       {

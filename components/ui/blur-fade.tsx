@@ -4,6 +4,7 @@ import { useRef } from "react"
 import {
   motion,
   useInView,
+  useReducedMotion,
   UseInViewOptions,
   Variants,
 } from "framer-motion"
@@ -23,6 +24,23 @@ interface BlurFadeProps {
   inView?: boolean
   inViewMargin?: MarginType
   blur?: string
+  /**
+   * Re-run the reveal every time the element enters the viewport, in either
+   * scroll direction, instead of only the first time.
+   *
+   * ONLY set this on SMALL subtrees — a heading, one card, one paragraph.
+   *
+   * The default is once-only for a measured reason: re-running a blur reveal
+   * over a whole section repaints an enormous subtree on every scroll pass,
+   * and that was the primary scroll-jank source on this page (fixed in
+   * 71a8d04). `filter: blur()` is the expensive part — the browser rasterises
+   * the entire subtree, blurs it, and composites it, every frame of the
+   * animation. Cost scales with painted area, so the same effect that is free
+   * on a 200px card is punishing on a 900px section.
+   *
+   * Rule of thumb: repeat on leaves, never on section wrappers.
+   */
+  repeat?: boolean
 }
 
 export function BlurFade({
@@ -35,12 +53,20 @@ export function BlurFade({
   inView = false,
   inViewMargin = "-50px",
   blur = "8px",
+  repeat = false,
 }: BlurFadeProps) {
   const ref = useRef(null)
-  // once: true — re-running a full-section blur animation on every scroll pass
-  // repaints huge subtrees and is the main scroll-jank source on the landing page.
-  const inViewResult = useInView(ref, { once: true, margin: inViewMargin })
+  const prefersReducedMotion = useReducedMotion()
+  // once: !repeat — see the `repeat` doc above. Section-level wrappers must
+  // stay once-only; only small subtrees opt into re-animating.
+  const inViewResult = useInView(ref, { once: !repeat, margin: inViewMargin })
   const isInView = !inView || inViewResult
+
+  // Respect the OS "reduce motion" setting: render the final state, no
+  // transform, no blur, no repeated animation.
+  if (prefersReducedMotion) {
+    return <div className={className}>{children}</div>
+  }
 
   const defaultVariants: Variants = {
     hidden: {

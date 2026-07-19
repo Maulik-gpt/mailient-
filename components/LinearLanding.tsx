@@ -49,7 +49,9 @@ import { BlurFade } from "@/components/ui/blur-fade";
 import NumberFlow from "@number-flow/react";
 import { EtheralShadow } from "@/components/ui/etheral-shadow";
 import { CircleExpandButton } from "@/components/CircleExpandButton";
+import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { SectionHeader } from "@/components/ui/section-header";
+import { TestimonialsSection } from "@/components/ui/testimonials-section";
 import { landingFaqs } from "@/lib/landing-faqs";
 
 function ActiveCounter({ target = 1420 }: { target?: number }) {
@@ -495,25 +497,25 @@ export function LinearLanding() {
                 second thing on the page — a wall of essay copy in the highest
                 bounce region. The lines kept here are the strongest ones from
                 it, verbatim; the connective tissue is gone. */}
-            <p>
-              The average founder spends <span className="text-white font-medium">13 hours a week on inbox management</span>. That is a part-time position — one you never hired for, never budgeted for, and never wanted. And it does not scale: the more successful you get, the worse it gets.
+            {/* Cut again — this was four paragraphs of solid prose and read as
+                an essay. Nobody reads an essay on a landing page. What survives
+                is one number, one contrast, and one reframe, each on its own
+                line so the section can be SCANNED rather than read. */}
+            <p className="text-white font-normal text-xl md:text-2xl tracking-tight leading-snug text-center">
+              <span className="text-white font-medium">13 hours a week</span>, gone to your inbox.
+              <br className="hidden md:block" />
+              <span className="text-neutral-500"> A part-time job you never hired for.</span>
             </p>
 
-            <p>
-              Gmail sorts the mail you read. Superhuman makes you faster at the mail you read. ChatGPT drafts a reply when you remember to ask. Every one of these works on the email you are looking at. <span className="text-white">None of them watch the email you never opened. That is where the money leaks.</span>
+            <p className="text-center text-base md:text-lg">
+              Gmail sorts what you read. Superhuman speeds up what you read.
+              <br className="hidden md:block" />
+              <span className="text-white"> None of them watch the email you never opened — where the money actually leaks.</span>
             </p>
 
-            <p className="text-white font-normal text-lg md:text-xl tracking-tight leading-snug pt-4">
-              Mailient does not make you faster at email. It removes email from your to-do list entirely.
+            <p className="text-white font-normal text-xl md:text-2xl tracking-tight leading-snug text-center pt-2">
+              So Mailient isn&apos;t a faster inbox. It&apos;s a hire — at $29 a month.
             </p>
-
-            <p className="text-white font-medium">
-              Mailient is not a feature. It is a hire — and your first employee shouldn&apos;t cost $80,000 a year. This one costs $29 a month, never sleeps, and never forgets a follow-up.
-            </p>
-
-            <div className="pt-6 font-mono text-xs text-neutral-500 uppercase tracking-widest">
-              Your inbox has been running you long enough.
-            </div>
 
           </div>
 
@@ -855,8 +857,29 @@ export function LinearLanding() {
             {/* Heading and pill lifted out to the SectionHeader above; this
                 column keeps only the body copy and the CTA. */}
             <div className="flex-1 space-y-6 text-left relative z-10">
-              <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-xl">
-                Tell it &ldquo;clear my inbox and prep tomorrow.&rdquo; It triages the flood, drafts replies in your voice, books the calls, and chases follow-ups across Gmail, Calendar, Notion, and Slack — then shows you the few things that still need you.
+              {/* Was one dense run-on sentence that buried four capabilities and
+                  four integrations in a single breath. Same content, broken
+                  into a scannable list — a landing page gets skimmed, not read. */}
+              <p className="text-base md:text-lg text-white font-normal leading-snug tracking-tight max-w-xl">
+                Tell it &ldquo;clear my inbox and prep tomorrow.&rdquo;
+              </p>
+
+              <ul className="space-y-2.5 max-w-xl">
+                {[
+                  "Triages the flood",
+                  "Drafts replies in your voice",
+                  "Books the calls",
+                  "Chases the follow-ups",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-sm text-neutral-400 font-light font-sans">
+                    <Check className="w-3.5 h-3.5 text-white shrink-0" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <p className="text-sm text-neutral-500 font-light font-sans max-w-xl">
+                Then shows you the few things that still need you.
               </p>
 
               <div className="pt-6">
@@ -1302,35 +1325,36 @@ export function LinearLanding() {
             heading="What a handled morning looks like."
             subtitle="Illustrative of a typical morning — not averaged usage data."
           />
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12 md:mb-24 text-left">
-            <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every morning</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                2h 14m
-              </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Returned to you. Go build</span>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">Every week</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={13} />h
-              </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Of email work off your plate</span>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">By 7am</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={3} />
-              </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Decisions left. It handled the rest</span>
-            </div>
-            <div className="flex flex-col space-y-1">
-              <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold">You owe</span>
-              <span className="text-2xl md:text-3xl font-semibold tracking-tight text-white">
-                <ActiveCounter target={0} />
-              </span>
-              <span className="text-[10px] text-neutral-500 font-light font-sans">Emails. Follow-ups chased for you</span>
-            </div>
+          {/* Was four bare text columns floating on the page background. Now
+              lit cards with icon tiles and a much larger figure — this is the
+              payoff section, so the numbers should carry the most weight in it.
+              The figures remain illustrative; the subtitle says so. */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12 md:mb-24 text-left">
+            {[
+              { icon: Clock, label: "Every morning", value: <>2h 14m</>, caption: "Returned to you. Go build." },
+              { icon: Briefcase, label: "Every week", value: <><ActiveCounter target={13} />h</>, caption: "Of email work off your plate." },
+              { icon: Inbox, label: "By 7am", value: <ActiveCounter target={3} />, caption: "Decisions left. It handled the rest." },
+              { icon: Check, label: "You owe", value: <ActiveCounter target={0} />, caption: "Emails. Follow-ups chased for you." },
+            ].map(({ icon: StatIcon, label, value, caption }, i) => (
+              <BlurFade key={label} inView repeat duration={0.6} delay={i * 0.07} blur="6px" className="h-full">
+              <div
+                className="linear-grid-card linear-grid-card-lift p-6 flex flex-col gap-4 h-full"
+              >
+                <span className="gradient-tile w-10 h-10 relative z-10">
+                  <StatIcon className="w-4 h-4 text-white" />
+                </span>
+                <span className="font-mono text-[9px] tracking-[0.2em] text-[#8a8f98] uppercase font-bold relative z-10">
+                  {label}
+                </span>
+                <span className="text-3xl md:text-4xl font-semibold tracking-tight bg-gradient-to-b from-white to-neutral-400 bg-clip-text text-transparent relative z-10">
+                  {value}
+                </span>
+                <span className="text-[11px] text-neutral-500 font-light font-sans relative z-10 mt-auto">
+                  {caption}
+                </span>
+              </div>
+              </BlurFade>
+            ))}
           </div>
 
 
@@ -1379,6 +1403,10 @@ export function LinearLanding() {
       </section>
 
 
+
+      {/* Customer testimonials. Renders nothing until lib/testimonials.ts has a
+          real entry — see the note in that file on why it ships empty. */}
+      <TestimonialsSection />
 
       {/* Core capability grid — moved ABOVE pricing. It previously rendered
           after the pricing section, so the last substantive argument for the
@@ -1466,17 +1494,16 @@ export function LinearLanding() {
 
       <Footer />
 
-      {/* Top edge blur only, and shorter (120px → 72px): just enough to soften
-          content passing under the fixed Navbar.
-
-          The bottom blur and the FloatingNavbar are both gone from the landing
-          page. Together they occupied ~200px of permanent viewport on a page
-          whose only job is to sell, and the floating bar's links (Changelog,
-          Support, Terms, Privacy) are footer-tier destinations that do not
-          deserve persistent chrome in front of a first-time visitor. The
-          Footer already carries all four. FloatingNavbar still renders on the
-          in-app routes that mount it. */}
+      {/* Top edge blur only, and shorter than the original 120px: just enough
+          to soften content passing under the fixed Navbar. The bottom blur
+          stays removed — it stacked with the floating bar below and the two
+          together ate ~200px of permanent viewport. */}
       <ProgressiveBlur position="top" backgroundColor="#000000" height="72px" blurAmount="10px" className="fixed z-40" />
+
+      {/* Floating navigation — restored at the founder's request after being
+          pulled in 4918b3b. Keeping the bottom ProgressiveBlur off so it costs
+          one layer of chrome rather than two. */}
+      <FloatingNavbar />
     </div>
   );
 }
