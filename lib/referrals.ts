@@ -83,19 +83,65 @@ export async function getOrCreateReferralCode(userId: string): Promise<string | 
 }
 
 export async function resolveCode(code: string): Promise<string | null> {
-  const c = String(code || '').trim().toUpperCase();
-  if (!c) return null;
+  const raw = String(code || '').trim();
+  if (!raw) return null;
+  const supabase = getSupabaseAdmin();
+
+  // 1. The real code table.
   try {
-    const { data } = await getSupabaseAdmin()
+    const { data } = await supabase
       .from('referral_codes')
       .select('user_id')
-      .eq('code', c)
+      .eq('code', raw.toUpperCase())
       .limit(1)
       .maybeSingle();
-    return data?.user_id ? norm(data.user_id) : null;
-  } catch {
-    return null;
+    if (data?.user_id) return norm(data.user_id);
+  } catch { /* fall through to legacy */ }
+
+  // 2. LEGACY LINKS. Before referral_codes existed, the rewards card handed out
+  //    /invite/<username-or-email-prefix>, and those links are already in
+  //    people's WhatsApp threads. Dropping them would silently break every
+  //    referral shared to date — the friend gets no free month and the referrer
+  //    never gets paid, with nothing anywhere saying why.
+  //
+  //    The original lookup was
+  //        .or(`username.ilike.${code},user_id.ilike.${code}@%`)
+  //    which interpolated raw input into a filter string. Rebuilt as two
+  //    parameterised queries with .limit(1) — never .maybeSingle(), which
+  //    ERRORS rather than returning a row when two profiles match.
+  const legacy = raw.toLowerCase();
+  // Only plausible identifiers reach the DB; a code with quotes or commas would
+  // otherwise be handed to the query builder.
+  if (!/^[a-z0-9._+-]{2,64}$/.test(legacy)) return null;
+
+  try {
+    const { data: byUsername } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+      .eq('username', legacy)
+      .limit(1);
+    if (byUsername?.[0]?.user_id) return norm(byUsername[0].user_id);
+
+    // Email local-part: "alice" → alice@anything. Anchored with @ so "ali"
+    // cannot match "alice@…", which the old prefix match happily did.
+    const { data: byEmail } = await supabase
+      .from('user_profiles')
+      .select('user_id')
+      .ilike('user_id', `${legacy}@%`)
+      .limit(2); // 2 so we can DETECT ambiguity instead of picking blindly
+    if (byEmail && byEmail.length === 1 && byEmail[0]?.user_id) {
+      return norm(byEmail[0].user_id);
+    }
+    if (byEmail && byEmail.length > 1) {
+      // Two people share an email local part on different domains. Paying the
+      // wrong person is worse than paying nobody, so refuse.
+      console.warn(`[referrals] legacy code "${legacy}" is ambiguous — refusing to attribute`);
+      return null;
+    }
+  } catch (err) {
+    console.error('[referrals] legacy resolve failed:', (err as Error).message);
   }
+  return null;
 }
 
 export interface AttributionResult {

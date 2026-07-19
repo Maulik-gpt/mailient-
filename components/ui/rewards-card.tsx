@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Zap, Sparkles, Copy, Check, Link2, Loader2 } from 'lucide-react';
+import { X, Zap, Sparkles, Copy, Check, Link2, Loader2, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface RewardsCardProps {
@@ -18,38 +18,55 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
     const [profile, setProfile] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
 
+    // The referral code comes from /api/referrals/me — the SAME source the
+    // /referrals page uses. This card used to build its link from
+    // `profile.username || email.split('@')[0]`, which is a guess at an
+    // identifier rather than a real code; once attribution moved to the
+    // referral_codes table those links resolved to nobody, so every invite
+    // shared from this card paid out nothing. One source of truth now.
+    const [referral, setReferral] = useState<any>(null);
+
     useEffect(() => {
-        const fetchProfile = async () => {
+        let cancelled = false;
+        (async () => {
             try {
-                const res = await fetch('/api/user/profile');
-                if (res.ok) {
-                    const data = await res.json();
-                    setProfile(data);
-                }
+                const [profRes, refRes] = await Promise.all([
+                    fetch('/api/user/profile'),
+                    fetch('/api/referrals/me'),
+                ]);
+                if (cancelled) return;
+                if (profRes.ok) setProfile(await profRes.json());
+                if (refRes.ok) setReferral(await refRes.json());
             } catch (err) {
-                console.error('Error fetching profile:', err);
+                console.error('Error fetching referral data:', err);
             } finally {
-                setIsLoading(false);
+                if (!cancelled) setIsLoading(false);
             }
-        };
-        fetchProfile();
+        })();
+        return () => { cancelled = true; };
     }, []);
 
+    const inviteLink: string = referral?.link || '';
+
     const handleCopyLink = () => {
-        const username = profile?.username || profile?.email?.split('@')[0] || '';
-        const url = `${window.location.origin}/invite/${username}`;
-        navigator.clipboard.writeText(url);
+        if (!inviteLink) {
+            toast.error('Your invite link isn’t ready yet — try again in a moment');
+            return;
+        }
+        navigator.clipboard.writeText(inviteLink);
         setCopied(true);
-        toast.success('Invite link copied to clipboard');
+        toast.success('Invite link copied');
         setTimeout(() => setCopied(false), 2000);
     };
 
-    const username = profile?.username || profile?.email?.split('@')[0] || '';
-    const referralUrl = `${typeof window !== 'undefined' ? window.location.hostname : 'mailient.xyz'}/invite/${username}`;
+    // Display form: strip the scheme so the pill reads cleanly.
+    const referralUrl = inviteLink.replace(/^https?:\/\//, '');
 
-    const freeProUntil = profile?.free_pro_until ? new Date(profile.free_pro_until) : null;
+    const freeProUntil = referral?.freeUntil
+        ? new Date(referral.freeUntil)
+        : (profile?.free_pro_until ? new Date(profile.free_pro_until) : null);
     const freeProActive = !!freeProUntil && freeProUntil > new Date();
-    const conversions = profile?.conversion_count || 0;
+    const conversions = referral?.converted ?? profile?.conversion_count ?? 0;
 
     const steps = [
         { icon: Link2, text: "Share your invite link", bold: "" },
@@ -95,12 +112,16 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
 
                     <div className="relative z-10 space-y-3">
                         <div className="inline-flex items-center px-3 py-1 rounded-full bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/10 backdrop-blur-md">
-                            <span className="text-[10px] font-bold text-neutral-500 dark:text-white tracking-widest uppercase opacity-80">Affiliate · Free Pro</span>
+                            <span className="text-[10px] font-bold text-neutral-500 dark:text-white tracking-widest uppercase opacity-80">Give a month · Get a month</span>
                         </div>
+                        {/* Same words as the /referrals screen on purpose. This card and
+                            that page were describing the deal differently ("Affiliate ·
+                            Free Pro" vs "Give a friend a free month"), which read as two
+                            separate schemes. Lead with the GIFT in both. */}
                         <h2 className="text-4xl font-bold text-black dark:text-white tracking-tight leading-[1.1]">
-                            Refer friends,<br />get Pro free
+                            Give a friend<br />a free month
                         </h2>
-                        <p className="text-neutral-500 dark:text-white/40 text-sm font-medium">a free month of Pro for every paid referral</p>
+                        <p className="text-neutral-500 dark:text-white/40 text-sm font-medium">they get a month free — you get one when they stay</p>
                     </div>
 
                     <button 
@@ -141,7 +162,7 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                     <div className="pt-2 border-t border-neutral-200 dark:border-white/5 space-y-3">
                         <div className="flex items-center justify-between">
                             <p className="text-[13px] font-medium text-neutral-500 dark:text-white/50">
-                                <span className="text-black dark:text-white font-bold">{profile?.invite_count || 0}</span> signed up, <span className="text-black dark:text-white font-bold">{conversions}</span> went Pro
+                                <span className="text-black dark:text-white font-bold">{referral?.invited ?? profile?.invite_count ?? 0}</span> signed up, <span className="text-black dark:text-white font-bold">{conversions}</span> went Pro
                             </p>
                             <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-neutral-100 dark:bg-white/5 border border-neutral-200 dark:border-white/5">
                                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -163,18 +184,34 @@ export function RewardsCard({ onClose, usageData }: RewardsCardProps) {
                         <div className="flex h-12 bg-black/5 dark:bg-white/5 rounded-xl border border-neutral-200 dark:border-white/10 focus-within:border-black/20 dark:focus-within:border-white/20 transition-all p-1 shadow-inner">
                             <div className="flex-1 flex items-center px-4 gap-3 overflow-hidden">
                                 <Link2 className="w-4 h-4 text-black/30 dark:text-white/30" />
+                                {/* Never print a bare "https://" while the code loads or if it
+                                    failed — an empty link beside a live Copy button reads as a
+                                    working control that silently copies nothing. */}
                                 <span className="text-xs text-neutral-500 dark:text-white/50 truncate font-mono tracking-tight">
-                                    https://{referralUrl}
+                                    {isLoading ? 'Loading your link…' : referralUrl ? referralUrl : 'Link unavailable — try again shortly'}
                                 </span>
                             </div>
-                            <button 
+                            <button
                                 onClick={handleCopyLink}
-                                className="px-6 h-full bg-black text-white hover:bg-black/90 rounded-[10px] text-xs font-bold transition-all shadow-lg active:scale-95 border-none inline-flex items-center justify-center"
+                                disabled={!inviteLink}
+                                className="px-6 h-full bg-black text-white hover:bg-black/90 rounded-[10px] text-xs font-bold transition-all shadow-lg active:scale-95 border-none inline-flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
                             >
                                 {copied ? 'Copied' : 'Copy link'}
                             </button>
                         </div>
                     </div>
+
+                    {/* The two surfaces are the same system, not two schemes. This card is
+                        the quick grab; /referrals is the full screen with the pre-written
+                        message and per-channel share. Linking them removes the "which one
+                        is real?" confusion. */}
+                    <a
+                        href="/referrals"
+                        className="flex items-center justify-center gap-1.5 text-[12.5px] font-medium text-neutral-500 dark:text-white/50 hover:text-black dark:hover:text-white transition-colors"
+                    >
+                        Open share screen
+                        <ArrowRight className="w-3.5 h-3.5" />
+                    </a>
                 </div>
             </motion.div>
         </motion.div>

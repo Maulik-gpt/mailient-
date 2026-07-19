@@ -23,10 +23,14 @@ export async function GET(request, { params }) {
   let code = '';
   try {
     const { id } = await params;
-    // Codes are 6 chars from a fixed alphabet. Anything else is noise or an
-    // injection attempt — drop it rather than store it.
-    code = String(id || '').trim().toUpperCase().slice(0, 12);
-    if (!/^[A-Z0-9]{4,12}$/.test(code)) code = '';
+    // New codes are 6 chars from a fixed alphabet, but LEGACY links are
+    // /invite/<username-or-email-prefix> and can contain dots, plus and
+    // hyphens ("mailient.xyz"). A strict [A-Z0-9] test silently dropped every
+    // one of those before the cookie was even set. Case is preserved here —
+    // resolveCode uppercases for the code table and lowercases for the legacy
+    // lookup, so normalising either way at this layer would break the other.
+    code = String(id || '').trim().slice(0, 64);
+    if (!/^[A-Za-z0-9._+-]{2,64}$/.test(code)) code = '';
 
     if (code) {
       const cookieStore = await cookies();
