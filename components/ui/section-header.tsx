@@ -4,6 +4,7 @@ import React from "react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BlurFade } from "@/components/ui/blur-fade";
+import { WordBlurReveal } from "@/components/ui/word-blur-reveal";
 
 /**
  * The landing page's one and only section header.
@@ -79,7 +80,17 @@ export function SectionHeader({
         </h2>
       </BlurFade>
 
-      {subtitle ? (
+      {/* A plain-string subtitle gets the per-word blur sweep. Anything richer
+          (the chaos/clarity section passes a <WordBlurStream> element) falls
+          back to the element-level reveal, since WordBlurReveal has to split a
+          string into word spans and cannot wrap arbitrary JSX. */}
+      {typeof subtitle === "string" ? (
+        <WordBlurReveal
+          text={subtitle}
+          delayMs={160}
+          className="mt-4 text-sm md:text-base text-[#8a8f98] font-light leading-relaxed font-sans max-w-xl"
+        />
+      ) : subtitle ? (
         <BlurFade inView repeat duration={0.6} delay={0.16} blur="6px">
           <p className="mt-4 text-sm md:text-base text-[#8a8f98] font-light leading-relaxed font-sans max-w-xl">
             {subtitle}

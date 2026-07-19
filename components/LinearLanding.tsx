@@ -52,6 +52,7 @@ import { CircleExpandButton } from "@/components/CircleExpandButton";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
 import { SectionHeader } from "@/components/ui/section-header";
 import { TestimonialsSection } from "@/components/ui/testimonials-section";
+import { WordBlurReveal } from "@/components/ui/word-blur-reveal";
 import { landingFaqs } from "@/lib/landing-faqs";
 
 function ActiveCounter({ target = 1420 }: { target?: number }) {
@@ -507,15 +508,15 @@ export function LinearLanding() {
               <span className="text-neutral-500"> A part-time job you never hired for.</span>
             </p>
 
-            <p className="text-center text-base md:text-lg">
-              Gmail sorts what you read. Superhuman speeds up what you read.
-              <br className="hidden md:block" />
-              <span className="text-white"> None of them watch the email you never opened — where the money actually leaks.</span>
-            </p>
+            <WordBlurReveal
+              text="Gmail sorts what you read. Superhuman speeds up what you read. None of them watch the email you never opened — where the money actually leaks."
+              className="text-center text-base md:text-lg"
+            />
 
-            <p className="text-white font-normal text-xl md:text-2xl tracking-tight leading-snug text-center pt-2">
-              So Mailient isn&apos;t a faster inbox. It&apos;s a hire — at $29 a month.
-            </p>
+            <WordBlurReveal
+              text="So Mailient isn't a faster inbox. It's a hire — at $29 a month."
+              className="text-white font-normal text-xl md:text-2xl tracking-tight leading-snug text-center pt-2"
+            />
 
           </div>
 
@@ -803,9 +804,10 @@ export function LinearLanding() {
               </span>
               <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 1</span>
               <h3 className="text-lg font-semibold text-white relative z-10">Connect Gmail.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
-                Two minutes, secure Google sign-in. Your email stays in Gmail — nothing moves, nothing to configure.
-              </p>
+              <WordBlurReveal
+                text="Two minutes, secure Google sign-in. Your email stays in Gmail — nothing moves, nothing to configure."
+                className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10"
+              />
             </div>
             <div className="linear-grid-card linear-grid-card-lift p-8 space-y-4">
               <span className="gradient-tile w-12 h-12 relative z-10">
@@ -813,9 +815,10 @@ export function LinearLanding() {
               </span>
               <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 2</span>
               <h3 className="text-lg font-semibold text-white relative z-10">It learns how you write.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
-                From your last 90 days of sent mail: your greetings, your rhythm, your sign-offs. Drafts start sounding like you, not like AI.
-              </p>
+              <WordBlurReveal
+                text="From your last 90 days of sent mail: your greetings, your rhythm, your sign-offs. Drafts start sounding like you, not like AI."
+                className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10"
+              />
             </div>
             <div className="linear-grid-card linear-grid-card-lift p-8 space-y-4">
               <span className="gradient-tile w-12 h-12 relative z-10">
@@ -823,9 +826,10 @@ export function LinearLanding() {
               </span>
               <span className="font-mono text-[10px] tracking-[0.2em] text-neutral-600 font-bold block relative z-10">STEP 3</span>
               <h3 className="text-lg font-semibold text-white relative z-10">Mornings arrive organized.</h3>
-              <p className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
-                Overnight it reads everything, drafts the replies, books the meetings, chases the silence — and leaves you one briefing. Nothing sends without your approval.
-              </p>
+              <WordBlurReveal
+                text="Overnight it reads everything, drafts the replies, books the meetings, chases the silence — and leaves you one briefing. Nothing sends without your approval."
+                className="text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10"
+              />
             </div>
           </div>
         </BlurFade>
