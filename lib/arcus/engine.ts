@@ -124,8 +124,9 @@ const FAST_MODELS = [
 // Ordered cheapest → fastest → most-capable so the engine spends as little
 // as possible per turn.
 const PAID_MODELS = [
-  'google/gemini-2.5-flash-lite', // primary — cheapest capable, fast, tool-capable, huge context
-  'anthropic/claude-haiku-4.5',   // reliability fallback. (Was claude-haiku-5 — a DEAD id
+  // gemini-2.5-flash-lite REMOVED (2026-07-16, user directive: "costing so much").
+  // It was leading this list, so it fired first on every paid-fallback call.
+  'anthropic/claude-haiku-4.5',   // primary. (Was claude-haiku-5 — a DEAD id
                                   // returning HTTP 400 "not a valid model ID"; 4.5 is the real one.)
   'google/gemini-2.5-flash',      // fallback
 ];
@@ -218,6 +219,20 @@ function toOpenAIMessages(messages: LLMMessage[]): any[] {
           tool_call_id: tr.tool_use_id,
           content: typeof tr.content === 'string' ? tr.content : JSON.stringify(tr.content),
         });
+      }
+      // Any TEXT alongside the tool results must survive. This used to
+      // `continue` straight past it, silently discarding every non-tool_result
+      // block — which is where the loop's [STATE:]/[TOOL BUDGET]/working-memory
+      // steer went to die, since that steer is appended to exactly these
+      // messages. A `tool` message cannot carry it (it is bound to a
+      // tool_call_id), so it goes out as its own user turn, which is valid
+      // immediately after tool results in this format.
+      const trailingText = (blocks.filter(b => b.type === 'text') as Array<{ type: 'text'; text: string }>)
+        .map(b => b.text)
+        .filter(t => typeof t === 'string' && t.trim())
+        .join('\n\n');
+      if (trailingText) {
+        out.push({ role: 'user', content: trailingText });
       }
       continue;
     }

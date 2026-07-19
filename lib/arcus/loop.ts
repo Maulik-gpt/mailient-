@@ -556,6 +556,60 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
   // LLM actually fetched ground truth before acting.
   const toolHistory: Array<{ name: string; input: any; success: boolean }> = [];
 
+  // ── Working memory ──────────────────────────────────────────────────────────
+  // The dedup cache only catches an EXACT repeat of the same params. It does
+  // nothing about the failure users actually see: the model searching the same
+  // INTENT over and over with slightly different wording — "kunal", then
+  // "from:kunal", then "kunal follow up" — because nothing in its context
+  // states plainly what it has already looked for and what came back. Each new
+  // phrasing is a cache miss, so a two-step task burned 26 steps.
+  //
+  // This is that missing statement: a compact ledger of every lookup and its
+  // OUTCOME, replayed to the model each iteration. "You already searched X and
+  // found nothing" is the one fact that stops a re-search; the raw tool results
+  // further up the transcript do not say it, and get skimmed once they are long.
+  const gathered: Array<{ name: string; hint: string; outcome: string }> = [];
+  const toolCallCounts = new Map<string, number>();
+
+  /** One readable line per lookup: what was asked, what came back. */
+  function recordGathered(name: string, input: any, output: string, success: boolean) {
+    const hintRaw =
+      input?.query ?? input?.threadId ?? input?.messageId ?? input?.email ??
+      input?.name ?? input?.pageId ?? '';
+    const hint = String(hintRaw).slice(0, 60);
+    let outcome: string;
+    if (!success) {
+      outcome = 'failed';
+    } else {
+      const text = String(output || '');
+      // Empty results are the ones worth remembering MOST — an empty result is
+      // exactly what tempts the model to rephrase and retry.
+      //
+      // Matched against real tool strings, not guessed: the noun between "no"
+      // and "found" varies wildly ("No labels found", "No memories found",
+      // "No sent emails found", "No past meetings found"), so anchoring on a
+      // fixed noun list missed most of them. Only the first 200 chars are
+      // examined, and populated results start with "Found N", so an email body
+      // containing similar words cannot flip a real result to empty.
+      const head = text.slice(0, 200);
+      const empty =
+        /\bno\b[^.!?\n]{0,48}\b(found|yet|match(?:es|ing)?)\b/i.test(head) ||
+        /^\s*none\b/i.test(head) ||
+        /\bnot found\b/i.test(head) ||
+        // "No upcoming events in the next 7 days." — no verb to anchor on.
+        // Safe only at position 0: populated results open with "Found N…" or
+        // "Message-ID:…", so a mail body that merely contains "no thanks"
+        // cannot reach here.
+        /^\s*no\s+\w/i.test(head);
+      if (empty) outcome = 'NOTHING FOUND';
+      else {
+        const m = text.match(/found\s+(\d+)/i) || text.match(/^(\d+)\s+(?:recent|email|result)/i);
+        outcome = m ? `${m[1]} result(s)` : `${Math.min(text.length, 99999)} chars returned`;
+      }
+    }
+    gathered.push({ name, hint, outcome });
+  }
+
   // PART 31 — Per-run dedup cache. When the LLM tries to call a READ tool
   // with the same params it already used this turn, we return the cached
   // result instead of re-running the API call. This kills the "drafting one
@@ -1517,16 +1571,64 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                 return '[STATE: REPORTING] — all tool calls done. Write the final user-facing message and stop.';
             }
           })();
+          // ── Working memory + repetition breaker ───────────────────────────
+          // Replays what has already been looked up, and escalates when the
+          // model keeps reaching for the same tool. Without this the transcript
+          // technically contains every result, but nothing SAYS "you already
+          // did this" — so the model rephrases and retries instead of deciding.
+          const memoryNote = (() => {
+            if (!gathered.length) return '';
+            // Newest last: the tail is what it just did, which is what it is
+            // most likely to repeat.
+            const lines = gathered.slice(-12).map(g =>
+              `- ${g.name}${g.hint ? ` "${g.hint}"` : ''} → ${g.outcome}`
+            );
+            return `\n[ALREADY GATHERED THIS RUN — do NOT look these up again:\n${lines.join('\n')}\n]`;
+          })();
+
+          const repeatNote = (() => {
+            const worst = [...toolCallCounts.entries()]
+              .filter(([n]) => READ_TOOLS_FOR_DEDUP.has(n))
+              .sort((a, b) => b[1] - a[1])[0];
+            if (!worst) return '';
+            const [name, count] = worst;
+            if (count >= 6) {
+              return `\n[STOP SEARCHING. You have called ${name} ${count} times this run. More lookups will not produce new information — you already have what exists. Use it and write your answer NOW. If what the user asked for genuinely is not there, SAY SO plainly instead of searching again.]`;
+            }
+            if (count >= 3) {
+              return `\n[You have called ${name} ${count} times. Before calling it again, re-read ALREADY GATHERED above and ask whether the answer is already in hand. Prefer acting on what you have over one more search.]`;
+            }
+            return '';
+          })();
+
           const budgetMsg = budgetLeft <= 3
-            ? `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. RESERVE these for report delivery. Stop executing new tasks and write your final report NOW.]`
-            : `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining.]`;
+            ? `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining. RESERVE these for report delivery. Stop executing new tasks and write your final report NOW.]${memoryNote}${repeatNote}`
+            : `${stateNote}\n[TOOL BUDGET: ${budgetUsed}/${toolCallLimit} used — ${budgetLeft} calls remaining.]${memoryNote}${repeatNote}`;
           if (messages.at(-1)?.role !== 'user') {
             messages.push({ role: 'user', content: budgetMsg } as any);
           } else {
-            // Append to the last user message so we don't break the alternating pattern
+            // Append to the last user message so we don't break the alternating pattern.
             const last = messages[messages.length - 1] as any;
-            if (typeof last.content === 'string' && !last.content.startsWith('[STATE:') && !last.content.includes('[STATE:')) {
-              last.content = `${last.content}\n\n${budgetMsg}`;
+            if (typeof last.content === 'string') {
+              if (!last.content.includes('[STATE:')) {
+                last.content = `${last.content}\n\n${budgetMsg}`;
+              }
+            } else if (Array.isArray(last.content)) {
+              // THE MAIN LOOP PATH, and it used to fall through here doing
+              // NOTHING. After tool calls we push {role:'user', content:[…
+              // tool_result blocks]} — an ARRAY — so the string branch above
+              // never matched and the budget/state steer was silently dropped
+              // on every single iteration that followed a tool call. The model
+              // therefore never saw its remaining budget, its run state, or
+              // (now) what it had already gathered, which is exactly the
+              // condition under which it keeps searching. A text block appended
+              // after the tool_results is valid content and reaches the model.
+              const hasState = last.content.some(
+                (b: any) => b?.type === 'text' && typeof b.text === 'string' && b.text.includes('[STATE:')
+              );
+              if (!hasState) {
+                last.content.push({ type: 'text', text: budgetMsg } as any);
+              }
             }
           }
 
@@ -1759,6 +1861,8 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                     // already called it with the same input this run, return
                     // the cached result. Saves the API call + tells the LLM
                     // it already has this data so it stops looping.
+                    toolCallCounts.set(tc.name, (toolCallCounts.get(tc.name) || 0) + 1);
+
                     let result;
                     if (READ_TOOLS_FOR_DEDUP.has(tc.name)) {
                       const cacheKey = makeCacheKey(tc.name, inputToUse);
@@ -1784,6 +1888,14 @@ export function runAgentLoop(opts: LoopOptions): ReadableStream {
                       }
                     } else {
                       result = await executeTool(tc.name, inputToUse, userId, buildToolContext());
+                    }
+
+                    // Log every READ into working memory. Writes are excluded on
+                    // purpose — "you already sent this" belongs to the approval
+                    // path, not to a hint that could talk the model out of a
+                    // legitimate second send.
+                    if (READ_TOOLS_FOR_DEDUP.has(tc.name)) {
+                      recordGathered(tc.name, inputToUse, result.output, result.success !== false);
                     }
 
                     // Newsletter layer 2: classify what slipped through
