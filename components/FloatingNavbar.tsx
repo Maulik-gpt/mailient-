@@ -9,17 +9,17 @@ import {
   LayoutList,
   HelpCircle,
   Scale,
-  FileText,
-  Gift
+  FileText
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navItems = [
   { id: "home", label: "Home", icon: Home, href: "/home-feed" },
-  // Second position on purpose. A referral page nobody can find is the whole
-  // reason the old system never got used — it has to sit where the eye already
-  // goes, not buried in settings.
-  { id: "referrals", label: "Give a month", icon: Gift, href: "/referrals" },
+  // NOTE: "Give a month" (/referrals) used to sit here in second position for
+  // discoverability. Removed at the founder's request — this bar now renders on
+  // the public landing and product pages, where a logged-out visitor has no
+  // referral link to give. /referrals stays reachable from the rewards card in
+  // the app, which is where a signed-in user actually is when they'd share it.
   { id: "changelog", label: "Changelog", icon: LayoutList, href: "/changelog" },
   { id: "support", label: "Support", icon: HelpCircle, href: "/contact" },
   { id: "terms", label: "Terms", icon: Scale, href: "/terms-of-service" },
