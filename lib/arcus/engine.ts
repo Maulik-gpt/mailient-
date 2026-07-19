@@ -124,19 +124,26 @@ const FAST_MODELS = [
 // Ordered cheapest → fastest → most-capable so the engine spends as little
 // as possible per turn.
 const PAID_MODELS = [
-  // RESTORED 2026-07-19. Removed 2026-07-16 on a report of "costing so much" —
-  // but verified against OpenRouter's live pricing (raw API, not a guess):
-  // flash-lite is $0.10/$0.40 per 1M (prompt/completion), vs claude-haiku-4.5 at
-  // $1.00/$5.00 — TEN TIMES more expensive per token. Flash-lite was the
-  // CHEAPEST of the three, not the most expensive; the visible cost was from
-  // CALL VOLUME (it led the list, so it absorbed every paid-fallback call while
-  // free models were rate-limited — the recurring root cause chased all through
-  // this codebase's history, see engine.ts's model-cooldown logic below), not
-  // its per-token price. Removing it and promoting Haiku to primary would have
-  // made the SAME volume of fallback calls cost ~10x more. Restored as primary;
-  // if paid spend is still too high, the fix is reducing how often free models
-  // get exhausted (funding/quota/reasoning-mode issues), not swapping the model.
-  'google/gemini-2.5-flash-lite', // primary — cheapest reliable, tool-capable, huge context
+  // Ordered by verified live OpenRouter pricing (raw /api/v1/models, not a guess),
+  // per-1M prompt/completion: gemma-4-26b-a4b-it $0.070/$0.340 <
+  // gemini-2.5-flash-lite $0.10/$0.40 < claude-haiku-4.5 $1.00/$5.00 <
+  // gemini-2.5-flash $0.30/$2.50 (pricier on completion despite a cheaper prompt
+  // rate — kept last, not "cheapest → priciest" strictly).
+  //
+  // gemma-4-26b-a4b-it (PAID, no :free suffix) added 2026-07-19 as primary — it's
+  // the cheapest option AND the :free version of this exact model already lives
+  // in ALL_FREE_MODELS/FAST_MODELS above, so it's proven for tool-calling in this
+  // system prompt already, unlike flash-lite which was never live-tested here.
+  //
+  // On flash-lite's history: removed 2026-07-16 on a report of "costing so much,"
+  // then restored the same day — it was the CHEAPEST of the original three, not
+  // the priciest; the visible cost was from CALL VOLUME (it led the list, so it
+  // absorbed every paid-fallback call while free models were rate-limited — the
+  // recurring root cause chased throughout this codebase's history), not its
+  // per-token price. If paid spend is still too high after this, the fix is
+  // reducing how often free models get exhausted, not swapping the model again.
+  'google/gemma-4-26b-a4b-it',    // primary — cheapest, and already proven for tool-calling here
+  'google/gemini-2.5-flash-lite', // 2nd — next cheapest, huge context
   'anthropic/claude-haiku-4.5',   // reliability fallback. (Was claude-haiku-5 — a DEAD id
                                   // returning HTTP 400 "not a valid model ID"; 4.5 is the real one.)
   'google/gemini-2.5-flash',      // fallback
