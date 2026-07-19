@@ -206,8 +206,9 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
     ? []
     : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean).length
         ? (process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean)
-        // claude-haiku-4.5 (NOT haiku-5 — that id is dead, HTTP 400). All three verified live.
-        : ['google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-4.5', 'google/gemini-2.5-flash']);
+        // gemini-2.5-flash-lite REMOVED (2026-07-16, user directive: "costing so much").
+        // claude-haiku-4.5 (NOT haiku-5 — that id is dead, HTTP 400). Both verified live.
+        : ['anthropic/claude-haiku-4.5', 'google/gemini-2.5-flash']);
   // Extra free models so the chain doesn't dead-end when both gemmas are
   // rate-limited upstream. All IDs verified against the live OpenRouter free
   // catalog; non-reasoning instruct models that honor json_object well.
