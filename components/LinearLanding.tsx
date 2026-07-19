@@ -538,10 +538,12 @@ export function LinearLanding() {
           />
         </BlurFade>
 
+        {/* 4/8 split, was 5/7 — the demo panel is the argument here, so it gets
+            the space. The selector column only has to hold three short labels. */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-center">
-          
+
           {/* Left panel: Vertical connected capability selectors */}
-          <BlurFade delay={0.1} duration={0.8} inView className="lg:col-span-5 w-full">
+          <BlurFade delay={0.1} duration={0.8} inView className="lg:col-span-4 w-full">
             <div className="space-y-12" role="tablist" aria-label="Product demos">
               {/* Step 1 */}
               {/* Tab semantics: these three selectors drive the demo panel on
@@ -582,7 +584,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Every morning: the handful of emails that actually need you — a meeting to confirm, a VIP waiting, a reply that can't slip — each with the decision ready to make in a tap. The rest is already handled.
+                    The few emails that need a decision. The rest is handled.
                   </p>
                   <CircleExpandButton
                     href="/product/sift"
@@ -628,7 +630,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    It learns how you write from your sent mail — your greetings, your rhythm, your sign-offs — and drafts replies so natural the recipient can't tell. Ask for 15 at once; it writes all 15. You just review and send.
+                    Learned from your sent mail. Ask for 15 at once — it writes all 15.
                   </p>
                   <CircleExpandButton
                     href="/product/drafts"
@@ -674,7 +676,7 @@ export function LinearLanding() {
                   className="mt-4 space-y-4"
                 >
                   <p className="text-sm md:text-base text-neutral-400 leading-relaxed font-light font-sans max-w-sm">
-                    Describe the job in plain words and pick when it runs. A 7am inbox sweep, a Friday revenue digest, meeting prep before every call — Mailient checks the calendar, books the slots, logs to Notion, and leaves a briefing in your inbox. Set it once; it runs on its own.
+                    Describe the job, pick when it runs. Set it once.
                   </p>
                   <CircleExpandButton
                     href="#pricing"
@@ -690,7 +692,7 @@ export function LinearLanding() {
         </BlurFade>
 
           {/* Right panel: dynamic high-contrast visual display */}
-          <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-7 w-full h-[500px]">
+          <BlurFade delay={0.25} duration={0.8} inView className="lg:col-span-8 w-full h-[440px] md:h-[580px]">
             <div id="demo-panel" role="tabpanel" className="bg-[#050505] border border-white/[0.08] rounded-[28px] p-5 md:p-10 shadow-2xl h-full flex flex-col justify-between relative overflow-hidden">
             {/* Custom Dither Dot Grid Overlay */}
             <div className="absolute inset-y-0 left-0 w-[45%] pointer-events-none opacity-[0.08] mix-blend-screen select-none"
@@ -1218,98 +1220,21 @@ export function LinearLanding() {
             }
           />
 
-          {/* 246 → 3: the transformation in one stark moment, before the detail panels. */}
-          <div className="flex flex-col items-center text-center mb-10 md:mb-20 select-none">
+          {/* 246 -> 3 is the whole section now.
+              Two 460px detail panels used to sit under this, each with invented
+              email rows and fabricated metric chips ("14h Drag", "8h Delay",
+              "TONE SIGNED"). That was the densest block of reading left on the
+              page below the fold, it restated what this number already says in
+              one glance, and it was more made-up telemetry. Deleted — the
+              contrast is stronger without a paragraph explaining it. */}
+          <div className="flex flex-col items-center text-center select-none">
             <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-neutral-600 mb-2">Yesterday</span>
-            <span className="text-4xl md:text-6xl font-medium tracking-tight text-neutral-600 line-through decoration-red-500/60 decoration-2">246 unread</span>
-            <span className="text-neutral-700 text-2xl my-4 font-light">↓</span>
+            <span className="text-5xl md:text-7xl font-medium tracking-tight text-neutral-600 line-through decoration-red-500/60 decoration-2">246 unread</span>
+            <span className="text-neutral-700 text-3xl my-6 font-light">↓</span>
             <span className="font-mono text-[11px] tracking-[0.2em] uppercase text-neutral-500 mb-2">Today</span>
-            <span className="text-5xl md:text-7xl font-medium tracking-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent">3 decisions.</span>
+            <span className="text-6xl md:text-8xl font-medium tracking-tight bg-gradient-to-b from-white via-neutral-100 to-neutral-400 bg-clip-text text-transparent">3 decisions.</span>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 w-full max-w-5xl mx-auto">
-            {/* Left panel: Chaos */}
-            {/* Shared .linear-grid-card base; the red is a semantic tint layered
-                on top, not a separate card treatment. Same for the green panel. */}
-            <div className="linear-grid-card !border-red-950/30 p-8 transition-all duration-300 relative text-left h-[460px] flex flex-col justify-between group">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(239,68,68,0.025),transparent_60%)] pointer-events-none" />
-              
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/20 border border-red-900/30 text-[9px] font-mono tracking-wider uppercase text-red-400 mb-6">
-                  <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
-                  <span>The Chaos of Yesterday</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">Buried before 9am</h3>
-                <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  246 unread, meetings piling up, replies you owe — all on you.
-                </p>
-
-                {/* Stress rows with beautiful high-fidelity styling */}
-                <div className="space-y-3 font-mono text-[11px]">
-                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                      <span className="text-neutral-300 font-semibold">Thread: Pitch deck update (Venture Partner)</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-red-950/40 border border-red-900/50 text-red-400">14h Drag</span>
-                  </div>
-                  <div className="p-4 rounded-xl border border-red-950/30 bg-black/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />
-                      <span className="text-neutral-300 font-semibold">Meeting request: slots needed today</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-red-950/40 border border-red-900/50 text-red-400">8h Delay</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Fake gauge chrome removed — "FATIGUE: 100%" / "RED ZONE
-                  ACCUMULATION" read as instrument output from a system that
-                  measures no such thing. */}
-              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] font-mono">
-                <span>Every one of these is still on you</span>
-              </div>
-            </div>
-
-            {/* Right panel: Overnight Clarity */}
-            <div className="linear-grid-card !border-emerald-950/30 p-8 transition-all duration-300 relative text-left h-[460px] flex flex-col justify-between group">
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.025),transparent_60%)] pointer-events-none" />
-              
-              <div>
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/20 border border-emerald-900/30 text-[9px] font-mono tracking-wider uppercase text-emerald-400 mb-6">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                  <span>Overnight Clarity</span>
-                </div>
-                <h3 className="text-xl font-bold text-white mb-2">Cleared while you slept</h3>
-                <p className="text-xs text-[#8a8f98] font-light font-sans max-w-sm mb-8">
-                  Replies drafted, meetings booked, one short brief of what's left.
-                </p>
-
-                {/* Clarity rows with premium detailed cards */}
-                <div className="space-y-3 font-mono text-[11px]">
-                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
-                      <span className="text-neutral-200">Venture partner pitch reply drafted & queued</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-emerald-950/40 border border-emerald-900/50 text-emerald-400 font-sans">TONE SIGNED</span>
-                  </div>
-                  <div className="p-4 rounded-xl border border-emerald-950/30 bg-black/40 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <span className="w-2.5 h-2.5 rounded-full bg-emerald-950 border border-emerald-400 flex items-center justify-center text-[7px] text-emerald-400">✓</span>
-                      <span className="text-neutral-200">Venture round alignment sync booked automatically</span>
-                    </div>
-                    <span className="text-[9px] font-bold px-2 py-0.5 rounded bg-blue-950/40 border border-blue-900/50 text-blue-400 font-sans">CAL.COM</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="text-[10px] text-neutral-500 pt-4 border-t border-white/[0.03] font-mono">
-                <span>Briefing delivered. Go build.</span>
-              </div>
-            </div>
-
-          </div>
         </BlurFade>
       </section>
 
