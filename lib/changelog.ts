@@ -30,6 +30,38 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'New',
+        title: 'Documents are properly editable now',
+        points: [
+          'The document panel has a real editor: headings, bold, italic, strikethrough, code, bullet and numbered lists, quotes and dividers, with undo and redo.',
+          'Editing used to mean typing raw markdown — hash marks and asterisks — into a plain monospace box, with no way to see the document until you stopped.',
+          'Pasting formatted text now keeps its formatting instead of arriving as literal asterisks.',
+        ],
+      },
+      {
+        tag: 'Improved',
+        title: 'The document panel reads like a document',
+        points: [
+          'Headings are bigger, the body text is larger and higher contrast, and the lines that used to sit under every heading are gone — it looked like a filled-in form.',
+          'The header now shows the file size beside the title, and Download is a single button with the format choice inside it instead of three look-alike icons.',
+          'Documents can be expanded to a wider reading width.',
+        ],
+      },
+      {
+        tag: 'Improved',
+        title: 'Arcus shows less clutter while it works',
+        points: [
+          'When Arcus reads seven emails in a row it now says so once, as a single line with a count, instead of seven identical rows you had to scroll past to reach the answer.',
+        ],
+      },
+      {
+        tag: 'New',
+        title: 'Watch Arcus actually work',
+        points: [
+          'The Meet Arcus section now shows a real recording of Arcus running — triaging, drafting and booking — in place of the example readout that used to sit there.',
+        ],
+      },
+      {
+        tag: 'New',
         title: 'See the Gmail connection before you sign up',
         points: [
           'The homepage now shows a real recording of connecting a Gmail account — the whole thing, start to finish, so you can see how little there is to it before you commit.',

@@ -929,30 +929,21 @@ export function LinearLanding() {
               </div>
             </div>
 
-            {/* Glass dashboard preview right side */}
-            <div className="flex-1 w-full linear-grid-card-inner p-6 h-[340px] flex flex-col justify-between font-mono text-left text-xs text-neutral-400 relative">
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.01),transparent_60%)] pointer-events-none" />
-
-              {/* Sample output, not a live feed. The pulsing "live" dot has been
-                  dropped and the header says EXAMPLE — the numbers below are
-                  representative of a real sweep, but they are not telemetry and
-                  must not be presented as if they were. */}
-              <div className="flex items-center justify-between border-b border-white/[0.03] pb-3 text-[10px]">
-                <span>MAILIENT · MORNING INBOX SWEEP</span>
-                <span className="text-neutral-600 tracking-wider">EXAMPLE</span>
-              </div>
-
-              <div className="space-y-2.5">
-                <p className="text-neutral-500">&gt; Scanned 214 threads from the last 24h</p>
-                <p className="text-neutral-400">&gt; Drafted 18 replies in your voice (avg confidence 89%)</p>
-                <p className="text-neutral-400">&gt; Booked 3 meetings · logged 6 contacts to Notion</p>
-                <p className="text-neutral-300">&gt; Archived 41 newsletters · flagged 2 for your eyes</p>
-                <p className="text-white font-semibold">&gt; Briefing delivered. 2 things need you.</p>
-              </div>
-
-              <div className="pt-3 border-t border-white/[0.03] flex items-center justify-between text-[9px] text-neutral-500">
-                <span>EVERY ACTION LOGGED · EVERY LINK CLICKABLE</span>
-                <span>NO BLACK BOX</span>
+            {/* Real footage of Arcus working, replacing the mocked terminal
+                panel that stood here — a hand-written "MORNING INBOX SWEEP"
+                readout listing 214 threads scanned, 18 replies at 89% average
+                confidence, 41 newsletters archived. Every one of those numbers
+                was invented. It was labelled EXAMPLE, which made it honest but
+                not persuasive: a fabricated readout is the weakest possible
+                proof for a section whose entire claim is "it does the work".
+                A recording of the thing actually running is the strongest. */}
+            <div className="flex-1 w-full linear-grid-card-inner p-2 relative overflow-hidden">
+              <div className="rounded-[10px] overflow-hidden aspect-[1280/758] relative z-10">
+                <DemoVideo
+                  src="/demos/arcus-demo.mp4"
+                  poster="/demos/arcus-demo.jpg"
+                  label="Arcus triaging an inbox, drafting replies and booking meetings on request"
+                />
               </div>
             </div>
 
