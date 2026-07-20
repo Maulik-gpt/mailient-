@@ -238,7 +238,7 @@ export async function POST(request) {
 
                 // Send welcome email only on brand-new subscriptions (not monthly renewals)
                 const isRenewal = eventType === 'subscription.updated';
-                if (activated && !isRenewal && (planType === 'starter' || planType === 'pro')) {
+                if (activated && !isRenewal && (planType === 'starter' || planType === 'pro' || planType === 'weekly')) {
                     const customerName = data.customer?.name || data.user?.name || null;
 
                     // A TRIAL is a different moment from a paid subscription, so it

@@ -7,6 +7,7 @@ import {
   Download, ChevronLeft, ChevronRight, Loader2,
   AlertTriangle, CheckCircle2, Clock, ListTodo, Target,
   HelpCircle, Shield, Play, Printer,
+  ChevronDown, Maximize2, Minimize2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -90,6 +91,10 @@ export function CanvasPanel({
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [width, setWidth]                 = useState(540);
   const [isResizing, setIsResizing]       = useState(false);
+  // Expand-to-fill. A 540px column is fine for an email draft and cramped for a
+  // real document — the reference gives the doc the whole surface on demand.
+  const [expanded, setExpanded]           = useState(false);
+  const [downloadMenu, setDownloadMenu]   = useState(false);
   const [isClient, setIsClient]           = useState(false);
   // Displayed data lags behind prop during update transitions
   const [displayedData, setDisplayedData] = useState<CanvasData | null>(canvasData);
@@ -244,7 +249,20 @@ export function CanvasPanel({
   const cfg = getConfig(displayedData.type);
   const isEmail = displayedData.type === 'email_draft' || displayedData.type === 'reply';
   const isMobile = isClient && window.innerWidth < 768;
-  const panelWidth = isMobile ? 'calc(100vw - 16px)' : `${width}px`;
+  // Expanded caps at 1100px rather than going truly full-bleed: past roughly
+  // 90 characters a line becomes hard to track, so a wider panel would make the
+  // document worse, not better.
+  const panelWidth = isMobile
+    ? 'calc(100vw - 16px)'
+    : expanded ? 'min(1100px, calc(100vw - 340px))' : `${width}px`;
+
+  // "Document · 2.5 KB" — the metadata line only claims what we can measure.
+  const docSizeLabel = (() => {
+    const raw = (displayedData as any)?.body || (displayedData as any)?.content || '';
+    const bytes = typeof raw === 'string' ? new Blob([raw]).size : 0;
+    if (!bytes) return '';
+    return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+  })();
 
   return (
     <motion.div
@@ -275,43 +293,87 @@ export function CanvasPanel({
       />
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <header className="shrink-0 flex items-center justify-between px-5 py-3.5 border-b border-black/[0.05] dark:border-white/[0.03] bg-arcus-elevated">
-        {/* Type badge + title */}
-        <div className="flex items-center gap-3 min-w-0">
-          <span className={cn('flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-[11px] font-semibold tracking-wide shrink-0', cfg.badge, cfg.badgeText)}>
-            <cfg.Icon className="w-3.5 h-3.5" />
-            {cfg.label}
+      <header className="shrink-0 flex items-center justify-between gap-3 px-4 py-3 border-b border-black/[0.05] dark:border-white/[0.03] bg-arcus-elevated">
+        {/* Identity block: icon TILE, then title over a metadata line. The old
+            header put a coloured type-badge beside the title on one row, which
+            spent the most valuable space in the panel on a label the user
+            already knows (they just asked for a doc) and left no room to say
+            anything true about the file. */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span className={cn(
+            'w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border',
+            cfg.badge, cfg.badgeText
+          )}>
+            <cfg.Icon className="w-[18px] h-[18px]" />
           </span>
-          <h2 className="text-[13px] font-semibold text-arcus-fg-secondary truncate leading-tight">
-            {displayedData.title || 'Document'}
-          </h2>
+          <div className="min-w-0">
+            <h2 className="text-[14px] font-semibold text-arcus-fg truncate leading-tight">
+              {displayedData.title || 'Document'}
+            </h2>
+            <p className="text-[11.5px] text-arcus-fg-tertiary leading-tight mt-0.5">
+              {cfg.label}
+              {docSizeLabel ? <> · {docSizeLabel}</> : null}
+            </p>
+          </div>
         </div>
 
-        {/* Toolbar */}
-        <div className="flex items-center gap-0.5 shrink-0 ml-3">
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Download is the PRIMARY action and looks like it. Format choice
+              lives in its menu rather than as three separate icon buttons —
+              copy/PDF/docx were visually equal to Close, so nothing read as the
+              thing you actually came to do. */}
+          <div className="relative">
+            <button
+              onClick={() => setDownloadMenu(v => !v)}
+              // Primary = inverse fill (black on light, white on dark). The
+              // reference uses a blue pill, but this design system is
+              // monochrome — importing an accent colour for one button would
+              // make it the only coloured thing in the product.
+              className="flex items-center gap-1.5 h-8 pl-3 pr-2.5 rounded-full bg-arcus-fg text-arcus-fg-inverse text-[12.5px] font-semibold hover:opacity-90 transition-opacity"
+            >
+              {downloadingDocx
+                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                : <Download className="w-3.5 h-3.5" />}
+              Download
+              <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', downloadMenu && 'rotate-180')} />
+            </button>
+
+            {downloadMenu && (
+              <>
+                {/* Click-away. A menu that only closes on re-click strands the
+                    user behind an invisible layer if they reach elsewhere. */}
+                <div className="fixed inset-0 z-40" onClick={() => setDownloadMenu(false)} />
+                <div className="absolute right-0 top-9 z-50 w-44 py-1 rounded-xl border border-arcus-border bg-arcus-elevated shadow-xl">
+                  <button
+                    onClick={() => { setDownloadMenu(false); handleDownloadDocx(); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px] text-arcus-fg-secondary hover:bg-arcus-surface transition-colors"
+                  >
+                    {isEmail ? 'Plain text (.txt)' : 'Word (.docx)'}
+                  </button>
+                  <button
+                    onClick={() => { setDownloadMenu(false); handleExportPdf(); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px] text-arcus-fg-secondary hover:bg-arcus-surface transition-colors"
+                  >
+                    PDF
+                  </button>
+                  <button
+                    onClick={() => { setDownloadMenu(false); handleCopy(); }}
+                    className="w-full text-left px-3 py-2 text-[12.5px] text-arcus-fg-secondary hover:bg-arcus-surface transition-colors"
+                  >
+                    {copied ? 'Copied' : 'Copy as Markdown'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
           <button
-            onClick={handleCopy}
-            title="Copy content"
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
+            onClick={() => setExpanded(v => !v)}
+            title={expanded ? 'Collapse' : 'Expand'}
+            className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
           >
-            {copied ? <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" /> : <Copy className="w-4 h-4" />}
-          </button>
-          <button
-            onClick={handleExportPdf}
-            title="Export as PDF"
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
-          >
-            <Printer className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleDownloadDocx}
-            title={isEmail ? 'Download .txt' : 'Download .docx'}
-            className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-arcus-surface text-arcus-fg-tertiary hover:text-arcus-fg-secondary transition-all"
-          >
-            {downloadingDocx
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : <Download className="w-4 h-4" />
-            }
+            {expanded ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
           </button>
           {isEmail && (
             <button
@@ -959,17 +1021,25 @@ function MarkdownView({ content }: { content: string }) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
+        // Editorial scale, not report scale. The old sizes (h1 22 / h2 17 /
+        // body 14) plus a rule under every heading made a document read like a
+        // filled-in form — the headings barely outranked the body, and the
+        // borders chopped the page into boxes. Real documents get their
+        // structure from SIZE and SPACE, so the rules are gone and the steps
+        // between levels are wide enough to see at a glance.
         h1: ({ children }) => (
-          <h1 className="text-[22px] font-bold text-arcus-fg leading-tight mb-3 mt-2 tracking-tight pb-3 border-b border-arcus-border/60">{children}</h1>
+          <h1 className="text-[30px] font-bold text-arcus-fg leading-[1.15] tracking-[-0.02em] mb-5 mt-1">{children}</h1>
         ),
         h2: ({ children }) => (
-          <h2 className="text-[17px] font-semibold text-arcus-fg leading-snug mb-3 mt-7 tracking-tight pb-2 border-b border-arcus-border/40">{children}</h2>
+          <h2 className="text-[21px] font-bold text-arcus-fg leading-snug tracking-[-0.015em] mt-9 mb-3">{children}</h2>
         ),
         h3: ({ children }) => (
-          <h3 className="text-[14px] font-semibold text-arcus-fg-secondary leading-snug mb-2.5 mt-5">{children}</h3>
+          <h3 className="text-[16px] font-semibold text-arcus-fg leading-snug mt-6 mb-2.5">{children}</h3>
         ),
+        // Body sits at full foreground contrast. It was fg-secondary, which is
+        // correct for chat chrome and wrong for the thing the user came to read.
         p: ({ children }) => (
-          <p className="text-[14px] text-arcus-fg-secondary leading-[1.75] mb-4">{children}</p>
+          <p className="text-[15.5px] text-arcus-fg leading-[1.75] mb-4">{children}</p>
         ),
         ul: ({ children }) => (
           <ul className="mb-4 space-y-1.5 list-none pl-0">{children}</ul>
@@ -979,9 +1049,9 @@ function MarkdownView({ content }: { content: string }) {
         ),
         li: ({ children, ...props }: any) => (
           props.ordered
-            ? <li className="text-[13.5px] text-arcus-fg-secondary leading-relaxed pl-1">{children}</li>
-            : <li className="flex items-start gap-2.5 text-[13.5px] text-arcus-fg-secondary leading-relaxed list-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-arcus-fg-muted mt-[7px] shrink-0" />
+            ? <li className="text-[15px] text-arcus-fg leading-[1.7] pl-1">{children}</li>
+            : <li className="flex items-start gap-2.5 text-[15px] text-arcus-fg leading-[1.7] list-none">
+                <span className="w-1.5 h-1.5 rounded-full bg-arcus-fg-muted mt-[9px] shrink-0" />
                 <span className="flex-1">{children}</span>
               </li>
         ),

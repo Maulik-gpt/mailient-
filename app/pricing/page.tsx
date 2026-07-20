@@ -14,6 +14,7 @@ import { BlurFade } from "@/components/ui/blur-fade";
 
 
 const POLAR_CHECKOUT_URLS = {
+  weekly: "https://buy.polar.sh/polar_cl_nnRbdFq1yLPLgMs9GxDUTx1O6t30yz400ZSR54dcWia",
   monthly: "https://buy.polar.sh/polar_cl_iFCJ2Mq7UbVBQTIiMGwI3STQZTvGfT1EBLyiM1HM5ca",
   annual: "https://buy.polar.sh/polar_cl_I2DWGQPxxX0lvNGzbAeSRbkdCP6TgU9Ybsy7O3pkReC",
   lifetime: "https://buy.polar.sh/polar_cl_T848DqQDK82361tmecJpNmtFgfPubJSb4Eyza2l8yrV"
@@ -23,16 +24,20 @@ const POLAR_CHECKOUT_URLS = {
 // badge + support level). The table must never invent capability differences;
 // that contradicts the "full product from day one" story told everywhere else.
 const COMPARISON_FEATURES = [
-  { category: "Core Capabilities", name: "Emails read, triaged & prioritized", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
-  { category: "Core Capabilities", name: "Replies drafted in your voice", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
-  { category: "Core Capabilities", name: "AI chat & overnight agents", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
-  { category: "Integration", name: "Google Calendar Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
-  { category: "Integration", name: "Notion & Cal.com Sync", monthly: "Included", annual: "Included", lifetime: "Included" },
-  { category: "Security & Badges", name: "Founding Badge", monthly: "✓ Gold Badge", annual: "✓ Gold Badge", lifetime: "✓ Diamond Badge" },
-  { category: "Support", name: "Customer Service", monthly: "Standard", annual: "Priority", lifetime: "24/7 Premium" }
+  { category: "Core Capabilities", name: "Emails read, triaged & prioritized", weekly: "Unlimited", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "Replies drafted in your voice", weekly: "Unlimited", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Core Capabilities", name: "AI chat & overnight agents", weekly: "Unlimited", monthly: "Unlimited", annual: "Unlimited", lifetime: "Unlimited" },
+  { category: "Integration", name: "Google Calendar Sync", weekly: "Included", monthly: "Included", annual: "Included", lifetime: "Included" },
+  { category: "Integration", name: "Notion & Cal.com Sync", weekly: "Included", monthly: "Included", annual: "Included", lifetime: "Included" },
+  { category: "Security & Badges", name: "Founding Badge", weekly: "✓ Standard", monthly: "✓ Gold Badge", annual: "✓ Gold Badge", lifetime: "✓ Diamond Badge" },
+  { category: "Support", name: "Customer Service", weekly: "Standard", monthly: "Standard", annual: "Priority", lifetime: "24/7 Premium" }
 ];
 
 const PRICING_FAQS = [
+  {
+    q: "How does the Weekly plan work?",
+    a: "The Weekly plan gives you 7 days of full access for $8.99. Start anytime, and your access runs for the next 7 days. It's perfect for trying Mailient without a longer commitment."
+  },
   {
     q: "Can I upgrade or downgrade anytime?",
     a: "Yes, you can manage your subscription directly inside your billing portal. Upgrades are applied instantly and prorated, while downgrades or cancellations take effect at the end of your current billing period."
@@ -74,9 +79,11 @@ export default function PricingPage() {
     }
   };
 
-  const handleSelectPlan = async (planId: "monthly" | "annual" | "lifetime") => {
+  const handleSelectPlan = async (planId: "weekly" | "monthly" | "annual" | "lifetime") => {
     let checkoutUrl = "";
-    if (planId === "monthly") {
+    if (planId === "weekly") {
+      checkoutUrl = POLAR_CHECKOUT_URLS.weekly;
+    } else if (planId === "monthly") {
       checkoutUrl = POLAR_CHECKOUT_URLS.monthly;
     } else if (planId === "annual") {
       checkoutUrl = POLAR_CHECKOUT_URLS.annual;
@@ -145,6 +152,7 @@ export default function PricingPage() {
             <thead>
               <tr className="border-b border-white/[0.06] text-neutral-450 uppercase font-bold tracking-widest text-[9px]">
                 <th className="py-4 px-6">Feature</th>
+                <th className="py-4 px-6">Weekly ($8.99/wk)</th>
                 <th className="py-4 px-6">Monthly ($29/mo)</th>
                 <th className="py-4 px-6">Annual ($16.58/mo)</th>
                 <th className="py-4 px-6">Lifetime Founder ($499)</th>
@@ -157,6 +165,7 @@ export default function PricingPage() {
                   className="hover:bg-white/[0.01] transition-colors"
                 >
                   <td className="py-4 px-6 font-medium text-white">{feat.name}</td>
+                  <td className="py-4 px-6 text-neutral-400">{feat.weekly}</td>
                   <td className="py-4 px-6 text-neutral-400">{feat.monthly}</td>
                   <td className="py-4 px-6 text-neutral-200 font-semibold">{feat.annual}</td>
                   <td className="py-4 px-6 text-neutral-400">{feat.lifetime}</td>

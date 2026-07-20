@@ -13,7 +13,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 interface PricingProps {
   isLoading?: boolean;
   currentPlan?: string | null;
-  handleSelectPlan?: (planId: "monthly" | "annual" | "lifetime") => void;
+  handleSelectPlan?: (planId: "weekly" | "monthly" | "annual" | "lifetime") => void;
 }
 
 const PricingSwitch = ({
@@ -112,6 +112,22 @@ export default function PricingSection3({
 
   const plans = [
     {
+      id: "weekly" as const,
+      name: "Weekly Access",
+      description: "Try Mailient for a week. Full access to every feature, no commitment beyond 7 days.",
+      price: 8.99,
+      yearlyPrice: 8.99,
+      buttonText: "Start Weekly",
+      popular: false,
+      features: [
+        "Full Sift email ingestion & triage",
+        "Unlimited custom voice-cloned drafts",
+        "Active Sync integrations (Notion, Cal.com)",
+        "Standard Arcus AI query access"
+      ],
+      tag: "7-Day Pass"
+    },
+    {
       id: "subscription" as const,
       name: "Autonomous Subscription",
       description: "Scale your email operations autonomously. Triages, drafts in your voice, and logs CRM entries in real time.",
@@ -197,12 +213,13 @@ export default function PricingSection3({
         animationNum={2}
         timelineRef={pricingRef}
         customVariants={revealVariants}
-        className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto items-stretch"
+        className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch"
       >
         {plans.map((plan, index) => {
           const isLifetime = plan.id === "lifetime";
-          const displayPrice = isLifetime ? plan.price : (isYearly ? plan.yearlyPrice : plan.price);
-          const isCurrentPlanActive = isLifetime ? (currentPlan === "lifetime") : (isYearly ? currentPlan === "starter" : currentPlan === "pro");
+          const isWeekly = plan.id === "weekly";
+          const displayPrice = (isLifetime || isWeekly) ? plan.price : (isYearly ? plan.yearlyPrice : plan.price);
+          const isCurrentPlanActive = isLifetime ? (currentPlan === "lifetime") : isWeekly ? (currentPlan === "weekly") : (isYearly ? currentPlan === "starter" : currentPlan === "pro");
 
           return (
             <TimelineContent
@@ -252,7 +269,7 @@ export default function PricingSection3({
                       />
                     </span>
                     <span className="text-neutral-400 font-light text-xs ml-2">
-                      {isLifetime ? "one-time payment" : (isYearly ? "/month, billed yearly" : "/month")}
+                      {isLifetime ? "one-time payment" : isWeekly ? "/week" : (isYearly ? "/month, billed yearly" : "/month")}
                     </span>
                   </div>
 
@@ -296,6 +313,8 @@ export default function PricingSection3({
                     onClick={() => {
                       if (isLifetime) {
                         handleSelectPlan("lifetime");
+                      } else if (isWeekly) {
+                        handleSelectPlan("weekly");
                       } else {
                         handleSelectPlan(isYearly ? "annual" : "monthly");
                       }
