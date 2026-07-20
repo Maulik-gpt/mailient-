@@ -29,6 +29,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 20, 2026',
     entries: [
       {
+        tag: 'Fixed',
+        title: 'Arcus now edits documents instead of rewriting them from a guess',
+        points: [
+          'Asking Arcus to change something in an open document — shorten it, add a section, fix a line — used to produce a much shorter, generic replacement, because Arcus was working from a vague memory of the topic rather than the actual text on your screen.',
+          'Arcus now sees the exact live document before editing it, so changes land on the real content and everything you did not ask to change stays intact.',
+          'New documents are also held to a higher bar: real sections and real depth for anything you call a report, doc, or plan — not a two-line stub.',
+        ],
+      },
+      {
         tag: 'New',
         title: 'A weekly plan, for trying Mailient properly',
         points: [

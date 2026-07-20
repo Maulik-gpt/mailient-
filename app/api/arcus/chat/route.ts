@@ -21,6 +21,7 @@ import { shouldDispatchParallelVAs } from '../../../../lib/arcus/inbox-pipeline'
 import { expandSlashCommand } from '../../../../lib/arcus/skills';
 import { searchMemories, extractAndSaveInsights } from '../../../../lib/arcus/memory';
 import { verifyGmailScopes } from '../../../../lib/arcus/gmail-scope';
+import { getCanvasState } from '../../../../lib/arcus/canvas-state';
 // @ts-ignore
 import { subscriptionService, FEATURE_TYPES } from '../../../../lib/subscription-service.js';
 import { assertPaidAccess } from '../../../../lib/subscription-protection.js';
@@ -387,7 +388,7 @@ export async function POST(request: NextRequest) {
       logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* telemetry table optional */ }
   }
 
-  const systemPrompt = isPlanMode
+  let systemPrompt = isPlanMode
     ? buildPlanSystemPrompt(userName, connectedIntegrations)
     : buildSystemPrompt({
         userName,
@@ -403,6 +404,46 @@ export async function POST(request: NextRequest) {
         skipConfirmations,
         ruleFocus,
       });
+
+  // ── Live canvas grounding ────────────────────────────────────────────────────
+  // THE root cause of "Arcus can't edit the document" — found by tracing what
+  // actually reaches the model on a follow-up turn. The `history` array sent
+  // with every request (both here and client-side in ChatInterface.tsx) carries
+  // ONLY the short chat-bubble text for each assistant turn — never the
+  // markdown that was written into the canvas. So the moment a document leaves
+  // the turn that created it, the model's knowledge of "what's on screen" is a
+  // one-line summary like "Canvas opened: Q3 Report." Ask it to shorten the
+  // intro or add a section, and it has no ground truth to edit — it fabricates
+  // a replacement from a vague memory of the topic, which is exactly why edits
+  // come back short and generic instead of a precise change to the real text.
+  //
+  // getCanvasState is DB-persisted per conversationId (arcus_canvas_state),
+  // independent of what the client includes in `history` — so it is reachable
+  // here even though the lossy history is not fixable without touching the
+  // client's message-storage shape everywhere it's read. Injecting the actual
+  // current markdown into the system prompt gives every edit request something
+  // real to act on.
+  if (conversationId && !isPlanMode) {
+    try {
+      const canvas = await getCanvasState(conversationId);
+      if (canvas?.markdown?.trim()) {
+        const MAX = 6000; // ~1500 tokens — generous for a real doc, bounded so one giant report can't eat the whole context budget
+        const full = canvas.markdown.trim();
+        const truncated = full.length > MAX;
+        const body = truncated ? `${full.slice(0, MAX)}\n\n…[truncated — ${full.length - MAX} more characters not shown]` : full;
+        systemPrompt += `\n\n## Current Canvas (what the user is actually looking at right now)\n` +
+          `Title: ${canvas.title || '(untitled)'} · Type: ${canvas.type || 'notes'}\n` +
+          `This is the EXACT live content of the open canvas — not your memory of writing it.\n` +
+          `--- BEGIN CANVAS ---\n${body}\n--- END CANVAS ---\n` +
+          `If the user asks to edit, shorten, expand, or restructure it, call update_canvas with the FULL revised markdown (mode="replace") that changes ONLY what was asked and leaves the rest of this text intact. Do NOT regenerate the document from scratch — that silently drops sections the user never asked to lose.` +
+          (truncated ? `\nThe content above was truncated for length. If the requested edit touches the truncated tail, use update_canvas mode="append" for additions instead of attempting a full replace you cannot see in full.` : '');
+      }
+    } catch (err: any) {
+      // Grounding is a quality improvement, not a requirement — never block
+      // the turn because canvas-state lookup had a bad moment.
+      logEvent({ channel: "failures", event: "❌ API Error", description: String(err?.message || err) });
+    }
+  }
 
   // Auto-extract "remember X" / "save this" / "from now on..." from the
   // user's message and persist it as a memory in-band. Fire-and-forget so

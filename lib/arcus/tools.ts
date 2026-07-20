@@ -618,6 +618,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
     description:
       'Render a long document (report, prep doc, schedule, analysis, full email draft for review) in the side Canvas panel. ' +
       'Use whenever the user-facing output would exceed 3 paragraphs — long content NEVER goes in chat. ' +
+      'WRITE A REAL DOCUMENT, not a stub: real section headers (multiple ## for anything called a report/doc/plan), the actual depth the request calls for, a close — not two sentences under one heading. Match length to the ask, never pad, never truncate for effort. ' +
       'Output: confirmation text + canvasData with title/type/markdown. ' +
       'Errors (success:false): validation_error (empty markdown). ' +
       'Inline charts use fenced code blocks: ```bar-chart / ```line-chart / ```pie-chart — see input.markdown description for exact syntax.',
@@ -1774,6 +1775,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       '  • "replace" (default): pass the FULL updated markdown — overwrites whatever is on screen.\n' +
       '  • "append": pass ONLY the new content to add; the server merges it onto the last-known canvas for this conversation (blank line separator) so you don\'t have to resend the whole document.\n' +
       'Append falls back to replace when there is no prior canvas state for this conversation (first call, background-agent run, or after a server restart) — the output flags this so you can mention it.\n' +
+      'FOR "REPLACE": start from the "Current Canvas" block in your system context (the exact live text), not from memory of writing it — reproduce it faithfully and change ONLY what the user asked for. Silently regenerating a shorter version from a vague recollection of the topic is the single most common way this tool is misused; the user notices immediately because sections they never asked to lose are gone. ' +
       'Output: "Canvas updated: <title>" with an optional " (appended)" or fallback note + canvasData.isUpdate = true. ' +
       'Errors (success:false): validation_error (empty markdown).',
     input_schema: {
