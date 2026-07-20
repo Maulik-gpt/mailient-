@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { CanvasEditor } from './CanvasEditor';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -435,12 +436,12 @@ export function CanvasPanel({
               <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <MetaInsights type={displayedData.type} content={getTextContent()} />
                 {editMode ? (
-                  <textarea
+                  // Real WYSIWYG. This was a monospace textarea of raw
+                  // markdown — the user hand-edited hash marks and asterisks
+                  // and could not see the document until they stopped.
+                  <CanvasEditor
                     value={editedBody}
-                    onChange={e => setEditedBody(e.target.value)}
-                    className="w-full min-h-[480px] bg-transparent text-[14px] text-arcus-fg-secondary leading-relaxed resize-none focus:outline-none font-mono"
-                    autoFocus
-                    placeholder="Document body…"
+                    onChange={setEditedBody}
                   />
                 ) : (
                   <MarkdownView content={editedBody || displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '')} />

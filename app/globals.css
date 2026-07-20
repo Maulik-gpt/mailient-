@@ -4427,3 +4427,51 @@ html {
 }
 
 
+
+/* ── Canvas editor (TipTap) ──────────────────────────────────────────────────
+   Deliberately mirrors the read-mode ReactMarkdown scale in CanvasPanel, so
+   toggling Edit doesn't reflow the document under the user's cursor — the text
+   must sit on exactly the same baseline in both modes. Kept here rather than
+   inline because TipTap renders its own DOM and can't take React className
+   props per node. */
+.canvas-prose { color: var(--arcus-fg); font-size: 15.5px; line-height: 1.75; }
+.canvas-prose > * + * { margin-top: 1rem; }
+.canvas-prose h1 { font-size: 30px; font-weight: 700; line-height: 1.15; letter-spacing: -0.02em; margin: 0.25rem 0 1.25rem; }
+.canvas-prose h2 { font-size: 21px; font-weight: 700; line-height: 1.35; letter-spacing: -0.015em; margin: 2.25rem 0 0.75rem; }
+.canvas-prose h3 { font-size: 16px; font-weight: 600; line-height: 1.4; margin: 1.5rem 0 0.625rem; }
+.canvas-prose p { font-size: 15.5px; line-height: 1.75; }
+.canvas-prose ul,
+.canvas-prose ol { padding-left: 1.35rem; }
+.canvas-prose ul { list-style: disc; }
+.canvas-prose ol { list-style: decimal; }
+.canvas-prose li { font-size: 15px; line-height: 1.7; margin: 0.35rem 0; }
+.canvas-prose li::marker { color: var(--arcus-fg-muted); }
+.canvas-prose blockquote {
+  border-left: 2px solid var(--arcus-border);
+  padding-left: 1rem;
+  color: var(--arcus-fg-secondary);
+}
+.canvas-prose code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: var(--arcus-surface);
+}
+.canvas-prose pre {
+  background: var(--arcus-surface);
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  overflow-x: auto;
+}
+.canvas-prose pre code { background: none; padding: 0; }
+.canvas-prose hr { border: none; border-top: 1px solid var(--arcus-border); margin: 1.75rem 0; }
+.canvas-prose strong { font-weight: 700; }
+/* Empty-doc affordance: without this an empty editor is an invisible click
+   target and reads as broken. */
+.canvas-prose p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--arcus-fg-muted);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
