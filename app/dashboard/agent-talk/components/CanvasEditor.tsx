@@ -89,7 +89,10 @@ export function CanvasEditor({ value, onChange }: CanvasEditorProps) {
 
 function Toolbar({ editor }: { editor: Editor }) {
   return (
-    <div className="sticky top-0 z-10 -mx-1 mb-4 flex flex-wrap items-center gap-0.5 px-1 py-2 bg-arcus-bg/95 backdrop-blur border-b border-arcus-border">
+    // Breaks out of the content's px-7/py-6 so it sits flush under the header,
+    // edge to edge, and sticks there while the document scrolls. Wraps to a
+    // second row on a narrow panel rather than clipping buttons off the end.
+    <div className="sticky -top-6 z-10 -mx-7 -mt-6 mb-7 flex flex-wrap items-center gap-0.5 px-5 py-2.5 bg-arcus-bg/95 backdrop-blur border-b border-arcus-border">
       <Btn onClick={() => editor.chain().focus().undo().run()} disabled={!editor.can().undo()} label="Undo"><Undo2 className="w-4 h-4" /></Btn>
       <Btn onClick={() => editor.chain().focus().redo().run()} disabled={!editor.can().redo()} label="Redo"><Redo2 className="w-4 h-4" /></Btn>
 

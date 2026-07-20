@@ -77,6 +77,20 @@ const TYPE_CONFIG: Record<string, {
   none:            { label: 'Document',        Icon: Sparkles,  accent: '#ffffff', badge: 'bg-arcus-elevated border-arcus-border', badgeText: 'text-arcus-fg-secondary' },
 };
 
+/**
+ * Which canvas types are DOCUMENTS the user authors, versus RESULTS the agent
+ * reports. Only documents get the always-on editor.
+ *
+ * Everything non-email already rendered as markdown, so this changes no
+ * output — but an "execution" or "action_outputs" canvas is a readout of what
+ * happened, and putting a cursor and a formatting bar on it would invite the
+ * user to rewrite history that nothing will persist.
+ */
+const EDITABLE_DOC_TYPES = new Set([
+  'report', 'notes', 'analysis', 'analytics', 'action_plan',
+  'research', 'summary', 'workflow', 'none',
+]);
+
 function getConfig(type: string) {
   return TYPE_CONFIG[type] ?? TYPE_CONFIG.none;
 }
@@ -492,11 +506,17 @@ export function CanvasPanel({
               </motion.div>
             ) : (
               <motion.div key="doc" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                <MetaInsights type={displayedData.type} content={getTextContent()} />
-                {editMode ? (
-                  // Real WYSIWYG. This was a monospace textarea of raw
-                  // markdown — the user hand-edited hash marks and asterisks
-                  // and could not see the document until they stopped.
+                {/* ALWAYS EDITABLE — no view/edit toggle. The document is the
+                    document; you click into it and type, and the formatting bar
+                    is always there. The old model made the user find an "Edit"
+                    button in a footer before they could change a word, and
+                    swapped the renderer underneath them when they did — which
+                    is also what made every edit-state bug possible, because
+                    there were two representations of the same text.
+                    Read and edit typography are identical, so there is nothing
+                    to reflow. Result-type canvases stay read-only — see
+                    EDITABLE_DOC_TYPES. */}
+                {EDITABLE_DOC_TYPES.has(displayedData.type) ? (
                   <CanvasEditor
                     value={editedBody}
                     onChange={setEditedBody}
@@ -544,21 +564,13 @@ export function CanvasPanel({
               </FooterButton>
             </>
           ) : (
-            <>
-              {editMode ? (
-                <FooterButton onClick={() => setEditMode(false)} variant="ghost">Done editing</FooterButton>
-              ) : (
-                <FooterButton onClick={() => setEditMode(true)} variant="ghost" icon={<Edit3 className="w-3.5 h-3.5" />}>Edit</FooterButton>
-              )}
-              <FooterButton
-                onClick={handleDownloadDocx}
-                variant="ghost"
-                loading={downloadingDocx}
-                icon={downloadingDocx ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
-              >
-                Download
-              </FooterButton>
-            </>
+            // Documents are always editable now, so "Edit"/"Done editing" would
+            // toggle nothing, and Download already lives in the header as the
+            // primary action. Duplicating it here just gave the same command two
+            // homes with different weights. The doc footer is now status only.
+            <span className="text-[11px] text-arcus-fg-muted">
+              Saved to this conversation
+            </span>
           )}
         </div>
       </footer>
