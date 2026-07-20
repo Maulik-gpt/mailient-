@@ -3835,8 +3835,19 @@ export default function ChatInterface({
               }));
               // Error = stream is closing — mark as finished so the "unexpected close" path is skipped
               streamFinishedNormally = true;
-              setIsCanvasOpen(false);
-              setCanvasData(null);
+              // DO NOT destroy a document the user is reading. This used to run
+              // setIsCanvasOpen(false) + setCanvasData(null) on every error, so
+              // if Arcus wrote a doc and then anything later in the run failed —
+              // a rate limit, a tool error, a timeout — the panel slammed shut
+              // and the document disappeared mid-read, with the error message
+              // appearing somewhere the user was no longer looking. The failure
+              // is already reported in the message above; a finished artifact
+              // outlives the run that produced it. Only clear when there is
+              // nothing to lose.
+              setCanvasData(prev => {
+                if (!prev) setIsCanvasOpen(false);
+                return prev;
+              });
               break;
 
             case 'mode_switch': {
@@ -4324,9 +4335,14 @@ export default function ChatInterface({
     } catch (err: any) {
       if (err.name === 'AbortError') { setMessages(prev => prev.filter(m => m.id !== assistantMsgId)); return; }
       console.error('[AgentLoop] Error:', err);
-      // Close stale canvas on hard failure
-      setIsCanvasOpen(false);
-      setCanvasData(null);
+      // Same rule as the 'error' event: a document that finished writing is not
+      // "stale" because a later step failed. Destroying it here threw away
+      // completed work the user could see on screen — including anything they
+      // had just edited in the panel. Keep it; only drop an empty canvas.
+      setCanvasData(prev => {
+        if (!prev) setIsCanvasOpen(false);
+        return prev;
+      });
 
       const isLimitError = err.message?.toLowerCase().includes('limit') ||
         err.message?.toLowerCase().includes('credits') ||
