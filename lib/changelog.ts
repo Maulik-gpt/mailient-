@@ -26,6 +26,27 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 20, 2026',
+    entries: [
+      {
+        tag: 'New',
+        title: 'A weekly pass, for trying Mailient properly',
+        points: [
+          '$8.99 gets you seven days of the complete product — every feature, nothing held back — with no subscription to remember to cancel.',
+          'It sits alongside Monthly, Annual and Lifetime on the pricing page and in setup.',
+        ],
+      },
+      {
+        tag: 'Fixed',
+        title: 'Plans now end exactly when they should',
+        points: [
+          'Annual plans could be recorded as ending after one month instead of one year, depending on which confirmation our payment provider sent first.',
+          'Your plan name is now shown correctly on your profile — annual subscribers were being labelled "Free Plan".',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 19, 2026',
     entries: [
       {

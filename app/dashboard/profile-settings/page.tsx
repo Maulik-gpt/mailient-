@@ -942,7 +942,11 @@ export default function ProfileSettingsPage() {
                             {/* Active Plan */}
                             <div className="flex items-center gap-2">
                               <Shield className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
-                              <span className="capitalize">{planType === 'lifetime' ? 'Diamond Lifetime Founder' : (planType === 'pro' ? 'Golden Pro Plan' : (planType === 'starter' ? 'Starter Plan' : 'Free Plan'))}</span>
+                              {/* Every paid tier needs its own label. This chain used to end
+                                  at 'starter', so BOTH weekly and annual subscribers were
+                                  shown "Free Plan" on the page where they check what they
+                                  are paying for. */}
+                              <span className="capitalize">{planType === 'lifetime' ? 'Diamond Lifetime Founder' : (planType === 'annual' ? 'Golden Annual Plan' : (planType === 'pro' ? 'Golden Pro Plan' : (planType === 'weekly' ? 'Weekly Pass' : (planType === 'starter' ? 'Starter Plan' : 'Free Plan'))))}</span>
                             </div>
                           </div>
                         ) : (

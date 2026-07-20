@@ -60,6 +60,9 @@ export async function GET(request) {
                 } else if (normalizedPlanType === 'lifetime' || normalizedPlanType === 'founder') {
                     planName = 'Lifetime Founder';
                     planType = 'lifetime';
+                } else if (normalizedPlanType === 'weekly') {
+                    planName = 'Weekly';
+                    planType = 'weekly';
                 } else if (normalizedPlanType === 'free' || normalizedPlanType === 'none') {
                     planName = 'No Plan';
                     planType = 'free';
@@ -87,7 +90,7 @@ export async function GET(request) {
                 hasActiveSubscription: isActive,
                 planType,
                 planName,
-                planPrice: planType === 'lifetime' ? 499 : planType === 'annual' ? 16.58 : planType === 'pro' ? 29 : 0,
+                planPrice: planType === 'lifetime' ? 499 : planType === 'annual' ? 16.58 : planType === 'pro' ? 29 : planType === 'weekly' ? 8.99 : 0,
                 subscriptionStartedAt: subscription?.subscription_started_at || null,
                 subscriptionEndsAt: subscription?.subscription_ends_at || null,
                 daysRemaining,
