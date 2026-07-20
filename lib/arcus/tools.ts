@@ -20,6 +20,7 @@ import { decrypt, encrypt } from '../crypto.js';
 import { annotateEmailWithSignals, annotateSearchResultsWithSignals } from './inbox-pipeline';
 import { getConnectedIntegrations } from './system-prompt';
 import { callLLM, getText } from './engine';
+import { normalizeDocumentMarkdown } from './markdown-normalize';
 import type { ToolSchema } from './engine';
 import { buildExecutionPlan } from './orchestrator';
 import {
@@ -5275,6 +5276,16 @@ async function openCanvas(input: any, userId: string, context: ToolContext = {})
   if (!input.markdown?.trim()) {
     return failureResult('Error: open_canvas requires non-empty markdown content. Write the full document content and pass it in the markdown parameter, then call open_canvas again.', 'validation_error');
   }
+
+  // Repair the model's formatting before ANYTHING else sees it. This
+  // normalisation existed since PART 42 but ran only on plan-mode's final
+  // text — canvas documents bypassed it entirely, which is why a Steps
+  // section kept rendering as a wall of raw JSON in the panel long after the
+  // bug was "fixed" for plans. The renderer only rich-renders a ```arcus-steps
+  // fence; an untagged or unfenced steps blob falls through as literal text.
+  // Applied here (not at the emit site) so persistence, the panel, exports and
+  // background-agent runs all get the same repaired document.
+  input = { ...input, markdown: normalizeDocumentMarkdown(input.markdown) };
   const isAgentSpec = input.type === 'report' && (
     input.title?.toLowerCase().includes('agent') ||
     input.markdown?.toLowerCase().includes('agent objective') ||
@@ -5310,6 +5321,9 @@ async function updateCanvas(input: any, userId: string, context: ToolContext = {
   if (!input.markdown?.trim()) {
     return failureResult('Error: update_canvas requires non-empty markdown content.', 'validation_error');
   }
+  // Same repair as open_canvas — an edit that reintroduces raw-JSON steps is
+  // just as broken as an initial write that does.
+  input = { ...input, markdown: normalizeDocumentMarkdown(input.markdown) };
   const mode = input.mode === 'append' ? 'append' : 'replace';
 
   let finalMarkdown = input.markdown;
