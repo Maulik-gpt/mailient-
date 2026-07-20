@@ -125,7 +125,7 @@ function ReasoningRow({ text, delay = 0 }: { text: string; delay?: number }) {
 // chip with a result expands the result inline below it. Active step pulses;
 // errors flip to rose. This replaces the old full-width row for a tighter,
 // scannable execution trace.
-function ToolRow({ step }: { step: AgentStep }) {
+function ToolRow({ step, repeatCount = 1 }: { step: AgentStep; repeatCount?: number }) {
   const [open, setOpen] = useState(false);
   const isActive = step.status === 'active';
   const isError = step.status === 'error';
@@ -139,11 +139,15 @@ function ToolRow({ step }: { step: AgentStep }) {
   // only a step with no context at all falls back to the bare verb. This is
   // where the specificity the loop already computes finally reaches the pixels.
   const ctx = (step.context || '').trim();
-  const line = ctx.length >= 28
-    ? ctx
-    : ctx
-      ? `${meta.verb} — “${ctx.length > 60 ? ctx.slice(0, 57) + '…' : ctx}”`
-      : meta.verb;
+  // A collapsed run shows the VERB and the count, never one call's context —
+  // "Read email — 'Re: proposal' ×7" would be a lie about the other six.
+  const line = repeatCount > 1
+    ? `${meta.verb} ×${repeatCount}`
+    : ctx.length >= 28
+      ? ctx
+      : ctx
+        ? `${meta.verb} — “${ctx.length > 60 ? ctx.slice(0, 57) + '…' : ctx}”`
+        : meta.verb;
   const domain = domainOf(step.params);
 
   return (
@@ -280,9 +284,16 @@ function IterationGroup({ block }: { block: IterationBlock }) {
               {block.narrative && (
                 <ReasoningRow text={block.narrative} />
               )}
+              {/* Consecutive calls to the SAME tool collapse into one counted
+                  row: "Search Gmail ×7" instead of seven identical lines. A
+                  run that read 26 emails rendered 26 rows the user had to
+                  scroll past, which buried the one thing they wanted — what it
+                  concluded. The count is the only part that carries meaning at
+                  this altitude; the individual calls are still there when a row
+                  is expanded. */}
               <div className="flex flex-col items-start gap-0.5 mt-0.5">
-                {block.steps.map((step, i) => (
-                  <ToolRow key={step.id || i} step={step} />
+                {collapseRuns(block.steps).map((run, i) => (
+                  <ToolRow key={run.head.id || i} step={run.head} repeatCount={run.count} />
                 ))}
               </div>
             </div>
@@ -291,6 +302,34 @@ function IterationGroup({ block }: { block: IterationBlock }) {
       </AnimatePresence>
     </div>
   );
+}
+
+/**
+ * Fold consecutive steps that call the same tool into a single run.
+ *
+ * Only ADJACENT calls collapse — search → read → search stays three rows,
+ * because that genuinely is three different moves. Collapsing across the whole
+ * block would hide the shape of the work and make an agent that alternated
+ * between two tools look like it did two things.
+ */
+function collapseRuns(steps: AgentStep[]): Array<{ head: AgentStep; count: number }> {
+  const runs: Array<{ head: AgentStep; count: number }> = [];
+  for (const step of steps) {
+    const last = runs[runs.length - 1];
+    // Never merge into a run whose head is still running or failed — a spinner
+    // or an error must stay its own row so its state is unambiguous.
+    if (
+      last &&
+      last.head.tool === step.tool &&
+      last.head.status === 'completed' &&
+      step.status === 'completed'
+    ) {
+      last.count += 1;
+    } else {
+      runs.push({ head: step, count: 1 });
+    }
+  }
+  return runs;
 }
 
 // ─── Group steps by iteration, attach narratives ──────────────────────────────
