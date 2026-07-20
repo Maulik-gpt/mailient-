@@ -30,9 +30,9 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'New',
-        title: 'A weekly pass, for trying Mailient properly',
+        title: 'A weekly plan, for trying Mailient properly',
         points: [
-          '$8.99 gets you seven days of the complete product — every feature, nothing held back — with no subscription to remember to cancel.',
+          '$8.99 a week gets you the complete product — every feature, nothing held back. It renews weekly and you can cancel anytime from your billing portal.',
           'It sits alongside Monthly, Annual and Lifetime on the pricing page and in setup.',
         ],
       },

@@ -946,7 +946,7 @@ export default function ProfileSettingsPage() {
                                   at 'starter', so BOTH weekly and annual subscribers were
                                   shown "Free Plan" on the page where they check what they
                                   are paying for. */}
-                              <span className="capitalize">{planType === 'lifetime' ? 'Diamond Lifetime Founder' : (planType === 'annual' ? 'Golden Annual Plan' : (planType === 'pro' ? 'Golden Pro Plan' : (planType === 'weekly' ? 'Weekly Pass' : (planType === 'starter' ? 'Starter Plan' : 'Free Plan'))))}</span>
+                              <span className="capitalize">{planType === 'lifetime' ? 'Diamond Lifetime Founder' : (planType === 'annual' ? 'Golden Annual Plan' : (planType === 'pro' ? 'Golden Pro Plan' : (planType === 'weekly' ? 'Weekly Plan' : (planType === 'starter' ? 'Starter Plan' : 'Free Plan'))))}</span>
                             </div>
                           </div>
                         ) : (

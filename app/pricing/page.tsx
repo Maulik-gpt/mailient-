@@ -36,7 +36,7 @@ const COMPARISON_FEATURES = [
 const PRICING_FAQS = [
   {
     q: "How does the Weekly plan work?",
-    a: "The Weekly plan gives you 7 days of full access for $8.99. Start anytime, and your access runs for the next 7 days. It's perfect for trying Mailient without a longer commitment."
+    a: "It's $8.99 per week for the complete product — nothing is held back compared to the larger plans. It renews every 7 days until you cancel, and you can cancel from your billing portal at any time; access runs to the end of the week you've already paid for. It's the lowest-commitment way to find out whether Mailient earns its place in your week."
   },
   {
     q: "Can I upgrade or downgrade anytime?",

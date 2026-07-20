@@ -114,7 +114,9 @@ export default function PricingSection3({
     {
       id: "weekly" as const,
       name: "Weekly Access",
-      description: "Try Mailient for a week. Full access to every feature, no commitment beyond 7 days.",
+      // This is a RECURRING weekly subscription, not a one-time pass. Copy must
+      // never imply the charge stops on its own — it renews until cancelled.
+      description: "The lowest-commitment way in. Full access to every feature, billed weekly and cancellable anytime.",
       price: 8.99,
       yearlyPrice: 8.99,
       buttonText: "Start Weekly",
@@ -125,7 +127,7 @@ export default function PricingSection3({
         "Active Sync integrations (Notion, Cal.com)",
         "Standard Arcus AI query access"
       ],
-      tag: "7-Day Pass"
+      tag: "Cancel anytime"
     },
     {
       id: "subscription" as const,

@@ -1529,7 +1529,7 @@ const PLAN_FEATURES = [
 ];
 
 const PLAN_PRICING: Record<PlanChoice, { label: string; price: string; unit: string; sub: string; badge?: string }> = {
-  weekly:   { label: 'Weekly',   price: '$8.99',   unit: '/wk',          sub: '7 days of full access', badge: 'Try it out' },
+  weekly:   { label: 'Weekly',   price: '$8.99',   unit: '/wk',          sub: 'Billed weekly · cancel anytime', badge: 'Try it out' },
   monthly:  { label: 'Monthly',  price: '$29',     unit: '/mo',          sub: 'Billed monthly' },
   annual:   { label: 'Annual',   price: '$16.58',  unit: '/mo',          sub: '$199/year · 2 months free', badge: '2 months free' },
   lifetime: { label: 'Lifetime', price: '$499',    unit: ' once',        sub: 'Pay once. Yours forever.',  badge: 'Best value' },
@@ -1608,7 +1608,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
             commitment. */}
         <PrimaryButton onClick={() => onChoose(selected)} className="w-full">
           {selected === 'weekly'
-            ? <>Start 7-day access <ArrowRight className="w-4 h-4" /></>
+            ? <>Continue with Weekly <ArrowRight className="w-4 h-4" /></>
             : selected === 'monthly'
               ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
               : selected === 'annual'
@@ -1616,7 +1616,7 @@ function S13Plan({ firstName, plan, onChoose }: { firstName: string; plan: PlanC
                 : <>Get lifetime access <ArrowRight className="w-4 h-4" /></>}
         </PrimaryButton>
         <p className="text-[11.5px] text-[#0A0A0A]/40 mt-3">
-          {selected === 'lifetime' ? 'Secure checkout · One-time payment' : selected === 'weekly' ? 'Secure checkout · 7-day pass' : 'Secure checkout · Cancel anytime'}
+          {selected === 'lifetime' ? 'Secure checkout · One-time payment' : 'Secure checkout · Cancel anytime'}
         </p>
       </GlassCard>
     </div>
@@ -1780,7 +1780,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
         {paid
           ? `${firstName ? `You're set, ${firstName}. ` : ''}Your agent runs on its schedule and everything waits for your approval before it sends. Go build — we'll handle the inbox.`
           : plan === 'weekly'
-            ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 7-day pass. Tomorrow morning: one briefing, not an inbox.`
+            ? `${firstName ? `Almost there, ${firstName}. ` : ''}$8.99 a week, cancel whenever you like. Tomorrow morning: one briefing, not an inbox.`
           : plan === 'monthly'
             ? `${firstName ? `Almost there, ${firstName}. ` : ''}Start your 3-day free trial — no charge today, cancel anytime. Tomorrow morning: one briefing, not an inbox.`
             : `${firstName ? `Almost there, ${firstName}. ` : ''}Subscribe and your agent deploys tonight. Tomorrow morning: one briefing, not an inbox. Everything waits for your approval.`}
@@ -1807,7 +1807,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
           <SummaryRow
             icon={<Check className="w-4 h-4" />}
             label="Plan"
-            value={plan === 'weekly' ? 'Weekly — $8.99 / 7 days' : plan === 'monthly' ? '3 days free, then $29/mo' : plan === 'annual' ? 'Annual — $199/year' : 'Lifetime — $499 once'}
+            value={plan === 'weekly' ? 'Weekly — $8.99/week' : plan === 'monthly' ? '3 days free, then $29/mo' : plan === 'annual' ? 'Annual — $199/year' : 'Lifetime — $499 once'}
           />
         )}
       </GlassCard>
@@ -1822,7 +1822,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
               // "Go to Mailient" that lands on a pricing screen reads as a trick.
               ? <>Choose your plan <ArrowRight className="w-4 h-4" /></>
               : plan === 'weekly'
-                ? <>Start 7-day access <ArrowRight className="w-4 h-4" /></>
+                ? <>Start Weekly <ArrowRight className="w-4 h-4" /></>
               : plan === 'monthly'
                 ? <>Start 3-day free trial <ArrowRight className="w-4 h-4" /></>
                 : <>Subscribe &amp; deploy <ArrowRight className="w-4 h-4" /></>}
@@ -1831,7 +1831,7 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       {!paid && plan && (
         <div className="mt-4 flex flex-col items-center gap-1.5">
           <p className="text-[11.5px] text-[#0A0A0A]/40">
-            {plan === 'weekly' ? 'Secure checkout · 7-day pass' : plan === 'monthly' ? 'No charge today · Secure checkout · Cancel anytime' : plan === 'annual' ? 'Secure checkout · Cancel anytime' : 'Secure checkout · One-time payment'}
+            {plan === 'monthly' ? 'No charge today · Secure checkout · Cancel anytime' : plan === 'lifetime' ? 'Secure checkout · One-time payment' : 'Secure checkout · Cancel anytime'}
           </p>
           <SkipLink onClick={() => router.replace('/onboarding?step=13')}>Change plan</SkipLink>
         </div>
