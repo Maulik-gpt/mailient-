@@ -48,6 +48,13 @@ interface CanvasPanelProps {
   isExecuting?: boolean;
   isSidebarCollapsed?: boolean;
   onSendToChat?: (message: string) => void;
+  /**
+   * Fires when the user selects text in the document and clicks "Add to chat".
+   * Receives the selection as markdown plus the document title, so the chat
+   * composer can show a labelled chip ("selection from <title>") and the model
+   * can be told exactly which document the quote came from.
+   */
+  onAddSelectionToChat?: (selection: { text: string; docTitle: string }) => void;
 }
 
 // ─── Type config ───────────────────────────────────────────────────────────────
@@ -98,7 +105,7 @@ function getConfig(type: string) {
 // ─── Main Component ────────────────────────────────────────────────────────────
 
 export function CanvasPanel({
-  isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed,
+  isOpen, onClose, canvasData, onExecute, isExecuting, isSidebarCollapsed, onAddSelectionToChat,
 }: CanvasPanelProps) {
   const [editMode, setEditMode]           = useState(false);
   const [editedBody, setEditedBody]       = useState('');
@@ -520,6 +527,14 @@ export function CanvasPanel({
                   <CanvasEditor
                     value={editedBody}
                     onChange={setEditedBody}
+                    onAddSelectionToChat={
+                      onAddSelectionToChat
+                        ? (text) => onAddSelectionToChat({
+                            text,
+                            docTitle: displayedData.title || 'Document',
+                          })
+                        : undefined
+                    }
                   />
                 ) : (
                   <MarkdownView content={editedBody || displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '')} />

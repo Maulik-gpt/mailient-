@@ -18,11 +18,13 @@
 
 import { useEffect } from 'react';
 import { useEditor, EditorContent, type Editor } from '@tiptap/react';
+import { BubbleMenu } from '@tiptap/react/menus';
 import StarterKit from '@tiptap/starter-kit';
 import { Markdown } from 'tiptap-markdown';
 import {
   Undo2, Redo2, Bold, Italic, Strikethrough, Code2,
   List, ListOrdered, Quote, Minus, Heading1, Heading2, Heading3,
+  MessageSquarePlus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,9 +33,16 @@ interface CanvasEditorProps {
   value: string;
   /** Fires with markdown on every change. */
   onChange: (markdown: string) => void;
+  /**
+   * Fires when the user clicks "Add to chat" on a text selection. Receives the
+   * selected text as MARKDOWN (not plain text) so formatting the user can see
+   * — bold, list structure, headings — survives into the prompt. Omit to hide
+   * the affordance entirely rather than render a button that does nothing.
+   */
+  onAddSelectionToChat?: (selectedMarkdown: string) => void;
 }
 
-export function CanvasEditor({ value, onChange }: CanvasEditorProps) {
+export function CanvasEditor({ value, onChange, onAddSelectionToChat }: CanvasEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -82,6 +91,55 @@ export function CanvasEditor({ value, onChange }: CanvasEditorProps) {
   return (
     <div className="flex flex-col min-h-0">
       <Toolbar editor={editor} />
+
+      {/* Selection → chat. Only mounted when the parent supplied a handler, so
+          there is never a visible button that silently does nothing. */}
+      {onAddSelectionToChat && (
+        <BubbleMenu
+          editor={editor}
+          // Empty selections fire this too (a plain cursor click). Without the
+          // emptiness guard the bubble would flash on every click in the doc.
+          shouldShow={({ editor, from, to }) => from !== to && !editor.state.selection.empty}
+          options={{ placement: 'top', offset: 8 }}
+        >
+          <button
+            type="button"
+            // Same reason as the toolbar buttons: a plain onClick blurs the
+            // editor first and collapses the selection, so by the time the
+            // handler ran there would be nothing left to extract.
+            onMouseDown={(e) => {
+              e.preventDefault();
+              const { from, to } = editor.state.selection;
+              if (from === to) return;
+
+              // Serialise the SLICE as markdown rather than using
+              // state.doc.textBetween (plain text). A selected bullet list
+              // arrives as a real list, bold stays bold — which matters
+              // because the model is being asked to reason about this text
+              // and formatting often carries the meaning.
+              let selected = '';
+              try {
+                const slice = editor.state.selection.content();
+                selected = (editor.storage as any).markdown.serializer
+                  .serialize(slice.content)
+                  .trim();
+              } catch {
+                // Serializer can throw on an unusual partial-node slice.
+                // Plain text is a lossy but correct fallback — better than
+                // dropping the interaction on the floor.
+                selected = editor.state.doc.textBetween(from, to, '\n').trim();
+              }
+              if (!selected) return;
+              onAddSelectionToChat(selected);
+            }}
+            className="flex items-center gap-1.5 px-2.5 h-8 rounded-lg border border-arcus-border bg-arcus-elevated text-arcus-fg text-[12.5px] font-medium shadow-lg hover:bg-arcus-surface transition-colors whitespace-nowrap"
+          >
+            <MessageSquarePlus className="w-3.5 h-3.5" />
+            Add to chat
+          </button>
+        </BubbleMenu>
+      )}
+
       <EditorContent editor={editor} />
     </div>
   );

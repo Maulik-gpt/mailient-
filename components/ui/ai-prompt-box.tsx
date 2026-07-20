@@ -484,6 +484,14 @@ interface PromptInputBoxProps {
   onAttachEmailClick?: () => void;
   onPersonalityClick?: () => void;
   selectedEmailsCount?: number;
+  /**
+   * Passages the user pinned from the Canvas document via "Add to chat".
+   * Rendered as removable chips above the input so the attached context is
+   * visible before sending — the alternative (silently attaching it) means the
+   * user can't tell what the model is about to receive.
+   */
+  canvasSelections?: Array<{ id: number; text: string; docTitle: string }>;
+  onRemoveCanvasSelection?: (id: number) => void;
   suggestionInput?: { text: string; id: number };
   activeMode?: 'agent' | 'plan';
   onModeChange?: (mode: 'agent' | 'plan') => void;
@@ -586,7 +594,9 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
     onSearchClick,
     onAttachEmailClick,
     onPersonalityClick,
-    selectedEmailsCount = 0
+    selectedEmailsCount = 0,
+    canvasSelections = [],
+    onRemoveCanvasSelection,
   } = props;
 
   const [input, setInput] = React.useState("");
@@ -735,7 +745,10 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
   }, [handlePaste]);
 
   const handleSubmit = () => {
-    if (input.trim() || files.length > 0) {
+    // A pinned canvas selection is real content. Without it in this condition,
+    // pinning a passage and pressing Enter with an empty textarea did nothing
+    // at all — the chip just sat there looking attached.
+    if (input.trim() || files.length > 0 || canvasSelections.length > 0) {
       const trimmed = input.trim();
 
       // PART 46 — client-kind slash commands never hit the network. If the
@@ -869,7 +882,7 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
     setIsRecording(false);
   };
 
-  const hasContent = input.trim() !== "" || files.length > 0;
+  const hasContent = input.trim() !== "" || files.length > 0 || canvasSelections.length > 0;
 
   return (
     <>
@@ -909,6 +922,46 @@ export const PromptInputBox = forwardRef<HTMLDivElement, PromptInputBoxProps>((p
           className
         )}
       >
+        <AnimatePresence>
+          {canvasSelections.length > 0 && !isRecording && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              className="flex flex-wrap gap-1.5 p-2 pb-0"
+            >
+              {canvasSelections.map((sel) => (
+                <motion.div
+                  key={sel.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  className="group flex items-center gap-1.5 pl-2 pr-1 py-1 rounded-full border border-arcus-border bg-black/[0.03] dark:bg-white/[0.06] max-w-[240px]"
+                  // The full passage on hover — the chip label alone can't show
+                  // which part of a long document was pinned.
+                  title={sel.text}
+                >
+                  <FileText className="w-3 h-3 shrink-0 text-black/50 dark:text-white/50" />
+                  <span className="text-[11.5px] text-black/70 dark:text-white/70 truncate">
+                    selection from {sel.docTitle}
+                  </span>
+                  {onRemoveCanvasSelection && (
+                    <button
+                      type="button"
+                      onClick={() => onRemoveCanvasSelection(sel.id)}
+                      aria-label="Remove selection"
+                      className="w-4 h-4 shrink-0 rounded-full flex items-center justify-center text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white hover:bg-black/[0.06] dark:hover:bg-white/[0.12] transition-colors"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  )}
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence>
           {files.length > 0 && !isRecording && (
             <motion.div

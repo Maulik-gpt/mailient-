@@ -2184,6 +2184,12 @@ export default function ChatInterface({
   const [conversations, setConversations] = useState<{ [key: string]: Message[] }>({});
   const [isNewConversation, setIsNewConversation] = useState<boolean>(!initialConversationId);
   const [selectedEmails, setSelectedEmails] = useState<Email[]>([]);
+  /**
+   * Text the user highlighted in the Canvas document and sent over with
+   * "Add to chat". Held as pending context until the next send, then attached
+   * to that message and cleared — the same lifecycle as selectedEmails.
+   */
+  const [canvasSelections, setCanvasSelections] = useState<Array<{ id: number; text: string; docTitle: string }>>([]);
   const [chatTitle, setChatTitle] = useState<string>('');
   const [suggestionInput, setSuggestionInput] = useState<{ text: string; id: number } | undefined>(undefined);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
@@ -5171,7 +5177,10 @@ export default function ChatInterface({
 
   const handleSend = async (forcedMessage?: string, files?: File[], options: { isDeepThinking?: boolean; isCanvas?: boolean; isSearch?: boolean; isPlanMode?: boolean; modelId?: string; displayText?: string } = {}) => {
     const messageText = (forcedMessage || message).trim();
-    if (!messageText && (!files || files.length === 0)) return;
+    // A pinned canvas selection counts as content on its own — the same guard
+    // exists in PromptInputBox.handleSubmit, and BOTH had to change or the
+    // send would still no-op here after passing the first one.
+    if (!messageText && (!files || files.length === 0) && canvasSelections.length === 0) return;
     // displayText: what the transcript shows for this user turn. The full
     // messageText (e.g. "Q: … / A: …" clarifying-answer context) still goes
     // to the API — the tags just never render in the chat.
@@ -5216,13 +5225,38 @@ export default function ChatInterface({
       setSelectedEmails([]);
     }
 
+    // Canvas selections ride the SAME attachment channel as emails. The chat
+    // route's embedTextAttachments() inlines any text/* attachment into the
+    // user message before the model sees it, so a quote from the document
+    // reaches the LLM as real readable text rather than a filename it would
+    // otherwise hallucinate around. type is text/plain (not a custom MIME) for
+    // exactly that reason — embedTextAttachments filters on TEXT_MIME_RE.
+    if (canvasSelections.length > 0) {
+      canvasSelections.forEach(sel => {
+        const body = `The user highlighted this passage in the document "${sel.docTitle}" and is asking about it:\n\n${sel.text}`;
+        attachments.push({
+          name: `Selection from ${sel.docTitle}`,
+          url: '',
+          type: 'text/plain',
+          size: body.length,
+          base64: btoa(encodeURIComponent(body).replace(/%([0-9A-F]{2})/g, (_m, p1) => String.fromCharCode(parseInt(p1, 16)))),
+          isCanvasSelection: true,
+        } as any);
+      });
+      setCanvasSelections([]);
+    }
+
     // Generate conversation ID if this is a new conversation
     let conversationIdToUse = currentConversationId;
     if (shouldCreateNewConversation) {
       conversationIdToUse = generateConversationId();
       setCurrentConversationId(conversationIdToUse);
       setIsNewConversation(true);
-      localStorage.setItem(`conv_${conversationIdToUse}_title`, messageText || (attachments ? attachments[0].name : 'New Chat'));
+      // `attachments ? attachments[0].name : …` threw on an EMPTY array — the
+      // array is always truthy, so [0] was undefined and .name blew up. It was
+      // unreachable before only because a send required text or a file; a
+      // pinned canvas selection can now reach here with neither.
+      localStorage.setItem(`conv_${conversationIdToUse}_title`, messageText || attachments[0]?.name || 'New Chat');
       // Pin the ref immediately so the initialConversationId useEffect skips
       // loadConversation and doesn't overwrite our in-flight messages state.
       loadedConversationIdRef.current = conversationIdToUse as string;
@@ -6025,6 +6059,8 @@ export default function ChatInterface({
                               actionMode={actionMode}
                               onActionModeChange={handleActionModeChange}
                               selectedEmailsCount={selectedEmails.length}
+                          canvasSelections={canvasSelections}
+                          onRemoveCanvasSelection={(id) => setCanvasSelections(prev => prev.filter(s => s.id !== id))}
                               suggestionInput={suggestionInput}
                               showConnectBanner={false}
                               onConnectClick={() => setIsIntegrationsModalOpen(true)}
@@ -7129,6 +7165,8 @@ export default function ChatInterface({
                           actionMode={actionMode}
                           onActionModeChange={handleActionModeChange}
                           selectedEmailsCount={selectedEmails.length}
+                          canvasSelections={canvasSelections}
+                          onRemoveCanvasSelection={(id) => setCanvasSelections(prev => prev.filter(s => s.id !== id))}
                           suggestionInput={suggestionInput}
                           onConnectClick={() => setIsIntegrationsModalOpen(true)}
                           currentPlan={currentPlan || 'free'}
@@ -7168,6 +7206,14 @@ export default function ChatInterface({
                       onExecute={handleCanvasExecute}
                       isExecuting={isCanvasExecuting}
                       isSidebarCollapsed={isSidebarCollapsed}
+                      onAddSelectionToChat={({ text, docTitle }) => {
+                        setCanvasSelections(prev => {
+                          // Re-adding an identical passage is a mis-click, not
+                          // an instruction to send it twice.
+                          if (prev.some(p => p.text === text)) return prev;
+                          return [...prev, { id: Date.now(), text, docTitle }];
+                        });
+                      }}
                     />
                   </motion.div>
                 ) : null}
