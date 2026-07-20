@@ -119,21 +119,30 @@ export function CanvasPanel({
     }
   }, [canvasData]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Tracks the exact text we last seeded the editor from, so we can tell a
+  // genuinely NEW document apart from a re-render of the same one.
+  const seededFrom = useRef<string | null>(null);
+
   useEffect(() => {
     if (!displayedData) return;
-    if (displayedData.type === 'email_draft' || displayedData.type === 'reply') {
-      const body = displayedData.content?.body || extractEmailBody(displayedData.raw || '');
-      setEditedBody(body);
-      setEditMode(false);
-    } else {
-      // F11 — Non-email docs: seed editedBody with the markdown so the Edit
-      // button has something to edit.
-      const docText = displayedData.raw
-        || (typeof displayedData.content === 'string' ? displayedData.content : '')
-        || '';
-      setEditedBody(docText);
-      setEditMode(false);
-    }
+
+    const isEmailDoc = displayedData.type === 'email_draft' || displayedData.type === 'reply';
+    const incoming = isEmailDoc
+      ? (displayedData.content?.body || extractEmailBody(displayedData.raw || ''))
+      : (displayedData.raw || (typeof displayedData.content === 'string' ? displayedData.content : '') || '');
+
+    // This effect used to setEditedBody + setEditMode(false) on EVERY
+    // displayedData change. Any re-render while the user was typing threw them
+    // out of edit mode and replaced their text with the original — losing work
+    // with no warning. Re-seed only when the incoming document is actually
+    // different from the one we seeded from.
+    if (seededFrom.current === incoming) return;
+
+    seededFrom.current = incoming;
+    setEditedBody(incoming);
+    // Leave edit mode only when the document underneath genuinely changed —
+    // otherwise the agent streaming an unrelated update yanks the cursor out.
+    setEditMode(false);
   }, [displayedData]);
 
   // ── Resize ───────────────────────────────────────────────────────────────────
@@ -148,17 +157,53 @@ export function CanvasPanel({
   }, [isResizing, isSidebarCollapsed]);
 
   useEffect(() => {
+    // Only listen WHILE dragging. These were attached permanently, so every
+    // mouse move anywhere in the app ran a handler that immediately returned —
+    // and because handleResize is rebuilt on each render, the pair was being
+    // torn down and re-added on every render of the panel.
+    if (!isResizing) return;
     window.addEventListener('mousemove', handleResize);
     window.addEventListener('mouseup', stopResizing);
+    // Kills text selection while dragging the divider — without it the whole
+    // document highlights as you drag.
+    const prevSelect = document.body.style.userSelect;
+    document.body.style.userSelect = 'none';
     return () => {
       window.removeEventListener('mousemove', handleResize);
       window.removeEventListener('mouseup', stopResizing);
+      document.body.style.userSelect = prevSelect;
     };
-  }, [handleResize, stopResizing]);
+  }, [isResizing, handleResize, stopResizing]);
 
   // ── Actions ──────────────────────────────────────────────────────────────────
+  /**
+   * THE document as it currently stands — the single source of truth for copy,
+   * download, PDF and the word count.
+   *
+   * This used to return displayedData.raw, i.e. the ORIGINAL text, ignoring
+   * `editedBody` entirely. So every edit the user made existed only as pixels:
+   * you could rewrite a document, hit Download, and get the version you started
+   * with — silently, with no indication anything had been dropped. Copy, PDF
+   * and the word count all had the same bug because they all call this.
+   *
+   * editedBody is seeded from the document whenever canvas data arrives and is
+   * updated live by the editor, so once populated it IS the document.
+   */
   const getTextContent = () => {
     if (!displayedData) return '';
+    const isEmailDoc = displayedData.type === 'email_draft' || displayedData.type === 'reply';
+
+    if (isEmailDoc) {
+      // For email, editedBody is the BODY only — re-attach the headers so a
+      // downloaded .txt is a complete email rather than a naked paragraph.
+      const body = editedBody || displayedData.content?.body || extractEmailBody(displayedData.raw || '');
+      const to = displayedData.content?.to || '';
+      const subject = displayedData.content?.subject || '';
+      const header = [to && `To: ${to}`, subject && `Subject: ${subject}`].filter(Boolean).join('\n');
+      return header ? `${header}\n\n${body}` : body;
+    }
+
+    if (editedBody) return editedBody;
     if (displayedData.raw) return displayedData.raw;
     if (typeof displayedData.content === 'string') return displayedData.content;
     if (displayedData.content?.body) return displayedData.content.body;
@@ -239,9 +284,15 @@ export function CanvasPanel({
   };
 
   const handleSend = () => {
+    // Was `editMode ? editedBody : content.body`, which sent the ORIGINAL any
+    // time the user pressed "Done editing" before Send — i.e. the exact,
+    // deliberate sequence a careful person follows. Their edits went out the
+    // window silently. editedBody is seeded from content.body on load, so it is
+    // always the right value to send once populated.
+    const body = editedBody || displayedData?.content?.body || '';
     const payload = displayedData?.content?.threadId
-      ? { ...displayedData.content, body: editMode ? editedBody : displayedData.content.body }
-      : { ...(displayedData?.content || {}), body: editMode ? editedBody : (displayedData?.content?.body || '') };
+      ? { ...displayedData.content, body }
+      : { ...(displayedData?.content || {}), body };
     onExecute('send_email', payload);
   };
 
@@ -257,10 +308,13 @@ export function CanvasPanel({
     ? 'calc(100vw - 16px)'
     : expanded ? 'min(1100px, calc(100vw - 340px))' : `${width}px`;
 
-  // "Document · 2.5 KB" — the metadata line only claims what we can measure.
+  // "Document · 2.5 KB" — measured from the LIVE document, so it tracks edits.
+  // The first version read displayedData.body (a field that does not exist) and
+  // fell back to .content, which is an object for emails — Blob size of a
+  // non-string is 0, so the label simply never appeared.
   const docSizeLabel = (() => {
-    const raw = (displayedData as any)?.body || (displayedData as any)?.content || '';
-    const bytes = typeof raw === 'string' ? new Blob([raw]).size : 0;
+    const text = getTextContent();
+    const bytes = text ? new Blob([text]).size : 0;
     if (!bytes) return '';
     return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
   })();
@@ -419,10 +473,14 @@ export function CanvasPanel({
               <motion.div key="email" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
                 <MetaInsights type={displayedData.type} content={getTextContent()} />
                 {editMode ? (
+                  // Email stays a PLAIN textarea by design, not by neglect: the
+                  // markdown editor would serialise bold as **bold**, and a
+                  // plain-text email sends those asterisks literally. Only the
+                  // type scale is brought up to match the rest of the panel.
                   <textarea
                     value={editedBody}
                     onChange={e => setEditedBody(e.target.value)}
-                    className="w-full min-h-[360px] bg-transparent text-[14px] text-arcus-fg-secondary leading-relaxed resize-none focus:outline-none font-sans"
+                    className="w-full min-h-[360px] bg-transparent text-[15.5px] text-arcus-fg leading-[1.75] resize-none focus:outline-none font-sans"
                     autoFocus
                     placeholder="Email body…"
                   />
