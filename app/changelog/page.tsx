@@ -58,7 +58,7 @@ export default function ChangelogPage() {
         <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
           <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-white leading-tight">
             Product updates. <br />
-            <span className="font-medium italic text-neutral-350">Shipped often.</span>
+            <span className="font-medium italic text-neutral-400">Shipped often.</span>
           </h1>
         </BlurFade>
 

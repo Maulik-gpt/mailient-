@@ -28,6 +28,7 @@ import { ChatPlanCard, type PlanCardData } from './components/ChatPlanCard';
 import { PlanPreviewCard, type PlanPreviewData } from './components/PlanPreviewCard';
 import { SourcesPanel, type SourceItem } from './components/SourcesPanel';
 import { CanvasPanel, type CanvasData } from './components/CanvasPanel';
+import { ChatSelectionToolbar } from './components/ChatSelectionToolbar';
 import { ArtifactsGalleryPanel } from './components/ArtifactsGalleryPanel';
 import PlanArtifactCard from './components/PlanArtifactCard';
 import { PlanModeBrief } from './components/PlanModeBrief';
@@ -2189,7 +2190,10 @@ export default function ChatInterface({
    * "Add to chat". Held as pending context until the next send, then attached
    * to that message and cleared — the same lifecycle as selectedEmails.
    */
-  const [canvasSelections, setCanvasSelections] = useState<Array<{ id: number; text: string; docTitle: string }>>([]);
+  // Pinned text selections awaiting the next send — from the canvas document OR
+  // from the chat transcript itself. `kind` drives only the wording (chip label
+  // + how the passage is framed to the model); everything else is shared.
+  const [canvasSelections, setCanvasSelections] = useState<Array<{ id: number; text: string; docTitle: string; kind?: 'canvas' | 'chat' }>>([]);
   const [chatTitle, setChatTitle] = useState<string>('');
   const [suggestionInput, setSuggestionInput] = useState<{ text: string; id: number } | undefined>(undefined);
   const [isTitleMenuOpen, setIsTitleMenuOpen] = useState(false);
@@ -5233,9 +5237,11 @@ export default function ChatInterface({
     // exactly that reason — embedTextAttachments filters on TEXT_MIME_RE.
     if (canvasSelections.length > 0) {
       canvasSelections.forEach(sel => {
-        const body = `The user highlighted this passage in the document "${sel.docTitle}" and is asking about it:\n\n${sel.text}`;
+        const body = sel.kind === 'chat'
+          ? `The user highlighted this passage from earlier in this conversation and is asking about it:\n\n${sel.text}`
+          : `The user highlighted this passage in the document "${sel.docTitle}" and is asking about it:\n\n${sel.text}`;
         attachments.push({
-          name: `Selection from ${sel.docTitle}`,
+          name: sel.kind === 'chat' ? 'Selection from chat' : `Selection from ${sel.docTitle}`,
           url: '',
           type: 'text/plain',
           size: body.length,
@@ -7221,6 +7227,18 @@ export default function ChatInterface({
             </div>
           </LayoutGroup>
         </div>
+        {/* Highlight any text in the transcript → "Add to chat". Scoped to the
+            scroll container, so composer/sidebar selections never trigger it.
+            Rendered once here; it manages its own portal + visibility. */}
+        <ChatSelectionToolbar
+          rootRef={scrollContainerRef}
+          onAdd={(text) => {
+            setCanvasSelections(prev => {
+              if (prev.some(p => p.text === text)) return prev;
+              return [...prev, { id: Date.now(), text, docTitle: 'chat', kind: 'chat' }];
+            });
+          }}
+        />
         <NoScrollbarStyles />
         <ConnectorsModal isOpen={isIntegrationsModalOpen} onClose={() => setIsIntegrationsModalOpen(false)} onTryOut={handleTryOut} />
         <EmailSelectionModal

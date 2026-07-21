@@ -109,7 +109,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
         {/* Navigation Links */}
         <nav className={cn(
           "hidden md:flex items-center gap-7 text-[12px] font-semibold transition-colors relative z-10",
-          isDark ? "text-neutral-450" : "text-neutral-600"
+          isDark ? "text-neutral-400" : "text-neutral-600"
         )}>
           {/* Product Dropdown Trigger */}
           <div
@@ -299,7 +299,7 @@ export function Navbar({ theme = "light" }: NavbarProps) {
                 onClick={() => signOut()}
                 className={cn(
                   "text-[12px] font-semibold transition-colors",
-                  isDark ? "text-neutral-450 hover:text-red-400" : "text-neutral-500 hover:text-red-600"
+                  isDark ? "text-neutral-400 hover:text-red-400" : "text-neutral-500 hover:text-red-600"
                 )}
               >
                 Sign Out

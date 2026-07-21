@@ -29,6 +29,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 20, 2026',
     entries: [
       {
+        tag: 'Improved',
+        title: 'The security page, rebuilt',
+        points: [
+          'The security page now matches the rest of the site — the same cards, headings and motion — instead of looking like a page from a different product.',
+          'Fixed a set of text colours across the site that were silently not applying, including a few labels and ticks that were meant to stand out and were rendering as plain grey.',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: 'Arcus now edits documents instead of rewriting them from a guess',
         points: [

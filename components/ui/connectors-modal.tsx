@@ -837,7 +837,7 @@ export function ConnectorsModal({
                   onClick={() => setShowDetails(!showDetails)}
                   className={cn(
                     "w-full flex items-center justify-center gap-2 py-2 transition-all text-[13px] font-medium mb-4",
-                    isDark ? "text-white/30 hover:text-white/60" : "text-neutral-450 hover:text-neutral-700"
+                    isDark ? "text-white/30 hover:text-white/60" : "text-neutral-400 hover:text-neutral-700"
                   )}
                 >
                   {showDetails ? 'Hide Details' : 'Show Details'}

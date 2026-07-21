@@ -159,7 +159,7 @@ export default function BlogsPage() {
         <BlurFade delay={0.15} duration={0.8} yOffset={15} inView>
           <h1 className="text-4xl md:text-7xl font-light tracking-[-0.04em] text-black dark:text-white leading-tight">
             Engineering Mailient. <br />
-            <span className="font-medium italic text-neutral-300 bg-gradient-to-r from-neutral-200 via-neutral-350 to-neutral-500 bg-clip-text text-transparent">Deep Dives & Essays.</span>
+            <span className="font-medium italic text-neutral-300 bg-gradient-to-r from-neutral-200 via-neutral-400 to-neutral-500 bg-clip-text text-transparent">Deep Dives & Essays.</span>
           </h1>
         </BlurFade>
 

@@ -907,7 +907,7 @@ export default function ProfileSettingsPage() {
                       {/* Metadata Grid */}
                       <div className="border-t border-white/[0.04] pt-4">
                         {!isEditingProfile ? (
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3.5 gap-x-6 text-[11px] font-semibold text-neutral-450">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-3.5 gap-x-6 text-[11px] font-semibold text-neutral-400">
                             {/* Occupation */}
                             <div className="flex items-center gap-2">
                               <Briefcase className="w-3.5 h-3.5 text-neutral-500 shrink-0" />

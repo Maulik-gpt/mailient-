@@ -150,7 +150,7 @@ export default function PricingPage() {
         <div className="overflow-x-auto rounded-3xl border border-white/[0.04] bg-[#070707] p-4 shadow-2xl">
           <table className="w-full border-collapse text-left text-xs font-sans font-light">
             <thead>
-              <tr className="border-b border-white/[0.06] text-neutral-450 uppercase font-bold tracking-widest text-[9px]">
+              <tr className="border-b border-white/[0.06] text-neutral-400 uppercase font-bold tracking-widest text-[9px]">
                 <th className="py-4 px-6">Feature</th>
                 <th className="py-4 px-6">Weekly ($8.99/wk)</th>
                 <th className="py-4 px-6">Monthly ($29/mo)</th>
@@ -220,7 +220,7 @@ export default function PricingPage() {
                       transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                       className="overflow-hidden border-t border-white/[0.04]"
                     >
-                      <div className="px-7 py-6 text-xs md:text-sm text-neutral-450 font-light leading-relaxed bg-white/[0.01]">
+                      <div className="px-7 py-6 text-xs md:text-sm text-neutral-400 font-light leading-relaxed bg-white/[0.01]">
                         {faq.a}
                       </div>
                     </motion.div>

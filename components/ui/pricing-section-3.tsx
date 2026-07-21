@@ -276,7 +276,7 @@ export default function PricingSection3({
                   </div>
 
                   {plan.id === "subscription" && isYearly && (
-                    <p className="text-[10px] text-neutral-450 font-semibold mb-6">
+                    <p className="text-[10px] text-neutral-400 font-semibold mb-6">
                       Billed as $199 annually (40% discount applied)
                     </p>
                   )}

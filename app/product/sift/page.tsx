@@ -198,7 +198,7 @@ export default function SiftProductPage() {
                   <p className="font-semibold text-white text-[11px]">Dev Ops Alert</p>
                   <p className="text-[10px] text-neutral-500">"Uptime report successful..."</p>
                 </div>
-                <span className="px-2 py-0.5 rounded bg-neutral-900 text-neutral-350 text-[9px] font-semibold border border-white/[0.06] uppercase">
+                <span className="px-2 py-0.5 rounded bg-neutral-900 text-neutral-300 text-[9px] font-semibold border border-white/[0.06] uppercase">
                   Operational
                 </span>
               </div>
