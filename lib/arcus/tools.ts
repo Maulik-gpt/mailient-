@@ -7229,7 +7229,13 @@ async function createScheduledAgent(userId: string, input: any, context: ToolCon
     !input._creationStage &&
     !input._planApproved
   ) {
-    const specMarkdown = (input.spec_markdown || '').trim();
+    // Normalize BEFORE the spec touches canvas state or the render payload.
+    // The spec_markdown schema asks the model for a ```arcus-steps fenced block,
+    // but weak free models routinely emit a BARE { "steps": [...] } blob under
+    // the ## Steps heading — which ReactMarkdown then renders as a wall of raw
+    // JSON prose (the reported bug). open_canvas/update_canvas already run this;
+    // the agent-spec path was the one canvas producer that skipped it.
+    const specMarkdown = normalizeDocumentMarkdown((input.spec_markdown || '').trim());
     if (!specMarkdown) {
       // F8 — Internal-only error: hide the raw "spec_markdown is required"
       // string from chat output. The sanitizer in engine.ts strips this

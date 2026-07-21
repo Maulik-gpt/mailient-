@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { CanvasEditor } from './CanvasEditor';
+import { normalizeDocumentMarkdown } from '@/lib/arcus/markdown-normalize';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -1100,8 +1101,15 @@ function MarkdownView({ content }: { content: string }) {
       <p className="text-[13px] text-arcus-fg-tertiary">No content</p>
     </div>
   );
-  // Apply defensive normalization before handing to ReactMarkdown
-  const normalized = normalizeInlineEnumeration(content);
+  // Defensive normalization before ReactMarkdown. normalizeDocumentMarkdown is
+  // the SAME repair the server runs — applied again here as the single
+  // client-side choke point so that NO canvas document, from any tool
+  // (open_canvas, the agent-spec card, a report, a reloaded cached doc, or a
+  // future producer), can ever render a bare { "steps": [...] } blob as a wall
+  // of raw JSON. It is idempotent, so re-running on already-fenced content is a
+  // no-op. normalizeInlineEnumeration stays for the inline "1. .. 2. .." case it
+  // uniquely handles.
+  const normalized = normalizeInlineEnumeration(normalizeDocumentMarkdown(content));
 
   return (
     <ReactMarkdown
