@@ -12,8 +12,8 @@ export const maxDuration = 15;
 // NOTE: title generation must use NON-reasoning instruct models — reasoning
 // models (nemotron-3-ultra/super) emit <thinking> tags that pollute titles,
 // the exact bug noted above. gpt-oss retired; these are reliable + tag-free.
+// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
 const FREE_MODELS = [
-  'google/gemma-4-31b-it:free',
   'google/gemma-4-26b-a4b-it:free',
   'meta-llama/llama-3.3-70b-instruct:free',
 ];

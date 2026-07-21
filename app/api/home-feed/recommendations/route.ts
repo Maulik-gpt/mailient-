@@ -28,12 +28,13 @@ import { logEvent } from "@/lib/logsso";
 export const dynamic = 'force-dynamic';
 export const maxDuration = 25;
 
-// Gemma-4 (instruct) — confirmed healthy 2026-07 on the live API: honors
-// response_format json_object and returns real content fast. Replaces
-// nemotron-3-super-120b, which was returning HTTP 200 with EMPTY content
-// (degraded upstream) and silently producing zero recommendations.
-const REC_MODEL = 'google/gemma-4-31b-it:free';
-const FALLBACK_MODEL = 'google/gemma-4-26b-a4b-it:free';
+// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working). Promoted
+// gemma-4-26b (previously the fallback, confirmed healthy) to primary; qwen3-next
+// verified to support response_format json_object (this route's hard
+// requirement — confirmed via OpenRouter's live /api/v1/models, not a guess) so
+// it's a real second option instead of duplicating the same model twice.
+const REC_MODEL = 'google/gemma-4-26b-a4b-it:free';
+const FALLBACK_MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
 
 type Category = 'connect' | 'productivity';
 
@@ -197,31 +198,23 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
     ],
   };
 
-  // Free models first; paid models LAST, reached only after the free pool is
-  // rate-limited — so a rate-limited free pool still returns AI recs instead of
-  // falling back. On by default (opt out with DISABLE_PAID_FALLBACK). Paid models
-  // are billed, so they're not subject to the free-per-day caps that exhaust the
-  // free chain.
+  // PAID MODELS EMPTIED 2026-07-19 on explicit user directive: "remove every
+  // paid model from our list, it is too much costing us money. you'll add when
+  // i tell." Deliberate — when the whole free chain below is rate-limited, this
+  // route now returns no AI recs rather than spending money. Do NOT re-add a
+  // paid model here without the user naming it first.
   const paidModels = process.env.DISABLE_PAID_FALLBACK === 'true'
     ? []
-    : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean).length
-        ? (process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean)
-        // gemma-4-26b-a4b-it (PAID, no :free suffix) leads 2026-07-19 — cheapest
-        // verified live ($0.070/$0.340 per 1M vs flash-lite's $0.10/$0.40), confirmed
-        // to support response_format (this route requires json_object — see
-        // lib/arcus/engine.ts's PAID_MODELS comment for the full pricing table).
-        // claude-haiku-4.5 (NOT haiku-5 — that id is dead, HTTP 400). All verified live.
-        : ['google/gemma-4-26b-a4b-it', 'google/gemini-2.5-flash-lite', 'anthropic/claude-haiku-4.5', 'google/gemini-2.5-flash']);
+    : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean));
   // Extra free models so the chain doesn't dead-end when both gemmas are
   // rate-limited upstream. All IDs verified against the live OpenRouter free
   // catalog; non-reasoning instruct models that honor json_object well.
-  // extractJsonObject() also tolerates any that leak prose. super-120b is LAST
-  // (it's been returning empty 200s) purely as a recover-if-fixed backstop.
+  // extractJsonObject() also tolerates any that leak prose.
+  // nemotron-3-nano-30b:free and nemotron-3-super-120b:free REMOVED 2026-07-19
+  // (user report: not working). qwen3-next-80b removed from here too — it's now
+  // FALLBACK_MODEL above, so listing it again here would just retry it twice.
   const EXTRA_FREE = [
-    'qwen/qwen3-next-80b-a3b-instruct:free',
     'meta-llama/llama-3.3-70b-instruct:free',
-    'nvidia/nemotron-3-nano-30b-a3b:free',
-    'nvidia/nemotron-3-super-120b-a12b:free',
   ];
   const modelChain = [REC_MODEL, FALLBACK_MODEL, ...EXTRA_FREE, ...paidModels];
 

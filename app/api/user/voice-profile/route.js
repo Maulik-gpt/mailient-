@@ -203,7 +203,10 @@ async function interpretVoiceInstruction(instruction) {
             method: 'POST',
             headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz' },
             body: JSON.stringify({
-                model: 'nvidia/nemotron-3-super-120b-a12b:free',
+                // nemotron-3-super-120b:free REMOVED 2026-07-19 (user report: not working —
+                // was returning empty 200s even before that). gemma-4-26b confirmed to support
+                // response_format json_object (verified via OpenRouter's live /api/v1/models).
+                model: 'google/gemma-4-26b-a4b-it:free',
                 max_tokens: 300,
                 temperature: 0.1,
                 response_format: { type: 'json_object' },

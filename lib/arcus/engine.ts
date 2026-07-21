@@ -84,22 +84,23 @@ const TOOL_CAPABLE_MODELS = [
   // account has credit. Leading with it is cheap because its errors return fast.
   'nvidia/nemotron-3-ultra-550b-a55b:free',
   // Confirmed-healthy fallbacks — returned valid tool/JSON content on a live key.
-  'google/gemma-4-31b-it:free',
+  // gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
   'google/gemma-4-26b-a4b-it:free',
   'qwen/qwen3-next-80b-a3b-instruct:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'qwen/qwen3-coder:free',
-  // Last-ditch — super-120b has been returning empty 200s (parseOpenAIResponse
-  // discards those, so it costs ≤1 skipped attempt if reached).
-  'nvidia/nemotron-3-super-120b-a12b:free',
+  // nemotron-3-super-120b:free REMOVED 2026-07-19 (user report: not working —
+  // consistent with the empty-200s issue already noted below).
   // Removed (verified 404 / dead on OpenRouter 2026-06): openai/gpt-oss-120b,
   // openai/gpt-oss-20b (retired per product decision), z-ai/glm-4.5-air,
   // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking.
 ];
 
-const FALLBACK_MODELS = [
-  'nvidia/nemotron-3-nano-30b-a3b:free',
-];
+// FALLBACK_MODELS / nemotron-3-nano-30b:free REMOVED 2026-07-19 (user report: not
+// working). ALL_FREE_MODELS now equals TOOL_CAPABLE_MODELS; kept as a separate
+// name (rather than deleted) so callers importing ALL_FREE_MODELS don't need a
+// second edit if a fallback tier is reintroduced later.
+const FALLBACK_MODELS: string[] = [];
 
 const ALL_FREE_MODELS = [
   ...TOOL_CAPABLE_MODELS,
@@ -111,43 +112,24 @@ const ALL_FREE_MODELS = [
 // replies must land in ~2s, so we lead with the smallest healthy models and
 // NEVER the 550B reasoning model (which thinks for 20s). gemma-4-26b first —
 // it's the quickest to first token.
+// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
 const FAST_MODELS = [
   'google/gemma-4-26b-a4b-it:free',
-  'google/gemma-4-31b-it:free',
   'meta-llama/llama-3.3-70b-instruct:free',
   'qwen/qwen3-next-80b-a3b-instruct:free',
 ];
 
 // F2.3 — Paid escape hatch. Activated only when ALL_FREE_MODELS exhaust AND
-// ALLOW_PAID_MODELS=true in env. These are cheap, fast, reliable paid models
-// the user pays for via their $29/mo plan when every free key is rate-limited.
-// Ordered cheapest → fastest → most-capable so the engine spends as little
-// as possible per turn.
-const PAID_MODELS = [
-  // Ordered by verified live OpenRouter pricing (raw /api/v1/models, not a guess),
-  // per-1M prompt/completion: gemma-4-26b-a4b-it $0.070/$0.340 <
-  // gemini-2.5-flash-lite $0.10/$0.40 < claude-haiku-4.5 $1.00/$5.00 <
-  // gemini-2.5-flash $0.30/$2.50 (pricier on completion despite a cheaper prompt
-  // rate — kept last, not "cheapest → priciest" strictly).
-  //
-  // gemma-4-26b-a4b-it (PAID, no :free suffix) added 2026-07-19 as primary — it's
-  // the cheapest option AND the :free version of this exact model already lives
-  // in ALL_FREE_MODELS/FAST_MODELS above, so it's proven for tool-calling in this
-  // system prompt already, unlike flash-lite which was never live-tested here.
-  //
-  // On flash-lite's history: removed 2026-07-16 on a report of "costing so much,"
-  // then restored the same day — it was the CHEAPEST of the original three, not
-  // the priciest; the visible cost was from CALL VOLUME (it led the list, so it
-  // absorbed every paid-fallback call while free models were rate-limited — the
-  // recurring root cause chased throughout this codebase's history), not its
-  // per-token price. If paid spend is still too high after this, the fix is
-  // reducing how often free models get exhausted, not swapping the model again.
-  'google/gemma-4-26b-a4b-it',    // primary — cheapest, and already proven for tool-calling here
-  'google/gemini-2.5-flash-lite', // 2nd — next cheapest, huge context
-  'anthropic/claude-haiku-4.5',   // reliability fallback. (Was claude-haiku-5 — a DEAD id
-                                  // returning HTTP 400 "not a valid model ID"; 4.5 is the real one.)
-  'google/gemini-2.5-flash',      // fallback
-];
+// PAID_MODELS is non-empty (paidEnabled below is `PAID_MODELS.length && ...`).
+//
+// EMPTIED 2026-07-19 on explicit user directive: "remove every paid model from
+// our list, it is too much costing us money. you'll add when i tell." This is
+// deliberate, not a bug — when every free model is rate-limited, there is now
+// NO paid fallback; requests will fail/EMPTY_RUN instead of spending money.
+// Do NOT re-add any model here (gemma-4-26b-a4b-it paid, gemini-2.5-flash-lite,
+// claude-haiku-4.5, gemini-2.5-flash, or any other) without the user naming it
+// first — that was explicit and specific ("you'll add when i tell, which model").
+const PAID_MODELS: string[] = [];
 
 
 function getKeys(): string[] {
