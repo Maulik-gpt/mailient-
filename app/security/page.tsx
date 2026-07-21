@@ -4,7 +4,22 @@ import React, { useEffect } from "react";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { FloatingNavbar } from "@/components/FloatingNavbar";
-import { ShieldCheck, Check, Lock, Server, UserCheck, Eye } from "lucide-react";
+import {
+  ShieldCheck,
+  Check,
+  Lock,
+  Server,
+  UserCheck,
+  Eye,
+  BookOpen,
+  Scale,
+  FileText,
+  Mail,
+  Trash2,
+  KeyRound,
+  Ban,
+  ArrowUpRight,
+} from "lucide-react";
 import AnimatedGradient from "@/components/ui/animated-gradient";
 import { BlurFade } from "@/components/ui/blur-fade";
 import { SectionHeader } from "@/components/ui/section-header";
@@ -50,6 +65,110 @@ const PILLARS = [
     title: "Google OAuth, revocable",
     body: "Mailient connects to Gmail through Google's OAuth. We hold no password, we ask only for the scopes we use, and you can revoke access from your Google account in one click.",
     proof: "Isolated token, revoke anytime",
+  },
+];
+
+/**
+ * The EXACT Google permissions we request, from the OAuth scope string in
+ * lib/auth.js. Nothing here is aspirational — this is the consent screen a user
+ * actually sees. Showing it plainly, with the reason for each, is a stronger
+ * trust signal than any adjective, and it must stay in sync with that scope
+ * string. If the scopes in lib/auth.js change, change this list.
+ */
+const SCOPES = [
+  {
+    label: "gmail.readonly",
+    plain: "Read your mail",
+    why: "So it can triage what arrives and draft replies in context. Reading is where the work starts.",
+  },
+  {
+    label: "gmail.modify",
+    plain: "Label & organise",
+    why: "So it can archive, label and file — the tidying you'd otherwise do by hand. It cannot permanently delete on its own.",
+  },
+  {
+    label: "gmail.send",
+    plain: "Send the replies you approve",
+    why: "So an approved draft actually goes out. Nothing sends without your say-so.",
+  },
+];
+
+/**
+ * Security FAQ. Every answer is grounded in verifiable product behaviour or in
+ * the published Privacy Policy (section numbers noted in comments), NOT in
+ * claims we cannot back. No certifications are asserted here because none are
+ * held yet — see the note in the page footer comment.
+ */
+const SECURITY_FAQS = [
+  {
+    icon: Eye,
+    q: "Can Mailient read my email?",
+    // Privacy Policy §6 (encryption) + §6 (zero-knowledge) + §12 (no training).
+    a: "Stored data is encrypted into blobs we cannot read — the keys live in your browser. To do a task you ask for, like drafting a reply, the AI reads the relevant message in memory for that task only. It is never warehoused and never used to train a model.",
+  },
+  {
+    icon: KeyRound,
+    q: "What exactly can it access?",
+    a: "Only the three Google permissions listed above — read, organise, and send. Nothing else in your Google account: not Drive, not Contacts, not your password.",
+  },
+  {
+    icon: Ban,
+    q: "Do you sell my data?",
+    // Privacy Policy §5.
+    a: "Never. Your email content and identity are not sold to advertisers, data brokers, or anyone. We also set no advertising or cross-site tracking cookies.",
+  },
+  {
+    icon: Trash2,
+    q: "What happens if I delete my account?",
+    // Privacy Policy §8 (retention).
+    a: "Your personal data is deleted or anonymised within 30 days, except where the law requires us to keep a record. Revoking Mailient's Google access takes one click in your Google account and cuts off inbox access immediately.",
+  },
+  {
+    icon: Server,
+    q: "Who else touches my data?",
+    // Privacy Policy §11 (service providers) — kept to CATEGORIES, not named
+    // vendors, to avoid asserting a specific processor we might change.
+    a: "Only the vendors needed to run the service — cloud hosting, the payment processor, the AI model providers, and the email sender — each under a data-processing agreement that forbids using your data for their own purposes. Never for advertising or profiling.",
+  },
+  {
+    icon: ShieldCheck,
+    q: "Nothing sends without me, right?",
+    a: "Right. Every reply is a draft until you approve it. The agent proposes; you decide. There is no mode where it emails people on your behalf without a review step.",
+  },
+];
+
+const RESOURCES = [
+  {
+    icon: BookOpen,
+    kind: "Deep dive",
+    title: "Zero-knowledge encryption, explained",
+    desc: "Most AI email tools have to read your data to work. The architecture that lets Mailient not.",
+    href: "/blogs/zero-knowledge-encryption-email-privacy",
+    external: false,
+  },
+  {
+    icon: FileText,
+    kind: "Policy",
+    title: "Privacy Policy",
+    desc: "What we collect, what we don't, how long we keep it, and the rights you have over it.",
+    href: "/privacy-policy",
+    external: false,
+  },
+  {
+    icon: Scale,
+    kind: "Policy",
+    title: "Terms of Service",
+    desc: "The agreement that governs your use of Mailient, in full.",
+    href: "/terms-of-service",
+    external: false,
+  },
+  {
+    icon: KeyRound,
+    kind: "Your control",
+    title: "Manage Google access",
+    desc: "See and revoke Mailient's Google permissions any time, straight from your Google account.",
+    href: "https://myaccount.google.com/permissions",
+    external: true,
   },
 ];
 
@@ -143,6 +262,112 @@ export default function SecurityPage() {
                     <span>{pillar.proof}</span>
                   </div>
                 </div>
+              </BlurFade>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* THE EXACT PERMISSIONS — the real OAuth scopes, plainly */}
+      <section className="relative z-10 w-full max-w-5xl px-6 pb-16 md:pb-24 border-t border-white/[0.06] pt-16 md:pt-24">
+        <SectionHeader
+          pill="What we ask Google for"
+          icon={KeyRound}
+          heading="Three permissions. No more."
+          subtitle="Exactly what the Google consent screen shows you — and why each one is there."
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {SCOPES.map((scope, i) => (
+            <BlurFade key={scope.label} delay={0.1 + i * 0.08} duration={0.8} inView className="h-full">
+              <div className="linear-grid-card h-full p-8 flex flex-col">
+                <span className="font-mono text-[11px] tracking-tight text-emerald-400 relative z-10">
+                  {scope.label}
+                </span>
+                <h3 className="mt-3 text-lg font-semibold text-white relative z-10">
+                  {scope.plain}
+                </h3>
+                <p className="mt-3 text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
+                  {scope.why}
+                </p>
+              </div>
+            </BlurFade>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center text-xs text-neutral-500 font-sans">
+          We never request access to Drive, Contacts, or the rest of your Google account.
+        </p>
+      </section>
+
+      {/* SECURITY FAQ */}
+      <section className="relative z-10 w-full max-w-4xl px-6 pb-16 md:pb-24 border-t border-white/[0.06] pt-16 md:pt-24">
+        <SectionHeader
+          pill="Straight answers"
+          icon={ShieldCheck}
+          heading="What people ask before they trust us."
+          subtitle="No hedging. If a question isn't here, the answer is one email away."
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {SECURITY_FAQS.map((faq, i) => {
+            const FaqIcon = faq.icon;
+            return (
+              <BlurFade key={faq.q} delay={0.1 + i * 0.06} duration={0.8} inView className="h-full">
+                <div className="linear-grid-card h-full p-8 flex flex-col">
+                  <div className="flex items-start gap-3 relative z-10">
+                    <span className="gradient-tile w-9 h-9 shrink-0">
+                      <FaqIcon className="w-4 h-4 text-white" />
+                    </span>
+                    <h3 className="text-base font-semibold text-white leading-snug pt-1.5">
+                      {faq.q}
+                    </h3>
+                  </div>
+                  <p className="mt-4 text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
+                    {faq.a}
+                  </p>
+                </div>
+              </BlurFade>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* RELATED READING — real, existing pages only */}
+      <section className="relative z-10 w-full max-w-5xl px-6 pb-16 md:pb-24 border-t border-white/[0.06] pt-16 md:pt-24">
+        <SectionHeader
+          pill="Read further"
+          icon={BookOpen}
+          heading="The full picture, in your own time."
+          subtitle="The architecture, the policies, and the switch that's always yours to flip."
+        />
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {RESOURCES.map((res, i) => {
+            const ResIcon = res.icon;
+            return (
+              <BlurFade key={res.title} delay={0.1 + i * 0.07} duration={0.8} inView className="h-full">
+                <Link
+                  href={res.href}
+                  {...(res.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                  className="linear-grid-card linear-grid-card-lift h-full p-8 flex flex-col group cursor-pointer no-underline"
+                >
+                  <div className="flex items-center justify-between relative z-10">
+                    <span className="gradient-tile w-10 h-10">
+                      <ResIcon className="w-4 h-4 text-white" />
+                    </span>
+                    <ArrowUpRight className="w-4 h-4 text-neutral-600 group-hover:text-white transition-colors" />
+                  </div>
+                  <span className="mt-6 font-mono text-[10px] tracking-[0.2em] uppercase text-neutral-500 relative z-10">
+                    {res.kind}
+                  </span>
+                  <h3 className="mt-2 text-lg font-semibold text-white relative z-10">
+                    {res.title}
+                  </h3>
+                  <p className="mt-2 text-sm text-neutral-400 font-light leading-relaxed font-sans relative z-10">
+                    {res.desc}
+                  </p>
+                </Link>
               </BlurFade>
             );
           })}

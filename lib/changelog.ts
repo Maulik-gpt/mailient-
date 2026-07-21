@@ -30,9 +30,12 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Improved',
-        title: 'The security page, rebuilt',
+        title: 'The security page, rebuilt — and far more thorough',
         points: [
           'The security page now matches the rest of the site — the same cards, headings and motion — instead of looking like a page from a different product.',
+          'It now spells out the exact three Google permissions Mailient asks for, and why each one is there — the same list the Google consent screen shows you.',
+          'Added a plain-English security FAQ: what the AI can read, what it can access, whether data is ever sold, what happens when you delete your account, who else touches your data, and the fact that nothing sends without your approval.',
+          'Added links to the deeper reading — the zero-knowledge encryption write-up, the Privacy Policy, the Terms, and the one-click page to revoke Google access.',
           'Fixed a set of text colours across the site that were silently not applying, including a few labels and ticks that were meant to stand out and were rendering as plain grey.',
         ],
       },
