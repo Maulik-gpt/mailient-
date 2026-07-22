@@ -71,20 +71,35 @@ export async function POST(request: NextRequest) {
 
   const result = await sendLandingHookEmail({ toEmail: email });
 
-  // Stamp when the send actually happened, so it's auditable. Only meaningful
-  // when the row exists (i.e. the insert above succeeded).
-  if (result?.success && !insertErr) {
-    try {
-      await supabase
-        .from('landing_leads')
-        .update({ hook_emailed_at: new Date().toISOString() })
-        .eq('email', email);
-    } catch {
-      // Non-fatal.
+  if (result?.success) {
+    // Stamp when the send actually happened, so it's auditable. Only meaningful
+    // when the row exists (i.e. the insert above succeeded).
+    if (!insertErr) {
+      try {
+        await supabase
+          .from('landing_leads')
+          .update({ hook_emailed_at: new Date().toISOString() })
+          .eq('email', email);
+      } catch {
+        // Non-fatal.
+      }
     }
+  } else {
+    // Loud, so a silent Resend failure (unverified domain, missing prod
+    // RESEND_API_KEY, rejected send) is visible in the function logs instead of
+    // being masked by a 200. This was the debugging blind spot: the visitor saw
+    // "Sent" while nothing went out.
+    console.error('[leads] hook email did NOT send:', result?.error);
   }
 
-  // Always report success to the visitor — a Resend hiccup shouldn't look like
-  // their submission failed; the lead is captured either way.
-  return NextResponse.json({ ok: true });
+  // Report the SEND outcome, not just capture. The visitor experience is
+  // unchanged (the component treats any 200 as done, and the lead is stored
+  // regardless), but the response body now reveals whether the email actually
+  // went out — open Network on a test submit to see `sent: false` + the reason
+  // when Resend is misconfigured.
+  return NextResponse.json({
+    ok: true,
+    sent: !!result?.success,
+    ...(result?.success ? {} : { reason: result?.error || 'unknown' }),
+  });
 }
