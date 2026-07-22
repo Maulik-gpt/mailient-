@@ -54,6 +54,7 @@ import { SectionHeader } from "@/components/ui/section-header";
 import { TestimonialsSection } from "@/components/ui/testimonials-section";
 import { WordBlurReveal } from "@/components/ui/word-blur-reveal";
 import { DemoVideo } from "@/components/ui/demo-video";
+import { LeadCapture } from "@/components/ui/lead-capture";
 import { landingFaqs } from "@/lib/landing-faqs";
 
 function ActiveCounter({ target = 1420 }: { target?: number }) {
@@ -1444,6 +1445,10 @@ export function LinearLanding() {
           </div>
         </BlurFade>
       </section>
+
+      {/* Soft-conversion email capture — for visitors who won't connect Gmail
+          yet. Opt-in only; fires one hook email via /api/leads. */}
+      <LeadCapture />
 
       {/* Premium Dithered CTA Section */}
       <BlurFade delay={0.1} duration={0.8} inView>
