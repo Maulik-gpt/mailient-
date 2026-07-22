@@ -30,7 +30,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip as RTooltip,
+  BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip as RTooltip, LabelList,
 } from 'recharts';
 import {
   Sparkles, Mail, Calendar, Clock, ArrowRight, MessageSquare,
@@ -88,12 +88,27 @@ function clockTime(iso: string): string {
   return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
 }
 
+// Conversations as returned by /api/home-feed/conversations (the real Gmail scan).
+interface ServerConvo { key: string; name: string; email: string; subject: string; status: ConvoStatus; summary: string; nextAction: string; lastActivityIso: string; daysSince: number; fromThem: boolean; messageCount: number; }
+
+// Instant-load cache: show the last snapshot the moment the tab paints, then
+// revalidate in the background. This is what SiftToday did and I'd dropped —
+// the reason the redesign "took too long to load" was a cold wait on the
+// server AI triage every single time.
+function readCache<T>(k: string): T | null {
+  try { const v = sessionStorage.getItem(k); return v ? JSON.parse(v) as T : null; } catch { return null; }
+}
+function writeCache(k: string, v: unknown) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* quota */ } }
+
 export function CommandCenter({ userName }: { userName?: string }) {
   const router = useRouter();
-  const [today, setToday] = useState<TodayData | null>(null);
-  const [week, setWeek] = useState<WeekData | null>(null);
+  const [today, setToday] = useState<TodayData | null>(() => readCache('cc_today'));
+  const [week, setWeek] = useState<WeekData | null>(() => readCache('cc_week'));
   const [recs, setRecs] = useState<Rec[] | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [convos, setConvos] = useState<ServerConvo[] | null>(() => readCache('cc_convos'));
+  const [convosLoading, setConvosLoading] = useState(true);
+  // Only block on a skeleton when we have NOTHING cached to show.
+  const [loading, setLoading] = useState(() => !readCache('cc_today'));
 
   const openArcus = useCallback((prompt: string) => {
     try { sessionStorage.setItem('arcus_prefill', prompt); } catch { /* incognito */ }
@@ -103,16 +118,27 @@ export function CommandCenter({ userName }: { userName?: string }) {
   useEffect(() => {
     let alive = true;
     (async () => {
-      // today + week land fast and drive the whole above-the-fold; recs are
-      // slower (an LLM call) so they stream in after and never block first paint.
       const [t, w] = await Promise.allSettled([
         fetch('/api/home-feed/today').then(r => r.ok ? r.json() : null),
         fetch('/api/home-feed/week-activity').then(r => r.ok ? r.json() : null),
       ]);
       if (!alive) return;
-      if (t.status === 'fulfilled' && t.value?.success !== false) setToday(t.value);
-      if (w.status === 'fulfilled' && w.value) setWeek(w.value);
+      if (t.status === 'fulfilled' && t.value?.success !== false && t.value) { setToday(t.value); writeCache('cc_today', t.value); }
+      if (w.status === 'fulfilled' && w.value) { setWeek(w.value); writeCache('cc_week', w.value); }
       setLoading(false);
+    })();
+    // The real relationship scan runs on its own timeline (cached server-side),
+    // so it never blocks the hero/stats/chart. Its own skeleton covers the wait.
+    (async () => {
+      try {
+        const r = await fetch('/api/home-feed/conversations');
+        if (alive && r.ok) {
+          const j = await r.json();
+          const list: ServerConvo[] = Array.isArray(j?.conversations) ? j.conversations : [];
+          setConvos(list); writeCache('cc_convos', list);
+        }
+      } catch { /* keep cached / fall back to derived */ }
+      finally { if (alive) setConvosLoading(false); }
     })();
     return () => { alive = false; };
   }, []);
@@ -151,19 +177,41 @@ export function CommandCenter({ userName }: { userName?: string }) {
 
   // ── Derive the four headline stats + the key-conversations list ───────────────
   const stats = useMemo(() => {
-    const handled = (today?.agentRuns || []).reduce(
-      (n, r) => n + r.artifactCounts.gmail + r.artifactCounts.calendar + r.artifactCounts.notion + r.artifactCounts.slack,
-      0,
-    );
+    // "Handled for you" = the real work Arcus did this week. It USED to sum
+    // artifact_links, which is empty on most runs (the real signal is tool_calls,
+    // already totalled by /week-activity) — so it read 0 while the chart showed
+    // 77. Now it uses that same real total, with the artifact sum as a fallback.
+    const artifactHandled = (today?.agentRuns || []).reduce(
+      (n, r) => n + r.artifactCounts.gmail + r.artifactCounts.calendar + r.artifactCounts.notion + r.artifactCounts.slack, 0);
     return {
       reply: today?.decide.length || 0,
       meetings: today?.showUp.length || 0,
       awaiting: today?.chase.length || 0,
-      handled,
+      handled: (week?.totalActions ?? 0) || artifactHandled,
     };
-  }, [today]);
+  }, [today, week]);
 
-  const conversations = useMemo<Conversation[]>(() => {
+  // Prefer the REAL Gmail relationship scan (server-side, cached). It surfaces
+  // important ongoing threads even when nothing is "actionable" — the whole
+  // point of the redesign. Until it lands (or if it's empty), fall back to
+  // deriving from the action pools so the section is never blank when there IS
+  // action to show.
+  const serverConversations = useMemo<Conversation[]>(() => {
+    if (!convos?.length) return [];
+    return convos.map(c => ({
+      key: c.key,
+      name: c.name,
+      email: c.email,
+      subject: c.subject,
+      status: c.status,
+      context: c.summary,
+      when: c.status === 'waiting_on_them' ? `${c.daysSince}d silent` : relTime(c.lastActivityIso),
+      urgency: c.status === 'awaiting_you' ? 100 : c.status === 'waiting_on_them' ? 50 : 20,
+      prompt: c.nextAction,
+    }));
+  }, [convos]);
+
+  const derivedConversations = useMemo<Conversation[]>(() => {
     if (!today) return [];
     const byKey = new Map<string, Conversation>();
     const put = (c: Conversation) => {
@@ -214,6 +262,8 @@ export function CommandCenter({ userName }: { userName?: string }) {
     return [...byKey.values()].sort((a, b) => b.urgency - a.urgency).slice(0, 6);
   }, [today]);
 
+  const conversations = serverConversations.length ? serverConversations : derivedConversations;
+
   if (loading) return <CommandCenterSkeleton />;
 
   const nothingPressing = stats.reply === 0 && stats.meetings === 0 && stats.awaiting === 0;
@@ -245,7 +295,7 @@ export function CommandCenter({ userName }: { userName?: string }) {
       <WeekChart week={week} onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')} />
 
       {/* 3 ── KEY CONVERSATIONS (the new capability) ────────────────────────── */}
-      {conversations.length > 0 && (
+      {conversations.length > 0 ? (
         <Section title="Key conversations" sub="Where your important threads stand right now">
           <div className="grid sm:grid-cols-2 gap-2.5">
             {conversations.map(c => (
@@ -253,7 +303,13 @@ export function CommandCenter({ userName }: { userName?: string }) {
             ))}
           </div>
         </Section>
-      )}
+      ) : convosLoading ? (
+        <Section title="Key conversations" sub="Reading your inbox for what matters…">
+          <div className="grid sm:grid-cols-2 gap-2.5">
+            {[0, 1, 2, 3].map(i => <div key={i} className="h-28 rounded-2xl bg-arcus-surface animate-pulse" />)}
+          </div>
+        </Section>
+      ) : null}
 
       {/* 4 ── NEEDS A REPLY ─────────────────────────────────────────────────── */}
       {today && today.decide.length > 0 && (
@@ -341,6 +397,15 @@ function Section({ title, sub, action, children }: { title: string; sub?: string
       </div>
       {children}
     </motion.section>
+  );
+}
+
+function Metric({ value, label, big }: { value: string; label: string; big?: boolean }) {
+  return (
+    <div>
+      <div className={cn('font-semibold tracking-tight text-arcus-fg tabular-nums leading-none', big ? 'text-[24px]' : 'text-[18px]')}>{value}</div>
+      <div className="text-[11px] text-arcus-fg-tertiary mt-1">{label}</div>
+    </div>
   );
 }
 
@@ -526,19 +591,26 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
     );
   }
 
-  const peak = Math.max(...week.days.map(d => d.actions), 1);
+  const busiest = Math.max(...week.days.map(d => d.actions), 0);
+  const avg = Math.round(week.totalActions / 7);
   return (
     <Section title="Your week" sub={`${week.totalActions} action${week.totalActions === 1 ? '' : 's'} across ${week.totalRuns} run${week.totalRuns === 1 ? '' : 's'}, last 7 days`}>
       <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-        <div className="h-[132px]">
+        <div className="flex items-center gap-6 mb-4">
+          <Metric big value={String(week.totalActions)} label="actions this week" />
+          <div className="w-px h-8 bg-arcus-border" />
+          <Metric value={String(avg)} label="daily average" />
+          <Metric value={String(busiest)} label="busiest day" />
+        </div>
+        <div className="h-[128px]">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={week.days} margin={{ top: 6, right: 4, bottom: 0, left: 4 }} barCategoryGap="28%">
+            <BarChart data={week.days} margin={{ top: 18, right: 2, bottom: 0, left: 2 }} barCategoryGap="34%">
               <XAxis
                 dataKey="label" tickLine={false} axisLine={false}
-                tick={{ fontSize: 11, fill: 'var(--arcus-fg-muted, #9a9a9a)' }} dy={4}
+                tick={{ fontSize: 11, fill: 'var(--arcus-fg-muted, #9a9a9a)' }} dy={6}
               />
               <RTooltip
-                cursor={{ fill: 'var(--arcus-surface-hover, rgba(0,0,0,0.04))' }}
+                cursor={false}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload as WeekDay;
@@ -550,14 +622,26 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
                   );
                 }}
               />
-              {/* Single neutral series — one ink, no legend needed (the title names it).
-                  Today's bar is de-emphasised because it's still filling ("so far"). */}
-              <Bar dataKey="actions" radius={[4, 4, 0, 0]} maxBarSize={40}>
+              {/* A faint full-height TRACK behind every bar gives the 7-day grid a
+                  shape even on zero days — the old chart left empty days as dead
+                  space, which read as broken. One neutral ink for the fill (no
+                  legend needed; the title names it); today de-emphasised ("so
+                  far"); values labelled directly so there's no y-axis to read. */}
+              <Bar
+                dataKey="actions" radius={[5, 5, 5, 5]} maxBarSize={30}
+                background={{ fill: 'var(--arcus-elevated, #f0f0f0)', radius: 5 } as any}
+                minPointSize={3}
+              >
+                <LabelList
+                  dataKey="actions" position="top"
+                  formatter={(v: any) => (Number(v) > 0 ? String(v) : '')}
+                  style={{ fill: 'var(--arcus-fg-secondary, #555)', fontSize: 11, fontWeight: 600 }}
+                />
                 {week.days.map((d, i) => (
                   <Cell
                     key={i}
                     fill={d.isToday ? 'var(--arcus-fg-muted, #b5b5b5)' : 'var(--arcus-fg, #111)'}
-                    fillOpacity={d.actions === 0 ? 0.12 : 1}
+                    fillOpacity={d.actions === 0 ? 0 : 1}
                   />
                 ))}
               </Bar>
