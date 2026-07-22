@@ -1029,6 +1029,35 @@ export function GmailInterfaceFixed({ forceTraditionalView = false }: GmailInter
     const [draftSubject, setDraftSubject] = useState('');
     const [draftTo, setDraftTo] = useState('');
     const [draftOriginalEmailBody, setDraftOriginalEmailBody] = useState('');
+
+    // Command Center hands off an ALREADY-EXISTING Gmail draft here (sessionStorage
+    // key 'hf_open_draft', same handoff pattern as 'arcus_prefill') when the user
+    // clicks "Draft reply" on a thread that already has one — instead of a fresh AI
+    // generation, open that real content directly in this editor, ready to review
+    // and send. Runs once per mount of the Inbox tab; the key is cleared immediately
+    // so revisiting the tab later doesn't reopen a stale handoff.
+    useEffect(() => {
+        if (!forceTraditionalView) return;
+        let raw: string | null = null;
+        try { raw = sessionStorage.getItem('hf_open_draft'); } catch { return; }
+        if (!raw) return;
+        try { sessionStorage.removeItem('hf_open_draft'); } catch { /* ignore */ }
+        try {
+            const draft = JSON.parse(raw) as { threadId: string; to: string; subject: string; body: string; isHtml: boolean };
+            const html = draft.isHtml ? draft.body : (draft.body || '').replace(/\n/g, '<br/>');
+            setDraftTo(draft.to || '');
+            setDraftSubject(draft.subject || '');
+            setDraftOriginalEmailBody(draft.body || '');
+            setDraftContent(html);
+            setDraftAttachments([]);
+            setIsDrafting(false);
+            setShowDraftEditor(true);
+        } catch {
+            /* malformed handoff payload — ignore, no editor opens */
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [forceTraditionalView]);
+
     const handleTraditionalDraftReply = async (email: any) => {
         setIsDrafting(true);
         setIsGenerating(true);

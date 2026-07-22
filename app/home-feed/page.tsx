@@ -78,6 +78,16 @@ function HomeFeedContent() {
     window.history.replaceState(null, '', url);
   }, [searchParams]);
 
+  // Command Center's "Draft reply" hands off here when a thread ALREADY has a
+  // Gmail draft — instead of sending a redundant prompt to Arcus, stash the
+  // existing draft's content for the Inbox tab's own draft-reply box to pick
+  // up (mirrors the established 'arcus_prefill' sessionStorage handoff), then
+  // switch tabs so the user lands right on it, ready to review and send.
+  const openExistingDraft = useCallback((draft: { threadId: string; to: string; subject: string; body: string; isHtml: boolean }) => {
+    try { sessionStorage.setItem('hf_open_draft', JSON.stringify(draft)); } catch { /* incognito */ }
+    switchTab('inbox');
+  }, [switchTab]);
+
   // Check authentication, subscription status, and onboarding status
   useEffect(() => {
     if (status === "loading") return;
@@ -410,7 +420,7 @@ function HomeFeedContent() {
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
           {activeTab === 'today'
-            ? <CommandCenter userName={(session?.user?.name || '').trim().split(/\s+/)[0] || undefined} />
+            ? <CommandCenter userName={(session?.user?.name || '').trim().split(/\s+/)[0] || undefined} onOpenExistingDraft={openExistingDraft} />
             : <GmailInterfaceFixed forceTraditionalView />}
         </motion.div>
       </AnimatePresence>

@@ -681,7 +681,14 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   // ── HEURISTIC SAFETY NET — the pre-AI behavior: top-3 by signal order, with the
   // robust OpenRouterAIService reason enrichment on the Decide bucket.
   if (!agentOk) {
-    decide = decidePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
+    // Hard-drop anything flagged as newsletter/automated BEFORE slicing to the
+    // top N. Without this, a quiet inbox with fewer than HEURISTIC_MAX_PER_BUCKET
+    // genuine candidates let noise (rank 9, sorted last but still in the pool)
+    // fill the remaining "Needs a reply" slots whenever the AI triage path was
+    // unavailable — exactly the "why is this newsletter under Needs a reply"
+    // failure mode. An empty/shorter bucket is correct; a padded one is not.
+    const genuinePool = decidePool.filter((d) => d.reason !== 'Likely newsletter/automated');
+    decide = genuinePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
     const snippetById = new Map<string, string>(decide.map((d) => [d.id, d.snippet || '']));
     await enrichDecideReasons(decide, snippetById);
     decide = decide.map(stripSnippet);

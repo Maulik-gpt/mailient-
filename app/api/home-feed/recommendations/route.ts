@@ -53,6 +53,44 @@ const APP_OF: Record<SignalKind, string> = {
   meeting: 'Calendar', booking: 'Cal.com', notion: 'Notion', slack: 'Slack', promised: 'Notes',
 };
 
+// Same mapping, but to the short KEY the "Across your apps" chart renders —
+// this is this endpoint's connection-aware cross-app gather already in effect
+// (gatherServerSignals only calls a source when its token exists AND the user
+// left it enabled), so a count here already means "connected AND active this
+// week." 'promised' has no key: it's the user's own commitments, not a
+// connected app, so it never appears in the chart. Disconnected/quiet apps
+// just never get a key set above 0 — nothing to render, nothing invented.
+type AppKey = 'gmail' | 'calendar' | 'notion' | 'slack' | 'calcom';
+const APP_KEY_OF: Partial<Record<SignalKind, AppKey>> = {
+  decide: 'gmail', chase: 'gmail', bounce: 'gmail',
+  meeting: 'calendar', booking: 'calcom', notion: 'notion', slack: 'slack',
+};
+
+interface SiftSummary { headline: string; analysis: string; }
+
+// Guaranteed-available fallback — built ONLY from real counts already computed
+// server-side, same two-tier pattern as /api/home-feed/conversations
+// (deterministicFill + aiUpgrade): the section is never blank or lorem when
+// the model is unavailable, and the AI pass (if it lands) just makes the same
+// facts read more like a person wrote them.
+function deterministicSift(items: InItem[]): SiftSummary {
+  const decideN = items.filter((i) => i.kind === 'decide').length;
+  const chaseN = items.filter((i) => i.kind === 'chase').length;
+  const meetingN = items.filter((i) => i.kind === 'meeting').length;
+  const otherN = items.length - decideN - chaseN - meetingN;
+  const parts: string[] = [];
+  if (decideN) parts.push(`${decideN} email${decideN === 1 ? '' : 's'} need${decideN === 1 ? 's' : ''} a reply`);
+  if (chaseN) parts.push(`${chaseN} follow-up${chaseN === 1 ? '' : 's'} going quiet`);
+  if (meetingN) parts.push(`${meetingN} meeting${meetingN === 1 ? '' : 's'} coming up`);
+  if (!parts.length && otherN) parts.push(`${otherN} item${otherN === 1 ? '' : 's'} worth a look`);
+  const headline = parts.length ? `${parts.join(', ')}.` : 'Nothing urgent anywhere — your inbox and calendar are handled.';
+  const apps = Array.from(new Set(items.map((i) => APP_OF[i.kind]))).filter((a) => a !== 'Notes');
+  const analysis = apps.length
+    ? `${headline} Checked in across ${apps.join(', ')} — this reflects only what's actually connected.`
+    : headline;
+  return { headline, analysis };
+}
+
 interface OutRec {
   id: string;
   category: Category;
@@ -145,7 +183,9 @@ function statFor(refs: InItem[]): { value: number; label: string } {
   return { value: refs.length, label: 'items' };
 }
 
-async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''): Promise<OutRec[] | null> {
+interface GenerateResult { recs: OutRec[]; sift: SiftSummary | null; }
+
+async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''): Promise<GenerateResult | null> {
   const ks = keys();
   if (!ks.length || !items.length) return null;
 
@@ -185,8 +225,9 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
     '- title: a short, plain imperative, ≤7 words (e.g. "Reconnect with Sarah before it stalls").\n' +
     '- summary: ONE sentence, specific, naming the real person/subject and why it matters now.\n' +
     '- arcusPrompt: one self-contained instruction the user hands to their AI assistant (Arcus) to DO this with zero further typing (e.g. "Draft a warm, low-pressure follow-up to Sarah Chen about the Q3 proposal she hasn\'t replied to."). Grounded entirely in the referenced items.\n' +
-    '- ctaLabel: 2-3 words for the button (e.g. "Draft nudge", "Prep me", "Clear it").\n' +
-    'Return ONLY JSON: {"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","atRisk":true|false,"refIds":[numbers]}]}';
+    '- ctaLabel: 2-3 words for the button (e.g. "Draft nudge", "Prep me", "Clear it").\n\n' +
+    'ALSO write a "sift" object — a Siri-style spoken-aloud read of the founder\'s WHOLE connected ecosystem right now (not just the recommendations above): headline = ONE short punchy sentence (≤14 words) naming the single thing that matters most today. analysis = 4-5 sentences synthesizing the real state across every app that has items below (who needs a reply, what\'s going quiet, what\'s coming up, what\'s handled) — read like a sharp chief of staff briefing the founder in 20 seconds, not a bullet list. Ground both ENTIRELY in the numbered items; NEVER invent a person, count, or company.\n' +
+    'Return ONLY JSON: {"sift":{"headline","analysis"},"recommendations":[{"category","title","summary","arcusPrompt","ctaLabel","atRisk":true|false,"refIds":[numbers]}]}';
 
   const basePayload = {
     max_tokens: 900,
@@ -242,7 +283,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
         const recs = validate(raw, items, max);
         if (recs.length) {
           console.log(`[recs] ${model} -> ${recs.length} recs`);
-          return recs; // got usable AI recs
+          return { recs, sift: validateSift(parsed?.sift) }; // got usable AI recs (sift falls back deterministically if missing/invalid)
         }
         console.warn(`[recs] ${model} parsed but ${raw.length} raw -> 0 valid after refId check`);
       } catch (e: any) {
@@ -279,6 +320,16 @@ function extractJsonObject(raw: string): any | null {
       logEvent({ channel: "failures", event: "❌ API Error", description: "Unknown error" }); /* give up */ }
   }
   return null;
+}
+
+// Same discipline as validate() below, just for the free-text sift fields:
+// reject anything empty/malformed rather than let a blank or truncated headline
+// through — the caller always has the deterministic sift to fall back to.
+function validateSift(raw: any): SiftSummary | null {
+  const headline = clampStr(raw?.headline, 90);
+  const analysis = clampStr(raw?.analysis, 380);
+  if (!headline || !analysis) return null;
+  return { headline, analysis };
 }
 
 // Reject anything the model invented; attach real, server-computed stats.
@@ -567,16 +618,34 @@ export async function POST(req: Request) {
     const items = filterByApps(appendServerSignals(clientItems, serverSignals), prefs.apps);
 
     if (!items.length) {
-      return NextResponse.json({ success: true, recommendations: [], source: 'empty' });
+      return NextResponse.json({ success: true, recommendations: [], source: 'empty', appCounts: {}, sift: null });
     }
 
     const apps = Array.from(new Set(items.map(i => APP_OF[i.kind])));
-    const recs = await generate(items, prefs, founderModel);
-    if (!recs || !recs.length) {
-      // Signal the client to keep its instant deterministic recommendations.
-      return NextResponse.json({ success: true, recommendations: [], source: 'fallback', apps });
+    // Real per-app counts for the "Across your apps" chart — already
+    // connection-gated (gatherServerSignals only ever produced a signal for an
+    // app with a live token) and toggle-gated (filterByApps above), so a key
+    // only appears here for an app that's actually connected and active.
+    const appCounts: Record<AppKey, number> = { gmail: 0, calendar: 0, notion: 0, slack: 0, calcom: 0 };
+    for (const it of items) {
+      const k = APP_KEY_OF[it.kind];
+      if (k) appCounts[k] += 1;
     }
-    return NextResponse.json({ success: true, recommendations: recs, source: 'ai', apps });
+    const fallbackSift = deterministicSift(items);
+
+    const genResult = await generate(items, prefs, founderModel);
+    if (!genResult || !genResult.recs.length) {
+      // Signal the client to keep its instant deterministic recommendations.
+      return NextResponse.json({ success: true, recommendations: [], source: 'fallback', apps, appCounts, sift: fallbackSift });
+    }
+    return NextResponse.json({
+      success: true,
+      recommendations: genResult.recs,
+      source: 'ai',
+      apps,
+      appCounts,
+      sift: genResult.sift || fallbackSift,
+    });
   } catch (err: any) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     return NextResponse.json({ success: true, recommendations: [], source: 'error', error: String(err?.message || 'failed').slice(0, 200) }, { status: 200 });

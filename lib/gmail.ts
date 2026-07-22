@@ -633,6 +633,23 @@ export class GmailService {
   }
 
   /**
+   * List drafts (metadata only — each item is { id, message: { id, threadId } }).
+   * Used to check whether a thread already has a draft before generating a new one.
+   */
+  async listDrafts(maxResults = 100, pageToken = null) {
+    const params = new URLSearchParams({ maxResults: String(maxResults) });
+    if (pageToken) params.append('pageToken', pageToken);
+    return this.makeRequest(`${this.baseUrl}/drafts?${params}`);
+  }
+
+  /**
+   * Get a single draft's full content (headers + body) by draft id.
+   */
+  async getDraft(draftId) {
+    return this.makeRequest(`${this.baseUrl}/drafts/${draftId}?format=full`);
+  }
+
+  /**
    * Send email
    */
   /**

@@ -47,6 +47,7 @@
   --arcus-chart-green:   #008300;
   --arcus-chart-magenta: #e87ba4;
   --arcus-chart-yellow:  #eda100;
+  --arcus-chart-aqua:    #1baf7a;
 }
 
 /* --- Premium Interactive Polish --- */
@@ -643,6 +644,7 @@ body,
   --arcus-chart-green:   #008300;
   --arcus-chart-magenta: #d55181;
   --arcus-chart-yellow:  #c98500;
+  --arcus-chart-aqua:    #199e70;
 
   --background: #000000;
   --foreground: #f7f8f8;

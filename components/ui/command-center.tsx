@@ -30,7 +30,7 @@ import { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip as RTooltip, LabelList,
+  BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip as RTooltip,
 } from 'recharts';
 import {
   Sparkles, Mail, Calendar, Clock, ArrowRight, MessageSquare,
@@ -46,11 +46,19 @@ interface ShowUpItem { id: string; start: string; end: string | null; title: str
 interface AgentRunItem { id: string; agentName: string; status: string; summary: string | null; toolCalls: number; ranAt: string; artifactCounts: { gmail: number; calendar: number; notion: number; slack: number }; }
 interface TodayData { decide: DecideItem[]; showUp: ShowUpItem[]; chase: ChaseItem[]; actionItems: any[]; agentRuns: AgentRunItem[]; summary: string | null; }
 interface WeekDay { date: string; label: string; isToday: boolean; runs: number; actions: number; }
-// Where the week's artifact links landed, summed across the 7 days (see
-// /api/home-feed/week-activity) — real counts, never illustrative.
-interface AppTotals { gmail: number; calendar: number; notion: number; slack: number; }
-interface WeekData { days: WeekDay[]; totalRuns: number; totalActions: number; hasData: boolean; appTotals?: AppTotals; }
+interface WeekData { days: WeekDay[]; totalRuns: number; totalActions: number; hasData: boolean; }
 interface Rec { id: string; category: string; title: string; summary: string; arcusPrompt: string; ctaLabel: string; stat: { value: number; label: string }; atRisk?: boolean; }
+// Real per-app signal counts from /api/home-feed/recommendations — already
+// connection-gated there (a gatherer only ever produces a signal for an app
+// with a live token) and toggle-gated by Customize Briefing, so a nonzero
+// count here means "connected AND active," never an invented number.
+interface AppCounts { gmail: number; calendar: number; notion: number; slack: number; calcom: number; }
+// The "Sift says…" ecosystem read — same endpoint, same real items, an extra
+// field on the one LLM call already being made (no added cost/latency).
+interface SiftSummary { headline: string; analysis: string; }
+// What the existing Gmail draft for a thread looks like, handed to the Inbox
+// tab's draft-reply box so it can open pre-filled instead of going to Arcus.
+interface ExistingDraft { threadId: string; to: string; subject: string; body: string; isHtml: boolean; }
 
 // A person-keyed conversation with its current status. Derived, never invented.
 // 'active' = a genuinely ongoing thread that's neither on you nor gone quiet
@@ -110,11 +118,19 @@ function readCache<T>(k: string): T | null {
 }
 function writeCache(k: string, v: unknown) { try { sessionStorage.setItem(k, JSON.stringify(v)); } catch { /* quota */ } }
 
-export function CommandCenter({ userName }: { userName?: string }) {
+export function CommandCenter({ userName, onOpenExistingDraft }: {
+  userName?: string;
+  // Passed down from home-feed/page.tsx: switches to the Inbox tab and hands
+  // the existing draft to its draft-reply box. Optional so CommandCenter can
+  // still render standalone (e.g. in a future test/story) without it.
+  onOpenExistingDraft?: (draft: ExistingDraft) => void;
+}) {
   const router = useRouter();
   const [today, setToday] = useState<TodayData | null>(() => readCache('cc_today'));
   const [week, setWeek] = useState<WeekData | null>(() => readCache('cc_week'));
   const [recs, setRecs] = useState<Rec[] | null>(null);
+  const [appCounts, setAppCounts] = useState<AppCounts | null>(() => readCache('cc_appcounts'));
+  const [sift, setSift] = useState<SiftSummary | null>(() => readCache('cc_sift'));
   const [convos, setConvos] = useState<ServerConvo[] | null>(() => readCache('cc_convos'));
   const [convosLoading, setConvosLoading] = useState(true);
   // Only block on a skeleton when we have NOTHING cached to show.
@@ -124,6 +140,29 @@ export function CommandCenter({ userName }: { userName?: string }) {
     try { sessionStorage.setItem('arcus_prefill', prompt); } catch { /* incognito */ }
     router.push('/dashboard/agent-talk');
   }, [router]);
+
+  // "Needs a reply" → Draft reply: check for an already-existing Gmail draft on
+  // this thread FIRST. If one exists, this is NOT an Arcus job — hand it to the
+  // Inbox tab's own draft-reply box (pre-filled, ready to review/send) instead
+  // of sending a redundant "draft a reply" prompt to Arcus, which would either
+  // duplicate the draft or confuse the user about which one is current. Fails
+  // soft to the normal Arcus prompt on any error/timeout/missing callback.
+  const handleDraftReply = useCallback(async (d: DecideItem) => {
+    const prompt = `Draft a reply to ${d.sender.name || d.sender.email} about "${d.subject}". Read the thread first, then write it in my voice.`;
+    if (onOpenExistingDraft) {
+      try {
+        const res = await fetch(`/api/gmail/drafts/for-thread?threadId=${encodeURIComponent(d.threadId)}`, { signal: AbortSignal.timeout(6000) });
+        if (res.ok) {
+          const j = await res.json();
+          if (j?.exists) {
+            onOpenExistingDraft({ threadId: d.threadId, to: j.to || '', subject: j.subject || d.subject, body: j.body || '', isHtml: !!j.isHtml });
+            return;
+          }
+        }
+      } catch { /* fall through to Arcus */ }
+    }
+    openArcus(prompt);
+  }, [onOpenExistingDraft, openArcus]);
 
   useEffect(() => {
     let alive = true;
@@ -170,6 +209,8 @@ export function CommandCenter({ userName }: { userName?: string }) {
         if (alive && res.ok) {
           const j = await res.json();
           setRecs(Array.isArray(j?.recommendations) ? j.recommendations : []);
+          if (j?.appCounts) { setAppCounts(j.appCounts); writeCache('cc_appcounts', j.appCounts); }
+          if (j?.sift) { setSift(j.sift); writeCache('cc_sift', j.sift); }
         }
       } catch { if (alive) setRecs([]); }
     })();
@@ -288,12 +329,22 @@ export function CommandCenter({ userName }: { userName?: string }) {
         <h1 className="mt-1 text-[28px] sm:text-[34px] font-semibold tracking-tight text-arcus-fg">
           {greeting}{userName ? `, ${userName}` : ''}.
         </h1>
-        <p className="mt-2 max-w-2xl text-[15px] leading-relaxed text-arcus-fg-secondary">
-          {today?.summary?.trim()
-            || (nothingPressing
-              ? 'Nothing needs you right now — your inbox is handled. Here’s where things stand.'
-              : 'Here’s what deserves your attention today.')}
-        </p>
+        <div className="mt-2 max-w-2xl">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary">Sift says…</p>
+          <p className="mt-1 text-[15px] font-medium leading-relaxed text-arcus-fg">
+            {sift?.headline
+              || today?.summary?.trim()
+              || (nothingPressing
+                ? 'Nothing needs you right now — your inbox is handled.'
+                : 'Here’s what deserves your attention today.')}
+          </p>
+          {/* The longer synthesis loads a beat later (it rides the same call as
+              Worth your time) — appears once ready rather than reserving empty
+              space up front, so the hero never shows a gap while waiting. */}
+          {sift?.analysis && (
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-arcus-fg-secondary">{sift.analysis}</p>
+          )}
+        </div>
 
         <div className="mt-5 grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           <StatTile icon={<Reply className="w-4 h-4" />} value={stats.reply} label="need a reply" tone={stats.reply > 0 ? 'attn' : 'calm'} />
@@ -305,6 +356,15 @@ export function CommandCenter({ userName }: { userName?: string }) {
 
       {/* 2 ── YOUR WEEK ─────────────────────────────────────────────────────── */}
       <WeekChart week={week} onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')} />
+
+      {/* 2b ── ACROSS YOUR APPS — live, connection-gated signal counts (never a
+          fixed Gmail/Calendar-only view; whichever apps are actually connected
+          show up, the rest are simply absent, never a placeholder). ────────── */}
+      {appCounts && Object.values(appCounts).some((v) => v > 0) && (
+        <Section title="Across your apps" sub="What's active right now, only where you're connected">
+          <AppEffortBars counts={appCounts} />
+        </Section>
+      )}
 
       {/* 3 ── KEY CONVERSATIONS (the new capability) ────────────────────────── */}
       {conversations.length > 0 ? (
@@ -336,7 +396,7 @@ export function CommandCenter({ userName }: { userName?: string }) {
                 reason={d.reason}
                 when={relTime(d.receivedAt)}
                 signals={d.signals}
-                onDraft={() => openArcus(`Draft a reply to ${d.sender.name || d.sender.email} about "${d.subject}". Read the thread first, then write it in my voice.`)}
+                onDraft={() => handleDraftReply(d)}
                 onOpen={() => window.open(d.gmailUrl, '_blank')}
               />
             ))}
@@ -633,7 +693,7 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
                 tick={{ fontSize: 11, fill: 'var(--arcus-fg-muted, #9a9a9a)' }} dy={6}
               />
               <RTooltip
-                cursor={false}
+                cursor={{ fill: 'var(--arcus-elevated, #f0f0f0)', opacity: 0.6, radius: 5 } as any}
                 content={({ active, payload }) => {
                   if (!active || !payload?.length) return null;
                   const d = payload[0].payload as WeekDay;
@@ -649,17 +709,14 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
                   shape even on zero days — the old chart left empty days as dead
                   space, which read as broken. One neutral ink for the fill (no
                   legend needed; the title names it); today de-emphasised ("so
-                  far"); values labelled directly so there's no y-axis to read. */}
+                  far"). Values are NOT drawn on the bars — the hover tooltip
+                  above is the one place they appear, so the chart itself stays
+                  quiet until touched. */}
               <Bar
                 dataKey="actions" radius={[5, 5, 5, 5]} maxBarSize={30}
                 background={{ fill: 'var(--arcus-elevated, #f0f0f0)', radius: 5 } as any}
                 minPointSize={3}
               >
-                <LabelList
-                  dataKey="actions" position="top"
-                  formatter={(v: any) => (Number(v) > 0 ? String(v) : '')}
-                  style={{ fill: 'var(--arcus-fg-secondary, #555)', fontSize: 11, fontWeight: 600 }}
-                />
                 {week.days.map((d, i) => (
                   <Cell
                     key={i}
@@ -672,52 +729,60 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
           </ResponsiveContainer>
         </div>
       </div>
-      <AppEffortBars appTotals={week.appTotals} />
     </Section>
   );
 }
 
-// ── This week, by app — where the artifact links (the same ones already
-// summed into the bar chart above) actually landed. Real counts from
-// arcus_agent_runs.artifact_links, never invented. Renders nothing if every
-// app total is 0 (an agent ran but produced no gmail/calendar/notion/slack
-// artifacts) rather than drawing four empty bars.
+// ── Across your apps — live, connection-gated per-app signal counts from
+// /api/home-feed/recommendations (bounces/replies-needed for Gmail, prep-needed
+// meetings for Calendar, stale pages for Notion, awaiting-reply DMs for Slack,
+// upcoming bookings for Cal.com). A row only exists here if that app is BOTH
+// connected and produced a real signal this pass — nothing invented, nothing
+// shown for an app the user hasn't connected.
 const APP_CHART_META = {
-  gmail:    { label: 'Gmail',    Icon: Mail,     varName: '--arcus-chart-blue' },
-  calendar: { label: 'Calendar', Icon: Calendar, varName: '--arcus-chart-green' },
-  notion:   { label: 'Notion',   Icon: FileText, varName: '--arcus-chart-magenta' },
-  slack:    { label: 'Slack',    Icon: Hash,     varName: '--arcus-chart-yellow' },
+  gmail:    { label: 'Gmail',    Icon: Mail,         varName: '--arcus-chart-blue' },
+  calendar: { label: 'Calendar', Icon: Calendar,     varName: '--arcus-chart-green' },
+  notion:   { label: 'Notion',   Icon: FileText,     varName: '--arcus-chart-magenta' },
+  slack:    { label: 'Slack',    Icon: Hash,         varName: '--arcus-chart-yellow' },
+  calcom:   { label: 'Cal.com',  Icon: CalendarPlus, varName: '--arcus-chart-aqua' },
 } as const;
 
-function AppEffortBars({ appTotals }: { appTotals?: AppTotals }) {
+function AppEffortBars({ counts }: { counts: AppCounts | null }) {
   const rows = useMemo(() => {
-    if (!appTotals) return [];
+    if (!counts) return [];
     return (Object.keys(APP_CHART_META) as Array<keyof typeof APP_CHART_META>)
-      .map((k) => ({ key: k, value: appTotals[k], ...APP_CHART_META[k] }))
+      .map((k) => ({ key: k, value: counts[k], ...APP_CHART_META[k] }))
       .filter((r) => r.value > 0)
       .sort((a, b) => b.value - a.value);
-  }, [appTotals]);
+  }, [counts]);
 
   if (rows.length === 0) return null;
   const max = Math.max(...rows.map((r) => r.value));
 
   return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5 mt-2.5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-3">This week, by app</p>
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
       <div className="space-y-2.5">
         {rows.map((r) => {
           const Icon = r.Icon;
           return (
-            <div key={r.key} className="flex items-center gap-3">
+            <div
+              key={r.key}
+              tabIndex={0}
+              className="group flex items-center gap-3 rounded-lg outline-none focus-visible:ring-1 focus-visible:ring-arcus-fg-muted"
+            >
               <Icon className="w-3.5 h-3.5 text-arcus-fg-tertiary shrink-0" />
               <span className="text-[12.5px] text-arcus-fg-secondary w-16 shrink-0">{r.label}</span>
               <div className="flex-1 h-2.5 rounded-full bg-arcus-elevated overflow-hidden">
                 <div
-                  className="h-full rounded-full"
+                  className="h-full rounded-full transition-[width] duration-500 ease-out"
                   style={{ width: `${Math.max((r.value / max) * 100, 6)}%`, background: `var(${r.varName})` }}
                 />
               </div>
-              <span className="text-[12px] font-semibold text-arcus-fg tabular-nums w-8 text-right shrink-0">{r.value}</span>
+              {/* Value stays hidden until hovered/focused — the bar length carries
+                  the comparison at rest; the exact count is a deliberate reveal. */}
+              <span className="text-[12px] font-semibold text-arcus-fg tabular-nums w-8 text-right shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200">
+                {r.value}
+              </span>
             </div>
           );
         })}
@@ -779,15 +844,17 @@ function ConversationPulse({ conversations }: { conversations: Conversation[] })
           <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Going quiet</p>
           <div className="space-y-2">
             {goingQuiet.map((c) => (
-              <div key={c.key} className="flex items-center gap-2.5">
+              <div key={c.key} tabIndex={0} className="group flex items-center gap-2.5 rounded-lg outline-none focus-visible:ring-1 focus-visible:ring-arcus-fg-muted">
                 <span className="text-[12.5px] text-arcus-fg-secondary w-20 shrink-0 truncate">{c.name}</span>
                 <div className="flex-1 h-2 rounded-full bg-arcus-elevated overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-amber-500"
+                    className="h-full rounded-full bg-amber-500 transition-[width] duration-500 ease-out"
                     style={{ width: `${Math.max((c.daysSince / maxQuiet) * 100, 6)}%` }}
                   />
                 </div>
-                <span className="text-[11.5px] text-arcus-fg-tertiary tabular-nums w-9 text-right shrink-0">{c.daysSince}d</span>
+                <span className="text-[11.5px] text-arcus-fg-tertiary tabular-nums w-9 text-right shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200">
+                  {c.daysSince}d
+                </span>
               </div>
             ))}
           </div>
