@@ -38,6 +38,15 @@
   --arcus-fg-tertiary:      #737373; /* Dark Graphite 400 */
   --arcus-fg-muted:         #8A8A8A; /* Light Graphite 500 */
   --arcus-fg-inverse:       #FAFAFA; /* Light Graphite 950 */
+
+  /* Chart categorical tokens (home-feed bar charts) — validated 4-slot order,
+     first-four-slots-of-eight so all-pairs comparisons (a legend showing every
+     slot at once) clear the CVD floor in both themes. NEVER cycle a 5th hue
+     onto this list — fold any 5th category into "Other" instead. */
+  --arcus-chart-blue:    #2a78d6;
+  --arcus-chart-green:   #008300;
+  --arcus-chart-magenta: #e87ba4;
+  --arcus-chart-yellow:  #eda100;
 }
 
 /* --- Premium Interactive Polish --- */
@@ -628,6 +637,12 @@ body,
   --arcus-fg-tertiary:      #8A8A8A; /* Light Graphite 500 */
   --arcus-fg-muted:         #6B6B6B; /* Light Graphite 400 */
   --arcus-fg-inverse:       #141414; /* Dark Graphite 900 */
+
+  /* Chart categorical tokens — same 4 hues, dark-surface steps (see :root). */
+  --arcus-chart-blue:    #3987e5;
+  --arcus-chart-green:   #008300;
+  --arcus-chart-magenta: #d55181;
+  --arcus-chart-yellow:  #c98500;
 
   --background: #000000;
   --foreground: #f7f8f8;

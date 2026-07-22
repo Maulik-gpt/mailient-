@@ -35,6 +35,7 @@ import {
 import {
   Sparkles, Mail, Calendar, Clock, ArrowRight, MessageSquare,
   CheckCircle2, Reply, CalendarPlus, Inbox, Zap, ChevronRight, AlertTriangle,
+  FileText, Hash,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -45,11 +46,19 @@ interface ShowUpItem { id: string; start: string; end: string | null; title: str
 interface AgentRunItem { id: string; agentName: string; status: string; summary: string | null; toolCalls: number; ranAt: string; artifactCounts: { gmail: number; calendar: number; notion: number; slack: number }; }
 interface TodayData { decide: DecideItem[]; showUp: ShowUpItem[]; chase: ChaseItem[]; actionItems: any[]; agentRuns: AgentRunItem[]; summary: string | null; }
 interface WeekDay { date: string; label: string; isToday: boolean; runs: number; actions: number; }
-interface WeekData { days: WeekDay[]; totalRuns: number; totalActions: number; hasData: boolean; }
+// Where the week's artifact links landed, summed across the 7 days (see
+// /api/home-feed/week-activity) — real counts, never illustrative.
+interface AppTotals { gmail: number; calendar: number; notion: number; slack: number; }
+interface WeekData { days: WeekDay[]; totalRuns: number; totalActions: number; hasData: boolean; appTotals?: AppTotals; }
 interface Rec { id: string; category: string; title: string; summary: string; arcusPrompt: string; ctaLabel: string; stat: { value: number; label: string }; atRisk?: boolean; }
 
 // A person-keyed conversation with its current status. Derived, never invented.
-type ConvoStatus = 'awaiting_you' | 'waiting_on_them' | 'meeting_booked';
+// 'active' = a genuinely ongoing thread that's neither on you nor gone quiet
+// (server /api/home-feed/conversations returns this whenever the latest message
+// doesn't clear either threshold) — it was missing from this union even though
+// the server has always been able to send it, which meant STATUS_META[c.status]
+// silently returned undefined and crashed the card. Fixed here.
+type ConvoStatus = 'awaiting_you' | 'waiting_on_them' | 'meeting_booked' | 'active';
 interface Conversation {
   key: string;
   name: string;
@@ -60,6 +69,7 @@ interface Conversation {
   when: string;           // relative time string
   urgency: number;        // for sort: higher = more urgent
   prompt: string;         // handed to Arcus on click
+  daysSince?: number;     // real days-silent, when known — powers the "going quiet" chart
 }
 
 // ── helpers ─────────────────────────────────────────────────────────────────
@@ -208,6 +218,7 @@ export function CommandCenter({ userName }: { userName?: string }) {
       when: c.status === 'waiting_on_them' ? `${c.daysSince}d silent` : relTime(c.lastActivityIso),
       urgency: c.status === 'awaiting_you' ? 100 : c.status === 'waiting_on_them' ? 50 : 20,
       prompt: c.nextAction,
+      daysSince: c.daysSince,
     }));
   }, [convos]);
 
@@ -257,6 +268,7 @@ export function CommandCenter({ userName }: { userName?: string }) {
         when: `${c.daysSilent}d silent`,
         urgency: 40 + Math.min(c.daysSilent, 20),
         prompt: `Draft a warm, low-pressure follow-up to ${c.recipient.name || c.recipient.email} about "${c.subject}" — it's been quiet for ${c.daysSilent} days.`,
+        daysSince: c.daysSilent,
       });
     }
     return [...byKey.values()].sort((a, b) => b.urgency - a.urgency).slice(0, 6);
@@ -297,6 +309,7 @@ export function CommandCenter({ userName }: { userName?: string }) {
       {/* 3 ── KEY CONVERSATIONS (the new capability) ────────────────────────── */}
       {conversations.length > 0 ? (
         <Section title="Key conversations" sub="Where your important threads stand right now">
+          <ConversationPulse conversations={conversations} />
           <div className="grid sm:grid-cols-2 gap-2.5">
             {conversations.map(c => (
               <ConversationCard key={c.key} c={c} onOpen={() => openArcus(c.prompt)} />
@@ -426,11 +439,21 @@ function StatTile({ icon, value, label, tone }: { icon: React.ReactNode; value: 
   );
 }
 
-const STATUS_META: Record<ConvoStatus, { label: string; cls: string; Icon: any }> = {
-  awaiting_you: { label: 'Awaiting your reply', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', Icon: Reply },
-  waiting_on_them: { label: 'Waiting on them', cls: 'bg-arcus-elevated text-arcus-fg-tertiary border-arcus-border', Icon: Clock },
-  meeting_booked: { label: 'Meeting booked', cls: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20', Icon: Calendar },
+// Status → { badge classes, solid bar-fill class, label, icon }. One entry per
+// value the server or the derived fallback can actually produce — `active` was
+// missing even though /api/home-feed/conversations has always been able to
+// return it, so any card in that state hit STATUS_META[undefined] and crashed
+// the section. `fill` is the SAME hue as the badge (never a second palette) so
+// the pulse chart and the cards below it read as one system.
+const STATUS_META: Record<ConvoStatus, { label: string; cls: string; fill: string; Icon: any }> = {
+  awaiting_you: { label: 'Awaiting your reply', cls: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20', fill: 'bg-amber-500', Icon: Reply },
+  waiting_on_them: { label: 'Waiting on them', cls: 'bg-arcus-elevated text-arcus-fg-tertiary border-arcus-border', fill: 'bg-arcus-fg-muted', Icon: Clock },
+  meeting_booked: { label: 'Meeting booked', cls: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20', fill: 'bg-indigo-500', Icon: Calendar },
+  active: { label: 'Active thread', cls: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20', fill: 'bg-blue-500', Icon: MessageSquare },
 };
+// Fixed render order for the status bar/legend — status color is state, not
+// rank, but a stable left-to-right order still keeps repeat visits legible.
+const STATUS_ORDER: ConvoStatus[] = ['awaiting_you', 'waiting_on_them', 'active', 'meeting_booked'];
 
 function ConversationCard({ c, onOpen }: { c: Conversation; onOpen: () => void }) {
   const s = STATUS_META[c.status];
@@ -649,7 +672,128 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
           </ResponsiveContainer>
         </div>
       </div>
+      <AppEffortBars appTotals={week.appTotals} />
     </Section>
+  );
+}
+
+// ── This week, by app — where the artifact links (the same ones already
+// summed into the bar chart above) actually landed. Real counts from
+// arcus_agent_runs.artifact_links, never invented. Renders nothing if every
+// app total is 0 (an agent ran but produced no gmail/calendar/notion/slack
+// artifacts) rather than drawing four empty bars.
+const APP_CHART_META = {
+  gmail:    { label: 'Gmail',    Icon: Mail,     varName: '--arcus-chart-blue' },
+  calendar: { label: 'Calendar', Icon: Calendar, varName: '--arcus-chart-green' },
+  notion:   { label: 'Notion',   Icon: FileText, varName: '--arcus-chart-magenta' },
+  slack:    { label: 'Slack',    Icon: Hash,     varName: '--arcus-chart-yellow' },
+} as const;
+
+function AppEffortBars({ appTotals }: { appTotals?: AppTotals }) {
+  const rows = useMemo(() => {
+    if (!appTotals) return [];
+    return (Object.keys(APP_CHART_META) as Array<keyof typeof APP_CHART_META>)
+      .map((k) => ({ key: k, value: appTotals[k], ...APP_CHART_META[k] }))
+      .filter((r) => r.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [appTotals]);
+
+  if (rows.length === 0) return null;
+  const max = Math.max(...rows.map((r) => r.value));
+
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5 mt-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-3">This week, by app</p>
+      <div className="space-y-2.5">
+        {rows.map((r) => {
+          const Icon = r.Icon;
+          return (
+            <div key={r.key} className="flex items-center gap-3">
+              <Icon className="w-3.5 h-3.5 text-arcus-fg-tertiary shrink-0" />
+              <span className="text-[12.5px] text-arcus-fg-secondary w-16 shrink-0">{r.label}</span>
+              <div className="flex-1 h-2.5 rounded-full bg-arcus-elevated overflow-hidden">
+                <div
+                  className="h-full rounded-full"
+                  style={{ width: `${Math.max((r.value / max) * 100, 6)}%`, background: `var(${r.varName})` }}
+                />
+              </div>
+              <span className="text-[12px] font-semibold text-arcus-fg tabular-nums w-8 text-right shrink-0">{r.value}</span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ── Conversation pulse — status breakdown + which relationships are going
+// quiet fastest. Two real, purely-derived signals rendered as bars rather than
+// a donut (house style: a pie/donut is for part-to-whole "at a glance" with
+// clearly separated segments — these statuses are frequently close in count,
+// which a segmented bar compares far more reliably). Renders nothing under 3
+// conversations: with that few there's nothing meaningful to compare.
+function ConversationPulse({ conversations }: { conversations: Conversation[] }) {
+  const total = conversations.length;
+  const segments = useMemo(() => {
+    const counts: Record<ConvoStatus, number> = { awaiting_you: 0, waiting_on_them: 0, active: 0, meeting_booked: 0 };
+    for (const c of conversations) counts[c.status] = (counts[c.status] || 0) + 1;
+    return STATUS_ORDER.map((s) => ({ status: s, count: counts[s] })).filter((s) => s.count > 0);
+  }, [conversations]);
+
+  const goingQuiet = useMemo(() => {
+    return conversations
+      .filter((c): c is Conversation & { daysSince: number } => c.status === 'waiting_on_them' && typeof c.daysSince === 'number')
+      .sort((a, b) => b.daysSince - a.daysSince)
+      .slice(0, 4);
+  }, [conversations]);
+  const maxQuiet = Math.max(...goingQuiet.map((c) => c.daysSince), 1);
+
+  if (total < 3) return null;
+
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-4 mb-2.5 grid sm:grid-cols-2 gap-5">
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Where things stand</p>
+        <div className="h-2.5 w-full rounded-full overflow-hidden flex gap-0.5 bg-arcus-elevated">
+          {segments.map((seg) => (
+            <div
+              key={seg.status}
+              className={cn(STATUS_META[seg.status].fill, 'h-full first:rounded-l-full last:rounded-r-full')}
+              style={{ width: `${(seg.count / total) * 100}%` }}
+              title={`${STATUS_META[seg.status].label}: ${seg.count}`}
+            />
+          ))}
+        </div>
+        <div className="flex flex-wrap gap-x-3 gap-y-1.5 mt-2.5">
+          {segments.map((seg) => (
+            <span key={seg.status} className="inline-flex items-center gap-1.5 text-[11.5px] text-arcus-fg-tertiary">
+              <span className={cn('w-2 h-2 rounded-full shrink-0', STATUS_META[seg.status].fill)} />
+              {STATUS_META[seg.status].label} <span className="text-arcus-fg-secondary font-semibold tabular-nums">{seg.count}</span>
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {goingQuiet.length > 0 && (
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Going quiet</p>
+          <div className="space-y-2">
+            {goingQuiet.map((c) => (
+              <div key={c.key} className="flex items-center gap-2.5">
+                <span className="text-[12.5px] text-arcus-fg-secondary w-20 shrink-0 truncate">{c.name}</span>
+                <div className="flex-1 h-2 rounded-full bg-arcus-elevated overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-500"
+                    style={{ width: `${Math.max((c.daysSince / maxQuiet) * 100, 6)}%` }}
+                  />
+                </div>
+                <span className="text-[11.5px] text-arcus-fg-tertiary tabular-nums w-9 text-right shrink-0">{c.daysSince}d</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
