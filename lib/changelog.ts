@@ -26,6 +26,21 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 22, 2026',
+    entries: [
+      {
+        tag: 'New',
+        title: 'A redesigned home feed that shows where your world stands',
+        points: [
+          'The home feed used to be a log of what already happened. It now opens with a real command center: a one-line read on your day, four live numbers (need a reply, meetings, awaiting reply, handled for you), and a chart of what Arcus actually did across the last 7 days.',
+          'New "Key conversations" section — your important threads and exactly where each one stands right now: awaiting your reply, waiting on them, or a meeting is booked. One click hands any of them to Arcus to handle.',
+          'The things that need you are separated from the things that are handled: reply-now emails, your upcoming meetings with one-tap prep and scheduling, cross-app suggestions from Gmail, Calendar, Notion and Slack, and a recap of what your agents did while you were away.',
+          'Every number on the page is real — the week chart shows an honest empty state when there is no activity yet, never a fake trend.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 20, 2026',
     entries: [
       {

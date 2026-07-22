@@ -4,6 +4,7 @@ import { useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
 import SiftToday from '@/components/ui/sift-today';
+import { CommandCenter } from '@/components/ui/command-center';
 import { GmailInterfaceFixed } from '@/components/ui/gmail-interface-fixed';
 import { PricingOverlay } from '@/components/ui/pricing-overlay';
 import { FloatingNavbar } from "@/components/FloatingNavbar";
@@ -408,7 +409,9 @@ function HomeFeedContent() {
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
         >
-          {activeTab === 'today' ? <SiftToday /> : <GmailInterfaceFixed forceTraditionalView />}
+          {activeTab === 'today'
+            ? <CommandCenter userName={(session?.user?.name || '').trim().split(/\s+/)[0] || undefined} />
+            : <GmailInterfaceFixed forceTraditionalView />}
         </motion.div>
       </AnimatePresence>
       <FloatingNavbar />
