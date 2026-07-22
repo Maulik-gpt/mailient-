@@ -1,2 +1,8 @@
 {
+  "crons": [
+    {
+      "path": "/api/cron/lifecycle-nudge",
+      "schedule": "0 15 * * *"
+    }
+  ]
 }
