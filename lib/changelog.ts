@@ -26,6 +26,19 @@ export interface ChangelogGroup {
 
 export const CHANGELOG: ChangelogGroup[] = [
   {
+    date: 'July 23, 2026',
+    entries: [
+      {
+        tag: 'Fixed',
+        title: 'The home feed’s AI is actually writing its briefings again',
+        points: [
+          'The reasons under “Needs a reply”, the “Key conversations” summaries, and the “Worth your time” cross-app suggestions could quietly fall back to plain, generic text — so the feed sometimes read like a fixed template instead of something that had actually looked at your inbox.',
+          'The cause: the AI models behind those sections were, on some attempts, spending their whole budget “thinking” and returning nothing. Those sections now tell the model to answer directly, so they come back written and specific — and faster.',
+        ],
+      },
+    ],
+  },
+  {
     date: 'July 22, 2026',
     entries: [
       {

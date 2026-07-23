@@ -272,10 +272,18 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
   for (const model of modelChain) {
     for (const key of ks.slice(0, KEYS_PER_MODEL)) {
       try {
+        // nemotron models are REASONERS: left on default they spend the entire
+        // max_tokens budget on hidden reasoning and come back as an empty 200
+        // (zero recs). Two of the three free models in modelChain are nemotron,
+        // so without this the fallback path silently produced no AI recs whenever
+        // gemma was rate-limited. Same fix already proven in lib/arcus/engine.ts;
+        // gated to /nemotron/ so non-reasoning models are untouched.
+        const reqBody: Record<string, any> = { ...basePayload, model };
+        if (/nemotron/i.test(model)) reqBody.reasoning = { enabled: false };
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz', 'X-Title': 'Mailient' },
-          body: JSON.stringify({ ...basePayload, model }),
+          body: JSON.stringify(reqBody),
           signal: AbortSignal.timeout(14000),
         });
         if (!res.ok) {

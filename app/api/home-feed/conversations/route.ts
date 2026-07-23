@@ -243,10 +243,17 @@ async function aiUpgrade(convos: Conversation[]): Promise<Conversation[]> {
   for (const model of models) {
     for (const key of keys.slice(0, KEYS_PER_MODEL)) {
       try {
+        // nemotron models are REASONERS: without disabling reasoning they burn
+        // the whole max_tokens budget thinking and return an empty 200, so the
+        // AI summary upgrade silently fell back to the deterministic one-liners
+        // whenever gemma was unavailable. Same fix as lib/arcus/engine.ts; gated
+        // to /nemotron/ so the non-reasoning gemma model is untouched.
+        const reqBody: Record<string, any> = { ...body, model };
+        if (/nemotron/i.test(model)) reqBody.reasoning = { enabled: false };
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json', 'HTTP-Referer': 'https://mailient.xyz', 'X-Title': 'Mailient' },
-          body: JSON.stringify({ ...body, model }),
+          body: JSON.stringify(reqBody),
           signal: AbortSignal.timeout(11000),
         });
         if (!res.ok) continue;
