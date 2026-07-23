@@ -184,14 +184,49 @@ async function runOwner(email: string) {
   }
 }
 
+// ?composio=1 — is Composio managed-auth actually usable in THIS deployment?
+// Reports env presence (booleans only, no secrets) + a LIVE initiate test that
+// proves a Google consent URL can be minted on Composio's verified client. This
+// is the go/no-go for routing the "Reconnect" button through Composio.
+async function runComposio(baseUrl: string) {
+  const out: Record<string, any> = {
+    env: {
+      COMPOSIO_API_KEY: !!process.env.COMPOSIO_API_KEY,
+      COMPOSIO_GMAIL_AUTH_CONFIG_ID: !!process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID,
+      COMPOSIO_GCAL_AUTH_CONFIG_ID: !!process.env.COMPOSIO_GCAL_AUTH_CONFIG_ID,
+      COMPOSIO_MEET_AUTH_CONFIG_ID: !!process.env.COMPOSIO_MEET_AUTH_CONFIG_ID,
+      COMPOSIO_LOGIN: process.env.COMPOSIO_LOGIN || null,
+      NEXT_PUBLIC_COMPOSIO_GMAIL: process.env.NEXT_PUBLIC_COMPOSIO_GMAIL || null,
+    },
+  };
+  try {
+    const { composioEnabled, initiateComposioConnection } = await import('@/lib/arcus/composio');
+    out.enabled = { gmail: composioEnabled('gmail'), gcal: composioEnabled('gcal') };
+    // Live initiate test for gmail — mints a real pending connection for a throwaway
+    // user (never completed). Proves the API key + auth config work end-to-end.
+    try {
+      const t0 = Date.now();
+      const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gmail`;
+      const r = await initiateComposioConnection('diagnostic-probe@example.com', 'gmail', cb);
+      out.initiateTest = { verdict: 'OK', ms: Date.now() - t0, gotRedirectUrl: !!r.redirectUrl, accountIdPrefix: String(r.accountId || '').slice(0, 6) };
+    } catch (e: any) {
+      out.initiateTest = { verdict: 'THREW', error: `${e?.name}: ${e?.message}`.slice(0, 300) };
+    }
+  } catch (e: any) {
+    out.enabled = { error: `${e?.name}: ${e?.message}`.slice(0, 200) };
+  }
+  return out;
+}
+
 export async function GET(req: Request) {
   const sp = new URL(req.url).searchParams;
   const deep = sp.get('deep') === '1';
   const ownerEmail = sp.get('owner') === '1' ? 'mailient.xyz@gmail.com' : null;
+  const wantComposio = sp.get('composio') === '1';
   const keys = loadKeys();
 
   const base: Record<string, any> = {
-    build: 'today-tool-less-v3',
+    build: 'composio-probe-v4',
     checkedAt: new Date().toISOString(),
     vercelEnv: process.env.VERCEL_ENV || 'unknown',
     keyCount: keys.length,
@@ -225,6 +260,7 @@ export async function GET(req: Request) {
 
   const deepResult = deep ? await runDeep() : undefined;
   const ownerResult = ownerEmail ? await runOwner(ownerEmail) : undefined;
+  const composioResult = wantComposio ? await runComposio(new URL(req.url).origin) : undefined;
 
   return NextResponse.json({
     ...base,
@@ -234,5 +270,6 @@ export async function GET(req: Request) {
     models: modelResults,
     ...(deepResult ? { deep: deepResult } : {}),
     ...(ownerResult ? { owner: ownerResult } : {}),
+    ...(composioResult ? { composio: composioResult } : {}),
   });
 }
