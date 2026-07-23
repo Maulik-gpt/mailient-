@@ -145,8 +145,49 @@ async function runDeep() {
   return out;
 }
 
+// The exact generic labels the heuristic path (decideSignal) emits when the AI
+// never ran / fell back — used to classify whether a REAL snapshot's reasons are
+// AI-written or generic, WITHOUT returning any inbox content.
+const GENERIC_REASONS = new Set([
+  'Money on the line', 'Flagged urgent', 'Direct question',
+  'Wants time on your calendar', 'Active thread waiting on you',
+  'Needs your attention', 'Likely newsletter/automated', 'Needs your reply.',
+]);
+
+// ?owner=1 — run the FULL real Today pipeline (computeTodaySnapshot) for the
+// founder's own inbox and report timing + counts + whether the reasons came out
+// AI-specific or generic. Returns NO inbox content (no subjects/senders/reasons),
+// only aggregates, so it's safe on an unauthenticated URL. This is what reveals
+// whether the real route times out / falls back on an actual busy inbox.
+async function runOwner(email: string) {
+  try {
+    const t0 = Date.now();
+    const { computeTodaySnapshot } = await import('../../home-feed/today/route');
+    const snap: any = await computeTodaySnapshot(email);
+    const ms = Date.now() - t0;
+    const decide = Array.isArray(snap?.decide) ? snap.decide : [];
+    const genericCount = decide.filter((d: any) => GENERIC_REASONS.has(String(d?.reason || '').trim())).length;
+    const specificCount = decide.length - genericCount;
+    return {
+      ms,
+      timedOutRisk: ms > 45000,
+      counts: { decide: decide.length, showUp: (snap?.showUp || []).length, chase: (snap?.chase || []).length, agentRuns: (snap?.agentRuns || []).length },
+      hasBriefing: !!(snap?.briefing && String(snap.briefing).trim()),
+      hasReasoning: !!(snap?.reasoning && String(snap.reasoning).trim()),
+      reasons: { specific: specificCount, generic: genericCount },
+      verdict: decide.length === 0 ? 'NO_DECIDE_ITEMS' : genericCount > specificCount ? 'MOSTLY_GENERIC' : 'MOSTLY_SPECIFIC',
+      gmailConnected: snap?.gmailConnected ?? null,
+      needsReconnect: snap?.needsReconnect ?? null,
+    };
+  } catch (e: any) {
+    return { verdict: 'THREW', error: `${e?.name}: ${e?.message}`.slice(0, 300) };
+  }
+}
+
 export async function GET(req: Request) {
-  const deep = new URL(req.url).searchParams.get('deep') === '1';
+  const sp = new URL(req.url).searchParams;
+  const deep = sp.get('deep') === '1';
+  const ownerEmail = sp.get('owner') === '1' ? 'mailient.xyz@gmail.com' : null;
   const keys = loadKeys();
 
   const base: Record<string, any> = {
@@ -182,6 +223,7 @@ export async function GET(req: Request) {
     : 'No model returned usable content from this deployment. Check the per-model errors below: 401/403 = bad/rotated key, 402 = account has no credit, 429 = rate-limited/quota. Fix the account or keys in Vercel Production.';
 
   const deepResult = deep ? await runDeep() : undefined;
+  const ownerResult = ownerEmail ? await runOwner(ownerEmail) : undefined;
 
   return NextResponse.json({
     ...base,
@@ -190,5 +232,6 @@ export async function GET(req: Request) {
     account: credits,
     models: modelResults,
     ...(deepResult ? { deep: deepResult } : {}),
+    ...(ownerResult ? { owner: ownerResult } : {}),
   });
 }
