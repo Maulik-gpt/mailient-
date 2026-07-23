@@ -138,6 +138,13 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
   const [convosLoading, setConvosLoading] = useState(true);
   // Only block on a skeleton when we have NOTHING cached to show.
   const [loading, setLoading] = useState(() => !readCache('cc_today'));
+  // Separate from `week`/`appCounts` being null (which is also the genuine
+  // "no data" state) — these track whether their fetch has resolved AT LEAST
+  // ONCE, so the analytics panel can tell "still loading" apart from
+  // "genuinely empty" instead of flashing a false empty state while the
+  // request is still in flight.
+  const [weekLoaded, setWeekLoaded] = useState(() => !!readCache('cc_week'));
+  const [recsLoaded, setRecsLoaded] = useState(() => !!readCache('cc_appcounts') || !!readCache('cc_sift'));
 
   const openArcus = useCallback((prompt: string) => {
     try { sessionStorage.setItem('arcus_prefill', prompt); } catch { /* incognito */ }
@@ -167,19 +174,40 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
     openArcus(prompt);
   }, [onOpenExistingDraft, openArcus]);
 
-  const [weekRefreshing, setWeekRefreshing] = useState(false);
-  const refreshWeek = useCallback(async () => {
-    setWeekRefreshing(true);
+  // Refresh BOTH sources the analytics panel actually draws from: week-activity
+  // (the area chart / spark tiles / radar) AND recommendations (the donut +
+  // Sift text). The old version only re-fetched week-activity — the donut and
+  // Sift could never be refreshed at all, which is exactly the "the analytics
+  // never seem to actually redo the AI work" bug. Reuses the current `today`
+  // snapshot as recommendations' input (this button refreshes analytics, not
+  // the whole feed — Needs a Reply/Key Conversations have their own data).
+  const [analyticsRefreshing, setAnalyticsRefreshing] = useState(false);
+  const refreshAnalytics = useCallback(async () => {
+    setAnalyticsRefreshing(true);
     try {
-      const res = await fetch('/api/home-feed/week-activity');
-      if (res.ok) {
-        const j = await res.json();
-        setWeek(j);
-        writeCache('cc_week', j);
+      const [w, r] = await Promise.allSettled([
+        fetch('/api/home-feed/week-activity').then(res => res.ok ? res.json() : null),
+        today
+          ? fetch('/api/home-feed/recommendations', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ decide: today.decide, chase: today.chase, actionItems: today.actionItems, showUp: today.showUp }),
+            }).then(res => res.ok ? res.json() : null)
+          : Promise.resolve(null),
+      ]);
+      if (w.status === 'fulfilled' && w.value) { setWeek(w.value); writeCache('cc_week', w.value); }
+      setWeekLoaded(true);
+      if (r.status === 'fulfilled' && r.value) {
+        const j = r.value;
+        setRecs(Array.isArray(j?.recommendations) ? j.recommendations : []);
+        if (j?.appCounts) { setAppCounts(j.appCounts); writeCache('cc_appcounts', j.appCounts); }
+        if (j?.sift) { setSift(j.sift); writeCache('cc_sift', j.sift); }
       }
-    } catch { /* keep the current chart on failure */ }
-    finally { setWeekRefreshing(false); }
-  }, []);
+      setRecsLoaded(true);
+    } finally {
+      setAnalyticsRefreshing(false);
+    }
+  }, [today]);
 
   useEffect(() => {
     let alive = true;
@@ -191,6 +219,7 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
       if (!alive) return;
       if (t.status === 'fulfilled' && t.value?.success !== false && t.value) { setToday(t.value); writeCache('cc_today', t.value); }
       if (w.status === 'fulfilled' && w.value) { setWeek(w.value); writeCache('cc_week', w.value); }
+      setWeekLoaded(true);
       setLoading(false);
     })();
     // The real relationship scan runs on its own timeline (cached server-side),
@@ -230,6 +259,7 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
           if (j?.sift) { setSift(j.sift); writeCache('cc_sift', j.sift); }
         }
       } catch { if (alive) setRecs([]); }
+      finally { if (alive) setRecsLoaded(true); }
     })();
     return () => { alive = false; };
   }, [today]);
@@ -375,9 +405,11 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
           signal counts, never a fixed Gmail/Calendar-only view. ─────────────── */}
       <AnalyticsSection
         week={week}
+        weekLoaded={weekLoaded}
         appCounts={appCounts}
-        weekRefreshing={weekRefreshing}
-        onRefreshWeek={refreshWeek}
+        recsLoaded={recsLoaded}
+        refreshing={analyticsRefreshing}
+        onRefresh={refreshAnalytics}
         onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')}
       />
 
@@ -889,12 +921,41 @@ function WeekdayRadar({ week }: { week: WeekData }) {
   );
 }
 
-// ── Orchestrates the whole analytics dashboard: honest empty state when there
-// is no agent activity yet, otherwise the two spark tiles + big area chart +
-// (donut when there's connected-app data) + weekday radar.
-function AnalyticsSection({ week, appCounts, weekRefreshing, onRefreshWeek, onSchedule }: {
-  week: WeekData | null; appCounts: AppCounts | null; weekRefreshing: boolean; onRefreshWeek: () => void; onSchedule: () => void;
+// A skeleton block matching one analytics tile's footprint — pulsing, never a
+// blank flash. Used both for first-load (nothing fetched yet) and to fill the
+// donut's slot while recommendations are still in flight.
+function AnalyticsTileSkeleton({ h }: { h: string }) {
+  return <div className={cn('bg-arcus-surface rounded-2xl animate-pulse', h)} />;
+}
+
+// ── Orchestrates the whole analytics dashboard: a real loading skeleton while
+// the first fetch is in flight (never the false-empty "no activity" state —
+// that used to flash before week-activity had even resolved), the honest
+// empty state once we KNOW there's no agent activity, and otherwise the two
+// spark tiles + big area chart + (donut when there's connected-app data) +
+// weekday radar. `refreshing` re-runs BOTH week-activity and recommendations
+// (the donut/Sift source) — the earlier version only refreshed the chart,
+// which meant the donut could never actually be refreshed.
+function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, refreshing, onRefresh, onSchedule }: {
+  week: WeekData | null; weekLoaded: boolean; appCounts: AppCounts | null; recsLoaded: boolean;
+  refreshing: boolean; onRefresh: () => void; onSchedule: () => void;
 }) {
+  if (!weekLoaded) {
+    return (
+      <Section title="Your week" sub="Loading your activity…">
+        <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
+          <AnalyticsTileSkeleton h="h-[84px]" />
+          <AnalyticsTileSkeleton h="h-[84px]" />
+        </div>
+        <AnalyticsTileSkeleton h="h-[236px]" />
+        <div className="grid sm:grid-cols-2 gap-2.5 mt-2.5">
+          <AnalyticsTileSkeleton h="h-[212px]" />
+          <AnalyticsTileSkeleton h="h-[212px]" />
+        </div>
+      </Section>
+    );
+  }
+
   if (!week || !week.hasData) {
     return (
       <Section title="Your week" sub="Arcus activity, last 7 days">
@@ -913,17 +974,25 @@ function AnalyticsSection({ week, appCounts, weekRefreshing, onRefreshWeek, onSc
   }
 
   const hasApps = !!appCounts && Object.values(appCounts).some((v) => v > 0);
+  // The donut's slot: real data, a loading skeleton while recs are still in
+  // flight, or nothing once we KNOW there's genuinely no cross-app signal.
+  const showDonutSlot = hasApps || !recsLoaded;
 
   return (
     <Section title="Your week" sub={`${week.totalActions} action${week.totalActions === 1 ? '' : 's'} across ${week.totalRuns} run${week.totalRuns === 1 ? '' : 's'}, last 7 days`}>
-      <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
-        <StatSparkTile label="actions this week" sub="last 7 days" value={week.totalActions} data={week.days} dataKey="actions" colorVar="var(--arcus-chart-blue)" />
-        <StatSparkTile label="agent runs this week" sub="last 7 days" value={week.totalRuns} data={week.days} dataKey="runs" colorVar="var(--arcus-chart-blue)" />
-      </div>
-      <WeekAreaChart week={week} onRefresh={onRefreshWeek} refreshing={weekRefreshing} />
-      <div className={cn('grid gap-2.5 mt-2.5', hasApps && 'sm:grid-cols-2')}>
-        {hasApps && <AppsDonut counts={appCounts} />}
-        <WeekdayRadar week={week} />
+      {/* Refetch keeps the frame — the existing charts hold at reduced opacity
+          (dim + pulse) while refreshing rather than being torn out and
+          replaced, so a manual refresh never causes a layout jump. */}
+      <div className={cn('transition-opacity duration-300', refreshing && 'opacity-50 pointer-events-none animate-pulse')}>
+        <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
+          <StatSparkTile label="actions this week" sub="last 7 days" value={week.totalActions} data={week.days} dataKey="actions" colorVar="var(--arcus-chart-blue)" />
+          <StatSparkTile label="agent runs this week" sub="last 7 days" value={week.totalRuns} data={week.days} dataKey="runs" colorVar="var(--arcus-chart-blue)" />
+        </div>
+        <WeekAreaChart week={week} onRefresh={onRefresh} refreshing={refreshing} />
+        <div className={cn('grid gap-2.5 mt-2.5', showDonutSlot && 'sm:grid-cols-2')}>
+          {hasApps ? <AppsDonut counts={appCounts} /> : (!recsLoaded ? <AnalyticsTileSkeleton h="h-[212px]" /> : null)}
+          <WeekdayRadar week={week} />
+        </div>
       </div>
     </Section>
   );
