@@ -50,6 +50,14 @@ interface ShowUpItem { id: string; start: string; end: string | null; title: str
 interface AgentRunItem { id: string; agentName: string; status: string; summary: string | null; toolCalls: number; ranAt: string; artifactCounts: { gmail: number; calendar: number; notion: number; slack: number }; }
 interface TodayData {
   decide: DecideItem[]; showUp: ShowUpItem[]; chase: ChaseItem[]; actionItems: any[]; agentRuns: AgentRunItem[]; summary: string | null;
+  // The AI triage agent's one-line read of the day ("All quiet — nothing needs
+  // you", or "Priya's proposal + the Acme renewal lead"). The route returns this
+  // as `briefing`; it's the reliable, specific "Sift says…" line the hero shows
+  // when the cross-app recommendations pass (which powers `sift`) is unavailable
+  // or rate-limited. Previously the hero read `today.summary`, a field the route
+  // never sets — so the agent's briefing never showed and the line fell back to
+  // generic filler.
+  briefing?: string;
   // A dead Gmail/Calendar token used to be silently swallowed inside the
   // server's per-source fetchers, so it read as "0 items, inbox handled"
   // instead of "your connection is broken." Live-verified 2026-07-23 against
@@ -407,7 +415,7 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
             {hasReconnectIssue
               ? `Your ${[gmailNeedsReconnect && 'Gmail', calendarNeedsReconnect && 'Calendar'].filter(Boolean).join(' and ')} connection expired — reconnect above to see what actually needs you.`
               : sift?.headline
-                || today?.summary?.trim()
+                || today?.briefing?.trim()
                 || (nothingPressing
                   ? 'Nothing needs you right now — your inbox is handled.'
                   : 'Here’s what deserves your attention today.')}

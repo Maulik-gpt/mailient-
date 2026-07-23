@@ -636,7 +636,11 @@ export async function POST(req: Request) {
     const items = filterByApps(appendServerSignals(clientItems, serverSignals), prefs.apps);
 
     if (!items.length) {
-      return NextResponse.json({ success: true, recommendations: [], source: 'empty', appCounts: {}, sift: null });
+      // Nothing to recommend (quiet inbox, no cross-app signals) is a REAL state,
+      // not an error — return the deterministic "all handled" read so the hero's
+      // "Sift says…" line shows a true, reassuring message instead of `null`
+      // (which fell through to generic filler on the client).
+      return NextResponse.json({ success: true, recommendations: [], source: 'empty', appCounts: {}, sift: deterministicSift([]) });
     }
 
     const apps = Array.from(new Set(items.map(i => APP_OF[i.kind])));
