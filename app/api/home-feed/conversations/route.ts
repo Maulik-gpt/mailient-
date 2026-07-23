@@ -225,7 +225,11 @@ async function aiUpgrade(convos: Conversation[]): Promise<Conversation[]> {
     ],
   };
 
-  const models = ['google/gemma-4-26b-a4b-it:free', 'meta-llama/llama-3.3-70b-instruct:free', 'qwen/qwen3-next-80b-a3b-instruct:free'];
+  // 'meta-llama/llama-3.3-70b-instruct:free' and 'qwen/qwen3-next-80b-a3b-instruct:free'
+  // REMOVED 2026-07-22 — OpenRouter retired both from the free tier (404
+  // "unavailable for free" on every key, live-probe confirmed). Replaced with
+  // the nemotron pair, verified the same day to return clean non-empty JSON.
+  const models = ['google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'nvidia/nemotron-3-nano-30b-a3b:free'];
   for (const model of models) {
     for (const key of keys) {
       try {

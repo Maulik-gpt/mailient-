@@ -26,16 +26,19 @@
  * rather than reproducing a streaming editor here.
  */
 
-import { useEffect, useMemo, useState, useCallback } from 'react';
+import { useEffect, useMemo, useState, useCallback, useId } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
-  BarChart, Bar, XAxis, ResponsiveContainer, Cell, Tooltip as RTooltip,
+  ResponsiveContainer, Cell, Tooltip as RTooltip,
+  AreaChart, Area, XAxis,
+  PieChart, Pie,
+  RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from 'recharts';
 import {
   Sparkles, Mail, Calendar, Clock, ArrowRight, MessageSquare,
   CheckCircle2, Reply, CalendarPlus, Inbox, Zap, ChevronRight, AlertTriangle,
-  FileText, Hash,
+  FileText, Hash, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -163,6 +166,20 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
     }
     openArcus(prompt);
   }, [onOpenExistingDraft, openArcus]);
+
+  const [weekRefreshing, setWeekRefreshing] = useState(false);
+  const refreshWeek = useCallback(async () => {
+    setWeekRefreshing(true);
+    try {
+      const res = await fetch('/api/home-feed/week-activity');
+      if (res.ok) {
+        const j = await res.json();
+        setWeek(j);
+        writeCache('cc_week', j);
+      }
+    } catch { /* keep the current chart on failure */ }
+    finally { setWeekRefreshing(false); }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -354,17 +371,15 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
         </div>
       </motion.section>
 
-      {/* 2 ── YOUR WEEK ─────────────────────────────────────────────────────── */}
-      <WeekChart week={week} onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')} />
-
-      {/* 2b ── ACROSS YOUR APPS — live, connection-gated signal counts (never a
-          fixed Gmail/Calendar-only view; whichever apps are actually connected
-          show up, the rest are simply absent, never a placeholder). ────────── */}
-      {appCounts && Object.values(appCounts).some((v) => v > 0) && (
-        <Section title="Across your apps" sub="What's active right now, only where you're connected">
-          <AppEffortBars counts={appCounts} />
-        </Section>
-      )}
+      {/* 2 ── ANALYTICS — real weekly activity + live, connection-gated cross-app
+          signal counts, never a fixed Gmail/Calendar-only view. ─────────────── */}
+      <AnalyticsSection
+        week={week}
+        appCounts={appCounts}
+        weekRefreshing={weekRefreshing}
+        onRefreshWeek={refreshWeek}
+        onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')}
+      />
 
       {/* 3 ── KEY CONVERSATIONS (the new capability) ────────────────────────── */}
       {conversations.length > 0 ? (
@@ -653,10 +668,233 @@ function AgentRunRow({ run }: { run: AgentRunItem }) {
   );
 }
 
-// ── Your-week chart ─────────────────────────────────────────────────────────
-function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: () => void }) {
-  // Honest empty state — no fabricated trend. A user with no agent activity is
-  // shown the truth and a nudge, not a fake sparkline.
+// ── Shared textured fill (stipple + wash) ────────────────────────────────────
+// Recharts renders each chart into its OWN <svg>, so defs must be declared
+// inside every chart that uses them. Two layers per hue: a soft top-to-bottom
+// gradient "wash" (dataviz house rule: area fills stay a wash, ~10-30%
+// opacity, never a saturated block) plus a small tiled dot pattern for the
+// stippled/particle texture — together, layered under a crisp stroke line,
+// they read as the textured fill in the reference dashboard without ever
+// drawing a solid block of color.
+function stippleDefs(id: string, colorVar: string) {
+  return (
+    <defs>
+      <linearGradient id={`${id}-wash`} x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stopColor={colorVar} stopOpacity={0.3} />
+        <stop offset="100%" stopColor={colorVar} stopOpacity={0} />
+      </linearGradient>
+      <pattern id={`${id}-dots`} width="4" height="4" patternUnits="userSpaceOnUse">
+        <circle cx="1" cy="1" r="0.65" fill={colorVar} fillOpacity={0.55} />
+      </pattern>
+    </defs>
+  );
+}
+
+// ── Stat tile with a REAL trend sparkline — the same week.days series that
+// feeds the big chart below, just a different dataKey (actions vs runs).
+// Never a fabricated trend: if there's no week data this never renders (its
+// parent gates on week.hasData).
+function StatSparkTile({ label, sub, value, data, dataKey, colorVar }: {
+  label: string; sub: string; value: number; data: WeekDay[]; dataKey: 'actions' | 'runs'; colorVar: string;
+}) {
+  const id = `spark-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-4 overflow-hidden">
+      <div className="flex items-start justify-between">
+        <div>
+          <div className="text-[26px] font-semibold tracking-tight text-arcus-fg tabular-nums leading-none">{value.toLocaleString()}</div>
+          <div className="text-[12px] text-arcus-fg-tertiary mt-1.5">{label}</div>
+        </div>
+        <span className="text-[10.5px] text-arcus-fg-muted mt-0.5 shrink-0">{sub}</span>
+      </div>
+      <div className="h-12 -mx-4 -mb-4 mt-2">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+            {stippleDefs(id, colorVar)}
+            <Area type="monotone" dataKey={dataKey} stroke="none" fill={`url(#${id}-wash)`} isAnimationActive={false} />
+            <Area type="monotone" dataKey={dataKey} stroke="none" fill={`url(#${id}-dots)`} isAnimationActive={false} />
+            <Area type="monotone" dataKey={dataKey} stroke={colorVar} strokeWidth={1.5} fill="none" isAnimationActive={false} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── The big "your week" area chart — real 7-day activity, textured fill,
+// crisp stroke, hover tooltip (values live there, never drawn permanently on
+// the chart), and a manual refresh control.
+function WeekAreaChart({ week, onRefresh, refreshing }: { week: WeekData; onRefresh: () => void; refreshing: boolean }) {
+  const id = `week-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  const busiest = Math.max(...week.days.map((d) => d.actions), 0);
+  const avg = Math.round(week.totalActions / 7);
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
+      <div className="flex items-start justify-between">
+        <div className="flex items-center gap-6">
+          <Metric big value={String(week.totalActions)} label="actions this week" />
+          <div className="w-px h-8 bg-arcus-border" />
+          <Metric value={String(avg)} label="daily average" />
+          <Metric value={String(busiest)} label="busiest day" />
+        </div>
+        <button
+          onClick={onRefresh}
+          aria-label="Refresh this week's activity"
+          className="w-8 h-8 rounded-lg flex items-center justify-center text-arcus-fg-tertiary hover:text-arcus-fg hover:bg-arcus-elevated transition-colors shrink-0"
+        >
+          <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
+        </button>
+      </div>
+      <div className="h-[180px] mt-3">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={week.days} margin={{ top: 10, right: 4, bottom: 0, left: 4 }}>
+            {stippleDefs(id, 'var(--arcus-chart-blue)')}
+            <XAxis
+              dataKey="label" tickLine={false} axisLine={false}
+              tick={{ fontSize: 11, fill: 'var(--arcus-fg-muted, #9a9a9a)' }} dy={6}
+            />
+            <RTooltip
+              cursor={{ stroke: 'var(--arcus-border, #d4d4d4)', strokeWidth: 1 } as any}
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const d = payload[0].payload as WeekDay;
+                return (
+                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
+                    <div className="text-[11px] font-semibold text-arcus-fg">{d.label}{d.isToday ? ' · so far' : ''}</div>
+                    <div className="text-[11px] text-arcus-fg-tertiary">{d.actions} action{d.actions === 1 ? '' : 's'} · {d.runs} run{d.runs === 1 ? '' : 's'}</div>
+                  </div>
+                );
+              }}
+            />
+            <Area type="monotone" dataKey="actions" stroke="none" fill={`url(#${id}-wash)`} />
+            <Area type="monotone" dataKey="actions" stroke="none" fill={`url(#${id}-dots)`} />
+            <Area
+              type="monotone" dataKey="actions" stroke="var(--arcus-chart-blue)" strokeWidth={2} fill="none"
+              dot={{ r: 3, fill: 'var(--arcus-chart-blue)', strokeWidth: 0 }} activeDot={{ r: 4 }}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── Across your apps — live, connection-gated per-app signal counts from
+// /api/home-feed/recommendations (bounces/replies-needed for Gmail, prep-needed
+// meetings for Calendar, stale pages for Notion, awaiting-reply DMs for Slack,
+// upcoming bookings for Cal.com). A slice only exists here if that app is BOTH
+// connected and produced a real signal this pass — nothing invented, nothing
+// shown for an app the user hasn't connected. Donut is the endorsed form here
+// (part-to-whole, ≤5 clearly-separated segments with a legend) rather than the
+// bar-length comparison used elsewhere on this page.
+const APP_CHART_META = {
+  gmail:    { label: 'Gmail',    Icon: Mail,         varName: '--arcus-chart-blue' },
+  calendar: { label: 'Calendar', Icon: Calendar,     varName: '--arcus-chart-green' },
+  notion:   { label: 'Notion',   Icon: FileText,     varName: '--arcus-chart-magenta' },
+  slack:    { label: 'Slack',    Icon: Hash,         varName: '--arcus-chart-yellow' },
+  calcom:   { label: 'Cal.com',  Icon: CalendarPlus, varName: '--arcus-chart-aqua' },
+} as const;
+
+function AppsDonut({ counts }: { counts: AppCounts | null }) {
+  const rows = useMemo(() => {
+    if (!counts) return [];
+    return (Object.keys(APP_CHART_META) as Array<keyof typeof APP_CHART_META>)
+      .map((k) => ({ key: k, value: counts[k], ...APP_CHART_META[k] }))
+      .filter((r) => r.value > 0)
+      .sort((a, b) => b.value - a.value);
+  }, [counts]);
+
+  if (rows.length === 0) return null;
+  const total = rows.reduce((n, r) => n + r.value, 0);
+
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Across your apps</p>
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-3">
+        {rows.map((r) => (
+          <span key={r.key} className="inline-flex items-center gap-1.5 text-[11.5px] text-arcus-fg-tertiary">
+            <span className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: `var(${r.varName})` }} />
+            {r.label}
+          </span>
+        ))}
+      </div>
+      <div className="relative h-[160px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <PieChart>
+            <Pie
+              data={rows} dataKey="value" nameKey="label"
+              innerRadius="64%" outerRadius="100%" paddingAngle={2}
+              stroke="var(--arcus-surface)" strokeWidth={3}
+            >
+              {rows.map((r) => <Cell key={r.key} fill={`var(${r.varName})`} />)}
+            </Pie>
+            <RTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const p = payload[0].payload as (typeof rows)[number];
+                return (
+                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
+                    <div className="text-[11px] font-semibold text-arcus-fg">{p.label}</div>
+                    <div className="text-[11px] text-arcus-fg-tertiary">{p.value} signal{p.value === 1 ? '' : 's'}</div>
+                  </div>
+                );
+              }}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span className="text-[24px] font-semibold tracking-tight text-arcus-fg tabular-nums leading-none">{total}</span>
+          <span className="text-[10.5px] text-arcus-fg-tertiary mt-1">signals right now</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── This week, by day — the SAME real week.days series as the area chart
+// above, re-plotted as a radar so the weekday pattern reads at a glance.
+// Labelled "this week" (not "average") since one week of real data isn't an
+// average yet — the codebase's own rule against reading illustrative numbers
+// as measured.
+function WeekdayRadar({ week }: { week: WeekData }) {
+  const id = `radar-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+  return (
+    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-3">This week, by day</p>
+      <div className="h-[160px]">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadarChart data={week.days} outerRadius="72%">
+            {stippleDefs(id, 'var(--arcus-chart-green)')}
+            <PolarGrid stroke="var(--arcus-border, #d4d4d4)" />
+            <PolarAngleAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--arcus-fg-tertiary, #8a8a8a)' }} />
+            <Radar dataKey="actions" stroke="none" fill={`url(#${id}-wash)`} fillOpacity={1} isAnimationActive={false} />
+            <Radar dataKey="actions" stroke="none" fill={`url(#${id}-dots)`} fillOpacity={1} isAnimationActive={false} />
+            <Radar dataKey="actions" stroke="var(--arcus-chart-green)" strokeWidth={2} fill="none" />
+            <RTooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null;
+                const d = payload[0].payload as WeekDay;
+                return (
+                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
+                    <div className="text-[11px] font-semibold text-arcus-fg">{d.label}{d.isToday ? ' · so far' : ''}</div>
+                    <div className="text-[11px] text-arcus-fg-tertiary">{d.actions} action{d.actions === 1 ? '' : 's'}</div>
+                  </div>
+                );
+              }}
+            />
+          </RadarChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
+  );
+}
+
+// ── Orchestrates the whole analytics dashboard: honest empty state when there
+// is no agent activity yet, otherwise the two spark tiles + big area chart +
+// (donut when there's connected-app data) + weekday radar.
+function AnalyticsSection({ week, appCounts, weekRefreshing, onRefreshWeek, onSchedule }: {
+  week: WeekData | null; appCounts: AppCounts | null; weekRefreshing: boolean; onRefreshWeek: () => void; onSchedule: () => void;
+}) {
   if (!week || !week.hasData) {
     return (
       <Section title="Your week" sub="Arcus activity, last 7 days">
@@ -674,120 +912,20 @@ function WeekChart({ week, onSchedule }: { week: WeekData | null; onSchedule: ()
     );
   }
 
-  const busiest = Math.max(...week.days.map(d => d.actions), 0);
-  const avg = Math.round(week.totalActions / 7);
+  const hasApps = !!appCounts && Object.values(appCounts).some((v) => v > 0);
+
   return (
     <Section title="Your week" sub={`${week.totalActions} action${week.totalActions === 1 ? '' : 's'} across ${week.totalRuns} run${week.totalRuns === 1 ? '' : 's'}, last 7 days`}>
-      <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-        <div className="flex items-center gap-6 mb-4">
-          <Metric big value={String(week.totalActions)} label="actions this week" />
-          <div className="w-px h-8 bg-arcus-border" />
-          <Metric value={String(avg)} label="daily average" />
-          <Metric value={String(busiest)} label="busiest day" />
-        </div>
-        <div className="h-[128px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={week.days} margin={{ top: 18, right: 2, bottom: 0, left: 2 }} barCategoryGap="34%">
-              <XAxis
-                dataKey="label" tickLine={false} axisLine={false}
-                tick={{ fontSize: 11, fill: 'var(--arcus-fg-muted, #9a9a9a)' }} dy={6}
-              />
-              <RTooltip
-                cursor={{ fill: 'var(--arcus-elevated, #f0f0f0)', opacity: 0.6, radius: 5 } as any}
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null;
-                  const d = payload[0].payload as WeekDay;
-                  return (
-                    <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
-                      <div className="text-[11px] font-semibold text-arcus-fg">{d.label}{d.isToday ? ' · so far' : ''}</div>
-                      <div className="text-[11px] text-arcus-fg-tertiary">{d.actions} action{d.actions === 1 ? '' : 's'} · {d.runs} run{d.runs === 1 ? '' : 's'}</div>
-                    </div>
-                  );
-                }}
-              />
-              {/* A faint full-height TRACK behind every bar gives the 7-day grid a
-                  shape even on zero days — the old chart left empty days as dead
-                  space, which read as broken. One neutral ink for the fill (no
-                  legend needed; the title names it); today de-emphasised ("so
-                  far"). Values are NOT drawn on the bars — the hover tooltip
-                  above is the one place they appear, so the chart itself stays
-                  quiet until touched. */}
-              <Bar
-                dataKey="actions" radius={[5, 5, 5, 5]} maxBarSize={30}
-                background={{ fill: 'var(--arcus-elevated, #f0f0f0)', radius: 5 } as any}
-                minPointSize={3}
-              >
-                {week.days.map((d, i) => (
-                  <Cell
-                    key={i}
-                    fill={d.isToday ? 'var(--arcus-fg-muted, #b5b5b5)' : 'var(--arcus-fg, #111)'}
-                    fillOpacity={d.actions === 0 ? 0 : 1}
-                  />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
+        <StatSparkTile label="actions this week" sub="last 7 days" value={week.totalActions} data={week.days} dataKey="actions" colorVar="var(--arcus-chart-blue)" />
+        <StatSparkTile label="agent runs this week" sub="last 7 days" value={week.totalRuns} data={week.days} dataKey="runs" colorVar="var(--arcus-chart-blue)" />
+      </div>
+      <WeekAreaChart week={week} onRefresh={onRefreshWeek} refreshing={weekRefreshing} />
+      <div className={cn('grid gap-2.5 mt-2.5', hasApps && 'sm:grid-cols-2')}>
+        {hasApps && <AppsDonut counts={appCounts} />}
+        <WeekdayRadar week={week} />
       </div>
     </Section>
-  );
-}
-
-// ── Across your apps — live, connection-gated per-app signal counts from
-// /api/home-feed/recommendations (bounces/replies-needed for Gmail, prep-needed
-// meetings for Calendar, stale pages for Notion, awaiting-reply DMs for Slack,
-// upcoming bookings for Cal.com). A row only exists here if that app is BOTH
-// connected and produced a real signal this pass — nothing invented, nothing
-// shown for an app the user hasn't connected.
-const APP_CHART_META = {
-  gmail:    { label: 'Gmail',    Icon: Mail,         varName: '--arcus-chart-blue' },
-  calendar: { label: 'Calendar', Icon: Calendar,     varName: '--arcus-chart-green' },
-  notion:   { label: 'Notion',   Icon: FileText,     varName: '--arcus-chart-magenta' },
-  slack:    { label: 'Slack',    Icon: Hash,         varName: '--arcus-chart-yellow' },
-  calcom:   { label: 'Cal.com',  Icon: CalendarPlus, varName: '--arcus-chart-aqua' },
-} as const;
-
-function AppEffortBars({ counts }: { counts: AppCounts | null }) {
-  const rows = useMemo(() => {
-    if (!counts) return [];
-    return (Object.keys(APP_CHART_META) as Array<keyof typeof APP_CHART_META>)
-      .map((k) => ({ key: k, value: counts[k], ...APP_CHART_META[k] }))
-      .filter((r) => r.value > 0)
-      .sort((a, b) => b.value - a.value);
-  }, [counts]);
-
-  if (rows.length === 0) return null;
-  const max = Math.max(...rows.map((r) => r.value));
-
-  return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-      <div className="space-y-2.5">
-        {rows.map((r) => {
-          const Icon = r.Icon;
-          return (
-            <div
-              key={r.key}
-              tabIndex={0}
-              className="group flex items-center gap-3 rounded-lg outline-none focus-visible:ring-1 focus-visible:ring-arcus-fg-muted"
-            >
-              <Icon className="w-3.5 h-3.5 text-arcus-fg-tertiary shrink-0" />
-              <span className="text-[12.5px] text-arcus-fg-secondary w-16 shrink-0">{r.label}</span>
-              <div className="flex-1 h-2.5 rounded-full bg-arcus-elevated overflow-hidden">
-                <div
-                  className="h-full rounded-full transition-[width] duration-500 ease-out"
-                  style={{ width: `${Math.max((r.value / max) * 100, 6)}%`, background: `var(${r.varName})` }}
-                />
-              </div>
-              {/* Value stays hidden until hovered/focused — the bar length carries
-                  the comparison at rest; the exact count is a deliberate reveal. */}
-              <span className="text-[12px] font-semibold text-arcus-fg tabular-nums w-8 text-right shrink-0 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity duration-200">
-                {r.value}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
   );
 }
 

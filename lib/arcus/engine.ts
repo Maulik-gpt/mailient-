@@ -83,23 +83,27 @@ const TOOL_CAPABLE_MODELS = [
   // ultra is erroring; ultra becomes the real server once it recovers / the
   // account has credit. Leading with it is cheap because its errors return fast.
   'nvidia/nemotron-3-ultra-550b-a55b:free',
-  // Confirmed-healthy fallbacks — returned valid tool/JSON content on a live key.
-  // gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
+  // Confirmed-healthy fallbacks — LIVE-VERIFIED 2026-07-22 by direct API probe
+  // (chat.completions with real keys, checked for non-empty content AND
+  // response_format:json_object support, not just an HTTP 200 — nemotron
+  // reasoners can 200 with an empty body when reasoning eats the token budget).
+  // qwen/qwen3-next-80b-a3b-instruct:free, meta-llama/llama-3.3-70b-instruct:free,
+  // and qwen/qwen3-coder:free were REMOVED here — OpenRouter has retired all
+  // three from the free tier (confirmed 404 "unavailable for free" on every
+  // key, not a transient rate limit). They were silently eating every
+  // failover attempt whenever the first model errored, which is what made
+  // "AI doesn't work at all" reproducible: once nemotron-3-ultra or gemma-4-26b
+  // hit a rate limit, the ENTIRE remaining chain was dead model ids.
   'google/gemma-4-26b-a4b-it:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-coder:free',
-  // nemotron-3-super-120b:free REMOVED 2026-07-19 (user report: not working —
-  // consistent with the empty-200s issue already noted below).
-  // Removed (verified 404 / dead on OpenRouter 2026-06): openai/gpt-oss-120b,
-  // openai/gpt-oss-20b (retired per product decision), z-ai/glm-4.5-air,
-  // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking.
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+  // Removed (verified 404 / dead on OpenRouter): openai/gpt-oss-120b,
+  // openai/gpt-oss-20b (now requires reasoning that can't be disabled — a
+  // different failure mode, still unsuitable here), z-ai/glm-4.5-air,
+  // deepseek/deepseek-v4-flash, arcee-ai/trinity-large-thinking, qwen3-coder,
+  // qwen3-next-80b-a3b-instruct, llama-3.3-70b-instruct.
 ];
 
-// FALLBACK_MODELS / nemotron-3-nano-30b:free REMOVED 2026-07-19 (user report: not
-// working). ALL_FREE_MODELS now equals TOOL_CAPABLE_MODELS; kept as a separate
-// name (rather than deleted) so callers importing ALL_FREE_MODELS don't need a
-// second edit if a fallback tier is reintroduced later.
 const FALLBACK_MODELS: string[] = [];
 
 const ALL_FREE_MODELS = [
@@ -111,12 +115,12 @@ const ALL_FREE_MODELS = [
 // conversational path (options.fastFirst): smalltalk/identity/capability
 // replies must land in ~2s, so we lead with the smallest healthy models and
 // NEVER the 550B reasoning model (which thinks for 20s). gemma-4-26b first —
-// it's the quickest to first token.
-// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
+// it's the quickest to first token. All three live-verified 2026-07-22 (real
+// keys, non-empty content, ~300-500ms to first token in testing).
 const FAST_MODELS = [
   'google/gemma-4-26b-a4b-it:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
-  'qwen/qwen3-next-80b-a3b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+  'nvidia/nemotron-3-super-120b-a12b:free',
 ];
 
 // F2.3 — Paid escape hatch. Activated only when ALL_FREE_MODELS exhaust AND

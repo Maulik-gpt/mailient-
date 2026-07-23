@@ -10,12 +10,15 @@ export const maxDuration = 15;
 // <thinking> tags into titles — so titles silently fell back to the user's
 // first words every time. These are reliable + don't emit reasoning tags.
 // NOTE: title generation must use NON-reasoning instruct models — reasoning
-// models (nemotron-3-ultra/super) emit <thinking> tags that pollute titles,
-// the exact bug noted above. gpt-oss retired; these are reliable + tag-free.
-// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working).
+// models (nemotron-3-ultra/super, and the "-reasoning" nano-omni variant) emit
+// <thinking> tags that pollute titles, the exact bug noted above. gpt-oss
+// retired. 'meta-llama/llama-3.3-70b-instruct:free' REMOVED 2026-07-22 —
+// OpenRouter retired it from the free tier (404 on every key, live-probe
+// confirmed). nemotron-3-nano-30b-a3b (NOT the "-reasoning" SKU) verified the
+// same day: clean tag-free text, no leaked reasoning, ~300ms to first token.
 const FREE_MODELS = [
   'google/gemma-4-26b-a4b-it:free',
-  'meta-llama/llama-3.3-70b-instruct:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
 ];
 
 function getKeys(): string[] {

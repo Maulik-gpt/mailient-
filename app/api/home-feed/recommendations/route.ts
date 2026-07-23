@@ -28,13 +28,14 @@ import { logEvent } from "@/lib/logsso";
 export const dynamic = 'force-dynamic';
 export const maxDuration = 25;
 
-// gemma-4-31b-it:free REMOVED 2026-07-19 (user report: not working). Promoted
-// gemma-4-26b (previously the fallback, confirmed healthy) to primary; qwen3-next
-// verified to support response_format json_object (this route's hard
-// requirement — confirmed via OpenRouter's live /api/v1/models, not a guess) so
-// it's a real second option instead of duplicating the same model twice.
+// 'qwen/qwen3-next-80b-a3b-instruct:free' REMOVED 2026-07-22 — OpenRouter
+// retired it from the free tier entirely (confirmed 404 "unavailable for free"
+// on every key via a live probe, not a rate limit). nemotron-3-super-120b is
+// its replacement, LIVE-VERIFIED 2026-07-22 to return clean, non-empty content
+// under response_format:json_object (this route's hard requirement) — checked
+// directly, not assumed from the model card.
 const REC_MODEL = 'google/gemma-4-26b-a4b-it:free';
-const FALLBACK_MODEL = 'qwen/qwen3-next-80b-a3b-instruct:free';
+const FALLBACK_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
 
 type Category = 'connect' | 'productivity';
 
@@ -247,15 +248,14 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
   const paidModels = process.env.DISABLE_PAID_FALLBACK === 'true'
     ? []
     : ((process.env.ARCUS_PREMIUM_MODELS || '').split(',').map(s => s.trim()).filter(Boolean));
-  // Extra free models so the chain doesn't dead-end when both gemmas are
-  // rate-limited upstream. All IDs verified against the live OpenRouter free
-  // catalog; non-reasoning instruct models that honor json_object well.
-  // extractJsonObject() also tolerates any that leak prose.
-  // nemotron-3-nano-30b:free and nemotron-3-super-120b:free REMOVED 2026-07-19
-  // (user report: not working). qwen3-next-80b removed from here too — it's now
-  // FALLBACK_MODEL above, so listing it again here would just retry it twice.
+  // Extra free model so the chain doesn't dead-end when gemma and nemotron-super
+  // are both rate-limited upstream. Live-verified 2026-07-22 (real keys, clean
+  // non-empty content under response_format:json_object). extractJsonObject()
+  // also tolerates any that leak prose. 'meta-llama/llama-3.3-70b-instruct:free'
+  // REMOVED same day — OpenRouter retired it from the free tier (404 on every
+  // key, confirmed via live probe, not a rate limit).
   const EXTRA_FREE = [
-    'meta-llama/llama-3.3-70b-instruct:free',
+    'nvidia/nemotron-3-nano-30b-a3b:free',
   ];
   const modelChain = [REC_MODEL, FALLBACK_MODEL, ...EXTRA_FREE, ...paidModels];
 
