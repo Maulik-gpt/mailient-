@@ -35,6 +35,7 @@ export const CHANGELOG: ChangelogGroup[] = [
           'Every Google connection — Gmail, Calendar, and Meet — now reconnects through our verified sign-in, instead of the old flow that kept looping back to the same error. Calendar in particular was still using the old path; it now matches the rest.',
           'The banner now names the connection that actually expired (Gmail or Calendar) and reconnects that one — it no longer tries to reconnect Gmail when it was really Calendar that lapsed.',
           'Once you reconnect, the warning clears right away. Before, the banner could linger even after a successful reconnect because the page was still showing a cached copy from when the connection was down.',
+          'Fixed the deeper reason Calendar kept showing as expired: it was reading your calendar over the old connection style while Gmail had moved to the new verified one, so it failed every time. Calendar now loads over the same verified connection — so an already-connected calendar just works, no reconnect needed.',
         ],
       },
       {

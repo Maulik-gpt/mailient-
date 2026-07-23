@@ -81,10 +81,19 @@ export async function initiateComposioConnection(
   // HTTP 400 "no longer supported. Use POST /api/v3/connected_accounts/link").
   // `.link()` is the current method — same (userId, authConfigId, {callbackUrl})
   // signature and same { id, redirectUrl } result.
+  //
+  // allowMultiple: true is REQUIRED for RECONNECTS. Once a user has an ACTIVE
+  // connection for this auth config, link() otherwise THROWS "Multiple connected
+  // accounts found for user … Please use the allowMultiple option" — the route's
+  // catch then bounced the user to /dashboard/agent-talk with an error instead of
+  // Composio consent (LIVE-CONFIRMED 2026-07-23 on the founder's account, which
+  // already had ACTIVE googlecalendar + googlemeet connections). With the flag it
+  // mints a fresh consent + accountId; the callback re-points arcus_integrations
+  // to the new account. Harmless for first-time connects (no existing account).
   const req = await client().connectedAccounts.link(
     userEmail.toLowerCase(),
     authConfigId,
-    { callbackUrl },
+    { callbackUrl, allowMultiple: true } as any,
   );
   if (!req.redirectUrl) {
     throw new Error('Composio did not return a redirect URL for the connection request');
@@ -96,6 +105,40 @@ export async function initiateComposioConnection(
 export async function getComposioAccountStatus(accountId: string): Promise<string> {
   const account = await client().connectedAccounts.get(accountId);
   return account.status;
+}
+
+/**
+ * Keep exactly ONE connected account per toolkit for a user: delete every OTHER
+ * connection under the same auth config, keeping `keepAccountId`. Called after a
+ * reconnect persists the fresh account. Because `link()` runs with allowMultiple
+ * (so a reconnect never throws on an existing account), connections would
+ * otherwise accumulate — and the Gmail/Calendar proxy resolves by user+toolkit,
+ * so several ACTIVE connections for one toolkit make it ambiguous. Best-effort:
+ * a failed prune never blocks the reconnect. Returns how many it deleted.
+ */
+export async function pruneOtherComposioConnections(
+  userEmail: string,
+  toolkit: ComposioToolkit,
+  keepAccountId: string,
+): Promise<number> {
+  const authConfigId = composioAuthConfigId(toolkit);
+  if (!authConfigId) return 0;
+  let deleted = 0;
+  try {
+    const list: any = await client().connectedAccounts.list({ userIds: [userEmail.toLowerCase()] } as any);
+    const items: any[] = list?.items || list?.data || [];
+    for (const acc of items) {
+      if (!acc?.id || acc.id === keepAccountId) continue;
+      const accCfg = acc?.authConfig?.id || acc?.authConfigId;
+      if (accCfg !== authConfigId) continue; // only the SAME toolkit's config
+      try {
+        await client().connectedAccounts.delete(acc.id);
+        tokenCache.delete(acc.id);
+        deleted++;
+      } catch { /* best-effort */ }
+    }
+  } catch { /* listing failed — leave duplicates rather than risk a wrong delete */ }
+  return deleted;
 }
 
 /** Revoke + delete a connected account on Composio (best-effort; used on disconnect). */

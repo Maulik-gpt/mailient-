@@ -19,7 +19,6 @@ import { auth } from '@/lib/auth.js';
 // @ts-ignore
 import { getSupabaseAdmin } from '@/lib/supabase.js';
 import { GmailService } from '@/lib/gmail';
-import { CalendarService } from '@/lib/calendar';
 import { cleanRunSummary } from '@/lib/arcus/report-summary';
 import { logEvent } from "@/lib/logsso";
 
@@ -146,7 +145,13 @@ function isTokenExpiredErr(err: any): boolean {
     || m.includes('invalid_grant')
     || m.includes('401')
     || m.includes('refresh failed')
-    || m.includes('invalid authentication credentials');
+    || m.includes('invalid authentication credentials')
+    // Composio Proxy Execute raises this when the connected account for the
+    // toolkit is missing/EXPIRED/REVOKED — i.e. the connection is dead and the
+    // user must reconnect. LIVE-SEEN 2026-07-23: an expired Gmail Composio
+    // connection returns "No active connection found for toolkit(s) 'gmail'…".
+    || m.includes('no active connection')
+    || m.includes('no_active_connection');
 }
 
 const URGENCY_SIGNALS = [
@@ -350,17 +355,42 @@ async function fetchDecide(gmail: GmailService, limit = HEURISTIC_MAX_PER_BUCKET
   }
 }
 
-async function fetchShowUp(cal: CalendarService, userEmail: string, limit = HEURISTIC_MAX_PER_BUCKET): Promise<ShowUpItem[]> {
+async function fetchShowUp(userEmail: string, limit = HEURISTIC_MAX_PER_BUCKET): Promise<ShowUpItem[]> {
   try {
     const now = new Date();
     const endOfWindow = new Date(now);
     endOfWindow.setDate(endOfWindow.getDate() + 1);
     endOfWindow.setHours(23, 59, 59, 999);
-    const events = await cal.listEvents({
+    // Read Calendar through googleFetch (Composio Proxy-aware), NOT CalendarService.
+    // CalendarService uses the googleapis client with the raw token, but for a
+    // Composio user the token on file is a `composio:<accountId>` MARKER, not a
+    // real Google access token — so every googleapis call 401s and the whole
+    // Calendar surface read as "expired" even with an ACTIVE Composio connection
+    // (proxy verified live: 200). googleFetch routes Composio users via Proxy
+    // Execute and legacy users via a direct fetch with the bearer we pass here.
+    const { getGcalToken, googleFetch } = await import('@/lib/arcus/tools/http-tokens');
+    const token = await getGcalToken(userEmail).catch(() => null);
+    const qs = new URLSearchParams({
       timeMin: now.toISOString(),
       timeMax: endOfWindow.toISOString(),
-      maxResults: 20,
+      singleEvents: 'true',
+      orderBy: 'startTime',
+      maxResults: '20',
     });
+    const res = await googleFetch(
+      userEmail,
+      'gcal',
+      `https://www.googleapis.com/calendar/v3/calendars/primary/events?${qs.toString()}`,
+      { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+    );
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      // A 401 (dead token/connection) flows to isTokenExpiredErr → needsReconnect;
+      // other statuses (rate/transient) are swallowed to an empty section below.
+      throw new Error(`Calendar API ${res.status}: ${body.slice(0, 160)}`);
+    }
+    const data: any = await res.json().catch(() => ({}));
+    const events: any[] = Array.isArray(data?.items) ? data.items : [];
     const items: ShowUpItem[] = [];
     for (const ev of events) {
       if (!ev.start?.dateTime && !ev.start?.date) continue; // skip malformed
@@ -620,7 +650,6 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
 
   const gmail = new GmailService(accessToken, '');
   (gmail as any).setUserEmail?.(userEmail);
-  const cal = new CalendarService(accessToken, '');
 
   const wrap = async <T,>(fn: () => Promise<T>, tag: 'gmail' | 'calendar'): Promise<{ value: T | null; expired: boolean }> => {
     try {
@@ -649,7 +678,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   const SHOWUP_CANDIDATES = 10;
   const [decideR, showUpR, chaseR, actionItems, agentRuns, pendingApprovals] = await Promise.all([
     wrap(() => fetchDecide(gmail, DECIDE_CANDIDATES), 'gmail'),
-    wrap(() => fetchShowUp(cal, userEmail, SHOWUP_CANDIDATES), 'calendar'),
+    wrap(() => fetchShowUp(userEmail, SHOWUP_CANDIDATES), 'calendar'),
     wrap(() => fetchChase(gmail, userEmail, CHASE_CANDIDATES), 'gmail'),
     fetchActionItems(userEmail),
     fetchAgentRuns(userEmail),

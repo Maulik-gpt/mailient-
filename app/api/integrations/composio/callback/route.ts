@@ -91,6 +91,17 @@ export async function GET(request: NextRequest) {
       } catch { /* cache module optional — non-fatal */ }
     }
 
+    // Keep exactly ONE connection per toolkit — remove the accounts this reconnect
+    // superseded. link() runs with allowMultiple (so a reconnect never throws on an
+    // existing account), so without this they'd accumulate; the Gmail/Calendar
+    // proxy resolves by user+toolkit, and multiple ACTIVE connections for one
+    // toolkit make it ambiguous. Best-effort — never blocks the reconnect.
+    try {
+      const { pruneOtherComposioConnections } = await import('../../../../../lib/arcus/composio');
+      const removed = await pruneOtherComposioConnections(userId, toolkit, accountId);
+      if (removed) console.log(`[Composio] pruned ${removed} superseded ${toolkit} connection(s) for ${userId}`);
+    } catch { /* best-effort */ }
+
     // Clear any needs_reauth flag left over from the expiry that triggered this
     // reconnect. The upsert above only touches access_token/tokens, so a prior
     // status='needs_reauth' would otherwise persist and keep showing the
