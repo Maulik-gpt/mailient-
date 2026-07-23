@@ -32,7 +32,7 @@ export const CHANGELOG: ChangelogGroup[] = [
         tag: 'Fixed',
         title: 'Reconnecting Google now actually works — and clears the warning',
         points: [
-          'The red “Google Connection Expired” banner now reconnects through our verified sign-in, instead of the old flow that kept looping back to the same error.',
+          'Every Google connection — Gmail, Calendar, and Meet — now reconnects through our verified sign-in, instead of the old flow that kept looping back to the same error. Calendar in particular was still using the old path; it now matches the rest.',
           'The banner now names the connection that actually expired (Gmail or Calendar) and reconnects that one — it no longer tries to reconnect Gmail when it was really Calendar that lapsed.',
           'Once you reconnect, the warning clears right away. Before, the banner could linger even after a successful reconnect because the page was still showing a cached copy from when the connection was down.',
         ],
