@@ -41,13 +41,22 @@ import {
   FileText, Hash, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { TokenExpiryAlert } from './token-expiry-alert';
 
 // ── Data shapes (mirror /api/home-feed/today + week-activity) ───────────────────
 interface DecideItem { id: string; threadId: string; sender: { name: string; email: string }; subject: string; reason: string; receivedAt: string; gmailUrl: string; signals?: string[]; }
 interface ChaseItem { id: string; threadId: string; recipient: { name: string; email: string }; subject: string; daysSilent: number; sentAt: string; gmailUrl: string; reason?: string; signals?: string[]; }
 interface ShowUpItem { id: string; start: string; end: string | null; title: string; attendeeCount: number; meetLink: string | null; hangoutLink: string | null; isExternal: boolean; reason?: string; }
 interface AgentRunItem { id: string; agentName: string; status: string; summary: string | null; toolCalls: number; ranAt: string; artifactCounts: { gmail: number; calendar: number; notion: number; slack: number }; }
-interface TodayData { decide: DecideItem[]; showUp: ShowUpItem[]; chase: ChaseItem[]; actionItems: any[]; agentRuns: AgentRunItem[]; summary: string | null; }
+interface TodayData {
+  decide: DecideItem[]; showUp: ShowUpItem[]; chase: ChaseItem[]; actionItems: any[]; agentRuns: AgentRunItem[]; summary: string | null;
+  // A dead Gmail/Calendar token used to be silently swallowed inside the
+  // server's per-source fetchers, so it read as "0 items, inbox handled"
+  // instead of "your connection is broken." Live-verified 2026-07-23 against
+  // a real expired-token account and fixed server-side; this field is what
+  // makes it visible here instead of lying that everything's fine.
+  needsReconnect?: { gmail?: boolean; calendar?: boolean };
+}
 interface WeekDay { date: string; label: string; isToday: boolean; runs: number; actions: number; }
 interface WeekData { days: WeekDay[]; totalRuns: number; totalActions: number; hasData: boolean; }
 interface Rec { id: string; category: string; title: string; summary: string; arcusPrompt: string; ctaLabel: string; stat: { value: number; label: string }; atRisk?: boolean; }
@@ -367,9 +376,20 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
   if (loading) return <CommandCenterSkeleton />;
 
   const nothingPressing = stats.reply === 0 && stats.meetings === 0 && stats.awaiting === 0;
+  // A dead token used to be indistinguishable from a genuinely empty, handled
+  // inbox — same 0/0/0 stats either way. This makes the difference visible
+  // instead of telling the user "you're all set" when nothing could load.
+  const gmailNeedsReconnect = !!today?.needsReconnect?.gmail;
+  const calendarNeedsReconnect = !!today?.needsReconnect?.calendar;
+  const hasReconnectIssue = gmailNeedsReconnect || calendarNeedsReconnect;
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 space-y-8">
+      {hasReconnectIssue && (
+        <div className="-mx-4 sm:-mx-6 -mt-6">
+          <TokenExpiryAlert isVisible={hasReconnectIssue} />
+        </div>
+      )}
       {/* 1 ── HERO ──────────────────────────────────────────────────────────── */}
       <motion.section initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <p className="text-[13px] font-medium text-arcus-fg-tertiary">{dateLabel}</p>
@@ -379,11 +399,13 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
         <div className="mt-2 max-w-2xl">
           <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary">Sift says…</p>
           <p className="mt-1 text-[15px] font-medium leading-relaxed text-arcus-fg">
-            {sift?.headline
-              || today?.summary?.trim()
-              || (nothingPressing
-                ? 'Nothing needs you right now — your inbox is handled.'
-                : 'Here’s what deserves your attention today.')}
+            {hasReconnectIssue
+              ? `Your ${[gmailNeedsReconnect && 'Gmail', calendarNeedsReconnect && 'Calendar'].filter(Boolean).join(' and ')} connection expired — reconnect above to see what actually needs you.`
+              : sift?.headline
+                || today?.summary?.trim()
+                || (nothingPressing
+                  ? 'Nothing needs you right now — your inbox is handled.'
+                  : 'Here’s what deserves your attention today.')}
           </p>
           {/* The longer synthesis loads a beat later (it rides the same call as
               Worth your time) — appears once ready rather than reserving empty

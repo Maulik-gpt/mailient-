@@ -136,7 +136,17 @@ interface TodayResponse {
 
 function isTokenExpiredErr(err: any): boolean {
   const m = String(err?.message || '').toLowerCase();
-  return m.includes('expired') || m.includes('invalid_grant') || m.includes('401') || m.includes('refresh failed');
+  // 'invalid authentication credentials' added 2026-07-23 — LIVE-VERIFIED
+  // against a real expired-token account: Google Calendar's actual 401 body
+  // reads "Request had invalid authentication credentials. Expected OAuth 2
+  // access token…", which matched none of the other patterns, so an expired
+  // Calendar token was silently read as calendarConnected:true / an honestly
+  // empty calendar instead of needsReconnect.
+  return m.includes('expired')
+    || m.includes('invalid_grant')
+    || m.includes('401')
+    || m.includes('refresh failed')
+    || m.includes('invalid authentication credentials');
 }
 
 const URGENCY_SIGNALS = [
@@ -329,6 +339,13 @@ async function fetchDecide(gmail: GmailService, limit = HEURISTIC_MAX_PER_BUCKET
   } catch (err) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] decide fetch failed:', (err as any)?.message);
+    // A token-expiry error must reach the wrap() wrapper around this call so it
+    // can set needsReconnect — swallowing it here (as every other error is
+    // swallowed) made an expired Gmail token indistinguishable from a genuinely
+    // empty inbox: the feed silently showed "nothing needs you, you're all
+    // handled" instead of telling the user their connection was dead. LIVE-
+    // VERIFIED 2026-07-23 against a real expired-token account.
+    if (isTokenExpiredErr(err)) throw err;
     return { items: [], scanned: 0 };
   }
 }
@@ -369,6 +386,9 @@ async function fetchShowUp(cal: CalendarService, userEmail: string, limit = HEUR
   } catch (err) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] showUp fetch failed:', (err as any)?.message);
+    // See fetchDecide's comment — must re-throw token expiry so wrap() can set
+    // needsReconnect instead of this reading as an honest empty calendar.
+    if (isTokenExpiredErr(err)) throw err;
     return [];
   }
 }
@@ -421,6 +441,9 @@ async function fetchChase(gmail: GmailService, userEmail: string, limit = HEURIS
   } catch (err) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
     console.warn('[home-feed/today] chase fetch failed:', (err as any)?.message);
+    // See fetchDecide's comment — must re-throw token expiry so wrap() can set
+    // needsReconnect instead of this reading as an honest empty sent folder.
+    if (isTokenExpiredErr(err)) throw err;
     return [];
   }
 }
