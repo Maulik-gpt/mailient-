@@ -30,10 +30,19 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Fixed',
-        title: 'The home feed’s AI is actually writing its briefings again',
+        title: 'Reconnecting Google now actually works — and clears the warning',
         points: [
-          'The reasons under “Needs a reply”, the “Key conversations” summaries, and the “Worth your time” cross-app suggestions could quietly fall back to plain, generic text — so the feed sometimes read like a fixed template instead of something that had actually looked at your inbox.',
-          'The cause: the AI models behind those sections were, on some attempts, spending their whole budget “thinking” and returning nothing. Those sections now tell the model to answer directly, so they come back written and specific — and faster.',
+          'The red “Google Connection Expired” banner now reconnects through our verified sign-in, instead of the old flow that kept looping back to the same error.',
+          'The banner now names the connection that actually expired (Gmail or Calendar) and reconnects that one — it no longer tries to reconnect Gmail when it was really Calendar that lapsed.',
+          'Once you reconnect, the warning clears right away. Before, the banner could linger even after a successful reconnect because the page was still showing a cached copy from when the connection was down.',
+        ],
+      },
+      {
+        tag: 'Fixed',
+        title: 'The home feed’s AI briefings are specific again — and much faster',
+        points: [
+          'The reasons under “Needs a reply”, the “Key conversations” summaries, and the “Sift says…” read could quietly fall back to plain, generic text — so the feed sometimes looked like a fixed template instead of something that had actually read your inbox.',
+          'The real cause: building the fresh, AI-written version was taking so long it occasionally timed out, and you were left looking at an older, generic copy. Building it is now several times faster, so the specific version reliably lands — and your daily one-line briefing is back.',
         ],
       },
     ],

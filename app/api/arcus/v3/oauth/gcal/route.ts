@@ -38,9 +38,14 @@ export async function GET(request: NextRequest) {
     // ── Composio-managed path ────────────────────────────────────────────────
     // Consent on Composio's verified Google client (no test-mode user cap).
     // Mirrors the Gmail route; failures fall through to the own-client flow.
+    // Where to send the user back after reconnect (home-feed banner passes
+    // ?returnTo=/home-feed). Threaded to the Composio callback below.
+    const rawReturn = new URL(request.url).searchParams.get('returnTo') || '';
+    const returnTo = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '';
+
     if (composioEnabled('gcal')) {
       try {
-        const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gcal`;
+        const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gcal${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`;
         const { accountId, redirectUrl } = await initiateComposioConnection(session.user.email, 'gcal', cb);
         const response = NextResponse.redirect(redirectUrl);
         response.cookies.set('composio_conn_gcal', accountId, {

@@ -91,7 +91,36 @@ export async function GET(request: NextRequest) {
       } catch { /* cache module optional — non-fatal */ }
     }
 
-    const successUrl = new URL('/dashboard/agent-talk', request.url);
+    // Clear any needs_reauth flag left over from the expiry that triggered this
+    // reconnect. The upsert above only touches access_token/tokens, so a prior
+    // status='needs_reauth' would otherwise persist and keep showing the
+    // integration as "reconnect required." Best-effort + separate from the
+    // upsert: if arcus_integrations has no `status` column this throws and is
+    // swallowed rather than failing the whole reconnect.
+    const legacyProvider = toolkit === 'gcal' ? 'google_calendar' : toolkit === 'gmeet' ? 'google_meet' : 'google';
+    try {
+      await supabase.from('arcus_integrations').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('user_id', userId).eq('provider', toolkit);
+    } catch { /* no status column — fine */ }
+    try {
+      await supabase.from('integration_credentials').update({ status: 'connected', updated_at: new Date().toISOString() }).eq('user_id', userId).eq('provider', legacyProvider);
+    } catch { /* legacy row may not exist — fine */ }
+
+    // Invalidate the Home-feed Today snapshot (and the conversations snapshot) so
+    // the "connection expired" banner — which is baked into the cached snapshot
+    // from when the token was dead — is recomputed fresh on the next load instead
+    // of persisting for the cache TTL. THIS is why "I reconnected but the error
+    // still shows" happened: the reconnect worked, but the stale cached snapshot
+    // kept rendering the banner.
+    try {
+      await supabase.from('arcus_today_cache').delete().in('user_id', [userId, `${userId}::convos`]);
+    } catch { /* cache table optional — non-fatal */ }
+
+    // Return the user to where they started the reconnect (e.g. /home-feed) when
+    // a safe relative path was passed; default to the chat. Guard against open
+    // redirects: must be a site-relative path, never protocol-relative ("//evil").
+    const rawReturn = url.searchParams.get('returnTo') || '';
+    const dest = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '/dashboard/agent-talk';
+    const successUrl = new URL(dest, request.url);
     successUrl.searchParams.set('success', 'connected');
     successUrl.searchParams.set('provider', uiProvider);
     const response = NextResponse.redirect(successUrl);

@@ -32,9 +32,15 @@ export async function GET(request: NextRequest) {
   // own client. The pending connected-account id rides in a short-lived cookie;
   // the Composio callback route verifies ACTIVE and persists the marker row.
   // Any initiate failure falls through to the legacy own-client OAuth below.
+  // Where to send the user back after the whole reconnect completes (e.g. the
+  // home-feed banner passes ?returnTo=/home-feed). Threaded to the Composio
+  // callback so the user lands back where they started, not on a fixed page.
+  const rawReturn = new URL(request.url).searchParams.get('returnTo') || '';
+  const returnTo = rawReturn.startsWith('/') && !rawReturn.startsWith('//') ? rawReturn : '';
+
   if (composioEnabled('gmail')) {
     try {
-      const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gmail`;
+      const cb = `${baseUrl}/api/integrations/composio/callback?toolkit=gmail${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ''}`;
       const { accountId, redirectUrl } = await initiateComposioConnection(session.user.email, 'gmail', cb);
       const response = NextResponse.redirect(redirectUrl);
       response.cookies.set('composio_conn_gmail', accountId, {

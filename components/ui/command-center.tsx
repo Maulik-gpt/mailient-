@@ -387,7 +387,12 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
     <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 space-y-8">
       {hasReconnectIssue && (
         <div className="-mx-4 sm:-mx-6 -mt-6">
-          <TokenExpiryAlert isVisible={hasReconnectIssue} />
+          <TokenExpiryAlert
+            isVisible={hasReconnectIssue}
+            gmailNeedsReconnect={gmailNeedsReconnect}
+            calendarNeedsReconnect={calendarNeedsReconnect}
+            returnTo="/home-feed"
+          />
         </div>
       )}
       {/* 1 ── HERO ──────────────────────────────────────────────────────────── */}
