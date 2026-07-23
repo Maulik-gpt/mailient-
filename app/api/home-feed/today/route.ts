@@ -693,9 +693,12 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
       // briefing/ranking — never the reason specificity — and the function
       // always finishes in time to cache a fresh, specific snapshot.
       const FN_BUDGET_MS = 52_000;         // stay safely under maxDuration (60s)
-      const FALLBACK_RESERVE_MS = 15_000;  // enrich (≤12s) + store + DB margin
+      const FALLBACK_RESERVE_MS = 13_000;  // gemma-led enrich (~2s, 10s cap) + store + DB
       const elapsedMs = Date.now() - snapshotStart;
-      const agentDeadlineMs = Math.max(12_000, Math.min(26_000, FN_BUDGET_MS - elapsedMs - FALLBACK_RESERVE_MS));
+      // Cap the agent at 18s: a HEALTHY ultra lands a light triage in ~10s (live-
+      // verified), so this still gives the rich path a fair shot; a stalling one
+      // bails with plenty of budget left for the fast, specific enrich fallback.
+      const agentDeadlineMs = Math.max(10_000, Math.min(18_000, FN_BUDGET_MS - elapsedMs - FALLBACK_RESERVE_MS));
       const agent = await buildTodayViaAgent(
         userEmail,
         {
@@ -703,7 +706,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
           chase: chasePool,
           showUp: showUpPool,
         },
-        { deadlineMs: agentDeadlineMs, maxToolCalls: 8 },
+        { deadlineMs: agentDeadlineMs, maxToolCalls: 5 },
       );
       if (agent) {
         decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];
