@@ -695,10 +695,18 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
       const FN_BUDGET_MS = 52_000;         // stay safely under maxDuration (60s)
       const FALLBACK_RESERVE_MS = 13_000;  // gemma-led enrich (~2s, 10s cap) + store + DB
       const elapsedMs = Date.now() - snapshotStart;
-      // Cap the agent at 18s: a HEALTHY ultra lands a light triage in ~10s (live-
-      // verified), so this still gives the rich path a fair shot; a stalling one
-      // bails with plenty of budget left for the fast, specific enrich fallback.
-      const agentDeadlineMs = Math.max(10_000, Math.min(18_000, FN_BUDGET_MS - elapsedMs - FALLBACK_RESERVE_MS));
+      // TOOL-LESS TRIAGE (maxToolCalls: 0). LIVE-MEASURED 2026-07-23 on a real
+      // inbox: with tools the agent NEVER landed (hasBriefing/hasReasoning false)
+      // — it hangs on tool-investigation turns through the flaky 550B model and
+      // times out, so the whole rich path (briefing, ranking, evidence) was lost
+      // and the compute ran ~24-48s. Run it as a single seeded pass instead: it
+      // reasons from the 300-char previews already attached to each candidate
+      // (enough for triage-grade reasons — the enrich fallback proves that same
+      // input yields "Priya needs Q3 budget sign-off before Friday"), lands in one
+      // ~3-8s call, and restores the briefing + ranking. Deeper thread reads were
+      // never actually happening, so nothing real is lost; the enrich fallback
+      // still covers the rare pass that returns nothing.
+      const agentDeadlineMs = Math.max(10_000, Math.min(16_000, FN_BUDGET_MS - elapsedMs - FALLBACK_RESERVE_MS));
       const agent = await buildTodayViaAgent(
         userEmail,
         {
@@ -706,7 +714,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
           chase: chasePool,
           showUp: showUpPool,
         },
-        { deadlineMs: agentDeadlineMs, maxToolCalls: 5 },
+        { deadlineMs: agentDeadlineMs, maxToolCalls: 0 },
       );
       if (agent) {
         decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];

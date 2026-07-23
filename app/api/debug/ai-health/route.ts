@@ -191,7 +191,7 @@ export async function GET(req: Request) {
   const keys = loadKeys();
 
   const base: Record<string, any> = {
-    build: 'today-agent-bound-v2+enrich-gemma',
+    build: 'today-tool-less-v3',
     checkedAt: new Date().toISOString(),
     vercelEnv: process.env.VERCEL_ENV || 'unknown',
     keyCount: keys.length,
