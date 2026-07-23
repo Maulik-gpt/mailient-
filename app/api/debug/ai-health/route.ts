@@ -99,7 +99,54 @@ async function testModel(key: string, model: string) {
   }
 }
 
-export async function GET() {
+// ?deep=1 — run the ACTUAL home-feed pipeline functions (not just a raw model
+// ping) with synthetic inputs, so we can see which specific path falls back to
+// generic even though the models are reachable. This is what pins the real bug.
+async function runDeep() {
+  const out: Record<string, any> = {};
+
+  // 1) Today reason enrichment (the heuristic-path reasons under "Needs a reply").
+  try {
+    const t0 = Date.now();
+    const { OpenRouterAIService } = await import('@/lib/openrouter-ai.js');
+    const svc = new OpenRouterAIService();
+    const reasons = await svc.enrichTodayReasons([
+      { from: 'Priya Sharma', subject: 'Q3 budget approval needed before Friday board call', snippet: 'Hi — we need your sign-off on the Q3 budget before the board meets Friday.' },
+      { from: 'Acme Corp', subject: 'Contract renewal — action required', snippet: 'Your annual contract renews next week; please confirm the seat count.' },
+    ]);
+    out.enrichTodayReasons = { ms: Date.now() - t0, isAvailable: svc.isAvailable(), result: reasons, verdict: Array.isArray(reasons) && reasons.some(Boolean) ? 'SPECIFIC' : 'NULL_FELL_BACK' };
+  } catch (e: any) {
+    out.enrichTodayReasons = { verdict: 'THREW', error: `${e?.name}: ${e?.message}`.slice(0, 300) };
+  }
+
+  // 2) The Today triage agent (the PRIMARY reason/briefing generator).
+  try {
+    const t0 = Date.now();
+    const { buildTodayViaAgent } = await import('@/lib/arcus/today-agent');
+    const agent = await buildTodayViaAgent(
+      'diagnostic@example.com',
+      {
+        decide: [{ id: 'd1', threadId: 't1', sender: { name: 'Priya Sharma', email: 'priya@acme.com' }, subject: 'Q3 budget approval needed before Friday board call', snippet: 'We need your sign-off on the Q3 budget before the board meets Friday.', receivedAt: new Date().toISOString(), gmailUrl: '' }],
+        chase: [],
+        showUp: [],
+      },
+      { deadlineMs: 35_000, maxToolCalls: 2 },
+    );
+    out.buildTodayViaAgent = {
+      ms: Date.now() - t0,
+      verdict: agent ? 'AI_OK' : 'NULL_FELL_BACK',
+      briefing: agent?.briefing || null,
+      firstDecideReason: agent?.decide?.[0]?.reason || null,
+    };
+  } catch (e: any) {
+    out.buildTodayViaAgent = { verdict: 'THREW', error: `${e?.name}: ${e?.message}`.slice(0, 300) };
+  }
+
+  return out;
+}
+
+export async function GET(req: Request) {
+  const deep = new URL(req.url).searchParams.get('deep') === '1';
   const keys = loadKeys();
 
   const base: Record<string, any> = {
@@ -134,11 +181,14 @@ export async function GET() {
     ? 'At least one model returned real content from THIS deployment, so the AI is reachable here. If the home-feed still reads generic, the cause is downstream (per-request timeouts under real load, or a stale server/client cache), not the keys.'
     : 'No model returned usable content from this deployment. Check the per-model errors below: 401/403 = bad/rotated key, 402 = account has no credit, 429 = rate-limited/quota. Fix the account or keys in Vercel Production.';
 
+  const deepResult = deep ? await runDeep() : undefined;
+
   return NextResponse.json({
     ...base,
     verdict,
     diagnosis,
     account: credits,
     models: modelResults,
+    ...(deepResult ? { deep: deepResult } : {}),
   });
 }
