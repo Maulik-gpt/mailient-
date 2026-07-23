@@ -30,6 +30,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Fixed',
+        title: '“Sift says…” now gives you a real read, even on a quiet day',
+        points: [
+          'The one-line summary at the top of your feed was falling back to a generic “Here’s what deserves your attention today,” even though the AI had actually written a specific read — the page just wasn’t showing it.',
+          'It now shows the AI’s real line: what needs you when there’s something, and a clear “all quiet — nothing needs you” when your inbox and calendar are genuinely handled. It no longer depends on a separate step that could be rate-limited.',
+        ],
+      },
+      {
+        tag: 'Fixed',
         title: 'Reconnecting Google now actually works — and clears the warning',
         points: [
           'Every Google connection — Gmail, Calendar, and Meet — now reconnects through our verified sign-in, instead of the old flow that kept looping back to the same error. Calendar in particular was still using the old path; it now matches the rest.',
