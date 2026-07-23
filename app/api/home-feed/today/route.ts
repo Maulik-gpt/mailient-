@@ -592,6 +592,7 @@ const TODAY_CACHE_TTL_MS = 5 * 60 * 1000;
  * serve time so a fresh dismiss takes effect even against a cached snapshot.
  */
 export async function computeTodaySnapshot(userEmail: string): Promise<TodayResponse> {
+  const snapshotStart = Date.now();
   let accessToken: string | null = null;
   try {
     const { getGmailToken, getGcalToken } = await import('@/lib/arcus/tools/http-tokens');
@@ -678,6 +679,23 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   if (decidePool.length || showUpPool.length || chasePool.length) {
     try {
       const { buildTodayViaAgent } = await import('@/lib/arcus/today-agent');
+      // BUDGET-AWARE DEADLINE — the agent must NEVER consume the whole 60s
+      // function budget (maxDuration). LIVE-MEASURED 2026-07-23 on a real inbox:
+      // at a flat deadlineMs 45s the agent burned the full 45s, STILL failed to
+      // emit JSON (no briefing/reasoning), and the whole compute hit ~48s — right
+      // at the cliff where Vercel kills the function BEFORE storeTodaySnapshot
+      // runs, so the browser is left on a stale/generic cached snapshot (the
+      // reported "AI is generic" bug — the fresh, specific compute never lands).
+      // The heuristic + enrichDecideReasons FALLBACK below produces specific
+      // reasons reliably in ~1-2s, so we give the agent only a bounded slice of
+      // the REMAINING budget and keep a hard reserve for that fallback + the
+      // store. When the agent doesn't land in this window we lose the
+      // briefing/ranking — never the reason specificity — and the function
+      // always finishes in time to cache a fresh, specific snapshot.
+      const FN_BUDGET_MS = 52_000;         // stay safely under maxDuration (60s)
+      const FALLBACK_RESERVE_MS = 15_000;  // enrich (≤12s) + store + DB margin
+      const elapsedMs = Date.now() - snapshotStart;
+      const agentDeadlineMs = Math.max(12_000, Math.min(26_000, FN_BUDGET_MS - elapsedMs - FALLBACK_RESERVE_MS));
       const agent = await buildTodayViaAgent(
         userEmail,
         {
@@ -685,18 +703,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
           chase: chasePool,
           showUp: showUpPool,
         },
-        // Was 28_000. LIVE-TESTED 2026-07-23 (real multi-turn tool-calling runs,
-        // not synthetic pings): nemotron-3-ultra is genuinely flaky under load
-        // (hangs to the timeout ceiling, or a hard 502 "Worker request limit
-        // reached" from NVIDIA's own backend) and a session can need 2-3
-        // fallback attempts across several turns before landing on a healthy
-        // model. At 28s, one bad turn could leave near-zero budget for the
-        // later fallback models — measured 1/3 real runs failing outright
-        // ("all passes exhausted") purely on exhausted time, not exhausted
-        // models. At 45s (route maxDuration is 60, so 15s stays in reserve for
-        // the DB reads/writes around this call), the same failing scenario
-        // succeeded 3/3 in repeat testing.
-        { deadlineMs: 45_000, maxToolCalls: 14 },
+        { deadlineMs: agentDeadlineMs, maxToolCalls: 8 },
       );
       if (agent) {
         decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];
