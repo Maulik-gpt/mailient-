@@ -1764,6 +1764,28 @@ function S15Done({ firstName, agent, scan, briefTime, briefChannel, plan, onFini
       localStorage.setItem('mailient_checkout_return', '/onboarding?step=15&paid=1');
     } catch { /* */ }
     try { posthog.capture('checkout_started', { plan }); } catch { /* */ }
+
+    // Prefer a server-created Polar checkout SESSION (correct org via our access
+    // token, email prefilled so the webhook maps the payment to THIS account,
+    // reliable success_url + user_id metadata). This is the fix for "21 started,
+    // 0 completed" — the static links below leave nowhere real to land and no way
+    // to attribute the payment. Fall back to the static link ONLY if the session
+    // call fails, so this can never regress below current behaviour.
+    try {
+      const r = await fetch('/api/subscription/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d?.url) {
+        window.location.href = d.url;
+        return;
+      }
+      console.error('[checkout] session create failed — falling back to static link:', d);
+    } catch (e) {
+      console.error('[checkout] session create threw — falling back to static link:', e);
+    }
     window.location.href = POLAR_CHECKOUT_URLS[plan];
   };
 
