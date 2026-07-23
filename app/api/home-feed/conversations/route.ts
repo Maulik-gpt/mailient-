@@ -230,8 +230,18 @@ async function aiUpgrade(convos: Conversation[]): Promise<Conversation[]> {
   // "unavailable for free" on every key, live-probe confirmed). Replaced with
   // the nemotron pair, verified the same day to return clean non-empty JSON.
   const models = ['google/gemma-4-26b-a4b-it:free', 'nvidia/nemotron-3-super-120b-a12b:free', 'nvidia/nemotron-3-nano-30b-a3b:free'];
+  // Tried at most 2 keys per model, not all of them. LIVE-TESTED 2026-07-23 (a
+  // real tool-calling run against the shared engine, not a synthetic ping):
+  // nemotron models can genuinely HANG for the full request timeout instead of
+  // fast-failing. This loop has no cooling/circuit-breaker like the shared
+  // engine does, so an 11s timeout × every model × every key could exceed this
+  // route's own maxDuration long before exhausting the chain — the exact
+  // mechanical shape of the "AI doesn't work" bug found and fixed in
+  // lib/arcus/engine.ts's MODEL_TIMEOUT. Capping keys-per-model bounds the
+  // worst case to (models × 2 × 11s) instead of (models × keys × 11s).
+  const KEYS_PER_MODEL = 2;
   for (const model of models) {
-    for (const key of keys) {
+    for (const key of keys.slice(0, KEYS_PER_MODEL)) {
       try {
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',

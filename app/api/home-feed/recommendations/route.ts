@@ -259,8 +259,18 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
   ];
   const modelChain = [REC_MODEL, FALLBACK_MODEL, ...EXTRA_FREE, ...paidModels];
 
+  // Tried at most 2 keys per model, not all of them. LIVE-TESTED 2026-07-23 (a
+  // real tool-calling run against the shared engine, not a synthetic ping):
+  // nemotron models can genuinely HANG for the full request timeout instead of
+  // fast-failing. This loop has no cooling/circuit-breaker like the shared
+  // engine does, so a 14s timeout × every model × every key could exceed this
+  // route's own maxDuration (25s) long before exhausting the chain — the exact
+  // mechanical shape of the "AI doesn't work" bug found and fixed in
+  // lib/arcus/engine.ts's MODEL_TIMEOUT. Capping keys-per-model bounds the
+  // worst case to (models × 2 × 14s) instead of (models × keys × 14s).
+  const KEYS_PER_MODEL = 2;
   for (const model of modelChain) {
-    for (const key of ks) {
+    for (const key of ks.slice(0, KEYS_PER_MODEL)) {
       try {
         const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',

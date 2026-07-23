@@ -515,7 +515,21 @@ export async function callLLM(
     return null;
   }
 
-  const MODEL_TIMEOUT = 32000;
+  // Was 32000 — tuned specifically for gpt-oss-120b's slow reasoning on tool
+  // calls (per the Pass-1 comment below). gpt-oss-120b is gone from every model
+  // list (retired/dead, 2026-06/07-22 sweeps) so that justification no longer
+  // applies. LIVE-TESTED 2026-07-23 (real tool-calling run, not a synthetic
+  // ping): nemotron-3-ultra can genuinely HANG for the full timeout rather than
+  // fast-failing — a real run burned 32s on ONE key of ONE model, which alone
+  // consumed nearly the entire 28s home-feed triage deadline and left the next
+  // three fallback models with almost no budget each, producing a total
+  // failure ("all passes exhausted") even though several of those models are
+  // healthy and fast (typically 1-8s) when they actually get a fair shot. This
+  // is the mechanical reason "AI doesn't work" reproduced even after the dead
+  // model ids were fixed. 12s comfortably covers every current model's
+  // observed real latency with margin, while capping a hang's cost to a third
+  // of what it was.
+  const MODEL_TIMEOUT = 12000;
 
   // Deadline-aware per-call timeout. When the caller passes a wall-clock deadline
   // (background agent runs do — the function is killed at maxDuration), every model

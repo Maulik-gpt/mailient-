@@ -662,7 +662,18 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
           chase: chasePool,
           showUp: showUpPool,
         },
-        { deadlineMs: 28_000, maxToolCalls: 14 },
+        // Was 28_000. LIVE-TESTED 2026-07-23 (real multi-turn tool-calling runs,
+        // not synthetic pings): nemotron-3-ultra is genuinely flaky under load
+        // (hangs to the timeout ceiling, or a hard 502 "Worker request limit
+        // reached" from NVIDIA's own backend) and a session can need 2-3
+        // fallback attempts across several turns before landing on a healthy
+        // model. At 28s, one bad turn could leave near-zero budget for the
+        // later fallback models — measured 1/3 real runs failing outright
+        // ("all passes exhausted") purely on exhausted time, not exhausted
+        // models. At 45s (route maxDuration is 60, so 15s stays in reserve for
+        // the DB reads/writes around this call), the same failing scenario
+        // succeeded 3/3 in repeat testing.
+        { deadlineMs: 45_000, maxToolCalls: 14 },
       );
       if (agent) {
         decide = agent.decide.map((d) => ({ ...d, snippet: undefined })) as DecideItem[];
