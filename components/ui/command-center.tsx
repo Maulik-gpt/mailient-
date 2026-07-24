@@ -33,7 +33,6 @@ import {
   ResponsiveContainer, Cell, Tooltip as RTooltip,
   AreaChart, Area, XAxis,
   PieChart, Pie,
-  RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from 'recharts';
 import {
   Sparkles, Mail, Calendar, Clock, ArrowRight, MessageSquare,
@@ -625,15 +624,6 @@ function Section({ title, sub, action, children }: { title: string; sub?: string
   );
 }
 
-function Metric({ value, label, big }: { value: string; label: string; big?: boolean }) {
-  return (
-    <div>
-      <div className={cn('font-semibold tracking-tight text-arcus-fg tabular-nums leading-none', big ? 'text-[24px]' : 'text-[18px]')}>{value}</div>
-      <div className="text-[11px] text-arcus-fg-tertiary mt-1">{label}</div>
-    </div>
-  );
-}
-
 function StatTile({ icon, value, label, tone }: { icon: React.ReactNode; value: number; label: string; tone: 'attn' | 'calm' | 'good' }) {
   return (
     <div className="rounded-2xl border border-arcus-border bg-arcus-surface px-4 py-3.5">
@@ -827,52 +817,66 @@ function stippleDefs(id: string, colorVar: string) {
   );
 }
 
-// ── Stat tile with a REAL trend sparkline — the same week.days series that
-// feeds the big chart below, just a different dataKey (actions vs runs).
-// Never a fabricated trend: if there's no week data this never renders (its
-// parent gates on week.hasData).
-function StatSparkTile({ label, sub, value, data, dataKey, colorVar }: {
-  label: string; sub: string; value: number; data: WeekDay[]; dataKey: 'actions' | 'runs'; colorVar: string;
-}) {
-  const id = `spark-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+// ── A faint dot-stipple + refraction-sheen overlay — the "pill texture" that
+// makes the frosted glass feel tactile. Theme-neutral dot color reads in both
+// light and dark; the sheen is the top-left specular of the liquid-glass family.
+// pointer-events-none + absolute so it never affects layout or interaction.
+function GlassTexture() {
   return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-4 overflow-hidden">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-[26px] font-semibold tracking-tight text-arcus-fg tabular-nums leading-none">{value.toLocaleString()}</div>
-          <div className="text-[12px] text-arcus-fg-tertiary mt-1.5">{label}</div>
-        </div>
-        <span className="text-[10.5px] text-arcus-fg-muted mt-0.5 shrink-0">{sub}</span>
-      </div>
-      <div className="h-12 -mx-4 -mb-4 mt-2">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-            {stippleDefs(id, colorVar)}
-            <Area type="monotone" dataKey={dataKey} stroke="none" fill={`url(#${id}-wash)`} isAnimationActive={false} />
-            <Area type="monotone" dataKey={dataKey} stroke="none" fill={`url(#${id}-dots)`} isAnimationActive={false} />
-            <Area type="monotone" dataKey={dataKey} stroke={colorVar} strokeWidth={1.5} fill="none" isAnimationActive={false} />
-          </AreaChart>
-        </ResponsiveContainer>
+    <>
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          backgroundImage: 'radial-gradient(circle, rgba(130,130,145,0.16) 0.6px, transparent 0.75px)',
+          backgroundSize: '7px 7px',
+          maskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.85), transparent 75%)',
+          WebkitMaskImage: 'linear-gradient(to bottom right, rgba(0,0,0,0.85), transparent 75%)',
+        }}
+      />
+      <div aria-hidden className="pointer-events-none absolute inset-0 bg-gradient-to-br from-white/[0.10] via-transparent to-transparent dark:from-white/[0.06]" />
+    </>
+  );
+}
+
+// ── Textured glass stat pill — one scalar KPI on a frosted, lightly-stippled
+// surface. Deliberately NOT a mini-chart: the trend lives ONCE, in the area
+// chart below (the old design plotted the same actions series in a spark tile,
+// the big chart, AND a radar — three times — which this redesign removes).
+function StatPill({ icon, value, label, accent }: {
+  icon: React.ReactNode; value: string; label: string; accent?: string;
+}) {
+  return (
+    <div className="arcus-glass-pill arcus-glass-hover rounded-2xl p-4 relative overflow-hidden">
+      <GlassTexture />
+      <div className="relative">
+        <span
+          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-arcus-elevated/70"
+          style={{ color: accent ? `var(${accent})` : 'var(--arcus-fg-tertiary)' }}
+        >
+          {icon}
+        </span>
+        <div className="text-[26px] font-semibold tracking-tight text-arcus-fg tabular-nums leading-none mt-3">{value}</div>
+        <div className="text-[12px] text-arcus-fg-tertiary mt-1 truncate">{label}</div>
       </div>
     </div>
   );
 }
 
 // ── The big "your week" area chart — real 7-day activity, textured fill,
-// crisp stroke, hover tooltip (values live there, never drawn permanently on
-// the chart), and a manual refresh control.
+// crisp stroke, hover crosshair+tooltip (values live there, never drawn
+// permanently), the busiest day emphasized with a larger dot, and a manual
+// refresh. One series → no legend (the title names it). Frosted glass card.
 function WeekAreaChart({ week, onRefresh, refreshing }: { week: WeekData; onRefresh: () => void; refreshing: boolean }) {
   const id = `week-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
-  const busiest = Math.max(...week.days.map((d) => d.actions), 0);
-  const avg = Math.round(week.totalActions / 7);
+  const peak = Math.max(...week.days.map((d) => d.actions), 0);
   return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-6">
-          <Metric big value={String(week.totalActions)} label="actions this week" />
-          <div className="w-px h-8 bg-arcus-border" />
-          <Metric value={String(avg)} label="daily average" />
-          <Metric value={String(busiest)} label="busiest day" />
+    <div className="arcus-glass-card rounded-2xl p-5 relative overflow-hidden">
+      <GlassTexture />
+      <div className="relative flex items-start justify-between mb-1">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary">Actions per day</p>
+          <p className="text-[12px] text-arcus-fg-muted mt-0.5">What Arcus handled each day, last 7 days</p>
         </div>
         <button
           onClick={onRefresh}
@@ -882,9 +886,9 @@ function WeekAreaChart({ week, onRefresh, refreshing }: { week: WeekData; onRefr
           <RefreshCw className={cn('w-3.5 h-3.5', refreshing && 'animate-spin')} />
         </button>
       </div>
-      <div className="h-[180px] mt-3">
+      <div className="relative h-[190px] mt-2">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={week.days} margin={{ top: 10, right: 4, bottom: 0, left: 4 }}>
+          <AreaChart data={week.days} margin={{ top: 14, right: 8, bottom: 0, left: 8 }}>
             {stippleDefs(id, 'var(--arcus-chart-blue)')}
             <XAxis
               dataKey="label" tickLine={false} axisLine={false}
@@ -896,7 +900,7 @@ function WeekAreaChart({ week, onRefresh, refreshing }: { week: WeekData; onRefr
                 if (!active || !payload?.length) return null;
                 const d = payload[0].payload as WeekDay;
                 return (
-                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
+                  <div className="arcus-glass-card rounded-lg px-2.5 py-1.5">
                     <div className="text-[11px] font-semibold text-arcus-fg">{d.label}{d.isToday ? ' · so far' : ''}</div>
                     <div className="text-[11px] text-arcus-fg-tertiary">{d.actions} action{d.actions === 1 ? '' : 's'} · {d.runs} run{d.runs === 1 ? '' : 's'}</div>
                   </div>
@@ -907,7 +911,24 @@ function WeekAreaChart({ week, onRefresh, refreshing }: { week: WeekData; onRefr
             <Area type="monotone" dataKey="actions" stroke="none" fill={`url(#${id}-dots)`} />
             <Area
               type="monotone" dataKey="actions" stroke="var(--arcus-chart-blue)" strokeWidth={2} fill="none"
-              dot={{ r: 3, fill: 'var(--arcus-chart-blue)', strokeWidth: 0 }} activeDot={{ r: 4 }}
+              // Selective emphasis — the busiest day gets a larger ringed dot so
+              // the eye lands on it; every other point is a quiet 2.5px dot. The
+              // number itself lives in the "busiest" pill above, so we don't
+              // double-label it here.
+              dot={(props: any) => {
+                const isPeak = peak > 0 && props?.payload?.actions === peak;
+                return (
+                  <circle
+                    key={`d-${props?.payload?.date ?? props?.index}`}
+                    cx={props.cx} cy={props.cy}
+                    r={isPeak ? 4.5 : 2.5}
+                    fill="var(--arcus-chart-blue)"
+                    stroke={isPeak ? 'var(--arcus-surface)' : 'none'}
+                    strokeWidth={isPeak ? 2 : 0}
+                  />
+                );
+              }}
+              activeDot={{ r: 5, stroke: 'var(--arcus-surface)', strokeWidth: 2 }}
             />
           </AreaChart>
         </ResponsiveContainer>
@@ -945,9 +966,10 @@ function AppsDonut({ counts }: { counts: AppCounts | null }) {
   const total = rows.reduce((n, r) => n + r.value, 0);
 
   return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Across your apps</p>
-      <div className="flex flex-wrap gap-x-3 gap-y-1.5 mb-3">
+    <div className="arcus-glass-card rounded-2xl p-5 relative overflow-hidden">
+      <GlassTexture />
+      <p className="relative text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-2.5">Across your apps</p>
+      <div className="relative flex flex-wrap gap-x-3 gap-y-1.5 mb-3">
         {rows.map((r) => (
           <span key={r.key} className="inline-flex items-center gap-1.5 text-[11.5px] text-arcus-fg-tertiary">
             <span className="w-2 h-2 rounded-[2px] shrink-0" style={{ background: `var(${r.varName})` }} />
@@ -970,7 +992,7 @@ function AppsDonut({ counts }: { counts: AppCounts | null }) {
                 if (!active || !payload?.length) return null;
                 const p = payload[0].payload as (typeof rows)[number];
                 return (
-                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
+                  <div className="arcus-glass-card rounded-lg px-2.5 py-1.5">
                     <div className="text-[11px] font-semibold text-arcus-fg">{p.label}</div>
                     <div className="text-[11px] text-arcus-fg-tertiary">{p.value} signal{p.value === 1 ? '' : 's'}</div>
                   </div>
@@ -988,39 +1010,61 @@ function AppsDonut({ counts }: { counts: AppCounts | null }) {
   );
 }
 
-// ── This week, by day — the SAME real week.days series as the area chart
-// above, re-plotted as a radar so the weekday pattern reads at a glance.
-// Labelled "this week" (not "average") since one week of real data isn't an
-// average yet — the codebase's own rule against reading illustrative numbers
-// as measured.
-function WeekdayRadar({ week }: { week: WeekData }) {
-  const id = `radar-${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
+// ── "This week, in short" — the panel that REPLACED the weekday radar (which
+// re-plotted the exact same actions-by-day series as the area chart above — a
+// dataviz redundancy). This gives NEW, genuinely useful reads instead, every
+// one honestly derived from the real week.days: the busiest day (with a
+// share-of-peak bar), how many of the 7 days had activity (as dots), and the
+// average actions per run (an efficiency read). Frosted glass to match.
+function WeekInsights({ week }: { week: WeekData }) {
+  const busiest = week.days.reduce((a, b) => (b.actions > a.actions ? b : a), week.days[0]);
+  const maxActions = Math.max(...week.days.map((d) => d.actions), 1);
+  const activeDays = week.days.filter((d) => d.runs > 0).length;
+  const perRun = week.totalRuns > 0 ? week.totalActions / week.totalRuns : 0;
+  const blue = 'var(--arcus-chart-blue)';
   return (
-    <div className="rounded-2xl border border-arcus-border bg-arcus-surface p-5">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-3">This week, by day</p>
-      <div className="h-[160px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart data={week.days} outerRadius="72%">
-            {stippleDefs(id, 'var(--arcus-chart-green)')}
-            <PolarGrid stroke="var(--arcus-border, #d4d4d4)" />
-            <PolarAngleAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--arcus-fg-tertiary, #8a8a8a)' }} />
-            <Radar dataKey="actions" stroke="none" fill={`url(#${id}-wash)`} fillOpacity={1} isAnimationActive={false} />
-            <Radar dataKey="actions" stroke="none" fill={`url(#${id}-dots)`} fillOpacity={1} isAnimationActive={false} />
-            <Radar dataKey="actions" stroke="var(--arcus-chart-green)" strokeWidth={2} fill="none" />
-            <RTooltip
-              content={({ active, payload }) => {
-                if (!active || !payload?.length) return null;
-                const d = payload[0].payload as WeekDay;
-                return (
-                  <div className="rounded-lg border border-arcus-border bg-arcus-elevated px-2.5 py-1.5 shadow-lg">
-                    <div className="text-[11px] font-semibold text-arcus-fg">{d.label}{d.isToday ? ' · so far' : ''}</div>
-                    <div className="text-[11px] text-arcus-fg-tertiary">{d.actions} action{d.actions === 1 ? '' : 's'}</div>
-                  </div>
-                );
-              }}
-            />
-          </RadarChart>
-        </ResponsiveContainer>
+    <div className="arcus-glass-card rounded-2xl p-5 relative overflow-hidden">
+      <GlassTexture />
+      <p className="relative text-[11px] font-semibold uppercase tracking-wide text-arcus-fg-tertiary mb-4">This week, in short</p>
+      <div className="relative space-y-4">
+        {/* Busiest day — with a share-of-peak bar */}
+        <div>
+          <div className="flex items-baseline justify-between mb-1.5">
+            <span className="text-[12.5px] text-arcus-fg-secondary">Busiest day</span>
+            <span className="text-[12.5px] font-semibold text-arcus-fg tabular-nums">
+              {busiest.label} · {busiest.actions} action{busiest.actions === 1 ? '' : 's'}
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-arcus-elevated overflow-hidden">
+            <div className="h-full rounded-full transition-[width] duration-500 ease-out" style={{ width: `${(busiest.actions / maxActions) * 100}%`, background: blue }} />
+          </div>
+        </div>
+
+        {/* Active days — 7 dots, one lit per day with a run */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12.5px] text-arcus-fg-secondary">Active days</span>
+          <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-1">
+              {week.days.map((d) => (
+                <span
+                  key={d.date}
+                  title={`${d.label}: ${d.runs} run${d.runs === 1 ? '' : 's'}`}
+                  className="w-1.5 h-1.5 rounded-full"
+                  style={{ background: d.runs > 0 ? blue : 'var(--arcus-fg-muted)', opacity: d.runs > 0 ? 1 : 0.3 }}
+                />
+              ))}
+            </div>
+            <span className="text-[12.5px] font-semibold text-arcus-fg tabular-nums">{activeDays}/7</span>
+          </div>
+        </div>
+
+        {/* Efficiency — actions per run */}
+        <div className="flex items-center justify-between">
+          <span className="text-[12.5px] text-arcus-fg-secondary">Actions per run</span>
+          <span className="text-[12.5px] font-semibold text-arcus-fg tabular-nums">
+            {perRun > 0 ? `~${perRun.toFixed(1)}` : '—'}
+          </span>
+        </div>
       </div>
     </div>
   );
@@ -1028,9 +1072,9 @@ function WeekdayRadar({ week }: { week: WeekData }) {
 
 // A skeleton block matching one analytics tile's footprint — pulsing, never a
 // blank flash. Used both for first-load (nothing fetched yet) and to fill the
-// donut's slot while recommendations are still in flight.
+// donut's slot while recommendations are still in flight. Frosted to match.
 function AnalyticsTileSkeleton({ h }: { h: string }) {
-  return <div className={cn('bg-arcus-surface rounded-2xl animate-pulse', h)} />;
+  return <div className={cn('arcus-glass-pill rounded-2xl animate-pulse', h)} />;
 }
 
 // ── Orchestrates the whole analytics dashboard: a real loading skeleton while
@@ -1048,12 +1092,11 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, recsError, 
   if (!weekLoaded) {
     return (
       <Section title="Your week" sub="Loading your activity…">
-        <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
-          <AnalyticsTileSkeleton h="h-[84px]" />
-          <AnalyticsTileSkeleton h="h-[84px]" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2.5">
+          {[0, 1, 2, 3].map((i) => <AnalyticsTileSkeleton key={i} h="h-[104px]" />)}
         </div>
-        <AnalyticsTileSkeleton h="h-[236px]" />
-        <div className="grid sm:grid-cols-2 gap-2.5 mt-2.5">
+        <AnalyticsTileSkeleton h="h-[248px]" />
+        <div className="grid lg:grid-cols-2 gap-2.5 mt-2.5">
           <AnalyticsTileSkeleton h="h-[212px]" />
           <AnalyticsTileSkeleton h="h-[212px]" />
         </div>
@@ -1064,15 +1107,18 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, recsError, 
   if (!week || !week.hasData) {
     return (
       <Section title="Your week" sub="Arcus activity, last 7 days">
-        <div className="rounded-2xl border border-dashed border-arcus-border bg-arcus-surface p-8 text-center">
-          <div className="w-10 h-10 rounded-xl bg-arcus-elevated flex items-center justify-center mx-auto mb-3 text-arcus-fg-tertiary">
-            <Zap className="w-5 h-5" />
+        <div className="arcus-glass-card rounded-2xl p-8 text-center relative overflow-hidden">
+          <GlassTexture />
+          <div className="relative">
+            <div className="w-11 h-11 rounded-2xl bg-arcus-elevated flex items-center justify-center mx-auto mb-3 text-arcus-fg-tertiary">
+              <Zap className="w-5 h-5" />
+            </div>
+            <p className="text-[14px] font-medium text-arcus-fg">No agent activity yet this week</p>
+            <p className="text-[12.5px] text-arcus-fg-tertiary mt-1 max-w-sm mx-auto">Schedule an agent and this fills in — a daily briefing, an inbox sweep, meeting prep.</p>
+            <button onClick={onSchedule} className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-arcus-fg text-arcus-fg-inverse text-[12.5px] font-semibold hover:opacity-90 transition-opacity">
+              <CalendarPlus className="w-4 h-4" /> Schedule an agent
+            </button>
           </div>
-          <p className="text-[14px] font-medium text-arcus-fg">No agent activity yet this week</p>
-          <p className="text-[12.5px] text-arcus-fg-tertiary mt-1 max-w-sm mx-auto">Schedule an agent and this fills in — a daily briefing, an inbox sweep, meeting prep.</p>
-          <button onClick={onSchedule} className="mt-4 inline-flex items-center gap-1.5 h-9 px-4 rounded-full bg-arcus-fg text-arcus-fg-inverse text-[12.5px] font-semibold hover:opacity-90 transition-opacity">
-            <CalendarPlus className="w-4 h-4" /> Schedule an agent
-          </button>
         </div>
       </Section>
     );
@@ -1083,6 +1129,8 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, recsError, 
   // directive — no masking fallback), else real data, a loading skeleton while
   // recs are in flight, or nothing once we KNOW there's genuinely no signal.
   const showDonutSlot = !!recsError || hasApps || !recsLoaded;
+  const avg = Math.round(week.totalActions / 7);
+  const busiestDay = week.days.reduce((a, b) => (b.actions > a.actions ? b : a), week.days[0]);
 
   return (
     <Section title="Your week" sub={`${week.totalActions} action${week.totalActions === 1 ? '' : 's'} across ${week.totalRuns} run${week.totalRuns === 1 ? '' : 's'}, last 7 days`}>
@@ -1090,16 +1138,19 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, recsError, 
           (dim + pulse) while refreshing rather than being torn out and
           replaced, so a manual refresh never causes a layout jump. */}
       <div className={cn('transition-opacity duration-300', refreshing && 'opacity-50 pointer-events-none animate-pulse')}>
-        <div className="grid sm:grid-cols-2 gap-2.5 mb-2.5">
-          <StatSparkTile label="actions this week" sub="last 7 days" value={week.totalActions} data={week.days} dataKey="actions" colorVar="var(--arcus-chart-blue)" />
-          <StatSparkTile label="agent runs this week" sub="last 7 days" value={week.totalRuns} data={week.days} dataKey="runs" colorVar="var(--arcus-chart-blue)" />
+        {/* Textured glass KPI pills — the scalar headlines, once each. */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 mb-2.5">
+          <StatPill icon={<Zap className="w-4 h-4" />} value={week.totalActions.toLocaleString()} label="actions this week" accent="--arcus-chart-blue" />
+          <StatPill icon={<Sparkles className="w-4 h-4" />} value={String(week.totalRuns)} label={`agent run${week.totalRuns === 1 ? '' : 's'}`} accent="--arcus-chart-aqua" />
+          <StatPill icon={<Clock className="w-4 h-4" />} value={String(avg)} label="daily average" />
+          <StatPill icon={<Calendar className="w-4 h-4" />} value={String(busiestDay.actions)} label={`busiest · ${busiestDay.label}`} accent="--arcus-chart-blue" />
         </div>
         <WeekAreaChart week={week} onRefresh={onRefresh} refreshing={refreshing} />
-        <div className={cn('grid gap-2.5 mt-2.5', showDonutSlot && 'sm:grid-cols-2')}>
+        <div className={cn('grid gap-2.5 mt-2.5', showDonutSlot && 'lg:grid-cols-2')}>
           {recsError
             ? <FeedErrorCard message={recsError} onRetry={onRefresh} />
             : hasApps ? <AppsDonut counts={appCounts} /> : (!recsLoaded ? <AnalyticsTileSkeleton h="h-[212px]" /> : null)}
-          <WeekdayRadar week={week} />
+          <WeekInsights week={week} />
         </div>
       </div>
     </Section>

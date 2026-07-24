@@ -30,6 +30,15 @@ export const CHANGELOG: ChangelogGroup[] = [
     entries: [
       {
         tag: 'Improved',
+        title: 'A cleaner, more useful “Your week”',
+        points: [
+          'Redesigned the “Your week” panel with frosted glass cards and textured stat pills — a calmer, more premium read of what Arcus did for you.',
+          'It tells you more at a glance: four headline numbers (actions, runs, daily average, and your busiest day), the daily trend with your busiest day highlighted, and a new “This week, in short” — your busiest day, how many of the 7 days had activity, and your average actions per run.',
+          'Dropped a duplicate chart that just re-plotted the same daily numbers, so the panel is less cluttered and every tile now earns its place. Every number is still real — nothing illustrative.',
+        ],
+      },
+      {
+        tag: 'Improved',
         title: 'The home feed now tells you when the AI actually fails',
         points: [
           'Instead of quietly swapping in a generic stand-in when an AI step can’t run, the feed now shows the real reason right where that content would be — e.g. “AI error — models rate-limited” — with a Retry.',
