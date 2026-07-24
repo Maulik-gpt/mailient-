@@ -851,7 +851,7 @@ function StatPill({ icon, value, label, accent }: {
       <GlassTexture />
       <div className="relative">
         <span
-          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-arcus-elevated/70"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-arcus-elevated"
           style={{ color: accent ? `var(${accent})` : 'var(--arcus-fg-tertiary)' }}
         >
           {icon}
