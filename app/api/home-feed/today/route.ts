@@ -119,6 +119,10 @@ interface TodayResponse {
   needsReconnect?: { gmail?: boolean; calendar?: boolean };
   // One-line AI briefing of what needs the user today (agent path only).
   briefing?: string;
+  // DIRECT AI-triage error — set only when BOTH the agent and the enrich pass
+  // failed, so the reasons fell to deterministic labels. Surfaced on the feed
+  // (never masked) so an AI failure is visible instead of hidden behind filler.
+  aiError?: string;
   // Transparent Reasoning (P6): HOW the day was prioritized — the tradeoff logic
   // behind the order ("ranked by who's waiting + what costs money to miss; left
   // the Stripe digest out — automated"). Surfaced on demand as "Why this order?"
@@ -269,13 +273,16 @@ function decideSignal(subject: string, snippet: string, from: string): { reason:
 // feel "random, not AI". Fed the email PREVIEW (not just From+Subject) so the
 // reason is grounded in what the email actually says. Mutates items in place;
 // the heuristic label stays for any email the model skips or on total failure.
-async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string, string>): Promise<void> {
-  if (!items.length) return;
+// Returns null on success, or a DIRECT error string when the AI reason
+// enrichment couldn't run — so the caller can surface it instead of masking the
+// failure behind the generic heuristic labels (founder directive: no fallbacks).
+async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string, string>): Promise<string | null> {
+  if (!items.length) return null;
   try {
     // @ts-ignore — JS module
     const { OpenRouterAIService } = await import('@/lib/openrouter-ai.js');
     const svc = new OpenRouterAIService();
-    if (!svc.isAvailable()) return;
+    if (!svc.isAvailable()) return 'AI unavailable — no OpenRouter keys configured';
 
     const input = items.map((it) => ({
       from: it.sender.name || it.sender.email,
@@ -283,12 +290,13 @@ async function enrichDecideReasons(items: DecideItem[], snippetById: Map<string,
       snippet: snippetById.get(it.id) || '',
     }));
     const reasons: string[] | null = await svc.enrichTodayReasons(input);
-    if (!reasons) return;
+    if (!reasons) return 'AI unavailable — reason enrichment returned nothing (rate-limited / all models exhausted)';
     reasons.forEach((r, i) => { if (r && items[i]) items[i].reason = r; });
+    return null;
   } catch (err) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
-    // keep heuristic reasons — never break the feed
     console.warn('[home-feed/today] reason enrichment failed:', (err as any)?.message);
+    return `AI error — ${(err as any)?.message || 'reason enrichment failed'}`;
   }
 }
 
@@ -700,6 +708,10 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
   let chase: ChaseItem[] = [];
   let briefing: string | undefined;
   let reasoning: string | undefined;
+  // DIRECT AI-triage error, surfaced (never masked) when the reasons had to fall
+  // to deterministic labels because BOTH the agent AND the enrich pass failed.
+  let agentError: string | undefined;
+  let aiError: string | undefined;
 
   // ── AI TRIAGE (primary) — a real, tool-driven agent selects + ranks + reasons
   // over the candidate pools. On ANY failure we fall through to the heuristic
@@ -752,9 +764,12 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
         briefing = agent.briefing || undefined;
         reasoning = agent.reasoning || undefined;
         agentOk = true;
+      } else {
+        agentError = 'Triage agent returned no result (rate-limited / deadline / unparseable)';
       }
     } catch (e: any) {
       logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
+      agentError = `Triage agent — ${e?.message || 'failed'}`;
       console.warn('[home-feed/today] AI triage failed, using heuristics:', e?.message);
     }
   }
@@ -771,7 +786,11 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     const genuinePool = decidePool.filter((d) => d.reason !== 'Likely newsletter/automated');
     decide = genuinePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
     const snippetById = new Map<string, string>(decide.map((d) => [d.id, d.snippet || '']));
-    await enrichDecideReasons(decide, snippetById);
+    const enrichErr = await enrichDecideReasons(decide, snippetById);
+    // Both AI paths (agent + enrich) failed → reasons are now deterministic
+    // labels. Surface the DIRECT error so the founder sees WHY, instead of the
+    // heuristic filler silently standing in for real AI reasoning.
+    if (enrichErr) aiError = [agentError, enrichErr].filter(Boolean).join(' · ');
     decide = decide.map(stripSnippet);
     showUp = showUpPool.slice(0, HEURISTIC_MAX_PER_BUCKET);
     chase = chasePool.slice(0, HEURISTIC_MAX_PER_BUCKET);
@@ -794,6 +813,7 @@ export async function computeTodaySnapshot(userEmail: string): Promise<TodayResp
     needsReconnect,
     briefing,
     reasoning,
+    aiError,
     // Confidence scale — only meaningful when we actually examined mail.
     triage: decideScanned > 0 ? { scanned: decideScanned, surfaced: decide.length } : undefined,
     pendingApprovals: pendingApprovals > 0 ? pendingApprovals : undefined,

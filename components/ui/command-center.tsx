@@ -58,6 +58,9 @@ interface TodayData {
   // never sets — so the agent's briefing never showed and the line fell back to
   // generic filler.
   briefing?: string;
+  // DIRECT AI-triage error — set only when the reasons fell to deterministic
+  // labels (agent + enrich both failed). Shown on "Needs a reply", never masked.
+  aiError?: string;
   // A dead Gmail/Calendar token used to be silently swallowed inside the
   // server's per-source fetchers, so it read as "0 items, inbox handled"
   // instead of "your connection is broken." Live-verified 2026-07-23 against
@@ -151,6 +154,10 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
   const [recs, setRecs] = useState<Rec[] | null>(null);
   const [appCounts, setAppCounts] = useState<AppCounts | null>(() => readCache('cc_appcounts'));
   const [sift, setSift] = useState<SiftSummary | null>(() => readCache('cc_sift'));
+  // The DIRECT recommendations-AI error (429 / timeout / exhausted chain), shown
+  // in place of a masking fallback per founder directive ("no fallbacks on
+  // anything in home-feed"). Never cached — an error is a live state, not data.
+  const [recsError, setRecsError] = useState<string | null>(null);
   const [convos, setConvos] = useState<ServerConvo[] | null>(() => readCache('cc_convos'));
   const [convosLoading, setConvosLoading] = useState(true);
   // Only block on a skeleton when we have NOTHING cached to show.
@@ -167,6 +174,18 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
     try { sessionStorage.setItem('arcus_prefill', prompt); } catch { /* incognito */ }
     router.push('/dashboard/agent-talk');
   }, [router]);
+
+  // Force a fresh Today recompute (bypasses the server cache) — the retry behind
+  // the "Needs a reply" AI-error card.
+  const refetchToday = useCallback(async () => {
+    try {
+      const r = await fetch('/api/home-feed/today?refresh=1');
+      if (r.ok) {
+        const j = await r.json();
+        if (j?.success !== false) { setToday(j); writeCache('cc_today', j); }
+      }
+    } catch { /* leave the error card up */ }
+  }, []);
 
   // "Needs a reply" → Draft reply: check for an already-existing Gmail draft on
   // this thread FIRST. If one exists, this is NOT an Arcus job — hand it to the
@@ -216,9 +235,13 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
       setWeekLoaded(true);
       if (r.status === 'fulfilled' && r.value) {
         const j = r.value;
+        setRecsError(j?.error || null);
         setRecs(Array.isArray(j?.recommendations) ? j.recommendations : []);
         if (j?.appCounts) { setAppCounts(j.appCounts); writeCache('cc_appcounts', j.appCounts); }
-        if (j?.sift) { setSift(j.sift); writeCache('cc_sift', j.sift); }
+        setSift(j?.sift || null);
+        if (j?.sift) writeCache('cc_sift', j.sift);
+      } else {
+        setRecsError('Recommendations refresh failed.');
       }
       setRecsLoaded(true);
     } finally {
@@ -269,13 +292,20 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
             actionItems: today.actionItems, showUp: today.showUp,
           }),
         });
-        if (alive && res.ok) {
+        if (!alive) return;
+        if (res.ok) {
           const j = await res.json();
+          // Surface the DIRECT AI error (no masking fallback) — see recsError.
+          setRecsError(j?.error || null);
           setRecs(Array.isArray(j?.recommendations) ? j.recommendations : []);
           if (j?.appCounts) { setAppCounts(j.appCounts); writeCache('cc_appcounts', j.appCounts); }
-          if (j?.sift) { setSift(j.sift); writeCache('cc_sift', j.sift); }
+          setSift(j?.sift || null);
+          if (j?.sift) writeCache('cc_sift', j.sift);
+        } else {
+          setRecsError(`Recommendations request failed (HTTP ${res.status})`);
+          setRecs([]);
         }
-      } catch { if (alive) setRecs([]); }
+      } catch (e) { if (alive) { setRecs([]); setRecsError(`Recommendations request failed — ${String((e as any)?.message || 'network error')}`); } }
       finally { if (alive) setRecsLoaded(true); }
     })();
     return () => { alive = false; };
@@ -415,10 +445,16 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
             {hasReconnectIssue
               ? `Your ${[gmailNeedsReconnect && 'Gmail', calendarNeedsReconnect && 'Calendar'].filter(Boolean).join(' and ')} connection expired — reconnect above to see what actually needs you.`
               : sift?.headline
-                || today?.briefing?.trim()
-                || (nothingPressing
-                  ? 'Nothing needs you right now — your inbox is handled.'
-                  : 'Here’s what deserves your attention today.')}
+                ? sift.headline
+                : recsError
+                  // FOUNDER DIRECTIVE — surface the DIRECT AI error, never a masking
+                  // fallback. (The today agent's briefing still powers the reasons
+                  // below; here we show why "Sift says…" itself couldn't run.)
+                  ? <span className="text-rose-600 dark:text-rose-400">AI error — {recsError}</span>
+                  : today?.briefing?.trim()
+                    || (nothingPressing
+                      ? 'Nothing needs you right now — your inbox is handled.'
+                      : 'Here’s what deserves your attention today.')}
           </p>
           {/* The longer synthesis loads a beat later (it rides the same call as
               Worth your time) — appears once ready rather than reserving empty
@@ -443,6 +479,7 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
         weekLoaded={weekLoaded}
         appCounts={appCounts}
         recsLoaded={recsLoaded}
+        recsError={recsError}
         refreshing={analyticsRefreshing}
         onRefresh={refreshAnalytics}
         onSchedule={() => openArcus('Set up a scheduled agent that gives me a morning briefing every weekday at 8am.')}
@@ -467,8 +504,13 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
       ) : null}
 
       {/* 4 ── NEEDS A REPLY ─────────────────────────────────────────────────── */}
-      {today && today.decide.length > 0 && (
+      {today && (today.decide.length > 0 || today.aiError) && (
         <Section title="Needs a reply" sub="On you right now">
+          {today.aiError && (
+            <div className="mb-2.5">
+              <FeedErrorCard message={today.aiError} onRetry={refetchToday} />
+            </div>
+          )}
           <div className="space-y-2">
             {today.decide.slice(0, 5).map(d => (
               <ReplyRow
@@ -510,7 +552,11 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
       )}
 
       {/* 6 ── WORTH YOUR TIME (cross-app) ───────────────────────────────────── */}
-      {recs && recs.length > 0 && (
+      {recsError ? (
+        <Section title="Worth your time" sub="Across Gmail, Calendar, Notion & Slack">
+          <FeedErrorCard message={recsError} onRetry={refreshAnalytics} />
+        </Section>
+      ) : recs && recs.length > 0 ? (
         <Section title="Worth your time" sub="Across Gmail, Calendar, Notion & Slack">
           <div className="grid sm:grid-cols-2 gap-2.5">
             {recs.slice(0, 4).map(r => (
@@ -518,7 +564,7 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
             ))}
           </div>
         </Section>
-      )}
+      ) : null}
 
       {/* 7 ── WHILE YOU WERE AWAY ───────────────────────────────────────────── */}
       {today && today.agentRuns.length > 0 && (
@@ -535,6 +581,30 @@ export function CommandCenter({ userName, onOpenExistingDraft }: {
 }
 
 // ── Pieces ──────────────────────────────────────────────────────────────────
+
+// Direct-error card — shown in place of a masking fallback whenever a home-feed
+// AI call fails (founder directive: "no fallbacks on anything in home-feed").
+// Renders the real error text + a retry, so a 429 / timeout / exhausted chain is
+// visible instead of hidden behind plausible filler.
+function FeedErrorCard({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  return (
+    <div className="rounded-2xl border border-rose-500/25 bg-rose-500/5 p-4 flex items-start gap-3">
+      <AlertTriangle className="w-4 h-4 text-rose-500 shrink-0 mt-0.5" />
+      <div className="min-w-0 flex-1">
+        <p className="text-[13px] font-semibold text-rose-600 dark:text-rose-400">AI error</p>
+        <p className="text-[12.5px] text-arcus-fg-secondary mt-0.5 break-words leading-relaxed">{message}</p>
+      </div>
+      {onRetry && (
+        <button
+          onClick={onRetry}
+          className="shrink-0 inline-flex items-center gap-1 h-7 px-2.5 rounded-lg border border-arcus-border text-[12px] font-medium text-arcus-fg-secondary hover:bg-arcus-surface-hover transition-colors"
+        >
+          <RefreshCw className="w-3 h-3" /> Retry
+        </button>
+      )}
+    </div>
+  );
+}
 
 function Section({ title, sub, action, children }: { title: string; sub?: string; action?: { label: string; onClick: () => void }; children: React.ReactNode }) {
   return (
@@ -971,8 +1041,8 @@ function AnalyticsTileSkeleton({ h }: { h: string }) {
 // weekday radar. `refreshing` re-runs BOTH week-activity and recommendations
 // (the donut/Sift source) — the earlier version only refreshed the chart,
 // which meant the donut could never actually be refreshed.
-function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, refreshing, onRefresh, onSchedule }: {
-  week: WeekData | null; weekLoaded: boolean; appCounts: AppCounts | null; recsLoaded: boolean;
+function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, recsError, refreshing, onRefresh, onSchedule }: {
+  week: WeekData | null; weekLoaded: boolean; appCounts: AppCounts | null; recsLoaded: boolean; recsError: string | null;
   refreshing: boolean; onRefresh: () => void; onSchedule: () => void;
 }) {
   if (!weekLoaded) {
@@ -1009,9 +1079,10 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, refreshing,
   }
 
   const hasApps = !!appCounts && Object.values(appCounts).some((v) => v > 0);
-  // The donut's slot: real data, a loading skeleton while recs are still in
-  // flight, or nothing once we KNOW there's genuinely no cross-app signal.
-  const showDonutSlot = hasApps || !recsLoaded;
+  // The donut's slot: the DIRECT error if recommendations failed (founder
+  // directive — no masking fallback), else real data, a loading skeleton while
+  // recs are in flight, or nothing once we KNOW there's genuinely no signal.
+  const showDonutSlot = !!recsError || hasApps || !recsLoaded;
 
   return (
     <Section title="Your week" sub={`${week.totalActions} action${week.totalActions === 1 ? '' : 's'} across ${week.totalRuns} run${week.totalRuns === 1 ? '' : 's'}, last 7 days`}>
@@ -1025,7 +1096,9 @@ function AnalyticsSection({ week, weekLoaded, appCounts, recsLoaded, refreshing,
         </div>
         <WeekAreaChart week={week} onRefresh={onRefresh} refreshing={refreshing} />
         <div className={cn('grid gap-2.5 mt-2.5', showDonutSlot && 'sm:grid-cols-2')}>
-          {hasApps ? <AppsDonut counts={appCounts} /> : (!recsLoaded ? <AnalyticsTileSkeleton h="h-[212px]" /> : null)}
+          {recsError
+            ? <FeedErrorCard message={recsError} onRetry={onRefresh} />
+            : hasApps ? <AppsDonut counts={appCounts} /> : (!recsLoaded ? <AnalyticsTileSkeleton h="h-[212px]" /> : null)}
           <WeekdayRadar week={week} />
         </div>
       </div>

@@ -29,6 +29,14 @@ export const CHANGELOG: ChangelogGroup[] = [
     date: 'July 23, 2026',
     entries: [
       {
+        tag: 'Improved',
+        title: 'The home feed now tells you when the AI actually fails',
+        points: [
+          'Instead of quietly swapping in a generic stand-in when an AI step can’t run, the feed now shows the real reason right where that content would be — e.g. “AI error — models rate-limited” — with a Retry.',
+          'This applies across the feed: the “Sift says…” line, the “Worth your time” suggestions, the cross-app analytics, and the reasons under “Needs a reply.” No more plausible-looking filler hiding a failure.',
+        ],
+      },
+      {
         tag: 'Fixed',
         title: '“Sift says…” now gives you a real read, even on a quiet day',
         points: [

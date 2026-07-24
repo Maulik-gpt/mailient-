@@ -69,28 +69,10 @@ const APP_KEY_OF: Partial<Record<SignalKind, AppKey>> = {
 
 interface SiftSummary { headline: string; analysis: string; }
 
-// Guaranteed-available fallback — built ONLY from real counts already computed
-// server-side, same two-tier pattern as /api/home-feed/conversations
-// (deterministicFill + aiUpgrade): the section is never blank or lorem when
-// the model is unavailable, and the AI pass (if it lands) just makes the same
-// facts read more like a person wrote them.
-function deterministicSift(items: InItem[]): SiftSummary {
-  const decideN = items.filter((i) => i.kind === 'decide').length;
-  const chaseN = items.filter((i) => i.kind === 'chase').length;
-  const meetingN = items.filter((i) => i.kind === 'meeting').length;
-  const otherN = items.length - decideN - chaseN - meetingN;
-  const parts: string[] = [];
-  if (decideN) parts.push(`${decideN} email${decideN === 1 ? '' : 's'} need${decideN === 1 ? 's' : ''} a reply`);
-  if (chaseN) parts.push(`${chaseN} follow-up${chaseN === 1 ? '' : 's'} going quiet`);
-  if (meetingN) parts.push(`${meetingN} meeting${meetingN === 1 ? '' : 's'} coming up`);
-  if (!parts.length && otherN) parts.push(`${otherN} item${otherN === 1 ? '' : 's'} worth a look`);
-  const headline = parts.length ? `${parts.join(', ')}.` : 'Nothing urgent anywhere — your inbox and calendar are handled.';
-  const apps = Array.from(new Set(items.map((i) => APP_OF[i.kind]))).filter((a) => a !== 'Notes');
-  const analysis = apps.length
-    ? `${headline} Checked in across ${apps.join(', ')} — this reflects only what's actually connected.`
-    : headline;
-  return { headline, analysis };
-}
+// NOTE: the old `deterministicSift` fallback was REMOVED 2026-07-23 (founder
+// directive: "no fallbacks on anything in home-feed"). The Sift line now shows
+// either the real AI read or the DIRECT AI error — never a deterministic
+// stand-in that hides a 429 / timeout / exhausted chain.
 
 interface OutRec {
   id: string;
@@ -186,9 +168,10 @@ function statFor(refs: InItem[]): { value: number; label: string } {
 
 interface GenerateResult { recs: OutRec[]; sift: SiftSummary | null; }
 
-async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''): Promise<GenerateResult | null> {
+async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''): Promise<GenerateResult | { error: string } | null> {
   const ks = keys();
-  if (!ks.length || !items.length) return null;
+  if (!ks.length) return { error: 'No OpenRouter API keys configured on the server.' };
+  if (!items.length) return null; // genuinely nothing to recommend — not an error
 
   const catalog = items.map(it => `[${it.ref}] (${it.kind}) ${it.label} — ${it.detail}`).join('\n');
 
@@ -269,7 +252,11 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
   // lib/arcus/engine.ts's MODEL_TIMEOUT. Capping keys-per-model bounds the
   // worst case to (models × 2 × 14s) instead of (models × keys × 14s).
   const KEYS_PER_MODEL = 2;
+  // Track the REAL last failure so the route can surface it directly instead of a
+  // silent fallback (founder directive: no masking fallbacks on the home-feed).
+  let lastError = '';
   for (const model of modelChain) {
+    const m = model.replace(':free', '');
     for (const key of ks.slice(0, KEYS_PER_MODEL)) {
       try {
         // nemotron models are REASONERS: left on default they spend the entire
@@ -287,6 +274,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
           signal: AbortSignal.timeout(14000),
         });
         if (!res.ok) {
+          lastError = `${m} → HTTP ${res.status}${res.status === 429 ? ' (rate-limited)' : res.status === 402 ? ' (no credit)' : ''}`;
           console.warn(`[recs] ${model} key…${key.slice(-4)} -> HTTP ${res.status}`);
           continue; // try the next key, then the next model
         }
@@ -294,6 +282,7 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
         const text: string = json.choices?.[0]?.message?.content || '';
         const parsed = extractJsonObject(text);
         if (!parsed) {
+          lastError = `${m} → unparseable / empty response`;
           console.warn(`[recs] ${model} returned unparseable content (${text.slice(0, 80)}…)`);
           continue;
         }
@@ -301,18 +290,20 @@ async function generate(items: InItem[], prefs: BriefingPrefs, founderModel = ''
         const recs = validate(raw, items, max);
         if (recs.length) {
           console.log(`[recs] ${model} -> ${recs.length} recs`);
-          return { recs, sift: validateSift(parsed?.sift) }; // got usable AI recs (sift falls back deterministically if missing/invalid)
+          return { recs, sift: validateSift(parsed?.sift) };
         }
+        lastError = `${m} → 0 valid recommendations after checks`;
         console.warn(`[recs] ${model} parsed but ${raw.length} raw -> 0 valid after refId check`);
       } catch (e: any) {
+        lastError = `${m} → ${(e?.name === 'TimeoutError' || e?.name === 'AbortError') ? 'timed out' : (e?.message || e)}`;
         logEvent({ channel: "failures", event: "❌ API Error", description: String(e) });
         console.warn(`[recs] ${model} key…${key.slice(-4)} threw: ${e?.message || e}`);
         continue;
       }
     }
   }
-  console.warn('[recs] all models/keys exhausted — no AI recs');
-  return null;
+  console.warn('[recs] all models/keys exhausted — no AI recs:', lastError);
+  return { error: `AI unavailable — ${lastError || 'all models/keys exhausted'}` };
 }
 
 /**
@@ -636,11 +627,10 @@ export async function POST(req: Request) {
     const items = filterByApps(appendServerSignals(clientItems, serverSignals), prefs.apps);
 
     if (!items.length) {
-      // Nothing to recommend (quiet inbox, no cross-app signals) is a REAL state,
-      // not an error — return the deterministic "all handled" read so the hero's
-      // "Sift says…" line shows a true, reassuring message instead of `null`
-      // (which fell through to generic filler on the client).
-      return NextResponse.json({ success: true, recommendations: [], source: 'empty', appCounts: {}, sift: deterministicSift([]) });
+      // Genuinely nothing to recommend (quiet inbox, no cross-app signals) — NOT
+      // an error, and not masked: sift:null lets the hero fall to the today
+      // agent's real AI briefing ("all quiet"), never a deterministic line.
+      return NextResponse.json({ success: true, recommendations: [], source: 'empty', appCounts: {}, sift: null });
     }
 
     const apps = Array.from(new Set(items.map(i => APP_OF[i.kind])));
@@ -653,12 +643,17 @@ export async function POST(req: Request) {
       const k = APP_KEY_OF[it.kind];
       if (k) appCounts[k] += 1;
     }
-    const fallbackSift = deterministicSift(items);
 
     const genResult = await generate(items, prefs, founderModel);
-    if (!genResult || !genResult.recs.length) {
-      // Signal the client to keep its instant deterministic recommendations.
-      return NextResponse.json({ success: true, recommendations: [], source: 'fallback', apps, appCounts, sift: fallbackSift });
+    // FOUNDER DIRECTIVE — no masking fallbacks. When the AI errors, surface the
+    // DIRECT error so it's visible on the feed (Sift + Worth-your-time), never a
+    // deterministic stand-in that hides a 429 / timeout / exhausted chain.
+    if (genResult && 'error' in genResult) {
+      return NextResponse.json({ success: false, recommendations: [], source: 'error', apps, appCounts, sift: null, error: genResult.error }, { status: 200 });
+    }
+    if (!genResult) {
+      // generate() only returns null for the no-items case (guarded above) — treat as empty.
+      return NextResponse.json({ success: true, recommendations: [], source: 'empty', apps, appCounts, sift: null });
     }
     return NextResponse.json({
       success: true,
@@ -666,10 +661,11 @@ export async function POST(req: Request) {
       source: 'ai',
       apps,
       appCounts,
-      sift: genResult.sift || fallbackSift,
+      sift: genResult.sift,
     });
   } catch (err: any) {
     logEvent({ channel: "failures", event: "❌ API Error", description: String(err) });
-    return NextResponse.json({ success: true, recommendations: [], source: 'error', error: String(err?.message || 'failed').slice(0, 200) }, { status: 200 });
+    // Surface the direct error rather than a silent success-with-empty.
+    return NextResponse.json({ success: false, recommendations: [], source: 'error', sift: null, error: String(err?.message || 'failed').slice(0, 200) }, { status: 200 });
   }
 }
